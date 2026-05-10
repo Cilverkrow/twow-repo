@@ -24,7 +24,6 @@
 #include "CreatureAI.h"
 #include "Map.h"
 #include "Player.h"
-#include "Totem.h"
 #include "ObjectAccessor.h"
 #include "UnitEvents.h"
 #include "TargetedMovementGenerator.h"
@@ -49,12 +48,6 @@ float ThreatCalcHelper::CalcThreat(Unit* pHatedUnit, float threat, bool crit, Sp
 
         if (crit)
             threat *= pHatedUnit->GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_CRITICAL_THREAT, schoolMask);
-
-        // Holy Shield (Paladin patch9 talent 20925) — Sprint 5.8: 50% additional
-        // threat on the damage proc the shield generates. The shield triggers
-        // 20925 cast as the threat-generating spell.
-        if (pThreatSpell->Id == 20925)
-            threat *= 1.5f;
     }
 
     threat = pHatedUnit->ApplyTotalThreatModifier(threat, schoolMask);
