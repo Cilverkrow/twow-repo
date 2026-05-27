@@ -786,33 +786,32 @@ bool PlayerbotAIConfig::Initialize()
 
 bool PlayerbotAIConfig::IsInRandomAccountList(uint32 id)
 {
-    // Fast path: already in the loaded/discovered list.
+    // Fast path: already confirmed bot account.
     if (find(randomBotAccounts.begin(), randomBotAccounts.end(), id) != randomBotAccounts.end())
         return true;
+    // Fast path: already confirmed non-bot account — skip the DB query.
+    if (nonRandomBotAccounts.count(id))
+        return false;
 
-    // Slow path: the account may have been created at runtime AFTER the
-    // startup loader ran (e.g. via `.rndbot create` with a number outside
-    // the configured pool, or any manual account creation that legitimately
-    // belongs to the bot pool). Look up the username and accept any account
-    // whose name starts with the configured RNDBOT prefix. Once recognized,
-    // add to the cached list so subsequent calls take the fast path.
+    // Slow path: look up username and check RNDBOT prefix. Cache result either way.
     auto qr = LoginDatabase.PQuery("SELECT username FROM account WHERE id = %u", id);
     if (!qr)
+    {
+        nonRandomBotAccounts.insert(id);
         return false;
+    }
     Field* fields = qr->Fetch();
     std::string username = fields[0].GetCppString();
     std::string prefix = randomBotAccountPrefix;
-    if (username.size() < prefix.size())
-        return false;
-    // Case-insensitive prefix compare (account usernames are typically
-    // upper-cased in the DB but the config string may not be).
-    for (size_t i = 0; i < prefix.size(); ++i)
-    {
-        if (std::tolower((unsigned char)username[i]) != std::tolower((unsigned char)prefix[i]))
-            return false;
-    }
-    randomBotAccounts.push_back(id);
-    return true;
+    bool isBot = username.size() >= prefix.size();
+    for (size_t i = 0; isBot && i < prefix.size(); ++i)
+        isBot = std::tolower((unsigned char)username[i]) == std::tolower((unsigned char)prefix[i]);
+
+    if (isBot)
+        randomBotAccounts.push_back(id);
+    else
+        nonRandomBotAccounts.insert(id);
+    return isBot;
 }
 
 bool PlayerbotAIConfig::IsFreeAltBot(uint32 guid)

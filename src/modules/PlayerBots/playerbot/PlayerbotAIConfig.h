@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_set>
 #include "Config/Config.h"
 #include "Talentspec.h"
 #include "SharedDefines.h"
@@ -130,6 +131,7 @@ public:
     std::vector<uint32> randomBotMaps;
     std::list<uint32> randomBotQuestItems;
     std::list<uint32> randomBotAccounts;
+    std::unordered_set<uint32> nonRandomBotAccounts;
     std::list<uint32> randomBotSpellIds;
     std::list<uint32> randomBotQuestIds;
     std::list<uint32> immuneSpellIds;
