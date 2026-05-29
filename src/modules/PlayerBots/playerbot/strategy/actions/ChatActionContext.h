@@ -108,6 +108,7 @@ namespace ai
             creators["add all loot"] = [](PlayerbotAI* ai) { return new AddAllLootAction(ai); };
             creators["roll"] = [](PlayerbotAI* ai) { return new RollAction(ai); };
             creators["release"] = [](PlayerbotAI* ai) { return new ReleaseSpiritAction(ai); };
+            creators["corpse run"] = [](PlayerbotAI* ai) { return new CorpseRunAction(ai); };
             creators["repop"] = [](PlayerbotAI* ai) { return new RepopAction(ai); };
             creators["teleport"] = [](PlayerbotAI* ai) { return new TeleportAction(ai); };
             creators["taxi"] = [](PlayerbotAI* ai) { return new TaxiAction(ai); };

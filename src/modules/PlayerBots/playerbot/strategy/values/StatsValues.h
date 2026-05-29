@@ -212,6 +212,19 @@ namespace ai
         }
     };
 
+    // Set true by the "corpse run" chat command; makes FindCorpseAction ignore the
+    // wait-for-master gate and run to the corpse. Reset to false once the bot resurrects.
+    class CorpseRunValue : public ManualSetValue<bool>
+    {
+    public:
+        CorpseRunValue(PlayerbotAI* ai, std::string name = "corpse run") : ManualSetValue<bool>(ai, false, name) {}
+
+        virtual std::string Format() override
+        {
+            return this->value ? "true" : "false";
+        }
+    };
+
 
     class ExperienceValue : public MemoryCalculatedValue<uint32>
     {

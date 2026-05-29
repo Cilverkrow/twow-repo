@@ -18,7 +18,7 @@ namespace ai
         virtual bool isUseful() override;
     };
 
-	class SpiritHealerAction : public MovementAction 
+	class SpiritHealerAction : public MovementAction
     {
 	public:
 	    SpiritHealerAction(PlayerbotAI* ai, std::string name = "spirit healer") : MovementAction(ai,name) {}

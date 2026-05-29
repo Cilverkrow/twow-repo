@@ -119,7 +119,32 @@ namespace ai
         }
     };
 
-    class RepopAction : public SpiritHealerAction 
+    // "corpse run" chat command: set the "corpse run" flag so FindCorpseAction ignores the
+    // wait-for-master gate and the bot runs to its own corpse (e.g. when the master has no
+    // way to resurrect it). The flag is cleared automatically when the bot resurrects.
+    class CorpseRunAction : public ChatCommandAction
+    {
+    public:
+        CorpseRunAction(PlayerbotAI* ai, std::string name = "corpse run") : ChatCommandAction(ai, name) {}
+
+        virtual bool Execute(Event& event) override
+        {
+            Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+
+            if (sServerFacade.IsAlive(bot) || !bot->GetCorpse())
+            {
+                ai->TellPlayerNoFacing(requester, "I am not dead", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                return false;
+            }
+
+            SET_AI_VALUE(bool, "corpse run", true);
+            sLog.outString("[BOT CORPSE] %s: corpse run command received - overriding wait-for-master, running to corpse", bot->GetName());
+            ai->TellPlayerNoFacing(requester, "Running to my corpse", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            return true;
+        }
+    };
+
+    class RepopAction : public SpiritHealerAction
     {
     public:
         RepopAction(PlayerbotAI* ai, std::string name = "repop") : SpiritHealerAction(ai, name) {}

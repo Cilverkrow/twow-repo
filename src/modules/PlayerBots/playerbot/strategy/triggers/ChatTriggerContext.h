@@ -26,6 +26,7 @@ namespace ai
             creators["loot"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "add all loot"); };
             creators["add all loot"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "add all loot"); };
             creators["release"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "release"); };
+            creators["corpse run"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "corpse run"); };
             creators["teleport"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "teleport"); };
             creators["taxi"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "taxi"); };
             creators["repair"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "repair"); };
