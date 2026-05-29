@@ -1214,7 +1214,8 @@ bool MovementAction::MoveTo2(const WorldPosition& endPos, bool idle, bool react,
     {
         if (Unit* master = ai->GetMaster())
         {
-            if (sServerFacade.IsFriendlyTo(bot, master) && master->m_movementInfo.HasMovementFlag(MOVEFLAG_WALK_MODE) && sServerFacade.GetDistance2d(bot, master) < sPlayerbotAIConfig.walkDistance)
+            if (sServerFacade.IsFriendlyTo(bot, master) && master->m_movementInfo.HasMovementFlag(MOVEFLAG_WALK_MODE) && sServerFacade.GetDistance2d(bot, master) < sPlayerbotAIConfig.walkDistance
+                && ai->GetState() != BotState::BOT_STATE_COMBAT)
             {
                 masterWalking = true;
             }
@@ -2053,7 +2054,8 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     Unit* master = ai->GetMaster();
     if (master && sServerFacade.IsFriendlyTo(bot, master))
     {
-        if (master->m_movementInfo.HasMovementFlag(MOVEFLAG_WALK_MODE) && sServerFacade.GetDistance2d(bot, master) < 20.0f)
+        if (master->m_movementInfo.HasMovementFlag(MOVEFLAG_WALK_MODE) && sServerFacade.GetDistance2d(bot, master) < 20.0f
+            && ai->GetState() != BotState::BOT_STATE_COMBAT)
             masterWalking = true;
     }
 
