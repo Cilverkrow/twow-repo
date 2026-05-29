@@ -974,12 +974,20 @@ void MovementAction::DispatchMovement(TravelPath movePath, bool generatePath, bo
         WorldPosition movePosition = path.back();
 
 #ifdef MANGOSBOT_ZERO
+        // Tortoise's MovePoint signature is (id, x, y, z, options, speed, orientation),
+        // NOT cmangos's (id, x, y, z, ForcedMovement, bool generatePath). The ported call
+        // below used to pass `moveMode` into `options` and the `generatePath` bool into the
+        // `speed` float — so generatePath==true set the velocity to 1.0 yd/s, making bots
+        // crawl slower than walking. Translate the intent into proper MoveOptions instead and
+        // leave speed at its default so it is derived from the run/walk movement flags.
+        uint32 moveOptions = (moveMode == FORCED_MOVEMENT_WALK) ? MOVE_WALK_MODE : MOVE_RUN_MODE;
+        if (generatePath)
+            moveOptions |= MOVE_PATHFINDING;
         mm.MovePoint(movePosition.getMapId(),
             movePosition.getX(),
             movePosition.getY(),
             movePosition.getZ(),
-            moveMode,
-            generatePath);
+            moveOptions);
 #else
         mm.MovePoint(movePosition.getMapId(),
             Position(movePosition.getX(), movePosition.getY(), movePosition.getZ(), 0.f),
@@ -1020,12 +1028,20 @@ void MovementAction::DispatchMovement(TravelPath movePath, bool generatePath, bo
         WorldPosition movePosition = path.back();
 
 #ifdef MANGOSBOT_ZERO
+        // Tortoise's MovePoint signature is (id, x, y, z, options, speed, orientation),
+        // NOT cmangos's (id, x, y, z, ForcedMovement, bool generatePath). The ported call
+        // below used to pass `moveMode` into `options` and the `generatePath` bool into the
+        // `speed` float — so generatePath==true set the velocity to 1.0 yd/s, making bots
+        // crawl slower than walking. Translate the intent into proper MoveOptions instead and
+        // leave speed at its default so it is derived from the run/walk movement flags.
+        uint32 moveOptions = (moveMode == FORCED_MOVEMENT_WALK) ? MOVE_WALK_MODE : MOVE_RUN_MODE;
+        if (generatePath)
+            moveOptions |= MOVE_PATHFINDING;
         mm.MovePoint(movePosition.getMapId(),
             movePosition.getX(),
             movePosition.getY(),
             movePosition.getZ(),
-            moveMode,
-            generatePath);
+            moveOptions);
 #else
         mm.MovePoint(movePosition.getMapId(),
             Position(movePosition.getX(), movePosition.getY(), movePosition.getZ(), 0.f),
@@ -2071,7 +2087,14 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     }
 
 #ifdef MANGOSBOT_ZERO
-        mm.MovePoint(movePosition.getMapId(), movePosition.getX(), movePosition.getY(), movePosition.getZ(), masterWalking ? FORCED_MOVEMENT_WALK : FORCED_MOVEMENT_RUN, generatePath);
+        // See note above: map the bot's walk/run + generatePath intent onto Tortoise's
+        // MoveOptions instead of mis-passing generatePath as the velocity (1.0 yd/s crawl).
+        {
+            uint32 moveOptions = masterWalking ? MOVE_WALK_MODE : MOVE_RUN_MODE;
+            if (generatePath)
+                moveOptions |= MOVE_PATHFINDING;
+            mm.MovePoint(movePosition.getMapId(), movePosition.getX(), movePosition.getY(), movePosition.getZ(), moveOptions);
+        }
 #else
     if (!bot->IsFreeFlying())
     {
@@ -2540,13 +2563,13 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
 {
     if (!ai->CanMove())
     {
-        sLog.outDetail("[BOT CHASE] %s: CanMove() blocked", bot->GetName());
+        sLog.outString("[BOT CHASE] %s: CanMove() blocked", bot->GetName());
         return false;
     }
 
     if (!ai->IsSafe(obj))
     {
-        sLog.outDetail("[BOT CHASE] %s: IsSafe() blocked", bot->GetName());
+        sLog.outString("[BOT CHASE] %s: IsSafe() blocked", bot->GetName());
         return false;
     }
 
@@ -2643,16 +2666,16 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
 #else
             mm.MovePath(pointsArray, FORCED_MOVEMENT_RUN, false);
 #endif
-            sLog.outDetail("[BOT CHASE] %s -> %s: dist=%.1f target=%.1f pts=%u wait=%.2f (MovePath)",
+            sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f target=%.1f pts=%u wait=%.2f (MovePath)",
                 bot->GetName(), obj->GetName(), distanceToTarget, distance, (uint32)path.size(), distance / bot->GetSpeed(MOVE_RUN));
             WaitForReach(distance);
             return true;
         }
-        sLog.outDetail("[BOT CHASE] %s -> %s: dist=%.1f no valid path, falling back", bot->GetName(), obj->GetName(), distanceToTarget);
+        sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f no valid path, falling back", bot->GetName(), obj->GetName(), distanceToTarget);
     }
     else
     {
-        sLog.outDetail("[BOT CHASE] %s -> %s: dist=%.1f endPos invalid, falling back", bot->GetName(), obj->GetName(), distanceToTarget);
+        sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f endPos invalid, falling back", bot->GetName(), obj->GetName(), distanceToTarget);
     }
 
     if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
@@ -2692,7 +2715,7 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
     mm.MoveChase((Unit*)obj, distance, angle);
     float dist = sServerFacade.GetDistance2d(bot, obj);
     float distDiff = dist > distance ? dist - distance : 0.f;
-    sLog.outDetail("[BOT CHASE] %s -> %s: dist=%.1f target=%.1f wait=%.2f (MoveChase)",
+    sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f target=%.1f wait=%.2f (MoveChase)",
         bot->GetName(), obj->GetName(), dist, distance, distDiff / bot->GetSpeed(MOVE_RUN));
     WaitForReach(distDiff);
 

@@ -149,11 +149,12 @@ class MotionMaster : std::stack<MovementGenerator *>
         void MoveDistance(Unit* target, float distance);
         void ReInitializePatrolMovement();
 
-        // The bot module calls MovePath with a vector of points. Stubbed
-        // out — full implementation (path-based movement generator) is
-        // future work. No-op so the bot module compiles.
-        template<typename PointPath>
-        void MovePath(PointPath const& /*pointPath*/, uint32 /*moveMode*/, bool /*flying*/, bool /*walk*/ = false) {}
+        // The bot module supplies a precomputed path of points and expects the
+        // unit to travel along it (chase, flee, travel and transport movement).
+        // Launches a spline through the points; walk == false selects run speed.
+        // moveMode is the bot's FORCED_MOVEMENT_* hint and is currently unused
+        // (run vs walk is driven by the explicit walk flag).
+        void MovePath(Movement::PointsArray const& pointPath, uint32 moveMode, bool flying, bool walk = false);
         // MoveFall: cmangos returns bool. Stub returns false.
         bool MoveFall() { return false; }
         // DistanceYourself: cmangos move-away action. Stub no-op (multiple forms).

@@ -7805,11 +7805,14 @@ void PlayerbotAI::AccelerateRespawn(Creature* creature, float accelMod)
 std::list<Unit*> PlayerbotAI::GetAllHostileUnitsAroundWO(WorldObject* wo, float distanceAround)
 {
     std::list<Unit*> hostileUnits;
-    MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(wo, distanceAround);
+    // Search around the world object `wo` (e.g. a lootable corpse) but judge hostility from
+    // the BOT's perspective. The 2-arg ctor used the object itself as the friendly-reference,
+    // so for a creature corpse it asked "is the dead mob friendly to u?" (flagging neutral
+    // critters and even friendly guards as hostile), and for a non-Unit object (GameObject)
+    // it set the reference to nullptr and crashed. Passing `bot` fixes both.
+    MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(wo, bot, distanceAround);
     MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> searcher(hostileUnits, u_check);
     Cell::VisitAllObjects(wo, searcher, distanceAround);
-
-    //bugs out with players very rarely - returns friendly as hostile to bots
 
     return hostileUnits;
 }

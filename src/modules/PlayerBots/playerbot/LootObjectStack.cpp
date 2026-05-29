@@ -64,10 +64,20 @@ void LootObject::Refresh(Player* bot, ObjectGuid guid, bool debug)
     {
         if (creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
         {
-            if (debug)
-                ai->TellDebug(ai->GetMaster(), "Creature flag lootable.", "debug loot");
+            // The lootable flag is set group-wide on a tapped corpse, so it alone does not mean
+            // this bot may loot it. Require tap rights, otherwise the bot walks to and kneels on
+            // corpses whose loot belongs to someone else (e.g. the master's round-robin kill).
+            if (creature->IsTappedBy(bot))
+            {
+                if (debug)
+                    ai->TellDebug(ai->GetMaster(), "Creature flag lootable.", "debug loot");
 
-            this->guid = guid;
+                this->guid = guid;
+            }
+            else if (debug)
+            {
+                ai->TellDebug(ai->GetMaster(), "Creature lootable but not tapped by bot.", "debug loot");
+            }
         }
 
         if (creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE))

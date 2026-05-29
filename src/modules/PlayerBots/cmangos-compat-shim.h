@@ -712,13 +712,50 @@ struct TransportAnimation {
 typedef std::map<uint32, TransportAnimationNode*> TransportPathContainer;
 // Note: Penqle has its own sTransportMgr; we extend TransportMgr inline (see Transports/TransportMgr.h).
 
-// === sLootMgr stub (cmangos global; Penqle has LootStore but no equivalent singleton) ===
+// === sLootMgr shim (cmangos global; Penqle has LootStore but no equivalent singleton) ===
 // Bot calls sLootMgr.GetLoot(player[, guid]) to fetch the loot the player is currently looking at.
-// Penqle stores Loot directly on Creature/GameObject. Stub returns nullptr; loot UI bot logic is a
-// stub: symbol needs to resolve, value never actually consulted.
+// Penqle stores the Loot object directly on the looted entity (Creature/GameObject/Item/Corpse),
+// resolved by the player's current loot guid. This MUST return the real loot: StoreLootAction
+// consumes it to actually take items + release. A previous nullptr stub made StoreLoot abort
+// before sending CMSG_LOOT_RELEASE, so bots kneeled on an open corpse forever ("crouch loop").
+// Mirrors the core resolution in Handlers/LootHandler.cpp (no distance gate: StoreLoot is reacting
+// to a server loot response, so the target is already validated).
 struct CmangosLootMgrStub
 {
-    Loot* GetLoot(Player* /*player*/, ObjectGuid /*guid*/ = ObjectGuid()) const { return nullptr; }
+    Loot* GetLoot(Player* player, ObjectGuid guid = ObjectGuid()) const
+    {
+        if (!player || !player->IsInWorld())
+            return nullptr;
+
+        if (!guid)
+            guid = player->GetLootGuid();
+        if (!guid)
+            return nullptr;
+
+        switch (guid.GetHigh())
+        {
+            case HIGHGUID_GAMEOBJECT:
+                if (GameObject* go = player->GetMap()->GetGameObject(guid))
+                    return &go->loot;
+                break;
+            case HIGHGUID_CORPSE:
+                if (Corpse* bones = player->GetMap()->GetCorpse(guid))
+                    return &bones->loot;
+                break;
+            case HIGHGUID_ITEM:
+                if (Item* item = player->GetItemByGuid(guid))
+                    return &item->loot;
+                break;
+            case HIGHGUID_UNIT:
+                if (Creature* creature = player->GetMap()->GetCreature(guid))
+                    return &creature->loot;
+                break;
+            default:
+                break;
+        }
+
+        return nullptr;
+    }
 };
 inline CmangosLootMgrStub sLootMgr;
 

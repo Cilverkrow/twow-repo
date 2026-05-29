@@ -317,8 +317,24 @@ struct Loot
     class GroupLootRoll* GetRollForSlot(uint32 /*slot*/) const { return nullptr; }
     // GetGoldAmount: cmangos accessor.
     uint32 GetGoldAmount() const { return gold; }
-    // CanLoot: cmangos checks player can loot. Stub returns true.
-    bool CanLoot(Player* /*player*/) const { return true; }
+    // CanLoot: true only if the player can actually take something from this loot — gold, or
+    // at least one unlooted item allowed for them. Was previously stubbed to always return
+    // true, which let bots try to loot corpses tapped/owned by another player (e.g. the human
+    // master's round-robin kill): the bot would kneel on an empty corpse and get stuck.
+    // LootItem::AllowedForPlayer already encodes round-robin / FFA / quest / condition rules.
+    bool CanLoot(Player* player) const
+    {
+        if (!player)
+            return false;
+        if (gold > 0)
+            return true;
+        for (LootItem const& item : items)
+        {
+            if (!item.is_looted && item.AllowedForPlayer(player, m_lootTarget))
+                return true;
+        }
+        return false;
+    }
     // Release: cmangos clears loot reservation. Stub no-op.
     void Release(Player* /*player*/) {}
     // GetLootItemsListFor: cmangos returns/populates per-player loot items list.

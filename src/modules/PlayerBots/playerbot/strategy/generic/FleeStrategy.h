@@ -1,8 +1,21 @@
 #pragma once
 #include "playerbot/strategy/Strategy.h"
+#include "playerbot/strategy/Multiplier.h"
 
 namespace ai
 {
+    // Dampens the "flee" action's relevance once a retreat has been performed, so the bot
+    // resumes normal combat instead of being pinned in flee-mode while the flee trigger stays
+    // active. The in-progress retreat itself is left intact (see GetValue).
+    class FleeMultiplier : public Multiplier
+    {
+    public:
+        FleeMultiplier(PlayerbotAI* ai) : Multiplier(ai, "flee") {}
+
+    public:
+        float GetValue(Action* action) override;
+    };
+
     class FleeStrategy : public Strategy
     {
     public:
@@ -17,6 +30,7 @@ namespace ai
 #endif
     private:
         void InitCombatTriggers(std::list<TriggerNode*> &triggers) override;
+        void InitCombatMultipliers(std::list<Multiplier*> &multipliers) override;
     };
 
     class FleeFromAddsStrategy : public Strategy
