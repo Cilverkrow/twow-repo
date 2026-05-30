@@ -75,10 +75,31 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     sLog.outString("[BOT LOOT] %s: DoLoot target=%lu", bot->GetName(), lootObject.guid.GetRawValue());
 
     Creature* creature = ai->GetCreature(lootObject.guid);
-    if (creature && sServerFacade.GetDistance2d(bot, creature) > INTERACTION_DISTANCE)
+    // Gate the loot send on the SERVER's exact loot-range rule: a 3D distance check against
+    // GetMaxLootDistance with no bounding-radius slack (Player::SendLoot, Player.cpp:9382 ->
+    // Object _IsWithinDist with SizeFactor::None). The old gate only measured 2D distance and
+    // ignored Z, so while the bot was being dragged along by follow/chase it fired CMSG_LOOT
+    // from a few yards above/below a corpse it had not actually reached (2D=2y but 3D>5y),
+    // and the server replied TOO_FAR. Returning false here keeps MoveToLoot approaching until
+    // the bot is truly standing on the corpse, then it loots.
+    if (creature && !creature->IsWithinDistInMap(bot, bot->GetMaxLootDistance(creature), true, SizeFactor::None))
     {
-        sLog.outString("[BOT LOOT] %s: too far from corpse (%.1f > %.1f), abort",
-            bot->GetName(), sServerFacade.GetDistance2d(bot, creature), (float)INTERACTION_DISTANCE);
+        sLog.outString("[BOT LOOT] %s: not in 3D loot range (dist2d=%.1f maxLoot=%.1f), keep approaching guid=%lu",
+            bot->GetName(), sServerFacade.GetDistance2d(bot, creature), bot->GetMaxLootDistance(creature), lootObject.guid.GetRawValue());
+        return false;
+    }
+
+    // Re-confirm the creature is still a fresh, lootable corpse before sending CMSG_LOOT.
+    // The cached UNIT_DYNFLAG_LOOTABLE can lag behind a corpse that has despawned or
+    // respawned while the bot was busy chain-killing (corpses age up to 30s in the loot
+    // stack). A stale entry makes the server reply with a loot error (DIDNT_KILL) and the
+    // bot kneel/abort on a non-corpse. Same predicate LootObjectStack::Refresh uses.
+    if (creature && sServerFacade.GetDeathState(creature) != CORPSE)
+    {
+        sLog.outString("[BOT LOOT] %s: not a fresh CORPSE (deathstate=%d), dropping guid=%lu",
+            bot->GetName(), (int)sServerFacade.GetDeathState(creature), lootObject.guid.GetRawValue());
+        AI_VALUE(LootObjectStack*, "available loot")->Remove(lootObject.guid);
+        RESET_AI_VALUE(LootObject, "loot target");
         return false;
     }
 
@@ -90,6 +111,11 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
                 bot->GetName());
             return true;
         }
+
+        sLog.outString("[BOT LOOT] %s: loot ctx guid=%lu alive=%d tapped=%d dist2d=%.1f maxLoot=%.1f",
+            bot->GetName(), lootObject.guid.GetRawValue(),
+            creature->IsAlive() ? 1 : 0, creature->IsTappedBy(bot) ? 1 : 0,
+            sServerFacade.GetDistance2d(bot, creature), bot->GetMaxLootDistance(creature));
 
         sLog.outString("[BOT LOOT] %s: sending CMSG_LOOT (crouch emote) guid=%lu lootDelay=%u",
             bot->GetName(), lootObject.guid.GetRawValue(), sPlayerbotAIConfig.lootDelay);
@@ -298,6 +324,27 @@ bool StoreLootAction::Execute(Event& event)
     {
         p >> gold;      // 4 money on corpse
         p >> items;     // 1 number of items on corpse
+    }
+    else
+    {
+        // Not a loot response but a loot ERROR packet from Player::SendLootError:
+        // [guid][uint8 loot_type=0][uint8 errorCode]. A real loot response (even an empty
+        // one) always carries the gold + item-count block, so size <= 10 means the server
+        // rejected the loot. Decode the trailing error byte so the rejection isn't a mystery.
+        uint8 lootError = 0;
+        if (p.rpos() < p.size())
+            p >> lootError;
+
+        const char* errName =
+            lootError == 0 ? "DIDNT_KILL/no-permission" :
+            lootError == 4 ? "TOO_FAR" : "other";
+        sLog.outString("[BOT LOOT] %s: loot REJECTED guid=%lu error=%u (%s)",
+            bot->GetName(), guid.GetRawValue(), lootError, errName);
+
+        // Drop the corpse so the bot stops retrying a loot the server won't grant.
+        AI_VALUE(LootObjectStack*, "available loot")->Remove(guid);
+        RESET_AI_VALUE(LootObject, "loot target");
+        return false;
     }
 
     sLog.outString("[BOT LOOT] %s: StoreLoot guid=%lu type=%u gold=%u items=%u",

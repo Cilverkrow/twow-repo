@@ -4,9 +4,9 @@
 
 namespace ai
 {
-    // Dampens the "flee" action's relevance once a retreat has been performed, so the bot
-    // resumes normal combat instead of being pinned in flee-mode while the flee trigger stays
-    // active. The in-progress retreat itself is left intact (see GetValue).
+    // Breaks the ranged-caster flee loop: once a bot has fled repeatedly with no progress the
+    // "flee" action is dampened below the nukes so it casts instead of running forever, and an
+    // in-progress non-instant cast is never interrupted by flee (see GetValue).
     class FleeMultiplier : public Multiplier
     {
     public:

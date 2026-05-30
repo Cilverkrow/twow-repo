@@ -14,23 +14,33 @@ float FleeMultiplier::GetValue(Action* action)
     if (!action || action->getName() != "flee")
         return 1.0f;
 
+    // Never let a flee interrupt a cast that is already underway: finishing the spell takes
+    // priority. (Same predicate MoveTo() uses before it calls InterruptSpell().)
+    if (bot->IsNonMeleeSpellCasted(true))
+        return 0.0f;
+
+    // The subsequent-flee loop break only applies to ranged casters (mage/warlock/priest).
+    // Melee bots and hunter-kite logic are left untouched.
+    if (!ai->IsRanged(bot))
+        return 1.0f;
+
     LastMovement& lastMovement = AI_VALUE(LastMovement&, "last movement");
+    const time_t now = time(0);
+    // Mirrors the flee timing scale in MovementAction::Flee() (fleeDelay = urand(2, window)).
+    const time_t window = (time_t)(sPlayerbotAIConfig.returnDelay / 1000);
 
-    // Never fled (or the flee window was cleared) -> allow flee at full relevance.
-    if (!lastMovement.lastFlee)
+    // No recent flee within the window -> not a flee loop. Allow flee at full relevance so the
+    // bot still makes a genuine attempt to gain distance (correct when the target is escapable
+    // or about to be crowd-controlled).
+    if (!lastMovement.lastFleeAttempt || (now - lastMovement.lastFleeAttempt) > window)
         return 1.0f;
 
-    // While the bot is actively retreating, do NOT dampen: flee should keep winning so the
-    // existing in-progress-flee debounce in MovementAction::Flee() carries the retreat to
-    // completion instead of a normal action interrupting it after a fraction of a second.
-    if (sServerFacade.isMoving(bot))
-        return 1.0f;
-
-    // Retreat done and the bot has settled: suppress re-fleeing for a short backoff so normal
-    // combat actions outrank flee, then allow it again. The window mirrors the flee timing
-    // scale already used in Flee() (fleeDelay = urand(2, returnDelay/1000)).
-    time_t elapsed = time(0) - lastMovement.lastFlee;
-    if (elapsed <= (time_t)(sPlayerbotAIConfig.returnDelay / 1000))
+    // Subsequent flee within the window: once the bot has already fled twice in a row with no
+    // progress, suppress flee so the low-priority nukes (fireball/frostbolt) outrank it. The
+    // bot then plants and casts instead of running forever; the cast, once started, is kept
+    // alive by the IsNonMeleeSpellCasted guard above. Higher-priority reactions the bot is
+    // programmed for (Frost Nova, Blast Wave, blink, ...) still win normally.
+    if (lastMovement.fleeCount >= 2)
         return 0.01f;
 
     return 1.0f;

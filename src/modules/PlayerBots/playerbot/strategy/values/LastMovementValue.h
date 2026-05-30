@@ -22,6 +22,8 @@ namespace ai
             lastPath = other.lastPath;
             lastMoveShort = other.lastMoveShort;
             nextTeleport = other.nextTeleport;
+            fleeCount = other.fleeCount;
+            lastFleeAttempt = other.lastFleeAttempt;
             moveEvent = Event();
         }
 
@@ -32,6 +34,8 @@ namespace ai
             lastAreaTrigger = 0;
             lastTransportEntry = 0;
             lastFlee = 0;
+            fleeCount = 0;
+            lastFleeAttempt = 0;
             lastMoveShort = WorldPosition();
             nextTeleport = 0;
             moveEvent = Event();
@@ -51,6 +55,12 @@ namespace ai
         uint32 lastAreaTrigger;
         uint32 lastTransportEntry;
         time_t lastFlee;
+        // Number of flee actions dispatched in quick succession (within returnDelay of each
+        // other). Used to detect a "subsequent" flee loop so spellcasting can take priority.
+        uint32 fleeCount;
+        // Wall-clock of the last dispatched flee, used to decide whether the next flee is
+        // "subsequent" (close in time) or a fresh flee (window lapsed -> count resets).
+        time_t lastFleeAttempt;
         TravelPath lastPath;
         WorldPosition lastMoveShort;
         time_t nextTeleport;

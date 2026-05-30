@@ -3014,7 +3014,16 @@ bool MovementAction::Flee(Unit *target)
 
         if(MoveTo(target->GetMapId(), rx, ry, rz))
         {
-            AI_VALUE(LastMovement&, "last movement").lastFlee = time(0);
+            LastMovement& lm = AI_VALUE(LastMovement&, "last movement");
+            // Count successive flee dispatches so FleeMultiplier can detect a flee loop and
+            // hand priority back to spellcasting. A dispatch within the return window of the
+            // previous one is "subsequent" (loop); otherwise it's a fresh flee episode.
+            if (lm.lastFleeAttempt && (now - lm.lastFleeAttempt) <= (time_t)(sPlayerbotAIConfig.returnDelay / 1000))
+                lm.fleeCount++;
+            else
+                lm.fleeCount = 1;
+            lm.lastFleeAttempt = now;
+            lm.lastFlee = time(0);
             succeeded = true;
         }
     }
@@ -3219,6 +3228,8 @@ bool MoveToLootAction::Execute(Event& event)
     LootObject loot = AI_VALUE(LootObject, "loot target");
     if (!loot.IsLootPossible(bot))
     {
+        sLog.outString("[BOT LOOT] %s: MoveToLoot abort guid=%lu (IsLootPossible=false)",
+            bot->GetName(), loot.guid.GetRawValue());
         if (ai->HasStrategy("debug loot", BotState::BOT_STATE_NON_COMBAT))
         {
             WorldObject* wo = loot.GetWorldObject(bot);
@@ -3245,10 +3256,12 @@ bool MoveToLootAction::Execute(Event& event)
         ai->TellPlayerNoFacing(GetMaster(), out);
     }
 
-    if(sServerFacade.IsWithinLOSInMap(bot, wo))
-        return MoveNear(wo, sPlayerbotAIConfig.contactDistance);
-
-    return MoveTo(WorldPosition(wo));
+    bool los = sServerFacade.IsWithinLOSInMap(bot, wo);
+    float dist = sServerFacade.GetDistance2d(bot, wo);
+    bool moved = los ? MoveNear(wo, sPlayerbotAIConfig.contactDistance) : MoveTo(WorldPosition(wo));
+    sLog.outString("[BOT LOOT] %s: MoveToLoot guid=%lu dist=%.1f los=%d via=%s result=%d",
+        bot->GetName(), loot.guid.GetRawValue(), dist, los ? 1 : 0, los ? "MoveNear" : "MoveTo", moved ? 1 : 0);
+    return moved;
 }
 
 bool MoveOutOfEnemyContactAction::Execute(Event& event)
