@@ -2671,7 +2671,7 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
             WaitForReach(distance);
             return true;
         }
-        sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f no valid path, falling back", bot->GetName(), obj->GetName(), distanceToTarget);
+        sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f no hazard-avoidance path (no hazards or unroutable), using MoveChase", bot->GetName(), obj->GetName(), distanceToTarget);
     }
     else
     {
