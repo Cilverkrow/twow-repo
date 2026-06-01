@@ -909,18 +909,25 @@ class WorldObject : public Object
         bool IsEnemy(WorldObject const* target) const;
         // bot passes int (DistanceCalculation enum).
         // Map DIST_CALC_NONE/BOUNDING_RADIUS/COMBAT_REACH (cmangos) to SizeFactor (Penqle).
+        // cmangos contract: DIST_CALC_NONE returns the SQUARED distance (callers sqrt() it),
+        // while BOUNDING_RADIUS/COMBAT_REACH return the linear distance. Penqle's SizeFactor
+        // overloads are always linear, so square the result for the NONE case to match.
         float GetDistance(float x, float y, float z, int distcalc) const {
-            return GetDistance(x, y, z, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+            float d = GetDistance(x, y, z, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+            return distcalc == 0 ? d * d : d;
         }
         float GetDistance(WorldObject const* obj, int distcalc) const {
-            return GetDistance(obj, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+            float d = GetDistance(obj, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+            return distcalc == 0 ? d * d : d;
         }
         // GetDistance2d 3-arg form taking int.
         float GetDistance2d(float x, float y, int distcalc) const {
-            return GetDistance2d(x, y, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+            float d = GetDistance2d(x, y, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+            return distcalc == 0 ? d * d : d;
         }
         float GetDistance2d(WorldObject const* obj, int distcalc) const {
-            return GetDistance2d(obj, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+            float d = GetDistance2d(obj, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+            return distcalc == 0 ? d * d : d;
         }
         float GetDistance2d(WorldObject const* obj, SizeFactor distcalc = SizeFactor::BoundingRadius) const;
         float GetDistance2d(float x, float y, SizeFactor distcalc = SizeFactor::BoundingRadius) const;

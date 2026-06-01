@@ -10030,7 +10030,7 @@ void ObjectMgr::LoadChatChannels()
 
         uint32 id = fields[0].GetUInt32();
         ChatChannelsEntry channel;
-        channel.id = 1;
+        channel.id = id;
         channel.flags = fields[1].GetUInt32();
         channel.factionGroup = fields[2].GetUInt32();
 

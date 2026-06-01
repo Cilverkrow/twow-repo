@@ -696,6 +696,7 @@ class ObjectMgr
         void LoadChatChannels();
         ChatChannelsEntry const* GetChannelEntryFor(uint32 channelId);
         ChatChannelsEntry const* GetChannelEntryFor(std::string const& name);
+        robin_hood::unordered_map<uint32, ChatChannelsEntry> const& GetChatChannelsMap() const { return m_chatChannelsMap; }
 
         static Player* GetPlayer(const char* name) { return ObjectAccessor::FindPlayerByName(name);}
         static Player* GetPlayer(ObjectGuid guid) { return ObjectAccessor::FindPlayer(guid); }

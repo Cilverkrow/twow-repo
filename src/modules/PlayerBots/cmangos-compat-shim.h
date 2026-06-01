@@ -670,12 +670,41 @@ inline CmangosSkillLineAbilityStoreProxy sSkillLineAbilityStore;
 #define sAreaStore sAreaStorage
 
 // === sChatChannelsStore proxy ===
-// Penqle exposes ChatChannels via sObjectMgr.GetChatChannelByDBId or similar. Stub returns nullptr.
+// cmangos bots iterate an indexed DBC store (LookupEntry(0..GetNumRows)) to join chat
+// channels. Tortoise keeps the same data in ObjectMgr::m_chatChannelsMap (loaded from the
+// `chat_channels` table at world init). We expose it here as a one-time, index-addressable
+// snapshot. The bot reads `pattern[locale]` as an snprintf format ("General - %s"); Tortoise
+// stores that string in `name[locale]`, so we point pattern at the snapshot's own name.
 struct CmangosChatChannelsStoreProxy
 {
+    // Built once on first access (channels load at world init, before any bot logs in;
+    // the map is read-only afterwards). The static vector owns its strings for the program
+    // lifetime, so the pattern[] c_str() pointers below stay valid.
+    static std::vector<ChatChannelsEntry> const& snapshot()
+    {
+        static std::vector<ChatChannelsEntry> entries = [] {
+            std::vector<ChatChannelsEntry> v;
+            auto const& m = sObjectMgr.GetChatChannelsMap();
+            v.reserve(m.size());
+            for (auto const& kv : m)
+                v.push_back(kv.second);
+            // Second pass: vector is fully sized now (no further reallocation), so wire each
+            // entry's pattern[] to its own owned name[] strings.
+            for (auto& e : v)
+                for (int i = 0; i < 8; ++i)
+                    e.pattern[i] = e.name[i].c_str();
+            return v;
+        }();
+        return entries;
+    }
+
     template<typename T = ChatChannelsEntry>
-    T const* LookupEntry(uint32 /*id*/) const { return nullptr; }
-    uint32 GetNumRows() const { return 0; }
+    T const* LookupEntry(uint32 id) const
+    {
+        auto const& v = snapshot();
+        return id < v.size() ? &v[id] : nullptr;
+    }
+    uint32 GetNumRows() const { return (uint32)snapshot().size(); }
 };
 inline CmangosChatChannelsStoreProxy sChatChannelsStore;
 
