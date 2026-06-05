@@ -7814,6 +7814,11 @@ std::list<Unit*> PlayerbotAI::GetAllHostileUnitsAroundWO(WorldObject* wo, float 
     MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> searcher(hostileUnits, u_check);
     Cell::VisitAllObjects(wo, searcher, distanceAround);
 
+    // AnyUnfriendlyUnitInObjectRangeCheck uses !IsFriendlyTo (reaction < REP_FRIENDLY), which
+    // includes neutral critters and wolves. Strip them out — only units the bot is truly hostile
+    // to (reaction <= REP_HOSTILE) are real threats that should block looting.
+    hostileUnits.remove_if([this](Unit* u) { return !bot->IsHostileTo(u); });
+
     return hostileUnits;
 }
 

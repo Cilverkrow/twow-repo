@@ -695,6 +695,12 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
         ai = bot->GetPlayerbotAI();
     }
 
+    // Clear intro cinematic state — bots never watch it but HandlePlayerLogin sets
+    // watching_cinematic_entry for characters that haven't logged in via a real client,
+    // which makes IsTargetable() return false and breaks combat entirely.
+    if (bot->watching_cinematic_entry != 0)
+        bot->CinematicEnd();
+
     if(!ai->HasRealPlayerMaster())
 	    OnBotLoginInternal(bot);
 
