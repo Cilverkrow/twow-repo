@@ -910,6 +910,9 @@ class World
         void UpdatePlayerbotsTick(uint32 diff);
         // One-shot startup hook (called from World::SetInitialWorldSettings) — loads bot config + mgrs.
         void InitPlayerbotsAtStartup();
+        // Second startup hook — called after sObjectMgr.LoadPlayerInfo() so CreateRandomBots() can
+        // use GetPlayerInfo(race, class) to validate starting positions.
+        void FinalizePlayerbotsPostPlayerInfo();
         uint32 GetCurrentMSTime() const;
         // GetMaxDiff: cmangos exposes max diff for performance dashboard. Stub returns 0.
         uint32 GetMaxDiff() const { return 0; }

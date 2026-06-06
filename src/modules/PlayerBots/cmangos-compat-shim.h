@@ -25,6 +25,7 @@
 #include <future>
 #include <chrono>
 #include <random>
+#include <cstdio>
 
 // === Type renames ===
 // cmangos's Transport class is called GenericTransport in WotLK builds and
@@ -854,9 +855,13 @@ inline AreaEntry const* GetAreaEntryByMapId(uint32 mapId) {
 typedef std::vector<MeetingStoneInfo> MeetingStoneSet;
 
 // === CharSections (cmangos-only DBC) ===
-// Penqle has no CharSections.dbc loader. The types are stubbed with an empty
-// static map so the bot's character-randomization code compiles. The factory
-// falls back to a default appearance when the map is empty.
+// Penqle has no CharSections.dbc loader, but the file exists in the data dir.
+// We load it manually here so bots get real randomized appearances.
+//
+// CharSections.dbc vanilla 1.12 layout (10 uint32 fields, record size 40):
+//   [0] ID  [1] Race  [2] Gender  [3] BaseSection  [4] VariationIndex
+//   [5] ColorIndex  [6-8] texture file string offsets  [9] Flags
+//
 // SECTION_TYPE_* (cmangos CharSection types)
 enum CharSectionType {
     SECTION_TYPE_SKIN = 0,
@@ -868,15 +873,71 @@ enum CharSectionType {
 struct CharSectionsEntry {
     uint32 Race = 0;
     uint32 Gender = 0;
+    uint32 BaseSection = 0;
+    uint32 VariationIndex = 0;
+    uint32 ColorIndex = 0;
+    // Legacy aliases used by MANGOSBOT_ZERO code paths in RandomPlayerbotFactory.cpp
+    uint32 Color = 0;        // same value as ColorIndex
     uint32 Type = 0;
     uint32 Section = 0;
-    uint32 ColorIndex = 0;
-    uint32 Color = 0;
-    uint32 VariationIndex = 0;
-    uint32 BaseSection = 0;
 };
 typedef std::map<uint32, CharSectionsEntry const*> CharSectionsMap;
 inline CharSectionsMap sCharSectionMap;
+
+// Loads CharSections.dbc from dataPath into sCharSectionMap.
+// Safe to call multiple times; second call is a no-op.
+inline void LoadCharSectionsDbc(const std::string& dataPath)
+{
+    if (!sCharSectionMap.empty())
+        return;
+
+    std::string path = dataPath + "/dbc/CharSections.dbc";
+    FILE* f = fopen(path.c_str(), "rb");
+    if (!f)
+    {
+        sLog.outError("CharSections.dbc not found at '%s'; bot appearances will use defaults.", path.c_str());
+        return;
+    }
+
+    // WDBC header: magic(4) + records(4) + fields(4) + recordSize(4) + stringBlockSize(4)
+    char magic[4];
+    uint32 records, fields, recordSize, stringBlockSize;
+    if (fread(magic, 1, 4, f) != 4 ||
+        fread(&records, 4, 1, f) != 1 ||
+        fread(&fields, 4, 1, f) != 1 ||
+        fread(&recordSize, 4, 1, f) != 1 ||
+        fread(&stringBlockSize, 4, 1, f) != 1 ||
+        magic[0] != 'W' || magic[1] != 'D' || magic[2] != 'B' || magic[3] != 'C' ||
+        fields != 10 || recordSize != 40)
+    {
+        sLog.outError("CharSections.dbc has unexpected format (fields=%u recordSize=%u); skipping.", fields, recordSize);
+        fclose(f);
+        return;
+    }
+
+    for (uint32 i = 0; i < records; ++i)
+    {
+        uint32 row[10];
+        if (fread(row, 4, 10, f) != 10)
+            break;
+
+        // row[3] == BaseSection: only skin(0), face(1), facial hair(2), hair(3) are used
+        if (row[3] > SECTION_TYPE_HAIR)
+            continue;
+
+        CharSectionsEntry* e = new CharSectionsEntry();
+        e->Race          = row[1];
+        e->Gender        = row[2];
+        e->BaseSection   = row[3];
+        e->VariationIndex = row[4];
+        e->ColorIndex    = row[5];
+        e->Color         = row[5];  // alias
+        sCharSectionMap[row[0]] = e;
+    }
+
+    fclose(f);
+    sLog.outString("Loaded %zu CharSections entries for bot appearance randomization.", sCharSectionMap.size());
+}
 
 // === LFGQueue ===
 // Penqle has its own LFGQueue in src/game/LFG/LFGMgr.h with stub methods added.

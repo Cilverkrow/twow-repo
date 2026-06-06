@@ -9,16 +9,16 @@ ConfVersion=2020072501
 # The bot subsystem is built into mangosd but inert
 # unless this is flipped to 1 + the user knows what they're doing. Flip when you
 # want to test/play with bots; flip back when you want guaranteed clean live play.
-AiPlayerbot.Enabled = 0
+AiPlayerbot.Enabled = 1
 
 # Enable random bot system
 # Single-bot manual-add (`.bot add <name>`) is the
 # recommended starting point. Random bots auto-spawn dozens of characters and
 # need DB schema + tuned class probabilities — defer this.
-AiPlayerbot.RandomBotAutologin = 0
+AiPlayerbot.RandomBotAutologin = 1
 
 # Log on all random bots on start
-AiPlayerbot.RandomBotLoginAtStartup = 0
+AiPlayerbot.RandomBotLoginAtStartup = 1
 
 # Disable automatic DBStore save
 AiPlayerbot.ExplicitDbStoreSave = 0
@@ -54,9 +54,9 @@ AiPlayerbot.PreQuests = 0
 AiPlayerbot.RandomBotAutoCreate = 1
 
 # Random bot count
-AiPlayerbot.MinRandomBots = 1000
-AiPlayerbot.MaxRandomBots = 1000
-AiPlayerbot.RandomBotMinLevel = 1
+AiPlayerbot.MinRandomBots = 30
+AiPlayerbot.MaxRandomBots = 30
+AiPlayerbot.RandomBotMinLevel = 5
 AiPlayerbot.RandomBotMaxLevel = 60
 
 # Accounts to create for random bots
@@ -201,11 +201,11 @@ AiPlayerbot.RandomBotShowCloak = 1
 
 # Disable random levels for randombots
 # Every bots started on the specified level and level up by killing mobs.
-AiPlayerbot.DisableRandomLevels = 0
+AiPlayerbot.DisableRandomLevels = 1
 
 # Set randombots starting level here if "AiPlayerbot.DisableRandomLevels" enabled
 # Recommended: 5+
-#AiPlayerbot.randombotStartingLevel = 5
+AiPlayerbot.randombotStartingLevel = 1
 
 # Set XP rate for bots (default: 1)
 # Server XP Rate * AiPlayerbot.XPRate
@@ -241,7 +241,7 @@ AiPlayerbot.RandomBotQuestIds = 7848,3802,5505,6502,7761,9378
 # AiPlayerbot.RandomBotFormGuild = 1
 
 # Bots will chat in say/guild when they invite other bots to groups/raids/guilds
-# AiPlayerbot.InviteChat = 1
+AiPlayerbot.InviteChat = 1
 
 # Enable per-bot action log files (logs/bots/<botname>_acc<id>_<timestamp>.log)
 # and "[BOT]" prefixed structured log lines in the server log. Useful for
@@ -345,7 +345,7 @@ AiPlayerbot.RandomBotQuestIds = 7848,3802,5505,6502,7761,9378
 # AiPlayerbot.GuildRepliesRate = 100         # Reply someone saying something.
 
 # Bots without a master will say things they normally tell their master.
-# AiPlayerbot.RandomBotSayWithoutMaster = 0
+AiPlayerbot.RandomBotSayWithoutMaster = 1
 
 # Minimum level at which bots will start accepting duels
 # AiPlayerbot.BotAcceptDuelMinimumLevel = 10

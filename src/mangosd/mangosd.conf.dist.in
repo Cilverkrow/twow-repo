@@ -1069,6 +1069,10 @@ WhisperRestriction = 0
 
 SayMinLevel = 1
 
+# Chat.MinLevel. Minimum level to use general/trade/LFG channels.
+
+Chat.MinLevel = 1
+
 # SayEmoteMinLevel. Minimum level to /emote in chat.
 
 SayEmoteMinLevel = 1

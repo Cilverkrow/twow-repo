@@ -4523,6 +4523,18 @@ void PlayerbotFactory::InitAmmo()
     if (!subClass)
         return;
 
+    // TurtleWoW: thrown weapons are single repairable items (Stackable=1), not 200-stack ammo.
+    // Give exactly 1 and return so we don't fill the bot's bags with 200 individual knives.
+    if (subClass == ITEM_SUBCLASS_THROWN)
+    {
+        uint32 entry = sRandomItemMgr.GetAmmo(level, subClass);
+        if (entry && bot->GetItemCount(entry) == 0)
+            bot->StoreNewItemInInventorySlot(entry, 1);
+        if (entry && bot->GetUInt32Value(PLAYER_AMMO_ID) != entry)
+            bot->SetAmmo(entry);
+        return;
+    }
+
     uint32 entry = bot->GetUInt32Value(PLAYER_AMMO_ID);
     uint32 count = bot->GetItemCount(entry) / 200;
     uint32 maxCount = 5 + level / 10;

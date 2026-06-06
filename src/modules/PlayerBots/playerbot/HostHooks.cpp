@@ -15,6 +15,7 @@
 #include "Objects/Player.h"
 #include "World.h"
 #include "playerbot/RandomPlayerbotMgr.h"
+#include "playerbot/RandomPlayerbotFactory.h"
 #include "playerbot/PlayerbotAIConfig.h"
 #include "BotDiagnostics.h"
 
@@ -94,6 +95,13 @@ void Player::UpdatePlayerbotHooks(uint32 diff)
 void World::InitPlayerbotsAtStartup()
 {
     sPlayerbotAIConfig.Initialize();
+}
+
+void World::FinalizePlayerbotsPostPlayerInfo()
+{
+    if (!sPlayerbotAIConfig.enabled)
+        return;
+    RandomPlayerbotFactory::CreateRandomBots();
 }
 
 // Outgoing-packet interceptor (called from WorldSession::SendPacket). For a

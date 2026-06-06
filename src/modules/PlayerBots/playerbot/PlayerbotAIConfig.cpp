@@ -755,7 +755,6 @@ bool PlayerbotAIConfig::Initialize()
     ItemUsageValue::PopulateSoldByVendorItemIds();
     ItemUsageValue::PopulateReagentItemIdsForCraftableItemIds();
 
-    RandomPlayerbotFactory::CreateRandomBots();
     PlayerbotFactory::Init();
     sRandomItemMgr.Init();
     sPlayerbotTextMgr.LoadBotTexts();

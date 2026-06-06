@@ -330,13 +330,19 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls, uint8 inputRace)
 #endif
     }
 
+    if (skinColors.empty() || faces.empty() || hairs.empty())
+    {
+        sLog.outError("No CharSections appearance data for race %u gender %u — bot creation skipped.", race, gender);
+        return false;
+    }
+
     uint8 skinColor = skinColors[urand(0, skinColors.size() - 1)];
     std::pair<uint8,uint8> face = faces[urand(0, faces.size() - 1)];
     std::pair<uint8,uint8> hair = hairs[urand(0, hairs.size() - 1)];
 
 	bool excludeCheck = (race == RACE_TAUREN) || (gender == GENDER_FEMALE && race != RACE_NIGHTELF && race != RACE_UNDEAD);
 #ifndef MANGOSBOT_TWO
-	uint8 facialHair = excludeCheck ? 0 : facialHairTypes[urand(0, facialHairTypes.size() - 1)];
+	uint8 facialHair = (excludeCheck || facialHairTypes.empty()) ? 0 : facialHairTypes[urand(0, facialHairTypes.size() - 1)];
 #else
 	uint8 facialHair = 0;
 #endif
@@ -505,6 +511,7 @@ void RandomPlayerbotFactory::EnsureNamesInitialized()
 void RandomPlayerbotFactory::CreateRandomBots()
 {
     EnsureNamesInitialized();
+    LoadCharSectionsDbc(sWorld.GetDataPath());
 
     // check if scheduled for delete
     bool delAccs = false;
@@ -889,7 +896,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
 	            uint8 cls = key.first;
 	            uint8 race = key.second;
 
-	            if (!((1 << (cls - 1)) & CLASSMASK_ALL_PLAYABLE) || !sChrClassesStore.LookupEntry(cls))
+	            if (!((1 << (cls - 1)) & CLASSMASK_ALL_PLAYABLE))
 	                continue;
 
 #ifdef MANGOSBOT_TWO
@@ -916,7 +923,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
             for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES - count; ++cls)
             {
                 // skip nonexistent classes
-                if (!((1 << (cls - 1)) & CLASSMASK_ALL_PLAYABLE) || !sChrClassesStore.LookupEntry(cls))
+                if (!((1 << (cls - 1)) & CLASSMASK_ALL_PLAYABLE))
                     continue;
 
 #ifdef MANGOSBOT_TWO
