@@ -23855,6 +23855,39 @@ void Player::SendDestroyGroupMembers(bool includingSelf)
     }
 }
 
+void Player::RefreshVisiblePlayersForClient()
+{
+    // Collect the players (incl. bots) the client currently has, then destroy them on the client
+    // and forget them, so the next visibility sweep re-sends a fresh create block. Called once after
+    // the login cinematic, by which point the item-query responses for their gear have been answered
+    // and cached client-side, so the recreated models render with full equipment instead of naked.
+    // See RefreshVisiblePlayersEvent in CharacterHandler.cpp for the full cause/fix explanation.
+    std::vector<ObjectGuid> players;
+    {
+        std::shared_lock<std::shared_mutex> lock(m_visibleGUIDs_lock);
+        for (const ObjectGuid& guid : m_visibleGUIDs)
+            if (guid.IsPlayer() && guid != GetObjectGuid())
+                players.push_back(guid);
+    }
+
+    if (players.empty())
+        return;
+
+    for (const ObjectGuid& guid : players)
+    {
+        WorldPacket data(SMSG_DESTROY_OBJECT, 8);
+        data << guid;
+        GetSession()->SendPacket(&data);
+
+        std::unique_lock<std::shared_mutex> lock(m_visibleGUIDs_lock);
+        m_visibleGUIDs.erase(guid);
+    }
+
+    // Re-run visibility now so in-range targets are immediately re-created (otherwise they would
+    // stay gone until the player next moves).
+    GetCamera().UpdateVisibilityForOwner();
+}
+
 void Player::RefreshBitsForVisibleUnits(UpdateMask* mask, uint32 objectTypeMask)
 {
     UpdateData data;

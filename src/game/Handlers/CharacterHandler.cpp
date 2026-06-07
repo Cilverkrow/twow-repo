@@ -538,6 +538,55 @@ void WorldSession::LoginPlayer(ObjectGuid loginPlayerGuid)
     CharacterDatabase.DelayQueryHolderUnsafe(&chrHandler, &CharacterHandler::HandlePlayerLoginCallback, holder);
 }
 
+// Post-login event that fixes other players/bots rendering "naked" (base/underwear model) to a
+// freshly logged-in client.
+//
+// CAUSE: While the player watches the intro cinematic, the surrounding players/bots are sent to the
+// client and their character models are built BEFORE the client has received the item display data
+// (DisplayInfoID, delivered via SMSG_ITEM_QUERY_SINGLE_RESPONSE) for their equipped gear. The 1.12
+// client does NOT re-render an already-created character model when those item-query responses
+// arrive afterwards, so the equipment never appears. Gear of the SAME class as the viewer renders
+// fine only because the client already cached that item data from drawing the viewer's own
+// character. The display otherwise corrects only on a full visibility reset (hearthstone/relog),
+// which destroys and re-creates the objects after the item data is cached.
+//
+// FIX: once the cinematic has finished (by which point the item-query responses have been received
+// and cached), force the client to destroy and re-create the players/bots it has in view, so their
+// models are rebuilt with the now-available equipment data. See Player::RefreshVisiblePlayersForClient.
+class RefreshVisiblePlayersEvent : public BasicEvent
+{
+public:
+    explicit RefreshVisiblePlayersEvent(ObjectGuid playerGuid, uint32 attempt = 0)
+        : BasicEvent(), m_playerGuid(playerGuid), m_attempt(attempt) {}
+
+    bool Execute(uint64 /*e_time*/, uint32 /*p_time*/) override
+    {
+        Player* player = ObjectAccessor::FindPlayer(m_playerGuid);
+        if (!player || !player->IsInWorld())
+            return true;
+
+        // Wait until the login cinematic has finished. Refreshing during the cinematic recreates
+        // objects the client hasn't fully received yet, which makes them vanish.
+        if (player->watching_cinematic_entry != 0)
+        {
+            if (m_attempt + 1 < kMaxAttempts)
+                player->m_Events.AddEvent(new RefreshVisiblePlayersEvent(m_playerGuid, m_attempt + 1),
+                                          player->m_Events.CalculateTime(kRetryMs));
+            return true;
+        }
+
+        // Cinematic done: one refresh of the players/bots the client has in view.
+        player->RefreshVisiblePlayersForClient();
+        return true;
+    }
+
+private:
+    static constexpr uint32 kMaxAttempts = 60; // cinematic-wait cap (~120s)
+    static constexpr uint32 kRetryMs     = 2000;
+    ObjectGuid m_playerGuid;
+    uint32 m_attempt;
+};
+
 void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
 {
     // The following fixes a crash. Use case:
@@ -748,6 +797,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     GetMasterPlayer()->SendInitialActionButtons();
 
     // Show only player accounts cinematic at first log on
+    bool showedIntroCinematic = false;
     if (!sWorld.getConfig(CONFIG_BOOL_PTR))
     {
         AccountMgr AccountMgr;
@@ -758,7 +808,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
                 pCurrChar->SetCinematic(1);
 
                 if (ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(pCurrChar->GetRace()))
+                {
                     pCurrChar->SendCinematicStart(rEntry->CinematicSequence);
+                    showedIntroCinematic = true;
+                }
             }
         }
     }
@@ -1013,6 +1066,14 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
 
 
     ALL_SESSION_SCRIPTS(this, OnLogin(pCurrChar));
+
+    // Only on the FIRST login (the one that plays the intro cinematic) is the client's item cache
+    // cold enough to render nearby players/bots naked; subsequent logins already have the gear data
+    // cached and render fine. So schedule the equipment-refresh only when the cinematic was shown,
+    // to avoid an unnecessary destroy/recreate "blink" on every subsequent login.
+    if (showedIntroCinematic)
+        pCurrChar->m_Events.AddEvent(new RefreshVisiblePlayersEvent(pCurrChar->GetObjectGuid()),
+                                     pCurrChar->m_Events.CalculateTime(3000));
 }
 
 void WorldSession::HandleSetFactionAtWarOpcode(WorldPacket & recv_data)

@@ -3225,6 +3225,12 @@ public:
         void SendUpdateToOutOfRangeGroupMembers();
         void SendDestroyGroupMembers(bool includingSelf = false);
 
+        // Forces the client to destroy and re-create every other player (incl. bots) currently in
+        // view, so equipment that rendered "naked" on first sight (item display data not yet
+        // cached when the create block arrived) is redrawn. Mimics the hearthstone/visibility
+        // re-entry that is known to fix the issue.
+        void RefreshVisiblePlayersForClient();
+
         // BattleGround Group System
         void SetBattleGroundRaid(Group* group, int8 subgroup = -1);
         void RemoveFromBattleGroundRaid();
