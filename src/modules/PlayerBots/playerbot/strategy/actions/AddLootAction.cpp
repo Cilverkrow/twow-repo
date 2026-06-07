@@ -82,7 +82,7 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
         else
             ai->TellDebug(requester, "for trying to add loot from " + ChatHelper::formatWorldobject(wo), "debug loot");
 
-        sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (no lootable WorldObject: corpse not tapped/looted-by-bot or wrong type)",
+        sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (no lootable WorldObject: corpse not tapped/looted-by-bot or wrong type)",
             bot->GetName(), guid.GetRawValue());
         return false;
     }
@@ -94,7 +94,7 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
     if (loot.IsEmpty())
     {
         ai->TellDebug(requester, "Loot object is empty.", "debug loot");
-        sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (loot object empty / not lootable-tapped)",
+        sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (loot object empty / not lootable-tapped)",
             bot->GetName(), guid.GetRawValue());
         return false;
     }
@@ -102,7 +102,7 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
     if (abs(wo->GetPositionZ() - bot->GetPositionZ()) > INTERACTION_DISTANCE)
     {
         ai->TellDebug(requester, "Object too high or low.", "debug loot");
-        sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (z-diff %.1f > %.1f)",
+        sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (z-diff %.1f > %.1f)",
             bot->GetName(), guid.GetRawValue(), (float)fabs(wo->GetPositionZ() - bot->GetPositionZ()), (float)INTERACTION_DISTANCE);
         return false;
     }
@@ -110,7 +110,7 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
     if (!loot.IsLootPossible(bot))
     {
         ai->TellDebug(requester, "Looting is not possible.", "debug loot");
-        sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (IsLootPossible=false)",
+        sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (IsLootPossible=false)",
             bot->GetName(), guid.GetRawValue());
         return false;
     }
@@ -132,7 +132,7 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
             && group->GetMasterLooterGuid() != bot->GetObjectGuid())
         {
             ai->TellDebug(requester, "Not master looter.", "debug loot");
-            sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (dungeon MASTER_LOOT, not master looter)",
+            sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (dungeon MASTER_LOOT, not master looter)",
                 bot->GetName(), guid.GetRawValue());
             return false;
         }
@@ -163,7 +163,7 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
     if (sServerFacade.IsDistanceGreaterThan(masterDist, lootDistanceToUse))
     {
         ai->TellDebug(requester, "Outside of loot range: " + std::to_string(lootDistanceToUse), "debug loot");
-        sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (range: masterDist=%.1f > cap=%.1f; botDist=%.1f)",
+        sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (range: masterDist=%.1f > cap=%.1f; botDist=%.1f)",
             bot->GetName(), guid.GetRawValue(), masterDist, lootDistanceToUse, botDist);
         return false;
     }
@@ -180,7 +180,7 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
             std::ostringstream out;
             out << hostiles.front()->GetName() << " is blocking " << wo->GetName() << ", need to kill it or I will not loot";
             ai->TellError(requester, out.str());
-            sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (hostile '%s' within %.0fy of corpse, count=%zu)",
+            sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (hostile '%s' within %.0fy of corpse, count=%zu)",
                 bot->GetName(), guid.GetRawValue(), hostiles.front()->GetName(), MOB_AGGRO_DISTANCE, hostiles.size());
             return false;
         }
@@ -205,7 +205,7 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
             if (usedBagSpacePercent > 99)
             {
                 ai->TellPlayer(requester, "Can not loot quest item, my bags are full", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
-                sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (bags full, quest item)", bot->GetName(), guid.GetRawValue());
+                sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (bags full, quest item)", bot->GetName(), guid.GetRawValue());
                 return false;
             }
 
@@ -214,13 +214,13 @@ bool AddAllLootAction::AddLoot(Player* requester, ObjectGuid guid)
         if (usedBagSpacePercent > 99)
         {
             ai->TellError(requester, "There is some loot but I do not have free bag space, so not looting");
-            sLog.outString("[BOT LOOT] %s: AddLoot reject guid=%lu (bags full)", bot->GetName(), guid.GetRawValue());
+            sLog.outDebug("[BOT LOOT] %s: AddLoot reject guid=%lu (bags full)", bot->GetName(), guid.GetRawValue());
             return false;
         }
     }
 
     bool added = AI_VALUE(LootObjectStack*, "available loot")->Add(guid);
-    sLog.outString("[BOT LOOT] %s: AddLoot queued guid=%lu (botDist=%.1f masterDist=%.1f cap=%.1f added=%d)",
+    sLog.outDebug("[BOT LOOT] %s: AddLoot queued guid=%lu (botDist=%.1f masterDist=%.1f cap=%.1f added=%d)",
         bot->GetName(), guid.GetRawValue(), botDist, masterDist, lootDistanceToUse, added ? 1 : 0);
     return added;
 }

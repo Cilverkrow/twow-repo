@@ -995,6 +995,12 @@ void RandomPlayerbotFactory::CreateRandomBots()
 
     for (auto player : players)
     {
+        // Freshly-created bots bypass HandleCharCreateOpcode, so they were never added to the
+        // player cache (m_playerCacheData). Without this, GetPlayerAccountIdByGUID returns 0 for
+        // every bot created this run and AddPlayerBot fails with "no account for guid". Populate the
+        // cache while the session is still attached (UpdatePlayerCache reads GetSession()).
+        sObjectMgr.UpdatePlayerCache(player);
+
         WorldSession* session = player->GetSession();
         session->LogoutPlayer();
         sObjectAccessor.RemoveObject(player);

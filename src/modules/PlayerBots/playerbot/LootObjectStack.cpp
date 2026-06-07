@@ -368,7 +368,7 @@ std::vector<LootObject> LootObjectStack::OrderByDistance(float maxDistance)
     size_t beforeShrink = availableLoot.size();
     availableLoot.shrink(time(0) - 30);
     if (availableLoot.size() < beforeShrink)
-        sLog.outString("[BOT LOOT] %s: loot stack expired %zu corpse(s) (>30s old, dropped before looting)",
+        sLog.outDebug("[BOT LOOT] %s: loot stack expired %zu corpse(s) (>30s old, dropped before looting)",
             bot->GetName(), beforeShrink - availableLoot.size());
 
     std::map<float, LootObject> sortedMap;

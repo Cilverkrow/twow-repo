@@ -5,12 +5,19 @@
 
 namespace ai
 { 
-    //Cheat class copy to hack into the loot system
+    // Cheat class copy to hack into the loot system: GetLootTemplate() reinterpret_casts the real
+    // LootTemplate to LootTemplateAccess to read its private Entries/Groups. For that cast to be
+    // valid, this layout MUST match LootTemplate::LootGroup EXACTLY (see LootMgr.cpp). In
+    // particular the trailing `hasConditionalEqualChancedItem` bool is part of the real layout —
+    // omitting it makes sizeof(LootLootGroupAccess) < sizeof(LootGroup), so iterating the
+    // std::vector<LootLootGroupAccess> Groups walks with the wrong stride and reads garbage past
+    // the first group (SIGSEGV in DropMapValue::Calculate). Keep these fields in lockstep.
     class LootLootGroupAccess                               // A set of loot definitions for items (refs are not allowed)
     {
     public:
         LootStoreItemList ExplicitlyChanced;                // Entries with chances defined in DB
         LootStoreItemList EqualChanced;                     // Zero chances - every entry takes the same chance
+        bool hasConditionalEqualChancedItem;                // layout-match LootTemplate::LootGroup (LootMgr.cpp)
     };
 
     class LootTemplateAccess

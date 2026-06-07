@@ -144,7 +144,14 @@ void PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
 
     m_pendingBotLogins[holder] = { botGuid, masterAccountId };
 
-    CharacterDatabase.DelayQueryHolder(this, &PlayerbotHolder::HandlePlayerBotLoginCallback, holder);
+    // MUST be the Unsafe (main-thread) variant: the plain DelayQueryHolder marks the callback
+    // threadSafe and SqlResultQueue::Update farms it out to a 6-thread callback pool, running
+    // HandlePlayerBotLoginCallback concurrently. That callback does real login work — it erases
+    // from the shared m_pendingBotLogins map and inserts the bot Player into the world/ObjectAccessor
+    // — none of which is thread-safe. Concurrent map erase corrupts the RB-tree (SIGSEGV in
+    // _Rb_tree_rebalance_for_erase) when many bots log in at once. The engine's own player login
+    // uses DelayQueryHolderUnsafe for exactly this reason (see CharacterHandler.cpp:493).
+    CharacterDatabase.DelayQueryHolderUnsafe(this, &PlayerbotHolder::HandlePlayerBotLoginCallback, holder);
 }
 
 // Called when CharacterDatabase finishes the holder's queries. Allocates a fresh WorldSession

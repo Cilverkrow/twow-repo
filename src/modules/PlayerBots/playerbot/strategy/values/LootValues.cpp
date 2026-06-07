@@ -259,12 +259,19 @@ DropMap* DropMapValue::Calculate()
 	DropMap* itemDropMap = GAI_VALUE(DropMap*, "item drop map");
 
 	//Add items that drop from items.
+	// Stage the new pairs first: inserting into dropMap while iterating a range from the same
+	// unordered_multimap can trigger a rehash, which invalidates the range iterators (itr /
+	// range.second) and crashes on the next ++itr. Build the additions, then apply them once.
+	std::vector<std::pair<uint32, int32>> itemSourcedDrops;
 	for (auto& [lootItemId, sourceItemId] : *itemDropMap)
 	{
 		auto range = dropMap->equal_range(sourceItemId);
 		for (auto itr = range.first; itr != range.second; ++itr)
-			dropMap->insert(std::make_pair(lootItemId, itr->second));
+			itemSourcedDrops.emplace_back(lootItemId, itr->second);
 	}
+
+	for (auto& drop : itemSourcedDrops)
+		dropMap->insert(drop);
 
 	return dropMap;
 }

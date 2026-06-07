@@ -2949,6 +2949,13 @@ void PlayerbotFactory::Shuffle(std::vector<uint32>& items)
 
 void PlayerbotFactory::InitEquipment(bool incremental, bool syncWithMaster, bool progressive, bool partialUpgrade)
 {
+    // Don't regear very low-level bots. InitEquipment destroys the currently equipped items up
+    // front (DestroyItemsVisitor below) and then selects replacements via RandomItemMgr. For
+    // level <= 3 bots the replacement step finds little/nothing (and can bail early, e.g. specId
+    // == 0), which strips them naked. Leave the starting outfit from Player::Create() intact.
+    if (bot->GetLevel() <= 3)
+        return;
+
     uint32 oldGS = ai->GetEquipGearScore(bot, false, false);
     uint32 masterGS = 0;
     if(syncWithMaster && ai->GetMaster())

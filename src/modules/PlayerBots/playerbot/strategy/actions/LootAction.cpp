@@ -31,7 +31,7 @@ bool LootAction::Execute(Event& event)
         released = true;
     }
 
-    sLog.outString("[BOT LOOT] %s: select target=%lu (prev=%lu released=%d)",
+    sLog.outDebug("[BOT LOOT] %s: select target=%lu (prev=%lu released=%d)",
         bot->GetName(), lootObject.guid.GetRawValue(), prevLoot.guid.GetRawValue(), released ? 1 : 0);
 
     context->GetValue<LootObject>("loot target")->Set(lootObject);
@@ -72,7 +72,7 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     if (lootObject.IsEmpty())
         return false;
 
-    sLog.outString("[BOT LOOT] %s: DoLoot target=%lu", bot->GetName(), lootObject.guid.GetRawValue());
+    sLog.outDebug("[BOT LOOT] %s: DoLoot target=%lu", bot->GetName(), lootObject.guid.GetRawValue());
 
     Creature* creature = ai->GetCreature(lootObject.guid);
     // Gate the loot send on the SERVER's exact loot-range rule: a 3D distance check against
@@ -84,7 +84,7 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     // the bot is truly standing on the corpse, then it loots.
     if (creature && !creature->IsWithinDistInMap(bot, bot->GetMaxLootDistance(creature), true, SizeFactor::None))
     {
-        sLog.outString("[BOT LOOT] %s: not in 3D loot range (dist2d=%.1f maxLoot=%.1f), keep approaching guid=%lu",
+        sLog.outDebug("[BOT LOOT] %s: not in 3D loot range (dist2d=%.1f maxLoot=%.1f), keep approaching guid=%lu",
             bot->GetName(), sServerFacade.GetDistance2d(bot, creature), bot->GetMaxLootDistance(creature), lootObject.guid.GetRawValue());
         return false;
     }
@@ -96,7 +96,7 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     // bot kneel/abort on a non-corpse. Same predicate LootObjectStack::Refresh uses.
     if (creature && sServerFacade.GetDeathState(creature) != CORPSE)
     {
-        sLog.outString("[BOT LOOT] %s: not a fresh CORPSE (deathstate=%d), dropping guid=%lu",
+        sLog.outDebug("[BOT LOOT] %s: not a fresh CORPSE (deathstate=%d), dropping guid=%lu",
             bot->GetName(), (int)sServerFacade.GetDeathState(creature), lootObject.guid.GetRawValue());
         AI_VALUE(LootObjectStack*, "available loot")->Remove(lootObject.guid);
         RESET_AI_VALUE(LootObject, "loot target");
@@ -107,17 +107,17 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     {
         if (!lootObject.IsLootPossible(bot)) //Clear loot if bot can't loot it.
         {
-            sLog.outString("[BOT LOOT] %s: IsLootPossible=false on lootable corpse, clearing (corpse stays lootable -> may re-add)",
+            sLog.outDebug("[BOT LOOT] %s: IsLootPossible=false on lootable corpse, clearing (corpse stays lootable -> may re-add)",
                 bot->GetName());
             return true;
         }
 
-        sLog.outString("[BOT LOOT] %s: loot ctx guid=%lu alive=%d tapped=%d dist2d=%.1f maxLoot=%.1f",
+        sLog.outDebug("[BOT LOOT] %s: loot ctx guid=%lu alive=%d tapped=%d dist2d=%.1f maxLoot=%.1f",
             bot->GetName(), lootObject.guid.GetRawValue(),
             creature->IsAlive() ? 1 : 0, creature->IsTappedBy(bot) ? 1 : 0,
             sServerFacade.GetDistance2d(bot, creature), bot->GetMaxLootDistance(creature));
 
-        sLog.outString("[BOT LOOT] %s: sending CMSG_LOOT (crouch emote) guid=%lu lootDelay=%u",
+        sLog.outDebug("[BOT LOOT] %s: sending CMSG_LOOT (crouch emote) guid=%lu lootDelay=%u",
             bot->GetName(), lootObject.guid.GetRawValue(), sPlayerbotAIConfig.lootDelay);
 
         WorldPacket packet(CMSG_LOOT, 8);
@@ -139,10 +139,10 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     if (creature)
     {
         SkillType skill = (SkillType)creature->GetCreatureInfo()->GetRequiredLootSkill();
-        sLog.outString("[BOT LOOT] %s: gather/skin path skill=%u reqValue=%u", bot->GetName(), skill, lootObject.reqSkillValue);
+        sLog.outDebug("[BOT LOOT] %s: gather/skin path skill=%u reqValue=%u", bot->GetName(), skill, lootObject.reqSkillValue);
         if (!CanOpenLock(skill, lootObject.reqSkillValue))
         {
-            sLog.outString("[BOT LOOT] %s: CanOpenLock=false (skill %u), abort", bot->GetName(), skill);
+            sLog.outDebug("[BOT LOOT] %s: CanOpenLock=false (skill %u), abort", bot->GetName(), skill);
             return false;
         }
 
@@ -191,17 +191,17 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     uint32 spellId = GetOpeningSpell(lootObject);
     if (!spellId)
     {
-        sLog.outString("[BOT LOOT] %s: GO no opening spell, abort", bot->GetName());
+        sLog.outDebug("[BOT LOOT] %s: GO no opening spell, abort", bot->GetName());
         return false;
     }
 
     if (!lootObject.IsLootPossible(bot)) //Clear loot if bot can't loot it.
     {
-        sLog.outString("[BOT LOOT] %s: GO IsLootPossible=false, clearing", bot->GetName());
+        sLog.outDebug("[BOT LOOT] %s: GO IsLootPossible=false, clearing", bot->GetName());
         return true;
     }
 
-    sLog.outString("[BOT LOOT] %s: GO opening with spell=%u guid=%lu", bot->GetName(), spellId, lootObject.guid.GetRawValue());
+    sLog.outDebug("[BOT LOOT] %s: GO opening with spell=%u guid=%lu", bot->GetName(), spellId, lootObject.guid.GetRawValue());
 
     //Keys need to use the key 
     if (spellId == sPlayerbotAIConfig.openGoSpell && go && lootObject.reqItem && bot->HasItemCount(lootObject.reqItem,1,false))
@@ -338,7 +338,7 @@ bool StoreLootAction::Execute(Event& event)
         const char* errName =
             lootError == 0 ? "DIDNT_KILL/no-permission" :
             lootError == 4 ? "TOO_FAR" : "other";
-        sLog.outString("[BOT LOOT] %s: loot REJECTED guid=%lu error=%u (%s)",
+        sLog.outDebug("[BOT LOOT] %s: loot REJECTED guid=%lu error=%u (%s)",
             bot->GetName(), guid.GetRawValue(), lootError, errName);
 
         // Drop the corpse so the bot stops retrying a loot the server won't grant.
@@ -347,7 +347,7 @@ bool StoreLootAction::Execute(Event& event)
         return false;
     }
 
-    sLog.outString("[BOT LOOT] %s: StoreLoot guid=%lu type=%u gold=%u items=%u",
+    sLog.outDebug("[BOT LOOT] %s: StoreLoot guid=%lu type=%u gold=%u items=%u",
         bot->GetName(), guid.GetRawValue(), loot_type, gold, items);
 
     bot->SetLootGuid(guid);
@@ -356,7 +356,7 @@ bool StoreLootAction::Execute(Event& event)
 
     if (!loot)
     {
-        sLog.outString("[BOT LOOT] %s: StoreLoot GetLoot returned null, releasing to avoid crouch loop", bot->GetName());
+        sLog.outDebug("[BOT LOOT] %s: StoreLoot GetLoot returned null, releasing to avoid crouch loop", bot->GetName());
         // Release the corpse so the bot stops the loot (kneel) animation instead of staying
         // crouched forever, and drop it from the loot stack so it isn't retried next tick.
         WorldPacket release(CMSG_LOOT_RELEASE, 8);
@@ -400,19 +400,19 @@ bool StoreLootAction::Execute(Event& event)
 #endif
             )
 		{
-			sLog.outString("[BOT LOOT] %s: skip item=%u slot_type=%u (not normal/owner)", bot->GetName(), itemid, lootslot_type);
+			sLog.outDebug("[BOT LOOT] %s: skip item=%u slot_type=%u (not normal/owner)", bot->GetName(), itemid, lootslot_type);
 			continue;
 		}
 
         if (loot_type != LOOT_SKINNING && !IsLootAllowed(itemQualifier, ai))
         {
-            sLog.outString("[BOT LOOT] %s: skip item=%u (IsLootAllowed=false)", bot->GetName(), itemid);
+            sLog.outDebug("[BOT LOOT] %s: skip item=%u (IsLootAllowed=false)", bot->GetName(), itemid);
             continue;
         }
 
         if (AI_VALUE2(uint32, "stack space for item", itemid) < itemcount)
         {
-            sLog.outString("[BOT LOOT] %s: skip item=%u (no stack space, need=%u)", bot->GetName(), itemid, itemcount);
+            sLog.outDebug("[BOT LOOT] %s: skip item=%u (no stack space, need=%u)", bot->GetName(), itemid, itemcount);
             continue;
         }
 
@@ -428,7 +428,7 @@ bool StoreLootAction::Execute(Event& event)
         //have no right to loot
         if (lootItem->is_blocked || lootItem->GetSlotTypeForSharedLoot(ALL_PERMISSION, bot, loot ? loot->GetLootTarget() : nullptr) == MAX_LOOT_SLOT_TYPE)
         {
-            sLog.outString("[BOT LOOT] %s: skip item=%u (no right: blocked=%u)", bot->GetName(), itemid, lootItem->is_blocked ? 1 : 0);
+            sLog.outDebug("[BOT LOOT] %s: skip item=%u (no right: blocked=%u)", bot->GetName(), itemid, lootItem->is_blocked ? 1 : 0);
             continue;
         }
 
@@ -444,7 +444,7 @@ bool StoreLootAction::Execute(Event& event)
         packet << itemindex;
         bot->GetSession()->HandleAutostoreLootItemOpcode(packet);
         ++itemsTaken;
-        sLog.outString("[BOT LOOT] %s: take item=%u x%u", bot->GetName(), itemid, itemcount);
+        sLog.outDebug("[BOT LOOT] %s: take item=%u x%u", bot->GetName(), itemid, itemcount);
 
         if (proto->Quality > ITEM_QUALITY_NORMAL && !urand(0, 50) && ai->HasStrategy("emote", BotState::BOT_STATE_NON_COMBAT)) ai->PlayEmote(TEXTEMOTE_CHEER);
         if (proto->Quality >= ITEM_QUALITY_RARE && !urand(0, 1) && ai->HasStrategy("emote", BotState::BOT_STATE_NON_COMBAT)) ai->PlayEmote(TEXTEMOTE_CHEER);
@@ -465,7 +465,7 @@ bool StoreLootAction::Execute(Event& event)
     RESET_AI_VALUE(LootObject, "loot target");
     RESET_AI_VALUE2(bool, "should loot object", std::to_string(guid.GetRawValue()));
 
-    sLog.outString("[BOT LOOT] %s: StoreLoot done guid=%lu items_taken=%u gold=%u, release sent",
+    sLog.outDebug("[BOT LOOT] %s: StoreLoot done guid=%lu items_taken=%u gold=%u, release sent",
         bot->GetName(), guid.GetRawValue(), itemsTaken, gold);
 
     // release loot

@@ -3228,7 +3228,7 @@ bool MoveToLootAction::Execute(Event& event)
     LootObject loot = AI_VALUE(LootObject, "loot target");
     if (!loot.IsLootPossible(bot))
     {
-        sLog.outString("[BOT LOOT] %s: MoveToLoot abort guid=%lu (IsLootPossible=false)",
+        sLog.outDebug("[BOT LOOT] %s: MoveToLoot abort guid=%lu (IsLootPossible=false)",
             bot->GetName(), loot.guid.GetRawValue());
         if (ai->HasStrategy("debug loot", BotState::BOT_STATE_NON_COMBAT))
         {
@@ -3259,7 +3259,7 @@ bool MoveToLootAction::Execute(Event& event)
     bool los = sServerFacade.IsWithinLOSInMap(bot, wo);
     float dist = sServerFacade.GetDistance2d(bot, wo);
     bool moved = los ? MoveNear(wo, sPlayerbotAIConfig.contactDistance) : MoveTo(WorldPosition(wo));
-    sLog.outString("[BOT LOOT] %s: MoveToLoot guid=%lu dist=%.1f los=%d via=%s result=%d",
+    sLog.outDebug("[BOT LOOT] %s: MoveToLoot guid=%lu dist=%.1f los=%d via=%s result=%d",
         bot->GetName(), loot.guid.GetRawValue(), dist, los ? 1 : 0, los ? "MoveNear" : "MoveTo", moved ? 1 : 0);
     return moved;
 }
