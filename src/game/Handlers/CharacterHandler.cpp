@@ -902,7 +902,16 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     }
 
     auto maskVar = pCurrChar->GetPlayerVariable(PlayerVariables::PendingChallengeMask);
-    if (maskVar && *maskVar != "0")
+    // Bot sessions must never go through challenge setup — they predate TurtleWoW's hardcore
+    // system and have no concept of it. Skip and clear any stale mask so it doesn't re-fire.
+    const std::string& remoteAddr = pCurrChar->GetSession()->GetRemoteAddress();
+    const bool isBotSession = (remoteAddr == "disconnected/bot" || remoteAddr == "<BOT>");
+    if (isBotSession)
+    {
+        if (maskVar)
+            pCurrChar->SetPlayerVariable(PlayerVariables::PendingChallengeMask, "0");
+    }
+    else if (maskVar && *maskVar != "0")
     {
         uint32 challengeMask = std::stoul(*maskVar);
 

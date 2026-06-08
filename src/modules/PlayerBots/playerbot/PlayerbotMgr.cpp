@@ -107,7 +107,7 @@ void PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
             // Near-teleport ACK uses MSG_MOVE_TELEPORT_ACK; less common but cover it.
             WorldPacket p(MSG_MOVE_TELEPORT_ACK, 8 + 4 + 4);
             p << ghost->GetObjectGuid();
-            p << uint32(0);
+            p << ghost->GetLastCounterForMovementChangeType(TELEPORT);
             p << uint32(time(0));
             ghost->GetSession()->HandleMoveTeleportAckOpcode(p);
         }

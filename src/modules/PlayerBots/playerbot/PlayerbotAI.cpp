@@ -1261,7 +1261,7 @@ void PlayerbotAI::HandleTeleportAck()
 #else
         p << bot->GetObjectGuid();
 #endif
-		p << (uint32) 0; // supposed to be flags? not used currently
+		p << bot->GetLastCounterForMovementChangeType(TELEPORT); // movement counter the core is waiting to ACK
 		p << (uint32) time(0); // time - not currently used
         bot->GetSession()->HandleMoveTeleportAckOpcode(p);
 

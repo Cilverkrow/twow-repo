@@ -157,6 +157,12 @@ bool QuestAction::ProcessQuests(ObjectGuid questGiver)
 
 bool QuestAction::ProcessQuests(WorldObject* questGiver)
 {
+    // These NPCs offer challenge quests (hardcore mode, etc.) that must never be taken by bots.
+    static const uint32 challengeQuestNpcs[] = { 81030 }; // Mysterious Stranger
+    for (uint32 blocked : challengeQuestNpcs)
+        if (questGiver->GetEntry() == blocked)
+            return false;
+
     ObjectGuid guid = questGiver->GetObjectGuid();
 
     if (sServerFacade.GetDistance2d(bot, questGiver) > INTERACTION_DISTANCE && !sPlayerbotAIConfig.syncQuestWithPlayer)
