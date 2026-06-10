@@ -1,6 +1,7 @@
 
 #include "playerbot/PlayerbotAIConfig.h"
 #include "playerbot/playerbot.h"
+#include "BotLog.h"
 #include "RandomPlayerbotFactory.h"
 #include "AccountMgr.h"
 #include "playerbot/PlayerbotFactory.h"
@@ -493,6 +494,12 @@ bool PlayerbotAIConfig::Initialize()
     inviteChat = config.GetBoolDefault("AiPlayerbot.InviteChat", true);
     botsSilent = config.GetBoolDefault("AiPlayerbot.BotsSilent", false);
     enableActionLog = config.GetBoolDefault("AiPlayerbot.EnableActionLog", false);
+    botLogFile = config.GetStringDefault("AiPlayerbot.BotLogFile", "bots.log");
+    {
+        std::string logsDir = sConfig.GetStringDefault("LogsDir");
+        bool botLogDebug = config.GetBoolDefault("AiPlayerbot.BotLogDebug", false);
+        BotLog::Instance().Initialize(botLogFile.c_str(), logsDir.c_str(), botLogDebug);
+    }
     enableOffSpecStrategies = config.GetBoolDefault("AiPlayerbot.EnableOffSpecStrategies", true);
     useWanderAsDefaultFollowStrategy = config.GetBoolDefault("AiPlayerbot.UseWanderAsDefaultFollowStrategy", true);
     defaultFormation = config.GetStringDefault("AiPlayerbot.DefaultFormation", "near");

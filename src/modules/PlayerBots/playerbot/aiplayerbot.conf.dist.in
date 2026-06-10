@@ -249,6 +249,15 @@ AiPlayerbot.InviteChat = 1
 # reads a thread-local "last phase" tag set by SC_PHASE when this is on.
 # AiPlayerbot.EnableActionLog = 0
 
+# Redirect all bot subsystem log output to a dedicated file so the main
+# server.log stays clean. Path is relative to the server's LogsDir setting.
+# Set to empty string to disable redirection (output goes to server.log).
+AiPlayerbot.BotLogFile = bots.log
+
+# Write DEBUG-level messages to bots.log. Disabled by default so only
+# outString/outInfo/outDetail/outError/outBasic/outErrorDb are logged.
+# AiPlayerbot.BotLogDebug = 0
+
 # The summon command can be used without restriction by non-gms.
 # AiPlayerbot.NonGmFreeSummon = 0
 

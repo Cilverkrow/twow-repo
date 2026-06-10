@@ -31,3 +31,10 @@ void split(std::vector<std::string>& dest, std::string const& str, char const* d
 #ifndef WIN32
 int strcmpi(std::string s1, std::string s2);
 #endif
+
+// Redirect all sLog calls in bot translation units to BotLog so the main
+// server log stays clean. BotLog routes to logs/bots.log when
+// AiPlayerbot.BotLogFile is set, and falls back to Log::Instance() otherwise.
+#include "BotLog.h"
+#undef sLog
+#define sLog BotLog::Instance()
