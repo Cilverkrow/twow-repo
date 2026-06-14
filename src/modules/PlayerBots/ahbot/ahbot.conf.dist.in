@@ -17,6 +17,9 @@ AuctionHouseBot.Buyer.Enabled = 0
 # Replace with the new AhBot
 AhBot.Enabled = 1
 
+# Character GUID of the AHBot player. Must be set to a valid character GUID for each server instance.
+AhBot.GUID = 0
+
 AhBot.MaxItemLevel = 500
 AhBot.MaxRequiredLevel = 80
 
@@ -30,8 +33,8 @@ AhBot.SendMail = 1
 # The time between buying/selling items of the same type or category.
 # AhBot.ItemBuyMinInterval  = 600
 # AhBot.ItemBuyMinInterval  = 7200
-# AhBot.ItemSellMinInterval = 600
-# AhBot.ItemSellMaxInterval = 7200
+AhBot.ItemSellMinInterval = 60
+AhBot.ItemSellMaxInterval = 300
 # The maxium time 
 # AhBot.MaxSellInterval     = 28800
 
