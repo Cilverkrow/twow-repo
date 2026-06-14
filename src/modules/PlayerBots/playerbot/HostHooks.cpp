@@ -17,6 +17,7 @@
 #include "playerbot/RandomPlayerbotMgr.h"
 #include "playerbot/RandomPlayerbotFactory.h"
 #include "playerbot/PlayerbotAIConfig.h"
+#include "ahbot/AhBot.h"
 #include "BotDiagnostics.h"
 
 void Player::CreatePlayerbotAI()
@@ -64,6 +65,7 @@ void World::UpdatePlayerbotsTick(uint32 diff)
     if (!sPlayerbotAIConfig.enabled)
         return;
     sRandomPlayerbotMgr.UpdateAI(diff);
+    auctionbot.Update();
 }
 
 // Per-Player bot tick:
@@ -102,6 +104,9 @@ void World::FinalizePlayerbotsPostPlayerInfo()
     if (!sPlayerbotAIConfig.enabled)
         return;
     RandomPlayerbotFactory::CreateRandomBots();
+    // AhBot::Init() scans sItemStorage for sellable items, so it must run
+    // after SetInitialWorldSettings() has finished loading world data.
+    auctionbot.Init();
 }
 
 // Outgoing-packet interceptor (called from WorldSession::SendPacket). For a

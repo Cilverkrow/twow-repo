@@ -74,6 +74,7 @@ namespace ahbot
         void SetTime(std::string category, uint32 id, uint32 auctionHouse, uint32 type, uint32 value);
         uint32 GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& category);
         void CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry);
+        bool TryEquipItem(uint32 bidder, uint32 itemGuidLow, ItemPrototype const* proto);
         void Dump();
         void CleanupPropositions();
         void DeleteMail(std::list<uint32> buffer);
