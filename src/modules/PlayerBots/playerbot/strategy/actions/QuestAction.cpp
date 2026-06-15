@@ -158,7 +158,7 @@ bool QuestAction::ProcessQuests(ObjectGuid questGiver)
 bool QuestAction::ProcessQuests(WorldObject* questGiver)
 {
     // These NPCs offer challenge quests (hardcore mode, etc.) that must never be taken by bots.
-    static const uint32 challengeQuestNpcs[] = { 81030 }; // Mysterious Stranger
+    static const uint32 challengeQuestNpcs[] = { 81030, 62609 }; // Mysterious Stranger variants
     for (uint32 blocked : challengeQuestNpcs)
         if (questGiver->GetEntry() == blocked)
             return false;

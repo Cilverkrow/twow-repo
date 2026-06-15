@@ -146,7 +146,19 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
         GuidPosition guidP(guid, bot->GetMapId(), bot->GetInstanceId());        
 
         if (!guidP)
-            SkipRpgTarget("not found on map/instance.");       
+            SkipRpgTarget("not found on map/instance.");
+
+        // Never approach Mysterious Stranger NPCs — they offer challenge quests bots must not take.
+        if (guidP.IsCreature())
+        {
+            static const uint32 ignoredRpgNpcEntries[] = { 81030, 62609 }; // Mysterious Stranger variants
+            bool isIgnoredNpc = false;
+            for (uint32 entry : ignoredRpgNpcEntries)
+                if ((uint32)guidP.GetEntry() == entry)
+                    isIgnoredNpc = true;
+            if (isIgnoredNpc)
+                SkipRpgTarget("NPC is a challenge-quest giver that bots must ignore.");
+        }
 
         bool isTravelTarget = (guidP.GetEntry() == travelTarget->GetEntry());
 
