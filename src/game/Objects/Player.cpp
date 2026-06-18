@@ -7710,7 +7710,12 @@ void Player::CheckAreaExploreAndOutdoor()
                     xp = xp + (xp * 0.2f);
 
                 // Fuck teleport leveling:
-                if (GetLevel() < 16) // Chinese config limitation for the world chat.
+                // Original Turtle WoW has no playerbots, so this check assumed all
+                // sub-16 players in a high-level zone are exploiting. Bots are
+                // routinely teleported everywhere by the bot system and must be
+                // excluded, otherwise every bot login at a saved high-level position
+                // spams false-positive errors.
+                if (GetLevel() < 16 && !GetPlayerbotAI()) // Chinese config limitation for the world chat.
                 {
                     if (uint32(p->AreaLevel) > 20)
                     {

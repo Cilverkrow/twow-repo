@@ -143,10 +143,13 @@ bool ItemBag::Add(ItemPrototype const* proto)
     if (proto->Duration & 0x80000000)
         return false;
 
+    if (proto->Flags & ITEM_FLAG_DEPRECATED)
+        return false;
+
     if (sAhBotConfig.ignoreItemIds.find(proto->ItemId) != sAhBotConfig.ignoreItemIds.end())
         return false;
 
-    if (strstri(proto->Name1, "qa") || strstri(proto->Name1, "test") || strstri(proto->Name1, "deprecated"))
+    if (strstri(proto->Name1, "qa") || strstri(proto->Name1, "test") || strstri(proto->Name1, "deprecated") || strstri(proto->Name1, "(old)"))
         return false;
 
     bool contains = false;
