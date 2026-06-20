@@ -607,8 +607,8 @@ Player* PlayerbotHolder::GetPlayerBot(uint32 playerGuid) const
 
 void PlayerbotHolder::JoinChatChannels(Player* bot)
 {
-    // bots join World chat if not solo oriented
-    if (bot->GetLevel() >= 10 && sRandomPlayerbotMgr.IsFreeBot(bot) && bot->GetPlayerbotAI() && bot->GetPlayerbotAI()->GetGrouperType() != GrouperType::SOLO)
+    // bots join World chat if they are free random bots
+    if (sRandomPlayerbotMgr.IsFreeBot(bot))
     {
         // TODO make action/config
         // Make the bot join the world channel for chat
@@ -1233,7 +1233,7 @@ void PlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
     UpdateSessions(elapsed);
 }
 
-void PlayerbotMgr::HandleCommand(uint32 type, const std::string& text, uint32 lang)
+void PlayerbotMgr::HandleCommand(uint32 type, const std::string& text, uint32 lang, const std::string& to)
 {
     Player *master = GetMaster();
     if (!master)
@@ -1248,13 +1248,16 @@ void PlayerbotMgr::HandleCommand(uint32 type, const std::string& text, uint32 la
         split(commands, text, sPlayerbotAIConfig.commandSeparator.c_str());
         for (std::vector<std::string>::iterator i = commands.begin(); i != commands.end(); ++i)
         {
-            HandleCommand(type, *i,lang);
+            HandleCommand(type, *i, lang, to);
         }
         return;
     }
 
     ForEachPlayerbot([&](Player *bot)
     {
+        if (type == CHAT_MSG_WHISPER && !to.empty() && bot->GetName() != to)
+            return;
+
         if (type == CHAT_MSG_SAY)
             if (bot->GetMapId() != master->GetMapId() || sServerFacade.GetDistance2d(bot, master) > 25)
                 return;
@@ -1268,6 +1271,9 @@ void PlayerbotMgr::HandleCommand(uint32 type, const std::string& text, uint32 la
 
     sRandomPlayerbotMgr.ForEachPlayerbot([&](Player* bot)
     {
+        if (type == CHAT_MSG_WHISPER && !to.empty() && bot->GetName() != to)
+            return;
+
         if (type == CHAT_MSG_SAY)
             if (bot->GetMapId() != master->GetMapId() || sServerFacade.GetDistance2d(bot, master) > 25)
                return;

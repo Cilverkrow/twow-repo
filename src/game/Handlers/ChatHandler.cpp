@@ -398,7 +398,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket & recv_data)
     // Implementation lives in src/modules/PlayerBots/playerbot/HostHooks.cpp.
     // No-op when m_playerbotMgr is null.
     if (_player && _player->GetPlayerbotMgr())
-        Player_DispatchBotChatCommand(_player, type, msg, lang);
+        Player_DispatchBotChatCommand(_player, type, msg, lang, to);
 
     // Message handling
     switch (type)

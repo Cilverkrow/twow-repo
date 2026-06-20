@@ -147,7 +147,7 @@ public:
     static bool HandlePlayerbotMgrCommand(ChatHandler* handler, char const* args);
     void HandleMasterIncomingPacket(const WorldPacket& packet);
     void HandleMasterOutgoingPacket(const WorldPacket& packet);
-    void HandleCommand(uint32 type, const std::string& text, uint32 lang = LANG_UNIVERSAL);
+    void HandleCommand(uint32 type, const std::string& text, uint32 lang = LANG_UNIVERSAL, const std::string& to = "");
     void OnPlayerLogin(Player* player);
     void CancelLogout();
 

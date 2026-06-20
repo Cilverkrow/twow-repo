@@ -92,7 +92,7 @@ public:
         void UpdateGearSpells(Player* bot);
         void ScheduleTeleport(uint32 bot, uint32 time = 0);
         void ScheduleChangeStrategy(uint32 bot, uint32 time = 0);
-        void HandleCommand(uint32 type, const std::string& text, Player& fromPlayer, std::string channelName = "", Team team = TEAM_BOTH_ALLOWED, uint32 lang = LANG_UNIVERSAL);
+        void HandleCommand(uint32 type, const std::string& text, Player& fromPlayer, std::string channelName = "", Team team = TEAM_BOTH_ALLOWED, uint32 lang = LANG_UNIVERSAL, const std::string& to = "");
         std::string HandleRemoteCommand(std::string request);
         void OnPlayerLogout(Player* player);
         void OnPlayerLogin(Player* player);

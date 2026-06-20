@@ -3142,14 +3142,15 @@ bool PlayerbotAI::SayToWorld(std::string msg)
         return false;
     }
 
-    //no zone
-    if (Channel* worldChannel = cMgr->GetChannel("World", bot))
-    {
-        worldChannel->Say(bot, msg.c_str(), LANG_UNIVERSAL);
-        return true;
-    }
+    Channel* worldChannel = cMgr->GetOrCreateChannel("World");
+    if (!worldChannel)
+        return false;
 
-    return false;
+    if (!worldChannel->IsOn(bot->GetObjectGuid()))
+        worldChannel->Join(bot->GetObjectGuid(), "");
+
+    worldChannel->Say(bot, msg.c_str(), LANG_UNIVERSAL);
+    return true;
 }
 
 bool PlayerbotAI::SayToGeneral(std::string msg)

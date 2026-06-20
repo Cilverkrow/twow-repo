@@ -2553,7 +2553,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation> 
             // filter other races zones
             if (bot->GetLevel() < 30)
             {
-                if ((zoneId == 12 || zoneId == 40) && bot->getRace() != RACE_HUMAN)
+                if ((zoneId == 12 || zoneId == 40) && bot->getRace() != RACE_HUMAN && bot->getRace() != RACE_HIGH_ELF)
                     return true;
                 if ((zoneId == 1 || zoneId == 38) && bot->getRace() != RACE_DWARF)
                     return true;
@@ -2561,7 +2561,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation> 
                     return true;
                 if ((zoneId == 141 || zoneId == 148) && bot->getRace() != RACE_NIGHTELF)
                     return true;
-                if ((zoneId == 14 || zoneId == 17) && !(bot->getRace() == RACE_ORC || bot->getRace() == RACE_TROLL))
+                if ((zoneId == 14 || zoneId == 17) && !(bot->getRace() == RACE_ORC || bot->getRace() == RACE_TROLL || bot->getRace() == RACE_GOBLIN))
                     return true;
                 if ((zoneId == 215) && bot->getRace() != RACE_TAUREN)
                     return true;
@@ -3568,10 +3568,13 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, cha
     return true;
 }
 
-void RandomPlayerbotMgr::HandleCommand(uint32 type, const std::string& text, Player& fromPlayer, std::string channelName, Team team, uint32 lang)
+void RandomPlayerbotMgr::HandleCommand(uint32 type, const std::string& text, Player& fromPlayer, std::string channelName, Team team, uint32 lang, const std::string& to)
 {
     ForEachPlayerbot([&](Player* bot)
     {
+        if (type == CHAT_MSG_WHISPER && !to.empty() && bot->GetName() != to)
+            return;
+
         if (type == CHAT_MSG_SAY)
         {
             if (bot->GetMapId() != fromPlayer.GetMapId() || sServerFacade.GetDistance2d(bot, &fromPlayer) > 25)

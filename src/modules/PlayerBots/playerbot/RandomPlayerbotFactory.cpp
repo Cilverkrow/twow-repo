@@ -41,12 +41,15 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_WARRIOR].push_back(RACE_UNDEAD);
     availableRaces[CLASS_WARRIOR].push_back(RACE_TAUREN);
     availableRaces[CLASS_WARRIOR].push_back(RACE_TROLL);
+    availableRaces[CLASS_WARRIOR].push_back(RACE_GOBLIN);
+    availableRaces[CLASS_WARRIOR].push_back(RACE_HIGH_ELF);
 #ifndef MANGOSBOT_ZERO
     availableRaces[CLASS_WARRIOR].push_back(RACE_DRAENEI);
 #endif
 
     availableRaces[CLASS_PALADIN].push_back(RACE_HUMAN);
     availableRaces[CLASS_PALADIN].push_back(RACE_DWARF);
+    availableRaces[CLASS_PALADIN].push_back(RACE_HIGH_ELF);
 #ifndef MANGOSBOT_ZERO
     availableRaces[CLASS_PALADIN].push_back(RACE_DRAENEI);
     availableRaces[CLASS_PALADIN].push_back(RACE_BLOODELF);
@@ -59,6 +62,8 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_ROGUE].push_back(RACE_ORC);
     availableRaces[CLASS_ROGUE].push_back(RACE_UNDEAD);
     availableRaces[CLASS_ROGUE].push_back(RACE_TROLL);
+    availableRaces[CLASS_ROGUE].push_back(RACE_GOBLIN);
+    availableRaces[CLASS_ROGUE].push_back(RACE_HIGH_ELF);
 #ifndef MANGOSBOT_ZERO
     availableRaces[CLASS_ROGUE].push_back(RACE_BLOODELF);
 #endif
@@ -68,6 +73,7 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_PRIEST].push_back(RACE_NIGHTELF);
     availableRaces[CLASS_PRIEST].push_back(RACE_TROLL);
     availableRaces[CLASS_PRIEST].push_back(RACE_UNDEAD);
+    availableRaces[CLASS_PRIEST].push_back(RACE_HIGH_ELF);
 #ifndef MANGOSBOT_ZERO
     availableRaces[CLASS_PRIEST].push_back(RACE_DRAENEI);
     availableRaces[CLASS_PRIEST].push_back(RACE_BLOODELF);
@@ -77,6 +83,8 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_MAGE].push_back(RACE_GNOME);
     availableRaces[CLASS_MAGE].push_back(RACE_UNDEAD);
     availableRaces[CLASS_MAGE].push_back(RACE_TROLL);
+    availableRaces[CLASS_MAGE].push_back(RACE_GOBLIN);
+    availableRaces[CLASS_MAGE].push_back(RACE_HIGH_ELF);
 #ifndef MANGOSBOT_ZERO
     availableRaces[CLASS_MAGE].push_back(RACE_DRAENEI);
     availableRaces[CLASS_MAGE].push_back(RACE_BLOODELF);
@@ -86,6 +94,7 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_WARLOCK].push_back(RACE_GNOME);
     availableRaces[CLASS_WARLOCK].push_back(RACE_UNDEAD);
     availableRaces[CLASS_WARLOCK].push_back(RACE_ORC);
+    availableRaces[CLASS_WARLOCK].push_back(RACE_GOBLIN);
 #ifndef MANGOSBOT_ZERO
     availableRaces[CLASS_WARLOCK].push_back(RACE_BLOODELF);
 #endif
@@ -102,6 +111,8 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_HUNTER].push_back(RACE_ORC);
     availableRaces[CLASS_HUNTER].push_back(RACE_TAUREN);
     availableRaces[CLASS_HUNTER].push_back(RACE_TROLL);
+    availableRaces[CLASS_HUNTER].push_back(RACE_GOBLIN);
+    availableRaces[CLASS_HUNTER].push_back(RACE_HIGH_ELF);
 #ifndef MANGOSBOT_ZERO
     availableRaces[CLASS_HUNTER].push_back(RACE_DRAENEI);
     availableRaces[CLASS_HUNTER].push_back(RACE_BLOODELF);
@@ -126,12 +137,10 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
 
 bool RandomPlayerbotFactory::isAvailableRace(uint8 cls, uint8 race)
 {
-    if (race == RACE_GOBLIN)
-        return false;
 #ifdef MANGOSBOT_TWO
-    else if (cls == 10)
+    if (cls == 10)
 #else
-    else if (cls == 10 || cls == 6)
+    if (cls == 10 || cls == 6)
 #endif
         return false;
 
@@ -392,6 +401,22 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls, uint8 inputRace)
     //player->SetSemaphoreTeleportFar(false);
 
     sObjectAccessor.AddObject(player);
+
+    if (race == RACE_GOBLIN)
+    {
+        player->SetLocationMapId(1);
+        player->Relocate(-618.518f, -4251.67f, 38.718f, 0.0f);
+        player->SetHomebindToLocation(WorldLocation(1, -618.518f, -4251.67f, 38.718f, 0.0f), 14);
+        player->SaveToDB();
+    }
+
+    if (race == RACE_HIGH_ELF)
+    {
+        player->SetLocationMapId(0);
+        player->Relocate(-8949.95f, -132.493f, 83.5312f, 0.0f);
+        player->SetHomebindToLocation(WorldLocation(0, -8949.95f, -132.493f, 83.5312f, 0.0f), 12);
+        player->SaveToDB();
+    }
 
     sLog.outDebug( "Random bot created for account %d - name: \"%s\"; race: %u; class: %u",
             accountId, name.c_str(), race, cls);

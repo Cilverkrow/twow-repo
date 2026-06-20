@@ -126,13 +126,13 @@ bool Player_DispatchBotOutgoingPacket(Player* player, WorldPacket const& packet)
 // Chat dispatcher: feeds the master's chat to every bot that listens. Without
 // this, in-party "+heal" / "stay" / "co" commands don't reach any bot. Bots
 // owned by the master and matching random bots both get the message.
-void Player_DispatchBotChatCommand(Player* master, uint32 type, std::string const& msg, uint32 lang)
+void Player_DispatchBotChatCommand(Player* master, uint32 type, std::string const& msg, uint32 lang, std::string const& to)
 {
     if (!master || !sPlayerbotAIConfig.enabled)
         return;
 
     if (PlayerbotMgr* mgr = master->GetPlayerbotMgr())
-        mgr->HandleCommand(type, msg, lang);
+        mgr->HandleCommand(type, msg, lang, to);
 
-    sRandomPlayerbotMgr.HandleCommand(type, msg, *master, "", master->GetTeam(), lang);
+    sRandomPlayerbotMgr.HandleCommand(type, msg, *master, "", master->GetTeam(), lang, to);
 }
