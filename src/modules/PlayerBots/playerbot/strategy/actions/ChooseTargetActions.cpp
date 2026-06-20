@@ -15,9 +15,12 @@ bool DpsAssistAction::isUseful()
     return true;
 }
 
-bool AttackAnythingAction::isUseful() 
+bool AttackAnythingAction::isUseful()
 {
     if (!ai->AllowActivity(GRIND_ACTIVITY)) //Bot not allowed to be active
+        return false;
+
+    if (ai->HasRealPlayerMaster())
         return false;
 
     if (!AI_VALUE(bool, "can move around"))

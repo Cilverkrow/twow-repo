@@ -49,8 +49,15 @@ namespace ai
 
                 if (range > 0.0f)
                 {
-                    chaseDist = inLos ? range : (isFriend ? std::min(distanceToTarget * 0.9f, range) : range);
-                    chaseDist = (chaseDist - sPlayerbotAIConfig.contactDistance);
+                    // Move to 75% of max range so we land comfortably inside the
+                    // range envelope rather than at its edge. This prevents constant
+                    // fidgeting when the target drifts slightly out of max range, and
+                    // stops bots from walking all the way out to the range limit before
+                    // they cast. The 0.75 factor keeps a buffer for target movement
+                    // while still being well within casting distance.
+                    const float preferredDist = range * 0.75f;
+                    chaseDist = inLos ? preferredDist : (isFriend ? std::min(distanceToTarget * 0.9f, preferredDist) : preferredDist);
+                    chaseDist = std::max(chaseDist - sPlayerbotAIConfig.contactDistance, 0.0f);
                 }
 
                 if (MoveStyleValue::WaitForEnemy(ai) && target->m_movementInfo.HasMovementFlag(movementFlagsMask) &&
