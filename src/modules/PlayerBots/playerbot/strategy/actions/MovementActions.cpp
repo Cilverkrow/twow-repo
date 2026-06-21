@@ -2897,7 +2897,8 @@ bool MovementAction::Flee(Unit *target)
                 else if (isRanged && ai->IsRanged(groupMember))
                 {
                     const float distanceToTarget = sServerFacade.GetDistance2d(groupMember, target);
-                    if (distanceToTarget > minRangedTargetDistance && groupMember->IsWithinLOSInMap(target, true))
+                    if (distanceToTarget > minRangedTargetDistance && distanceToTarget < ai->GetRange("spell") &&
+                        groupMember->IsWithinLOSInMap(target, true))
                     {
                         possibleTargets.push_back(groupMember);
                     }
@@ -2921,7 +2922,7 @@ bool MovementAction::Flee(Unit *target)
                     if(isRanged)
                     {
                         const float distanceToTarget = sServerFacade.GetDistance2d(master, target);
-                        if (distanceToTarget > minRangedTargetDistance)
+                        if (distanceToTarget > minRangedTargetDistance && distanceToTarget < ai->GetRange("spell"))
                         {
                             fleeTarget = master;
                         }

@@ -773,8 +773,35 @@ void WorldSession::LogoutPlayer(bool Save)
 
         // remove player from the group if he is:
         // a) in group; b) not in raid group; c) logging out normally (not being kicked or disconnected)
+        //
+        // For normal logout (m_Socket set): also evict any bot members first so
+        // they don't linger in a real-player-less group after we leave.  We do
+        // this BEFORE removing the player so the bots are still in-world and
+        // their group pointers can be properly cleared.  Any bot that already
+        // logged out has a stale m_memberSlots entry; RemoveFromGroup on a null
+        // player is safe and still purges the DB row + slot.
         if (_player->GetGroup() && !_player->GetGroup()->isRaidGroup() && m_Socket)
-            _player->RemoveFromGroup();
+        {
+            Group* grp = _player->GetGroup();
+            std::vector<ObjectGuid> botGuids;
+            for (const auto& slot : grp->GetMemberSlots())
+            {
+                if (slot.guid == _player->GetObjectGuid())
+                    continue;
+                Player* member = sObjectMgr.GetPlayer(slot.guid);
+                if (!member || !member->isRealPlayer())
+                    botGuids.push_back(slot.guid);
+            }
+            for (const ObjectGuid& guid : botGuids)
+            {
+                if (!_player->GetGroup())
+                    break; // group was disbanded mid-loop
+                Player::RemoveFromGroup(_player->GetGroup(), guid);
+            }
+            // Remove the player last (may trigger auto-disband if only 1 left).
+            if (_player->GetGroup())
+                _player->RemoveFromGroup();
+        }
 
         ///- Send update to group
         if (Group* group = _player->GetGroup())
