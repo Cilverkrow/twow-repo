@@ -218,6 +218,7 @@ void AddSC_westfall();
 void AddSC_wetlands();
 
 //kalimdor
+void AddSC_boss_velthelaxx_the_defiler();            //blackfathom_deeps
 void AddSC_instance_blackfathom_deeps();             //blackfathom_deeps
 void AddSC_boss_celebras_the_cursed();               //maraudon
 void AddSC_boss_landslide();
@@ -574,6 +575,7 @@ void AddScripts()
     AddSC_wetlands();
 
     //kalimdor
+    AddSC_boss_velthelaxx_the_defiler();                    //blackfathom_deeps
     AddSC_instance_blackfathom_deeps();                     //blackfathom_deeps
     AddSC_boss_celebras_the_cursed();                       //maraudon
     AddSC_boss_landslide();
