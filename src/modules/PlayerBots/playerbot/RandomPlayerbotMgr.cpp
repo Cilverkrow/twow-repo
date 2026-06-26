@@ -2577,6 +2577,10 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation> 
             }
         }
 
+        // Never send bots to custom player-only starting zones (no MMAP support)
+        if (zoneId == 5536 || zoneId == 5225)
+            return true;
+
         if (!area)
             return true;
 
