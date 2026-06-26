@@ -20,7 +20,28 @@ bool LootAction::Execute(Event& event)
         return false;
 
     LootObject prevLoot = AI_VALUE(LootObject, "loot target");
-    LootObject const& lootObject = AI_VALUE(LootObjectStack*, "available loot")->GetLoot(sPlayerbotAIConfig.lootDistance);
+
+    LootObject lootObject;
+    Player* master = ai->GetMaster();
+    std::vector<LootObject> candidates = AI_VALUE(LootObjectStack*, "available loot")->OrderByDistance(sPlayerbotAIConfig.lootDistance);
+    for (LootObject& candidate : candidates)
+    {
+        if (master && master != bot)
+        {
+            Creature* c = ai->GetCreature(candidate.guid);
+            if (c && sServerFacade.GetDeathState(c) == CORPSE)
+            {
+                float safeRange = sPlayerbotAIConfig.followDistance + bot->GetMaxLootDistance(c);
+                if (sServerFacade.GetDistance2d(master, c) > safeRange)
+                    continue;
+            }
+        }
+        lootObject = candidate;
+        break;
+    }
+
+    if (lootObject.IsEmpty())
+        return false;
 
     bool released = false;
     if (!prevLoot.IsEmpty() && prevLoot.guid != lootObject.guid)

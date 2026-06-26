@@ -57,7 +57,7 @@ namespace ai
         bool CanLoot(float maxDistance);
         LootObject GetLoot(float maxDistance = 0);
 
-    private:
+    public:
         std::vector<LootObject> OrderByDistance(float maxDistance = 0);
 
     private:
