@@ -58,6 +58,12 @@ namespace ai
                 if (bot->GetMap()->IsRaid())
                     isRaid = true;
 
+                // Casters have no minimum range — only flee if the mob is actually targeting/attacking this bot.
+                // Hunters are excluded: their ranged weapons have a ~8 yd minimum range so they must
+                // maintain distance even when the mob is focused on someone else.
+                if (bot->getClass() != CLASS_HUNTER && !isVictim && target->GetTarget() != bot)
+                    return false;
+
                 //if (isBoss || isRaid)
                 //    return sServerFacade.IsDistanceLessThan(targetDistance, (ai->GetRange("spell") + combatReach) / 2);
 
