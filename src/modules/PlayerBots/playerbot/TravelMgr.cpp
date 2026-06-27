@@ -2620,7 +2620,7 @@ void TravelMgr::GetPartitionsLock(bool getLock)
 bool TravelMgr::IsLocationLevelValid(const WorldPosition& position, const PlayerTravelInfo& info)
 {
     bool canFightElite = info.GetBoolValue("can fight elite");
-    uint32 botLevel = info.GetLevel();
+    int32 botLevel = (int32)info.GetLevel();
 
     if (position.getMapId() == 530 && info.GetLevel() < 58) //Outland
         return false;
@@ -2634,18 +2634,18 @@ bool TravelMgr::IsLocationLevelValid(const WorldPosition& position, const Player
         botLevel += 2;
     else if (!info.GetBoolValue("can fight equal"))
     {
-        botLevel -= (2 + info.GetUint32Value("death count"));
+        botLevel -= (int32)(2 + info.GetUint32Value("death count"));
     }
 
-    if (botLevel < 6)
-        botLevel = 6;
+    if (botLevel < 1)
+        botLevel = 1;
 
     uint32 areaLevel = position.getAreaLevel();
 
     if (!position.isOverworld() && !canFightElite)
         areaLevel += 10;
 
-    if (!areaLevel || botLevel < areaLevel) //Skip points that are in a area that is too high level.
+    if (!areaLevel || (uint32)botLevel < areaLevel) //Skip points that are in a area that is too high level.
         return false;
 
     return true;

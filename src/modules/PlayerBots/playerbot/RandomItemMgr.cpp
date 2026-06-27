@@ -2760,7 +2760,7 @@ uint32 RandomItemMgr::GetUpgrade(Player* player, std::string spec, uint8 slot, u
             continue;
 
         // skip too low level
-        if (info->minLevel < (player->GetLevel() - 10))
+        if (player->GetLevel() > 10 && info->minLevel < (player->GetLevel() - 10))
             continue;
 
         // skip wrong team
@@ -2877,7 +2877,7 @@ std::vector<uint32> RandomItemMgr::GetUpgradeList(Player* player, uint32 specId,
             continue;
 
         // skip too low level
-        if ((int32)info->minLevel < (int32)(player->GetLevel() - 20))
+        if (player->GetLevel() > 20 && (int32)info->minLevel < (int32)(player->GetLevel() - 20))
             continue;
 
         // skip wrong team
@@ -3571,7 +3571,7 @@ void RandomItemMgr::BuildPotionCache()
                     proto->Bonding != NO_BIND)
                     continue;
 
-                if (proto->RequiredLevel && (proto->RequiredLevel > level || proto->RequiredLevel < level - 10))
+                if (proto->RequiredLevel && (proto->RequiredLevel > level || (level > 10 && proto->RequiredLevel < level - 10)))
                     continue;
 
                 if (proto->RequiredSkill)
@@ -3643,7 +3643,7 @@ void RandomItemMgr::BuildFoodCache()
                     proto->Bonding != NO_BIND)
                     continue;
 
-                if (proto->RequiredLevel && (proto->RequiredLevel > level || proto->RequiredLevel < level - 10))
+                if (proto->RequiredLevel && (proto->RequiredLevel > level || (level > 10 && proto->RequiredLevel < level - 10)))
                     continue;
 
                 if (proto->RequiredSkill)
@@ -3787,7 +3787,7 @@ void RandomItemMgr::BuildTradeCache()
             if (proto->ItemLevel < level)
                 continue;
 
-            if (proto->RequiredLevel && (proto->RequiredLevel > level || proto->RequiredLevel < level - 10))
+            if (proto->RequiredLevel && (proto->RequiredLevel > level || (level > 10 && proto->RequiredLevel < level - 10)))
                 continue;
 
             if (proto->RequiredSkill)

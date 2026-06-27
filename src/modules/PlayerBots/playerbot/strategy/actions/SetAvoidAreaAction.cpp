@@ -31,7 +31,7 @@ bool SetAvoidAreaAction::Execute(Event& event)
         if (cInfo->NpcFlags > 0) //Ignore npcs.
             continue;
 
-        if (cInfo->MaxLevel < bot->GetLevel() - 3) //Ignore lower level mobs.
+        if (bot->GetLevel() > 3 && cInfo->MaxLevel < bot->GetLevel() - 3) //Ignore lower level mobs.
             continue;
 
         FactionTemplateEntry const* factionEntry = sFactionTemplateStore.LookupEntry(cInfo->Faction);

@@ -6,6 +6,17 @@ using namespace ai;
 
 bool AcceptAllQuestsAction::ProcessQuest(Player* requester, Quest const* quest, WorldObject* questGiver)
 {
+    // Skip breadcrumb delivery quests until the bot reaches the quest's recommended level.
+    // These quests (deliver item to innkeeper in next town) are available from level 1 but
+    // lead through dangerous territory — letting bots defer them prevents death loops.
+    if (!quest->GetRequiredClasses() &&
+        quest->HasSpecialFlag(QUEST_SPECIAL_FLAG_DELIVER) &&
+        !quest->HasSpecialFlag(QUEST_SPECIAL_FLAG_KILL_OR_CAST) &&
+        (int32)bot->GetLevel() < (int32)quest->GetQuestLevel())
+    {
+        return false;
+    }
+
     if (AcceptQuest(requester, quest, questGiver->GetObjectGuid()))
     {
         if (sPlayerbotAIConfig.globalSoundEffects)
