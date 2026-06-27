@@ -520,7 +520,6 @@ namespace
         void JustDied(Unit* /*killer*/) override
         {
             ApplyRazjalIntermissionImmunity(m_creature, false);
-            DespawnScorpids();
         }
 
         void UpdateAI(uint32 const diff) override
