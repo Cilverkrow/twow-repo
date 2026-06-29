@@ -160,7 +160,8 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
                 SkipRpgTarget("NPC is a challenge-quest giver that bots must ignore.");
         }
 
-        bool isTravelTarget = (guidP.GetEntry() == travelTarget->GetEntry());
+        bool isTravelTarget = (travelTarget->GetEntry() != 0 &&
+                               (uint32)std::abs(travelTarget->GetEntry()) == guidP.GetEntry());
 
         //Stop to save peformance.
         if (checked >= maxCheck && !isTravelTarget)

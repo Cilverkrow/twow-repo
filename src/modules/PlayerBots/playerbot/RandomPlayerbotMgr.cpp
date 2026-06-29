@@ -3110,7 +3110,19 @@ void RandomPlayerbotMgr::UpdateGearSpells(Player* bot)
     uint32 lastLevel = GetValue(bot, "level");
     uint32 level = bot->GetLevel();
     PlayerbotFactory factory(bot, level);
-    factory.Randomize(true, false);
+
+    if (sPlayerbotAIConfig.disableRandomLevels)
+    {
+        // Randomize() exits early when DisableRandomLevels=1 (it would skip gear too).
+        // Call UpgradeGear/InitGems directly so bots still get proper equipment.
+        sLog.outBasic("Bot #%d <%s> lvl %d: UpdateGearSpells direct path (DisableRandomLevels=1)",
+            bot->GetGUIDLow(), bot->GetName(), level);
+        factory.UpgradeGearBest();
+    }
+    else
+    {
+        factory.Randomize(true, false);
+    }
 
     if (lastLevel != level)
         SetValue(bot, "level", level);

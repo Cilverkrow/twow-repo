@@ -62,6 +62,7 @@ bool ReviveFromCorpseAction::Execute(Event& event)
     bot->GetSession()->HandleReclaimCorpseOpcode(packet);
 
     SET_AI_VALUE(bool, "corpse run", false);
+    RESET_AI_VALUE(uint32, "death count");
     sPlayerbotAIConfig.logEvent(ai, "ReviveFromCorpseAction");
 
     return true;
@@ -332,6 +333,7 @@ bool SpiritHealerAction::Execute(Event& event)
         bot->SpawnCorpseBones();
         bot->SaveToDB();
         SET_AI_VALUE(bool, "corpse run", false);
+        RESET_AI_VALUE(uint32, "death count");
         context->GetValue<Unit*>("current target")->Set(nullptr);
         bot->SetSelectionGuid(ObjectGuid());
         ai->TellPlayer(requester, BOT_TEXT("hello"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);

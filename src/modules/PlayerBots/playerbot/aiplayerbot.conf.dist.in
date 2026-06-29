@@ -54,14 +54,14 @@ AiPlayerbot.PreQuests = 0
 AiPlayerbot.RandomBotAutoCreate = 1
 
 # Random bot count
-AiPlayerbot.MinRandomBots = 30
-AiPlayerbot.MaxRandomBots = 30
+AiPlayerbot.MinRandomBots = 1000
+AiPlayerbot.MaxRandomBots = 1000
 AiPlayerbot.RandomBotMinLevel = 5
 AiPlayerbot.RandomBotMaxLevel = 60
 
 # Accounts to create for random bots
 AiPlayerbot.RandomBotAccountPrefix = RNDBOT
-AiPlayerbot.RandomBotAccountCount = 200
+AiPlayerbot.RandomBotAccountCount = 500
 
 # Disable core mangos map/bot optimizations which hinders bot activity
 # Works best together with AiPlayerbot.DisableActivityPriorities = 1
@@ -130,7 +130,7 @@ AiPlayerbot.RandomGearMaxLevel = 500
 AiPlayerbot.RandomGearMaxDiff = 9
 
 # Regularly upgrade bots equipment for their level
-AiPlayerbot.RandomGearUpgradeEnabled = 0
+AiPlayerbot.RandomGearUpgradeEnabled = 1
 
 # Enable random tabards on randomisation
 AiPlayerbot.RandomGearTabards = 0
@@ -209,7 +209,7 @@ AiPlayerbot.randombotStartingLevel = 1
 
 # Set XP rate for bots (default: 1)
 # Server XP Rate * AiPlayerbot.XPRate
-AiPlayerbot.XPRate = 4
+AiPlayerbot.XPRate = 3
 
 # Set minimum level of randombots where gets enchants on items (Maxlevel + 1 to disable)
 # Default: 60
@@ -1032,7 +1032,7 @@ AiPlayerbot.RndBotCheats = repair,breath
 
 # Allowed log files. See SPP_MAP for more information
 # https://github.com/mostlikely4r/spp-map
-# AiPlayerbot.AllowedLogFiles = 
+AiPlayerbot.AllowedLogFiles = bot_events.csv,deaths.csv
 
 # Filters certain actions from showing up in 'nc +debug' and 'nc +debug action'
 # AiPlayerbot.DebugFilter = add gathering loot,check values,emote,check mount state,jump

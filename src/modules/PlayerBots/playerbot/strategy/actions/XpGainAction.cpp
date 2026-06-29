@@ -68,7 +68,21 @@ bool XpGainAction::Execute(Event& event)
     Unit* victim;
     if (guid)
         victim = ai->GetUnit(guid);
+
+    // Capture level-ups from both base XP (already applied by server) and bonus XP (applied below).
+    // The server's Player::GiveXP fires before this action runs, so levelBefore may already be
+    // higher than what we saw at packet receipt — compare after GiveXP to catch any remaining jumps.
+    uint32 levelBefore = bot->GetLevel();
     GiveXP(bonusXpgain, victim);
+    uint32 levelAfter = bot->GetLevel();
+
+    if (levelAfter > levelBefore && levelAfter >= 5 &&
+        sRandomPlayerbotMgr.IsRandomBot(bot) && !bot->GetPlayerbotAI()->HasRealPlayerMaster())
+    {
+        sLog.outBasic("Bot #%d <%s> levelled %d->%d (Execute hook), triggering gear update",
+            bot->GetGUIDLow(), bot->GetName(), levelBefore, levelAfter);
+        sRandomPlayerbotMgr.UpdateGearSpells(bot);
+    }
 
     return false;
 }

@@ -140,7 +140,7 @@ void CleanQuestLogAction::DropQuestType(Player* requester, uint8 &numQuest, uint
             if (HasProgress(bot, quest) && !hasProgress && bot->GetQuestStatus(questId) != QUEST_STATUS_FAILED)
                 continue;
 
-            if (bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE && !isComplete)
+            if (bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
                 continue;
 
             if (numQuest <= wantNum)

@@ -183,8 +183,9 @@ bool QuestRelationTravelDestination::IsActive(Player* bot, const PlayerTravelInf
             }
             else
             {
-                if (!AI_VALUE2(bool, "group or", "following party,can accept quest low level npc::" + std::to_string(GetEntry()))) //Noone can pick up this quest for money.
-                    return false;
+                if (!AI_VALUE2(bool, "group or", "following party,can accept quest npc::" + std::to_string(GetEntry()))) //Noone has yellow exclamation mark.
+                    if (!AI_VALUE2(bool, "group or", "following party,can accept quest low level npc::" + std::to_string(GetEntry()))) //Noone can pick up this quest for money.
+                        return false;
             }
         }
     }
@@ -454,7 +455,12 @@ uint8 QuestObjectiveTravelDestination::GetObjective() const
 }
 
 bool RpgTravelDestination::IsPossible(const PlayerTravelInfo& info) const
-{   
+{
+    // Don't send low-level bots on RPG travel — the path to any NPC typically
+    // crosses level 5+ mobs that kill level 1-4 bots instantly, creating a death loop.
+    if (info.GetLevel() < 5)
+        return false;
+
     //Horde pvp baracks
     if (ClosestMapId(info.GetPosition()) == 450 && info.GetTeam() == ALLIANCE)
         return false;

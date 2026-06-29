@@ -116,6 +116,14 @@ void PriestStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode(
         "party member dead",
         NextAction::array(0, new NextAction("resurrection", ACTION_EMERGENCY), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("flash heal", ACTION_CRITICAL_HEAL), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "low health",
+        NextAction::array(0, new NextAction("greater heal", ACTION_MEDIUM_HEAL), NULL)));
 }
 
 void PriestStrategy::InitReactionTriggers(std::list<TriggerNode*>& triggers)
@@ -681,6 +689,14 @@ void PriestStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode(
         "party member dead",
         NextAction::array(0, new NextAction("resurrection", ACTION_EMERGENCY), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("flash heal", ACTION_CRITICAL_HEAL), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "low health",
+        NextAction::array(0, new NextAction("greater heal", ACTION_MEDIUM_HEAL), NULL)));
 }
 
 void PriestStrategy::InitReactionTriggers(std::list<TriggerNode*>& triggers)
@@ -1254,6 +1270,14 @@ void PriestStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode(
         "party member dead",
         NextAction::array(0, new NextAction("resurrection", ACTION_EMERGENCY), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("flash heal", ACTION_CRITICAL_HEAL), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "low health",
+        NextAction::array(0, new NextAction("greater heal", ACTION_MEDIUM_HEAL), NULL)));
 }
 
 void PriestStrategy::InitReactionTriggers(std::list<TriggerNode*>& triggers)

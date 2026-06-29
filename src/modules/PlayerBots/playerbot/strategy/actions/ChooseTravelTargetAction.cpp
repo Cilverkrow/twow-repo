@@ -132,6 +132,8 @@ void ChooseTravelTargetAction::setNewTarget(Player* requester, TravelTarget* new
     {
         std::string condition = "group or::{following party,need quest objective::{" + std::to_string(dest->GetQuestId()) + "," + std::to_string((uint8)dest->GetObjective()) + "}}";
         oldTarget->AddCondition(condition);
+        if (Quest const* q = sObjectMgr.GetQuestTemplate(dest->GetQuestId()))
+            sPlayerbotAIConfig.logEvent(ai, "QuestTravelToObjective", q->GetTitle(), std::to_string(dest->GetQuestId()));
     }
     else if (QuestRelationTravelDestination* dest = dynamic_cast<QuestRelationTravelDestination*>(oldTarget->GetDestination()))
     {
@@ -143,6 +145,11 @@ void ChooseTravelTargetAction::setNewTarget(Player* requester, TravelTarget* new
             condition = "group or::{following party,can turn in quest npc::" + qualifier + "}";
 
         oldTarget->AddCondition(condition);
+        if (Quest const* q = sObjectMgr.GetQuestTemplate(dest->GetQuestId()))
+        {
+            std::string eventName = (dest->GetPurpose() == TravelDestinationPurpose::QuestGiver) ? "QuestTravelToGiver" : "QuestTravelToTaker";
+            sPlayerbotAIConfig.logEvent(ai, eventName, q->GetTitle(), std::to_string(dest->GetQuestId()));
+        }
     }
 
     oldTarget->SetStatus(TravelStatus::TRAVEL_STATUS_READY);

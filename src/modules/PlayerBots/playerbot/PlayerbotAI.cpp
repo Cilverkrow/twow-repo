@@ -1092,6 +1092,12 @@ void PlayerbotAI::OnDeath()
 
                 out << "\"," << std::to_string(adds);
 
+                TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+                std::string travelInfo = "none";
+                if (travelTarget && travelTarget->GetDestination())
+                    travelInfo = travelTarget->GetDestination()->GetTitle();
+                out << ",\"" << travelInfo << "\"";
+
                 sPlayerbotAIConfig.log("deaths.csv", out.str().c_str());
             }
         }
@@ -2792,6 +2798,9 @@ void PlayerbotAI::DropQuest(uint32 questIdToDrop)
         QuestStatus status = bot->GetQuestStatus(questId);
         if (questId == questIdToDrop)
         {
+            if (Quest const* q = sObjectMgr.GetQuestTemplate(questIdToDrop))
+                sPlayerbotAIConfig.logEvent(this, "QuestDropped", q->GetTitle(), std::to_string(questIdToDrop));
+
             bot->SetQuestSlot(slot, 0);
 
             //We ignore unequippable quest items in this case, its' still be equipped

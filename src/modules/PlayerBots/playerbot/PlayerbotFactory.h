@@ -59,6 +59,7 @@ public:
     void EquipGearBest() { return InitEquipment(false, false, false); }
     void EquipGearPartialUpgrade() { return InitEquipment(false, false, true, true); }
     void UpgradeGear(bool syncWithMaster) { return InitEquipment(!syncWithMaster, syncWithMaster); }
+    void UpgradeGearBest() { return InitEquipment(true, false, false); }
     void AddReagents() { return InitReagents(); }
     void AddPotions() { return InitPotions(); }
     void AddConsumes() { return AddConsumables(); }

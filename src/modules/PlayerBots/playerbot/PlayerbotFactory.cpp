@@ -2986,12 +2986,15 @@ void PlayerbotFactory::Shuffle(std::vector<uint32>& items)
 
 void PlayerbotFactory::InitEquipment(bool incremental, bool syncWithMaster, bool progressive, bool partialUpgrade)
 {
-    // Don't regear very low-level bots. InitEquipment destroys the currently equipped items up
-    // front (DestroyItemsVisitor below) and then selects replacements via RandomItemMgr. For
-    // level <= 3 bots the replacement step finds little/nothing (and can bail early, e.g. specId
-    // == 0), which strips them naked. Leave the starting outfit from Player::Create() intact.
-    if (bot->GetLevel() <= 3)
+    // Bots below level 5 stay in their starting outfit: gear DB has little for them,
+    // and specId is often 0 at low levels which would strip them naked (DestroyItemsVisitor
+    // runs before the specId guard). Level 5 aligns with AcceptQuestAction's breadcrumb gate.
+    if (bot->GetLevel() < 5)
+    {
+        sLog.outDetail("Bot #%d <%s> lvl %d: InitEquipment skipped (below level 5)",
+            bot->GetGUIDLow(), bot->GetName(), bot->GetLevel());
         return;
+    }
 
     uint32 oldGS = ai->GetEquipGearScore(bot, false, false);
     uint32 masterGS = 0;
@@ -3000,16 +3003,22 @@ void PlayerbotFactory::InitEquipment(bool incremental, bool syncWithMaster, bool
         masterGS = ai->GetEquipGearScore(ai->GetMaster(), false, false);
     }
 
+    // Check spec before wiping gear — a specId==0 result after DestroyItemsVisitor would
+    // leave the bot naked.
+    uint32 specId = sRandomItemMgr.GetPlayerSpecId(bot);
+    if (specId == 0)
+    {
+        sLog.outDetail("Bot #%d <%s> lvl %d class %d: InitEquipment skipped (specId=0)",
+            bot->GetGUIDLow(), bot->GetName(), bot->GetLevel(), bot->getClass());
+        return;
+    }
+
     bool isRandomBot = sRandomPlayerbotMgr.IsRandomBot(bot) && bot->GetPlayerbotAI() && !bot->GetPlayerbotAI()->HasRealPlayerMaster() && !bot->GetPlayerbotAI()->IsInRealGuild();
     if (!incremental)
     {
         DestroyItemsVisitor visitor(bot);
         ai->InventoryIterateItems(&visitor, IterateItemsMask::ITERATE_ITEMS_IN_EQUIP);
     }
-
-    uint32 specId = sRandomItemMgr.GetPlayerSpecId(bot);
-    if (specId == 0)
-        return;
 
     // choose type of weapon
     uint32 weaponType = 0;
@@ -3610,8 +3619,9 @@ void PlayerbotFactory::InitEquipment(bool incremental, bool syncWithMaster, bool
         }
     }
 
-    /*if (incremental && oldGS != newGS)
-        sLog.outDetail("Bot #%d %s:%d <%s>: GS: %u -> %u", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName(), oldGS, newGS);*/
+    sLog.outDetail("Bot #%d %s:%d <%s>: InitEquipment done, GS %u -> %u",
+        bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName(),
+        oldGS, ai->GetEquipGearScore(bot, false, false));
 
     // Update stats here so the bots will benefit from the new equipped items' stats
     bot->InitStatsForLevel(true);
