@@ -268,6 +268,7 @@ dungeons/wailing_caverns/def_wailing_caverns.h
 dungeons/wailing_caverns/instance_wailing_caverns.cpp
 dungeons/wailing_caverns/wailing_caverns.cpp
 dungeons/zulfarrak/instance_zulfarrak.cpp
+dungeons/zulfarrak/farraki_arena.cpp
 dungeons/zulfarrak/zulfarrak.cpp
 dungeons/zulfarrak/zulfarrak.h
 dungeons/zulgurub/boss_arlokk.cpp

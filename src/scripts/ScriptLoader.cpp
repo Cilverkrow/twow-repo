@@ -251,6 +251,7 @@ void AddSC_instance_temple_of_ahnqiraj();
 void AddSC_instance_wailing_caverns();               //Wailing caverns
 void AddSC_wailing_caverns();
 void AddSC_zulfarrak();                              //zulfarrak
+void AddSC_farraki_arena();
 void AddSC_instance_zulfarrak();
 
 void AddSC_ashenvale();
@@ -608,6 +609,7 @@ void AddScripts()
     AddSC_wailing_caverns();                               //Wailing caverns
     AddSC_instance_wailing_caverns();
     AddSC_zulfarrak();                                      //zulfarrak
+    AddSC_farraki_arena();
     AddSC_instance_zulfarrak();
 
     AddSC_ashenvale();
