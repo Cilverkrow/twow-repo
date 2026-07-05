@@ -231,6 +231,12 @@ AccountDataWrapper::~AccountDataWrapper()
 
 void World::InternalShutdown()
 {
+	// ProcessAsyncPackets() iterates m_sessions on its own thread with no lock,
+	// so it must be joined before the deletion loop below starts erasing entries
+	// out from under it.
+	if (m_asyncPacketsThread.joinable())
+	    m_asyncPacketsThread.join();
+
 	///- Empty the kicked session set
 	while (!m_sessions.empty())
 	{
@@ -261,9 +267,6 @@ void World::InternalShutdown()
 
     if (m_autoPDumpThread.joinable())
         m_autoPDumpThread.join();
-
-    if (m_asyncPacketsThread.joinable())
-        m_asyncPacketsThread.join();
 
     if (m_shopThread.joinable())
         m_shopThread.join();
@@ -2450,8 +2453,11 @@ void World::ProcessAsyncPackets()
         do
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        } while (!m_canProcessAsyncPackets);
-        
+        } while (!m_canProcessAsyncPackets && !sWorld.IsStopped());
+
+        if (sWorld.IsStopped())
+            break;
+
         for (auto const& itr : m_sessions)
         {
             WorldSession* pSession = itr.second;

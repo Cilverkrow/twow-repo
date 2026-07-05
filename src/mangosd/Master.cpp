@@ -621,7 +621,20 @@ int Master::Run()
         // go down and shutdown the server
     }
 
-    sWorldSocketMgr->Wait();
+    // Do NOT also call sWorldSocketMgr->Wait() here. WorldRunnable's shutdown
+    // path (run on world_thread) ends by calling sWorldSocketMgr->StopNetwork(),
+    // which itself stops and joins every network thread before returning.
+    // Waiting on the network threads a second time from this thread raced
+    // StopNetwork()'s own join (both called ACE_Task_Base::wait() on the same
+    // ReactorRunnable threads concurrently, which is undefined behavior) and
+    // was the root cause of the intermittent "Stopping network threads..."
+    // shutdown hang. world_thread.join() below is sufficient on its own: it
+    // cannot return until StopNetwork() -- and thus the network-thread join --
+    // has completed.
+    //
+    // when the main thread closes the singletons get unloaded
+    // since worldrunnable uses them, it will crash if unloaded after master
+    world_thread.join();
 
     ///- Stop freeze protection before shutdown tasks
     if (freeze_thread)
@@ -632,10 +645,6 @@ int Master::Run()
 
     ///- Remove signal handling before leaving
     _UnhookSignals();
-
-    // when the main thread closes the singletons get unloaded
-    // since worldrunnable uses them, it will crash if unloaded after master
-    world_thread.join();
 
     ///- Clean account database before leaving
     sLog.outString("Cleaning character database...");
