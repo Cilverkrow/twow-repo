@@ -38,7 +38,14 @@ void Player::RemovePlayerbotAI()
 void Player::CreatePlayerbotMgr()
 {
     if (!m_playerbotMgr)
+    {
         m_playerbotMgr = new PlayerbotMgr(this);
+        // RandomPlayerbotMgr tracks real players in its own `players` map
+        // (used by SyncLevelWithPlayers, RandomBotLoginWithPlayer, LFG
+        // auto-queue). Without this call the map never gets populated and
+        // those features silently never trigger.
+        sRandomPlayerbotMgr.OnPlayerLogin(this);
+    }
 }
 
 void Player::RemovePlayerbotMgr()
@@ -48,6 +55,7 @@ void Player::RemovePlayerbotMgr()
         // Log out the master's alt bots first; otherwise their PlayerbotAI
         // outlives the mgr and they linger in-world with a dangling master.
         m_playerbotMgr->LogoutAllBots();
+        sRandomPlayerbotMgr.OnPlayerLogout(this);
         delete m_playerbotMgr;
         m_playerbotMgr = nullptr;
     }
