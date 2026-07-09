@@ -297,6 +297,13 @@ bool PossibleAttackTargetsValue::IsPossibleTarget(Unit* target, Player* player, 
 {
     if(target)
     {
+        // A target that has turned friendly (PvP flag drop, charm/MC ended, etc.) is never
+        // a valid attack target, regardless of range/CC/tap state.
+        if (sServerFacade.IsFriendlyTo(player, target))
+        {
+            return false;
+        }
+
         // If the target is in an attackable distance
         if(!player->IsWithinDistInMap(target, range))
         {
