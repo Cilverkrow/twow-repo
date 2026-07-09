@@ -297,9 +297,14 @@ bool PossibleAttackTargetsValue::IsPossibleTarget(Unit* target, Player* player, 
 {
     if(target)
     {
-        // A target that has turned friendly (PvP flag drop, charm/MC ended, etc.) is never
-        // a valid attack target, regardless of range/CC/tap state.
-        if (sServerFacade.IsFriendlyTo(player, target))
+        // Defer to the same attackability check the real spell-cast validation uses
+        // (Spell::CheckCast -> WorldObject::IsValidAttackTarget). This rejects targets
+        // that have turned friendly (PvP flag drop, charm/MC ended, etc.) as well as
+        // opposing-faction players who aren't actually PvP-flagged/in an FFA zone/duelling -
+        // faction hostility alone isn't enough to legally attack another player, but the
+        // bot target-selection logic only ever checked faction, so bots were picking
+        // targets they could never actually hit and then never re-evaluating them.
+        if (!player->IsValidAttackTarget(target))
         {
             return false;
         }
