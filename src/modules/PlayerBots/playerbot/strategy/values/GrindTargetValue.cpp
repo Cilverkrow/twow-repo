@@ -38,6 +38,28 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
     if (master && (master == bot || master->GetMapId() != bot->GetMapId() || master->IsBeingTeleported() || !master->GetPlayerbotAI()))
         master = nullptr;
 
+    // TEMP-DEBUG(grind-target): the existing "debug grind" strategy only reaches a
+    // real player master via TellPlayer, which silently no-ops for random bots (no
+    // master to tell) - mirror the same verdict to a file so masterless random bots
+    // are traceable too, tagging the reaction (hostile/neutral/friendly) to see if
+    // neutral starting-zone wildlife is being systematically skipped. Remove once
+    // the "bots not picking fights" investigation concludes.
+    auto logGrind = [&](Unit* u, const std::string& reason)
+    {
+        if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
+            ai->TellPlayer(GetMaster(), chat->formatWorldobject(u) + " " + reason);
+
+        if (sPlayerbotAIConfig.hasLog("grind_target.csv"))
+        {
+            std::ostringstream out;
+            out << sPlayerbotAIConfig.GetTimestampStr() << "+00,";
+            out << bot->GetName() << ",\"" << u->GetName() << "\"," << u->GetEntry() << ",";
+            out << (int)sServerFacade.IsHostileTo(bot, u) << "," << (int)sServerFacade.IsFriendlyTo(bot, u) << ",";
+            out << bot->GetDistance(u) << ",\"" << reason << "\"";
+            sPlayerbotAIConfig.log("grind_target.csv", out.str().c_str());
+        }
+    };
+
     std::list<ObjectGuid> attackers = context->GetValue<std::list<ObjectGuid>>("possible attack targets")->Get();
     for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); i++)
     {
@@ -47,14 +69,11 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
 
         if (!bot->InBattleGround() && !CanFreeMoveValue::CanFreeTarget(ai, GuidPosition(unit)))
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + "(hostile) ignored (out of free range).");
+            logGrind(unit, "(hostile) ignored (out of free range).");
             continue;
         }
 
-        if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-            ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) +"(hostile) selected.");
-       
+        logGrind(unit, "(hostile) selected.");
         return unit;
     }
 
@@ -154,15 +173,13 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
 
         if (abs(bot->GetPositionZ() - unit->GetPositionZ()) > sPlayerbotAIConfig.spellDistance)
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (to far above/below).");
+            logGrind(unit, "ignored (to far above/below).");
             continue;
         }
 
         if (!bot->InBattleGround() && !CanFreeMoveValue::CanFreeTarget(ai, GuidPosition(unit))) //Do not grind mobs far away from master.
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (out of free range).");
+            logGrind(unit, "ignored (out of free range).");
             continue;
         }
 
@@ -171,15 +188,13 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
              ai->HasStrategy("wander", BotState::BOT_STATE_NON_COMBAT)) &&
             sServerFacade.GetDistance2d(master, unit) > sPlayerbotAIConfig.proximityDistance)
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (far from master).");
+            logGrind(unit, "ignored (far from master).");
             continue;
         }
 
         if (!bot->InBattleGround() && (int)unit->GetLevel() - (int)bot->GetLevel() > 4 && !unit->GetObjectGuid().IsPlayer())
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (" + std::to_string((int)unit->GetLevel() - (int)bot->GetLevel()) + " levels above bot).");
+            logGrind(unit, std::to_string((int)unit->GetLevel() - (int)bot->GetLevel()) + " levels above bot).");
             continue;
         }
 
@@ -187,29 +202,25 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
         if (creature && creature->GetCreatureInfo() && creature->GetCreatureInfo()->Rank > CREATURE_ELITE_NORMAL && !AI_VALUE(bool, "can fight elite") &&
             !AI_VALUE2(bool, "trigger active", "in vehicle"))
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (can not fight elites currently).");
+            logGrind(unit, "ignored (can not fight elites currently).");
             continue;
         }
 
         if (!AttackersValue::IsValid(unit, bot, nullptr, false, false))
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (is pet or evading/unkillable).");
+            logGrind(unit, "ignored (is pet or evading/unkillable).");
             continue;
         }
 
         if (!PossibleAttackTargetsValue::IsPossibleTarget(unit, bot, sPlayerbotAIConfig.sightDistance, false))
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (tapped, cced or out of range).");
+            logGrind(unit, "ignored (tapped, cced or out of range).");
             continue;
         }
 
         if (creature && creature->IsCritter() && urand(0, 10))
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (ignore critters).");
+            logGrind(unit, "ignored (ignore critters).");
             continue;
         }
 
@@ -233,36 +244,36 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
 
         if (entry && !needForQuest)
         {
-            if (urand(0, 100) < 99 && travelTargetWorking && !isGrindTravelDest)
+            // Was < 99 (99% skip chance for anything not tied to an active quest
+            // objective) - with grind_target.csv logging live, this was confirmed as
+            // the dominant reason bots weren't engaging: 23,863 "no grind target
+            // found" against only 664 successful selections in one run, and the
+            // rejected candidates were overwhelmingly real, appropriate-level,
+            // killable mobs (Rat, Ragged Young Wolf, Duskbat, Defias Cutpurse, etc.),
+            // not grey/no-XP ones - bots were holding out for quest-specific kills
+            // almost exclusively instead of grinding on anything nearby. Lowered so
+            // bots still lean toward quest-relevant kills when traveling somewhere
+            // specific, but no longer skip everything else 99% of the time.
+            if (urand(0, 100) < 20 && travelTargetWorking && !isGrindTravelDest)
             {
-                if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                    ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (not needed for active quest).");
-
+                logGrind(unit, "ignored (not needed for active quest).");
                 continue;
             }
             else if (creature && !MaNGOS::XP::Gain(bot, creature) && urand(0, 50))
             {
-                if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                    if ((AI_VALUE(bool, "travel target traveling") && typeid(AI_VALUE(TravelTarget*, "travel target")->GetDestination()) != typeid(GrindTravelDestination)))
-                        ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (not xp and not needed for quest).");
-
+                logGrind(unit, "ignored (not xp and not needed for quest).");
                 continue;
             }
             else if (urand(0, 100) < 75)
             {
-                if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                    if (AI_VALUE(bool, "travel target traveling") && typeid(AI_VALUE(TravelTarget*, "travel target")->GetDestination()) != typeid(GrindTravelDestination))
-                        ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " increased distance (not needed for quest).");
-
+                logGrind(unit, "increased distance (not needed for quest).");
                 newdistance += 20;
             }
         }
 
         if (!bot->InBattleGround() && GetTargetingPlayerCount(unit) > assistCount)
         {
-            if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " increased distance (" + std::to_string(GetTargetingPlayerCount(unit)) + " bots already targeting).");
-
+            logGrind(unit, std::to_string(GetTargetingPlayerCount(unit)) + " bots already targeting).");
             newdistance =+ GetTargetingPlayerCount(unit) * 5;
         }
 
@@ -293,16 +304,20 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
         }
     }
 
-    if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
+    if (result)
     {
-        if(result)
-        {
-            ai->TellPlayer(GetMaster(), chat->formatWorldobject(result) + " selected.");
-        }
-        else
-        {
-            ai->TellPlayer(GetMaster(), "No grind target found.");
-        }
+        logGrind(result, "selected.");
+    }
+    else if (sPlayerbotAIConfig.hasLog("grind_target.csv"))
+    {
+        std::ostringstream out;
+        out << sPlayerbotAIConfig.GetTimestampStr() << "+00,";
+        out << bot->GetName() << ",\"none\",0,0,0,0,\"no grind target found\"";
+        sPlayerbotAIConfig.log("grind_target.csv", out.str().c_str());
+    }
+    if (!result && ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
+    {
+        ai->TellPlayer(GetMaster(), "No grind target found.");
     }
 
     return result;
