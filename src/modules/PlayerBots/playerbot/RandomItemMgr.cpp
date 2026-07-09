@@ -1132,7 +1132,7 @@ void RandomItemMgr::BuildItemInfoCache()
                         cacheInfo->source = ITEM_SOURCE_QUEST;
                         cacheInfo->sourceIds.push_back(*i);
                         if (!cacheInfo->minLevel)
-                            cacheInfo->minLevel = quest->GetMinLevel();
+                            cacheInfo->minLevel = quest->GetQuestLevel();
 
                         // check quest team
                         if (!cacheInfo->team)

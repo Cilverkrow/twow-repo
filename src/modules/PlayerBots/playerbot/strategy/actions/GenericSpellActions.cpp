@@ -58,13 +58,20 @@ bool CastSpellAction::Execute(Event& event)
     }
     else
     {
-        if (GetTargetName() == "current target" && (!bot->GetCurrentSpell(CURRENT_MELEE_SPELL) && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)))
+        Unit* target = GetTarget();
+        if (!target)
         {
-            if (bot->getClass() == CLASS_HUNTER && spellName != "auto shot" && sServerFacade.GetDistance2d(bot, GetTarget()) > 5.0f)
-                ai->CastSpell("auto shot", GetTarget());
+            sLog.outDebug("%s: CastSpellAction::Execute aborting '%s' - target resolved to null at cast time", bot->GetName(), spellName.c_str());
+            return false;
         }
 
-        executed = ai->CastSpell(spellName, GetTarget(), nullptr, false, &spellDuration);
+        if (GetTargetName() == "current target" && (!bot->GetCurrentSpell(CURRENT_MELEE_SPELL) && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)))
+        {
+            if (bot->getClass() == CLASS_HUNTER && spellName != "auto shot" && sServerFacade.GetDistance2d(bot, target) > 5.0f)
+                ai->CastSpell("auto shot", target);
+        }
+
+        executed = ai->CastSpell(spellName, target, nullptr, false, &spellDuration);
     }
 
     if (executed)
