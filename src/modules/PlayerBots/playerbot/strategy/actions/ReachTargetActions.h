@@ -87,6 +87,11 @@ namespace ai
             return false;
         }
 
+        // True for reach actions whose target is always meant to be attacked
+        // (melee, pull) - false for "reach spell", which is also used to close
+        // distance on friendly targets (e.g. Blessing of Protection/Freedom).
+        virtual bool RequiresAttackableTarget() const { return false; }
+
         virtual bool isUseful() override
 		{
             // Do not move if stay strategy is set
@@ -95,6 +100,16 @@ namespace ai
                 Unit* target = GetTarget();
                 if (target)
                 {
+                    // A target that can never legally be attacked (friendly, wrong
+                    // phase, etc.) isn't worth closing distance to - this is what let
+                    // bots walk up to and cluster around friendly NPCs once a stale
+                    // "current target"/"pull target" pointed at one (same check used
+                    // in PossibleAttackTargetsValue::IsPossibleTarget).
+                    if (RequiresAttackableTarget() && !bot->IsValidAttackTarget(target))
+                    {
+                        return false;
+                    }
+
                     // Do not move while casting
                     if (!bot->IsNonMeleeSpellCasted(true, false, true))
                     {
@@ -169,6 +184,7 @@ namespace ai
 	{
     public:
         ReachMeleeAction(PlayerbotAI* ai) : ReachTargetAction(ai, "reach melee") {}
+        bool RequiresAttackableTarget() const override { return true; }
     };
 
     class ReachSpellAction : public ReachTargetAction
@@ -199,6 +215,7 @@ namespace ai
         }
 
         std::string GetTargetName() override { return "pull target"; }
+        bool RequiresAttackableTarget() const override { return true; }
     };
 
     class ReachPartyMemberToHealAction : public ReachTargetAction

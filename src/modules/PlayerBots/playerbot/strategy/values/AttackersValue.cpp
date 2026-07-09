@@ -396,6 +396,17 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
     // If the target is a NPC
     else
     {
+        // Some callers (GrindTargetValue::FindTargetForGrinding, PullRequestAction)
+        // pass validatePossibleTarget=false to reuse this function purely for its
+        // combat/evade checks, which skips the friendliness gate above entirely.
+        // Re-check here so a friendly NPC referenced by a stale "current target"/
+        // "attack target"/"pull target" (the same staleness this function already
+        // guards against for players, above) is never treated as a valid attacker.
+        if (sServerFacade.IsFriendlyTo(playerToCheckAgainst, target))
+        {
+            return false;
+        }
+
         // If the target is not fighting the player (and if the owner bot is not pulling the target)
         if (checkInCombat && !InCombat(target, player, (player == owner)))
         {
