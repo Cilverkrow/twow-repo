@@ -2563,13 +2563,13 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
 {
     if (!ai->CanMove())
     {
-        sLog.outString("[BOT CHASE] %s: CanMove() blocked", bot->GetName());
+        sLog.outDetail("[BOT CHASE] %s: CanMove() blocked", bot->GetName());
         return false;
     }
 
     if (!ai->IsSafe(obj))
     {
-        sLog.outString("[BOT CHASE] %s: IsSafe() blocked", bot->GetName());
+        sLog.outDetail("[BOT CHASE] %s: IsSafe() blocked", bot->GetName());
         return false;
     }
 
@@ -2666,16 +2666,16 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
 #else
             mm.MovePath(pointsArray, FORCED_MOVEMENT_RUN, false);
 #endif
-            sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f target=%.1f pts=%u wait=%.2f (MovePath)",
+            sLog.outDetail("[BOT CHASE] %s -> %s: dist=%.1f target=%.1f pts=%u wait=%.2f (MovePath)",
                 bot->GetName(), obj->GetName(), distanceToTarget, distance, (uint32)path.size(), distance / bot->GetSpeed(MOVE_RUN));
             WaitForReach(distance);
             return true;
         }
-        sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f no hazard-avoidance path (no hazards or unroutable), using MoveChase", bot->GetName(), obj->GetName(), distanceToTarget);
+        sLog.outDetail("[BOT CHASE] %s -> %s: dist=%.1f no hazard-avoidance path (no hazards or unroutable), using MoveChase", bot->GetName(), obj->GetName(), distanceToTarget);
     }
     else
     {
-        sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f endPos invalid, falling back", bot->GetName(), obj->GetName(), distanceToTarget);
+        sLog.outDetail("[BOT CHASE] %s -> %s: dist=%.1f endPos invalid, falling back", bot->GetName(), obj->GetName(), distanceToTarget);
     }
 
     if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
@@ -2715,7 +2715,7 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
     mm.MoveChase((Unit*)obj, distance, angle);
     float dist = sServerFacade.GetDistance2d(bot, obj);
     float distDiff = dist > distance ? dist - distance : 0.f;
-    sLog.outString("[BOT CHASE] %s -> %s: dist=%.1f target=%.1f wait=%.2f (MoveChase)",
+    sLog.outDetail("[BOT CHASE] %s -> %s: dist=%.1f target=%.1f wait=%.2f (MoveChase)",
         bot->GetName(), obj->GetName(), dist, distance, distDiff / bot->GetSpeed(MOVE_RUN));
     WaitForReach(distDiff);
 
