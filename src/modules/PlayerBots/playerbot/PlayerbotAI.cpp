@@ -4610,7 +4610,15 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
     if (!sServerFacade.IsInFront(bot, faceTo, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT))
     {
         sServerFacade.SetFacingTo(bot, faceTo);
-        if (!HasRealPlayerMaster()) failWithDelay = true;
+        // ServerFacade::SetFacingTo only turns instantly (Unit::SetOrientation) while the bot
+        // is stationary; while moving it's a spline-based turn that takes real time to finish,
+        // which is what this GCD-delay-and-retry was guarding against. For a stationary bot
+        // the facing was just corrected synchronously above, so proceed with this same cast
+        // attempt instead of deferring - deferring here against a moving target (wandering
+        // wildlife, etc.) meant the target had already drifted again by the retry, so the bot
+        // never actually caught up and stayed stuck failing to cast indefinitely.
+        if (!HasRealPlayerMaster() && !bot->IsStopped())
+            failWithDelay = true;
     }
 
     if (failWithDelay)
