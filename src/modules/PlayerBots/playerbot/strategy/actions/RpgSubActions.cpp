@@ -190,6 +190,8 @@ bool RpgTaxiAction::Execute(Event& event)
 
     TaxiNodesEntry const* nodeFrom = sTaxiNodesStore.LookupEntry(entry->from);
     TaxiNodesEntry const* nodeTo = sTaxiNodesStore.LookupEntry(entry->to);
+    if (!nodeFrom || !nodeTo)
+        return false;
 
     Creature* flightMaster = bot->GetNPCIfCanInteractWith(guidP, UNIT_NPC_FLAG_FLIGHTMASTER);
     if (!flightMaster)
