@@ -1305,6 +1305,22 @@ void TravelMgr::SetMobAvoidAreaMap(uint32 mapId)
     }
 }
 
+// Custom player-only starting zones with no MMAP support: Blackstone Island (Goblin, map 1)
+// and Thalassian Highlands (High Elf, map 0). Bots are spawned in Durotar/Elwynn instead
+// (RandomPlayerbotFactory::CreateRandomBot) and RandomPlayerbotMgr::RandomTeleport already
+// excludes these by zone ID for teleport destinations. This is a plain coordinate check
+// (bounds taken from the zones' own NPC spawns) rather than a zone-ID lookup because this
+// function runs once at startup over every quest-relevant spawn in the game, and
+// GetZoneAndAreaId can force-load grid data per call - doing that here deadlocked the server.
+static bool IsInBlackstoneOrThalassian(uint32 mapId, float x, float y)
+{
+    if (mapId == 1 && x > -500.0f && x < 350.0f && y > -7850.0f && y < -7100.0f)
+        return true;
+    if (mapId == 0 && x > 3000.0f && x < 3800.0f && y > -2800.0f && y < -2250.0f)
+        return true;
+    return false;
+}
+
 void TravelMgr::LoadQuestTravelTable()
 {
     if (!sTravelMgr.destinationMap.empty())
@@ -1364,6 +1380,14 @@ void TravelMgr::LoadQuestTravelTable()
             {
                 for (auto& guidP : guidpMap.at(entry))
                 {
+                    // Never send bots to custom player-only starting zones (no MMAP support).
+                    // Same exclusion as RandomPlayerbotMgr::RandomTeleport, but done as a plain
+                    // coordinate check here: this loop runs over every quest-relevant spawn in
+                    // the game, and GetZoneAndAreaId can force-load grid data per call, which
+                    // deadlocked the server when tried at this stage of the boot sequence.
+                    if (IsInBlackstoneOrThalassian(guidP.getMapId(), guidP.getX(), guidP.getY()))
+                        continue;
+
                     pointsMap.insert(std::make_pair(guidP.GetRawValue(), guidP));
 
                     for (auto tLoc : locs)
@@ -1373,7 +1397,7 @@ void TravelMgr::LoadQuestTravelTable()
                 }
             }
         }
-    }       
+    }
 
     sLog.outString("Loading all travel locations.");
 
@@ -1420,14 +1444,18 @@ void TravelMgr::LoadQuestTravelTable()
 
         for (auto& guidP : guidpMap.at(entry))
         {
+            // Never send bots to custom player-only starting zones (no MMAP support).
+            if (IsInBlackstoneOrThalassian(guidP.getMapId(), guidP.getX(), guidP.getY()))
+                continue;
+
             pointsMap.insert(std::make_pair(guidP.GetRawValue(), guidP));
 
             for (auto tLoc : dests)
             {
                 tLoc->AddPoint(&pointsMap.at(guidP.GetRawValue()));
             }
-        }       
-    }     
+        }
+    }
 
     sLog.outString("Loading Explore locations.");
 
