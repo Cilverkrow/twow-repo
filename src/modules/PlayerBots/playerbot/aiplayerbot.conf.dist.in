@@ -1017,7 +1017,7 @@ AiPlayerbot.PerfMonEnabled = 0
 # Cheats for alts
 AiPlayerbot.BotCheats = repair,breath
 # Cheats for randombots
-AiPlayerbot.RndBotCheats = repair,breath
+AiPlayerbot.RndBotCheats = repair,breath,item
 
 # Self bot turns your current character into a bot with the command ".bot self"
 # !!DISCLAMER!! Selfbots will work and act like randombots based on their enabled strategies. Your epic mount will be sold to a vendor!
