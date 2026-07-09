@@ -189,7 +189,13 @@ namespace ai
             travelTarget->SetStatus(TravelStatus::TRAVEL_STATUS_EXPIRED);
             travelTarget->SetExpireIn(1000);
 
-            PlayerInfo const* defaultPlayerInfo = sObjectMgr.GetPlayerInfo(bot->getRace(), bot->getClass());
+            // Goblin/High Elf bots are spawned in Durotar/Elwynn instead of their real (custom,
+            // player-only, bot-excluded) starting zone - RandomPlayerbotFactory::CreateRandomBot
+            // overrides their homebind to reflect this. GetPlayerInfo() below would return the
+            // real racial spawn point instead, sending the bot right back to the excluded zone
+            // on every death, so route these two races through the homebind branch instead.
+            bool useHomebindOverride = bot->getRace() == RACE_GOBLIN || bot->getRace() == RACE_HIGH_ELF;
+            PlayerInfo const* defaultPlayerInfo = useHomebindOverride ? nullptr : sObjectMgr.GetPlayerInfo(bot->getRace(), bot->getClass());
             if (defaultPlayerInfo)
             {
                 sLog.outDetail("Repop: Teleporting bot #%d %s:%d <%s> to spawn", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
