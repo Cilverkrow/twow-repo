@@ -4604,6 +4604,21 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
     if (!target)
         target = bot;
 
+    // Catches both "no target given" (defaulted to self above) and "current target"
+    // having already resolved to the bot's own Unit* before CastSpell was ever called -
+    // the latter sailed past the old !target-only check with a perfectly valid non-null
+    // pointer that just happened to be self, so a harmful spell like Fireball could still
+    // land on the caster.
+    if (target == bot)
+    {
+        SpellEntry const* fallbackSpellInfo = sServerFacade.LookupSpellInfo(spellId);
+        if (fallbackSpellInfo && CheckSpellTargetAlignment(fallbackSpellInfo, bot) != SPELL_CAST_OK)
+        {
+            sLog.outError("PlayerbotAI::CastSpell: %s target resolved to self for harmful spell %u - refusing to self-cast", bot->GetName(), spellId);
+            return false;
+        }
+    }
+
     Pet* pet = bot->GetPet();
     if (pet && pet->HasSpell(spellId))
     {
