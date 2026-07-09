@@ -511,6 +511,31 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
             bot->SetPower(bot->GetPowerType(), bot->GetMaxPower(bot->GetPowerType()));
         if (HasCheat(BotCheatMask::cooldown))
             bot->RemoveAllCooldowns();
+        if (HasCheat(BotCheatMask::repair))
+        {
+            // The "repair" cheat is meant to mean gear never actually breaks, but nothing
+            // ever called PlayerbotAI::DurabilityLoss() (the only place that checked this
+            // cheat before applying durability loss) - normal combat/death durability loss
+            // goes through the core engine directly and bypasses it entirely. Left
+            // unrepaired, a broken (0-durability) weapon makes every spell that needs it
+            // fail CanCastSpell with SPELL_FAILED_EQUIPPED_ITEM_CLASS forever, regardless of
+            // range, since that failure has nothing to do with distance - this is what was
+            // permanently soft-locking hunters on their current target. Only pay for the
+            // repair scan when something is actually below full durability.
+            bool needsRepair = false;
+            for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
+            {
+                Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+                if (item && item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY) &&
+                    item->GetUInt32Value(ITEM_FIELD_DURABILITY) < item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY))
+                {
+                    needsRepair = true;
+                    break;
+                }
+            }
+            if (needsRepair)
+                bot->DurabilityRepairAll(false, 0.0f);
+        }
         if (HasCheat(BotCheatMask::movespeed))
         {
             bot->UpdateSpeed(MOVE_WALK, true, 10);
