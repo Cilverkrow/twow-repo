@@ -282,8 +282,11 @@ AiPlayerbot.EnableBroadcasts = 1
 # setting channel broadcast chance to 0, will re-route most broadcasts to other available channels
 # setting all channel broadcasts to 0 will disable most broadcasts
 # AiPlayerbot.BroadcastToGuildGlobalChance = 30000
-# AiPlayerbot.BroadcastToWorldGlobalChance = 30000
-# AiPlayerbot.BroadcastToGeneralGlobalChance = 30000
+# World/general channels are what real players actually read, and every quest/loot/
+# kill/levelup/suggest-* broadcast below routes through them at chance=100 - so these
+# two global gates are the main throttle on how much of that ends up as visible chat spam.
+AiPlayerbot.BroadcastToWorldGlobalChance = 3000
+AiPlayerbot.BroadcastToGeneralGlobalChance = 3000
 # AiPlayerbot.BroadcastToTradeGlobalChance = 30000
 # AiPlayerbot.BroadcastToLFGGlobalChance = 30000
 # AiPlayerbot.BroadcastToLocalDefenseGlobalChance = 30000
@@ -327,7 +330,10 @@ AiPlayerbot.EnableBroadcasts = 1
 # AiPlayerbot.BroadcastChanceSuggestGrindMaterials = 5000
 # AiPlayerbot.BroadcastChanceSuggestGrindReputation = 5000
 # AiPlayerbot.BroadcastChanceSuggestSell = 300
-# AiPlayerbot.BroadcastChanceSuggestSomething = 30000
+# suggest_something is pure ambient chit-chat (no real event behind it, e.g. "anyone
+# know the lore behind Elwynn Forest") - it fired at 100% chance by default, making it
+# the single biggest source of world/general noise. Cut hard since it carries no info.
+AiPlayerbot.BroadcastChanceSuggestSomething = 2000
 #
 # Very rude speeches
 # AiPlayerbot.BroadcastChanceSuggestSomethingToxic = 0
