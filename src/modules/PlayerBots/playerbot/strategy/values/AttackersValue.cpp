@@ -362,14 +362,35 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
             return false;
         }
 
+        const bool isDuelOpponent = player->m_duel && player->m_duel->opponent == target->GetObjectGuid();
+
         // Don't check distance on duel opponents
-        if (!player->m_duel || (player->m_duel && (player->m_duel->opponent != (target ? target->GetObjectGuid() : ObjectGuid()))))
+        if (!isDuelOpponent)
         {
             // If the enemy player is not within sight distance
             if (!enemyPlayer->IsWithinDist(playerToCheckAgainst, EnemyPlayerValue::GetMaxAttackDistance(playerToCheckAgainst), false))
             {
                 return false;
             }
+        }
+
+        // Unlike the NPC branch below, this had no actual-combat check at all: a stale
+        // "current target"/"old target" reference to a player who stopped fighting long ago
+        // (or was never fighting to begin with) stayed "valid" forever just by being nearby
+        // and PvP-flagged, keeping "has attackers" true and the bot latched into combat
+        // state with nothing to do (see AttackersValue::AddTargetsOf and InCombat()).
+        if (checkInCombat && !isDuelOpponent && !InCombat(target, player, (player == owner)))
+        {
+            bool isRtiTarget = false;
+            if (player->GetPlayerbotAI() && !player->GetPlayerbotAI()->HasActivePlayerMaster())
+            {
+                Unit* rtiTarget = PAI_VALUE(Unit*, "rti target");
+                if (target == rtiTarget)
+                    isRtiTarget = true;
+            }
+
+            if (!isRtiTarget)
+                return false;
         }
     }
     // If the target is a NPC
