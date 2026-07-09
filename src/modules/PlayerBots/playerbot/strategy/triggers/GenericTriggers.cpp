@@ -307,7 +307,11 @@ bool SpellTrigger::IsActive()
 bool SpellCanBeCastedTrigger::IsActive()
 {
 	Unit* target = GetTarget();
-	return target && ai->CanCastSpell(spell, target, true);
+	// Ignore range/LOS here so this only gates on real cast-blockers (cooldown, mana,
+	// proc/aura-state requirements). The action's own "reach spell" prerequisite is what
+	// handles closing distance - if range were checked here too, the trigger would never
+	// fire while out of range, so the reach step it depends on would never get a chance to run.
+	return target && ai->CanCastSpell(spell, target, true, nullptr, true);
 }
 
 bool SpellNoCooldownTrigger::IsActive()
