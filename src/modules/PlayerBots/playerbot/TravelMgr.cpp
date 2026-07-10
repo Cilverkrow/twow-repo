@@ -461,6 +461,15 @@ bool RpgTravelDestination::IsPossible(const PlayerTravelInfo& info) const
     if (info.GetLevel() < 5)
         return false;
 
+    // Don't send a bot to an NPC sitting in a zone far above its level — the journey
+    // crosses (and the destination sits among) mobs that farm the bot into a death
+    // spiral at the local high-level graveyard. Mirrors the grind-target level gate
+    // (GrindTravelDestination::IsPossible). Margin matches the quest-level gate (+5).
+    // getAreaLevel() returns -1/-2 for unknown areas; only reject on a real level.
+    int32 destAreaLevel = GuidPosition(HIGHGUID_UNIT, GetEntry()).getAreaLevel();
+    if (destAreaLevel > 0 && destAreaLevel > (int32)info.GetLevel() + 5)
+        return false;
+
     //Horde pvp baracks
     if (ClosestMapId(info.GetPosition()) == 450 && info.GetTeam() == ALLIANCE)
         return false;
