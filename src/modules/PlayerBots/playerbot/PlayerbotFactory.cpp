@@ -140,13 +140,17 @@ void PlayerbotFactory::Prepare()
     }
 
     bot->CombatStop(true);
-    /*if (sPlayerbotAIConfig.disableRandomLevels)
+    // Was commented out - re-enabled so a manual .bot random/.bot init on a
+    // still-fresh bot (below the configured starting level) brings it up to
+    // randombotStartingLevel. GiveLevel (not SetLevel) so stats/HP/mana/talent
+    // points come along too - raw SetLevel only touches the level field.
+    if (sPlayerbotAIConfig.disableRandomLevels)
     {
         if (bot->GetLevel() < sPlayerbotAIConfig.randombotStartingLevel)
         {
-            bot->SetLevel(sPlayerbotAIConfig.randombotStartingLevel);
+            bot->GiveLevel(sPlayerbotAIConfig.randombotStartingLevel);
         }
-    }*/
+    }
 
     if (!sPlayerbotAIConfig.disableRandomLevels)
     {

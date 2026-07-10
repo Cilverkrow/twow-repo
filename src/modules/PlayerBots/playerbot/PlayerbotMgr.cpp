@@ -792,6 +792,17 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
         {
             sRandomPlayerbotMgr.InstaRandomize(bot);
         }
+
+        // A freshly-created bot force-started above level 1 (randombotStartingLevel,
+        // applied at creation via GiveLevel) never went through a real level-up event,
+        // so the "levelup" trigger that normally fires "auto learn spell"
+        // (WorldPacketHandlerStrategy.cpp) never ran for it - it would otherwise sit at
+        // its starting level with none of the trainer-taught abilities a real character
+        // of that level would have. Catch it up once, on its first ever login.
+        if (sPlayerbotAIConfig.disableRandomLevels && !bot->GetTotalPlayedTime())
+        {
+            ai->DoSpecificAction("auto learn spell");
+        }
     }
 
     if (!bot->HasItemCount(6948, 1)

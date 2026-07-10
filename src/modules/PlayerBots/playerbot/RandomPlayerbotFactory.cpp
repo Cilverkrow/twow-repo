@@ -400,6 +400,15 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls, uint8 inputRace)
     //player->SaveToDB();
     //player->SetSemaphoreTeleportFar(false);
 
+    // With DisableRandomLevels=1 nothing else in the automatic bot-population
+    // path ever touches level (RandomPlayerbotMgr::ProcessBot/Randomize, which
+    // would normally apply randombotStartingLevel, is itself gated off by that
+    // same config flag) - so a brand new bot would otherwise stay at whatever
+    // level core character creation gave it (1) forever. GiveLevel (not
+    // SetLevel) so stats/HP/mana/talent points are set up correctly.
+    if (sPlayerbotAIConfig.disableRandomLevels && sPlayerbotAIConfig.randombotStartingLevel > 1)
+        player->GiveLevel(sPlayerbotAIConfig.randombotStartingLevel);
+
     sObjectAccessor.AddObject(player);
 
     if (race == RACE_GOBLIN)
