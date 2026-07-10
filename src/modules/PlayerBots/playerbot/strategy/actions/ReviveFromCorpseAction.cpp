@@ -382,6 +382,44 @@ bool SpiritHealerAction::Execute(Event& event)
     }
 }
 
+bool CheckRevivalSafetyAction::isUseful()
+{
+    WorldPosition botPos(bot);
+    std::list<ObjectGuid> units = AI_VALUE(std::list<ObjectGuid>, "possible targets no los");
+    return botPos.getUnitsAggro(units, bot) > 0;
+}
+
+bool CheckRevivalSafetyAction::Execute(Event& event)
+{
+    WorldPosition botPos(bot);
+    std::list<ObjectGuid> units = AI_VALUE(std::list<ObjectGuid>, "possible targets no los");
+
+    for (auto guid : units)
+    {
+        Unit* unit = ai->GetUnit(guid);
+        if (!unit)
+            continue;
+        if (botPos.sqDistance(unit) > unit->GetAttackDistance(bot) * unit->GetAttackDistance(bot))
+            continue;
+
+        sLog.outDetail("[BOT CORPSE] %s: revived into danger near %s, fleeing", bot->GetName(), unit->GetName());
+
+        // Not using the generic Flee() helper here: for a masterless bot vs. a non-player
+        // target it takes the MoveChase() branch (kite-and-maintain-distance, meant for
+        // ranged classes mid-fight) instead of actually retreating - useless right after a
+        // revival where we want distance from the threat, not to keep tracking it. Build the
+        // retreat directly with FleeManager instead, same as FindCorpseAction's existing
+        // pre-reclaim safety check already does successfully.
+        FleeManager manager(bot, sPlayerbotAIConfig.reactDistance, bot->GetAngle(unit) + M_PI);
+        float rx, ry, rz;
+        if (manager.isUseful() && manager.CalculateDestination(&rx, &ry, &rz))
+            return MoveTo(bot->GetMapId(), rx, ry, rz);
+
+        return false;
+    }
+    return false;
+}
+
 bool SpiritHealerAction::isUseful()
 {
     if (bot->InBattleGround())

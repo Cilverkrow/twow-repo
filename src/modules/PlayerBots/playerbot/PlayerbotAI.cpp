@@ -388,6 +388,10 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
         if (!inCombat && !isCasting && !isWaiting)
         {
             ResetAIInternalUpdateDelay();
+            // REACT_ACTIVITY has its own cache slot (separate from ALL_ACTIVITY above) that
+            // can still be holding a stale "inactive" verdict from just before combat started -
+            // force a fresh check now instead of waiting up to 5s for it to expire on its own.
+            AllowActivity(REACT_ACTIVITY, true);
         }
         else if (!AllowActivity())
         {
@@ -1052,6 +1056,21 @@ void PlayerbotAI::OnDeath()
 {
     if (!IsStateActive(BotState::BOT_STATE_DEAD) && !sServerFacade.IsAlive(bot))
     {
+        // A bot that already has a corpse AND the ghost flag did not just die — it died
+        // earlier and is corpse-running. The engine transiently leaves DEAD state during
+        // the corpse run (e.g. on the graveyard teleport), so DeathTrigger
+        // (!inDeadState && !isAlive) re-fires and OnDeath would otherwise log/count the
+        // same death a second time — the "killer=none phantom death at the graveyard"
+        // that inflated every death metric ~2x. A genuine fresh death always has no corpse
+        // and no ghost flag yet (both spawn/set only after death, during release-spirit).
+        // Restore the DEAD engine state so the corpse run continues, then bail without
+        // re-logging or re-incrementing the death count.
+        if (bot->GetCorpse() && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
+        {
+            ChangeEngine(BotState::BOT_STATE_DEAD);
+            return;
+        }
+
         StopMoving();
 
         Player* master = GetMaster();
@@ -1151,6 +1170,11 @@ void PlayerbotAI::OnResurrected()
         }
 
         ChangeEngine(BotState::BOT_STATE_NON_COMBAT);
+
+        // Revival happens wherever the bot died, at only 50% HP, with no grace period -
+        // if that spot is still dangerous, flee immediately instead of waiting for the
+        // next normal target-selection cycle to notice.
+        DoSpecificAction("flee revival danger", Event(), true);
     }
 }
 
@@ -6242,12 +6266,12 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
         case ActivePiorityType::IN_INSTANCE:
         case ActivePiorityType::IS_ALWAYS_ACTIVE:
         case ActivePiorityType::IS_RUNNING_TEST:
+        case ActivePiorityType::IN_COMBAT:
             return true;
         case ActivePiorityType::VISIBLE_FOR_PLAYER:
             if (sPlayerbotAIConfig.forceActiveWhenNearPlayer)
                 return true;
             break;
-        case ActivePiorityType::IN_COMBAT:
         case ActivePiorityType::NEARBY_PLAYER:
         case ActivePiorityType::IN_BG_QUEUE:
         case ActivePiorityType::IN_LFG:
