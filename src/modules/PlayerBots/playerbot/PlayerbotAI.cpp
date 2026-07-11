@@ -6989,7 +6989,7 @@ bool PlayerbotAI::AddAura(Unit* unit, uint32 spellId)
         }
     }
     if (!unit->AddSpellAuraHolder(holder))
-        delete holder;
+        holder = nullptr;
 
     return true;
 }

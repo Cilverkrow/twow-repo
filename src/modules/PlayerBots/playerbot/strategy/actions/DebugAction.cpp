@@ -1156,7 +1156,7 @@ void DebugAction::addAura(uint32 spellId, Unit* target)
         }
     }
     if (!target->AddSpellAuraHolder(holder))
-        delete holder;
+        holder = nullptr;
 
     return;
 }
