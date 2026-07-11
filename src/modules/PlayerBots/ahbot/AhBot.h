@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include "Category.h"
 #include "ItemBag.h"
 #include "playerbot/PlayerbotAIBase.h"
@@ -93,7 +94,7 @@ namespace ahbot
         std::map<std::string, uint64> categoryMultiplierExpireTimes;
         std::map<uint32, std::vector<uint32>> bidders;
         std::set<uint32> allBidders;
-        bool updating;
+        std::atomic<bool> updating;
     };
 };
 

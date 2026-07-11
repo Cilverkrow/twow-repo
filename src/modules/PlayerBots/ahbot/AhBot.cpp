@@ -132,14 +132,14 @@ void AhBot::ForceUpdate()
 		return;
 	}
 
-	if (updating)
+	bool expected = false;
+	if (!updating.compare_exchange_strong(expected, true))
 	{
 		sLog.outString("[AhBot] ForceUpdate called but previous check is still running — skipping");
 		return;
 	}
 
 	sLog.outString("[AhBot] === Auction check starting ===");
-	updating = true;
 
 	if (!allBidders.size())
 	{
