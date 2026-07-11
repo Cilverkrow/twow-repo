@@ -90,6 +90,35 @@ bool PanicTrigger::IsActive()
 
 bool OutNumberedTrigger::IsActive()
 {
+    // Below level 10, Hunter has no viable kiting toolkit (ranged abilities have an 8yd
+    // minimum range, no traps yet, only Concussive Shot to slow) - fleeing mid-fight can't
+    // actually create distance, it just eats time while still taking hits. The correct
+    // pre-10 Hunter playbook is: burst at range, then fight it out in melee once the mob
+    // closes. Don't fire this trigger for low-level Hunters at all; PanicTrigger (separate,
+    // narrower - critical health AND low/no mana) is untouched, so a genuine near-death
+    // escape attempt still fires.
+    if (bot->getClass() == CLASS_HUNTER && bot->GetLevel() < 10)
+        return false;
+
+    // Druid has Rejuvenation/Healing Touch as a genuine pre-10 self-sufficiency fallback -
+    // no need to preserve a flee/retreat option here either. Same reasoning as Hunter above,
+    // different tool (self-heal instead of "no viable kiting toolkit").
+    if (bot->getClass() == CLASS_DRUID && bot->GetLevel() < 10)
+        return false;
+
+    // Mage has no kiting toolkit pre-10 either (Frost Nova is level 10, Blink is level 22) -
+    // same reasoning as Hunter: fleeing can't create real distance yet, so don't bother.
+    if (bot->getClass() == CLASS_MAGE && bot->GetLevel() < 10)
+        return false;
+
+    // Priest gets real self-healing from level 1 (Renew, Heal), so the pre-10 case is the
+    // same "self-sufficiency beats fleeing" reasoning as Druid. Additionally, when playing
+    // solo (no group to preserve healing capacity for), that reasoning holds at any level -
+    // there's no one else depending on this bot surviving longer by running instead of
+    // healing through it.
+    if (bot->getClass() == CLASS_PRIEST && (bot->GetLevel() < 10 || !bot->GetGroup()))
+        return false;
+
     // Don't trigger if the bot is a dungeon or raid
     if (!bot->IsInWorld() || bot->IsBeingTeleported() || bot->GetMap()->IsDungeon() || bot->GetMap()->IsRaid())
         return false;

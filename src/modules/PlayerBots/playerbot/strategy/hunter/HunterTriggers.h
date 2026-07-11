@@ -249,6 +249,14 @@ private:
 
         bool IsActive() override
         {
+            // Below level 10, Hunter has no viable kiting toolkit (8yd ranged minimum, no
+            // traps yet) - once melee starts, stay in it rather than repeatedly trying to
+            // reopen ranged distance (which the "target->GetVictim() != bot" case below would
+            // otherwise attempt even against a target just as fast as the bot, e.g. whenever
+            // the pet currently has aggro, regardless of what happens if aggro flips back).
+            if (bot->getClass() == CLASS_HUNTER && bot->GetLevel() < 10)
+                return false;
+
 #ifdef MANGOSBOT_ZERO
             bool hasAmmo = ai->HasCheat(BotCheatMask::item) || AI_VALUE2(uint32, "item count", "ammo");
 #else
