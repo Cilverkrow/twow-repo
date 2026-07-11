@@ -1492,6 +1492,7 @@ class ObjectMgr
         uint32 GetPlayerWorldMaskByGUID(const uint64 guid);
         void SetPlayerWorldMask(const uint64 guid, uint32 newWorldMask);
         std::map<uint32, uint32> m_PlayerPhases;
+        std::mutex m_PlayerPhasesLock;
 
         // Saving Variables
         SavedVariable& _InsertVariable(uint32 index, uint32 value, bool saved);

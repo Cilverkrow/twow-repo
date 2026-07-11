@@ -445,6 +445,8 @@ Position const* ObjectMgr::GetCinematicInitialPosition(uint32 cinematicId)
 // ALTER TABLE characters ADD COLUMN world_phase_mask int(11) unsigned not null default 0;
 void ObjectMgr::LoadPlayerPhaseFromDb()
 {
+    std::lock_guard<std::mutex> lock(m_PlayerPhasesLock);
+
     m_PlayerPhases.clear();
 
     std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT guid, world_phase_mask FROM characters"));
@@ -467,10 +469,13 @@ void ObjectMgr::LoadPlayerPhaseFromDb()
 
 uint32 ObjectMgr::GetPlayerWorldMaskByGUID(const uint64 guid)
 {
+    std::lock_guard<std::mutex> lock(m_PlayerPhasesLock);
     return m_PlayerPhases[GUID_LOPART(guid)];
 }
 void ObjectMgr::SetPlayerWorldMask(const uint64 guid, uint32 newWorldMask)
 {
+    std::lock_guard<std::mutex> lock(m_PlayerPhasesLock);
+
     if (m_PlayerPhases[GUID_LOPART(guid)] == newWorldMask)
         return;
 
