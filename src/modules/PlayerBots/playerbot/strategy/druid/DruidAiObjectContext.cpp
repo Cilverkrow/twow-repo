@@ -5,6 +5,7 @@
 #include "TankFeralDruidStrategy.h"
 #include "DpsFeralDruidStrategy.h"
 #include "BalanceDruidStrategy.h"
+#include "LevelingDruidStrategy.h"
 #include "playerbot/strategy/NamedObjectContext.h"
 #include "DruidTriggers.h"
 #include "RestorationDruidStrategy.h"
@@ -167,6 +168,7 @@ namespace ai
                 creators["balance"] = [](PlayerbotAI* ai) { return new BalanceDruidPlaceholderStrategy(ai); };
                 creators["restoration"] = [](PlayerbotAI* ai) { return new RestorationDruidPlaceholderStrategy(ai); };
                 creators["heal"] = [](PlayerbotAI* ai) { return new RestorationDruidPlaceholderStrategy(ai); };
+                creators["leveling"] = [](PlayerbotAI* ai) { return new LevelingDruidPlaceholderStrategy(ai); };
             }
         };
 
@@ -187,6 +189,9 @@ namespace ai
                 creators["balance pvp"] = [](PlayerbotAI* ai) { return new BalanceDruidPvpStrategy(ai); };
                 creators["balance pve"] = [](PlayerbotAI* ai) { return new BalanceDruidPveStrategy(ai); };
                 creators["balance raid"] = [](PlayerbotAI* ai) { return new BalanceDruidRaidStrategy(ai); };
+                creators["leveling pvp"] = [](PlayerbotAI* ai) { return new LevelingDruidPvpStrategy(ai); };
+                creators["leveling pve"] = [](PlayerbotAI* ai) { return new LevelingDruidPveStrategy(ai); };
+                creators["leveling raid"] = [](PlayerbotAI* ai) { return new LevelingDruidRaidStrategy(ai); };
             }
         };
 
@@ -203,6 +208,8 @@ namespace ai
                 creators["faerie fire"] = [](PlayerbotAI* ai) { return new FaerieFireTrigger(ai); };
                 creators["insect swarm"] = [](PlayerbotAI* ai) { return new InsectSwarmTrigger(ai); };
                 creators["moonfire"] = [](PlayerbotAI* ai) { return new MoonfireTrigger(ai); };
+                creators["leveling moonfire"] = [](PlayerbotAI* ai) { return new LevelingMoonfireTrigger(ai); };
+                creators["leveling rejuvenation"] = [](PlayerbotAI* ai) { return new LevelingRejuvenationTrigger(ai); };
                 creators["nature's grasp"] = [](PlayerbotAI* ai) { return new NaturesGraspTrigger(ai); };
                 creators["tiger's fury"] = [](PlayerbotAI* ai) { return new TigersFuryTrigger(ai); };
                 creators["rake"] = [](PlayerbotAI* ai) { return new RakeTrigger(ai); };

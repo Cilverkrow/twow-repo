@@ -122,6 +122,9 @@ int AiFactory::GetPlayerSpecTab(const Player* bot)
         case CLASS_WARRIOR:
             tab = 2;
             break;
+        case CLASS_SHAMAN:
+            tab = 1;
+            break;
         }
         return tab;
     }
@@ -449,6 +452,16 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
 
         case CLASS_DRUID:
         {
+            // Below level 10, no shapeshift forms exist yet (Bear at 10, Cat at 20), so
+            // neither Feral spec is usable. Dedicated leveling kit instead: burst Wrath/
+            // Moonfire at range, melee once the mob closes, self-heal as needed. Deliberately
+            // no "flee"/"ranged" here - see the CLASS_DRUID guard in OutNumberedTrigger.
+            if (player->GetLevel() < 10)
+            {
+                combatEngine->addStrategies("leveling", "dps assist", "cure", NULL);
+                break;
+            }
+
             if (tab == 1)
             {
                 if (player->HasSpell(16961) || player->HasSpell(16958))
@@ -860,6 +873,12 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
 
         case CLASS_DRUID:
         {
+            if (player->GetLevel() < 10)
+            {
+                nonCombatEngine->addStrategies("leveling", "dps assist", "cure", NULL);
+                break;
+            }
+
             if (tab == 1)
             {
                 if (player->HasSpell(16961) || player->HasSpell(16958))
@@ -1270,6 +1289,12 @@ void AiFactory::AddDefaultDeadStrategies(Player* player, PlayerbotAI* const faca
 
         case CLASS_DRUID:
         {
+            if (player->GetLevel() < 10)
+            {
+                deadEngine->addStrategy("leveling");
+                break;
+            }
+
             if (tab == 1)
             {
                 if (player->HasSpell(16961) || player->HasSpell(16958))
@@ -1464,6 +1489,12 @@ void AiFactory::AddDefaultReactionStrategies(Player* player, PlayerbotAI* const 
 
         case CLASS_DRUID:
         {
+            if (player->GetLevel() < 10)
+            {
+                reactionEngine->addStrategy("leveling");
+                break;
+            }
+
             if (tab == 1)
             {
                 if (player->HasSpell(16961) || player->HasSpell(16958))

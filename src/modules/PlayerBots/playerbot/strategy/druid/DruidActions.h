@@ -690,6 +690,12 @@ namespace ai
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "balance pve", strategiesRequired);
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "balance pve", strategiesRequired);
 
+            strategiesRequired = { "leveling" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "leveling pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "leveling pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "leveling pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "leveling pve", strategiesRequired);
+
             strategiesRequired = { "balance", "aoe" };
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe balance pve", strategiesRequired);
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe balance pve", strategiesRequired);
@@ -821,6 +827,12 @@ namespace ai
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "balance pvp", strategiesRequired);
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "balance pvp", strategiesRequired);
 
+            strategiesRequired = { "leveling" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "leveling pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "leveling pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "leveling pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "leveling pvp", strategiesRequired);
+
             strategiesRequired = { "balance", "aoe" };
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe balance pvp", strategiesRequired);
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe balance pvp", strategiesRequired);
@@ -951,6 +963,12 @@ namespace ai
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "balance raid", strategiesRequired);
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "balance raid", strategiesRequired);
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "balance raid", strategiesRequired);
+
+            strategiesRequired = { "leveling" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "leveling raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "leveling raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "leveling raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "leveling raid", strategiesRequired);
 
             strategiesRequired = { "balance", "aoe" };
             strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe balance raid", strategiesRequired);
