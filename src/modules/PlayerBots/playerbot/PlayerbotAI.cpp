@@ -452,6 +452,17 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
             QueuePacket(land);
             sLog.outDetail("%s: Jump: Landed, landTime: %u", bot->GetName(), curTime);
 
+            // Player::IsFalling() (m_fallStartZ != 0, set by SetFallInformation() above
+            // this block and in the knockback handler) is what actually gates CanMove().
+            // It's meant to clear via Player::UpdateFallInformationIfNeed() when the
+            // MSG_MOVE_FALL_LAND packet just queued above is processed by
+            // WorldSession::HandleMovementOpcodes - but that processing is unreliable for
+            // an AI-synthesized packet (dropped if the bot's movespline isn't finalized,
+            // rejected by anti-cheat, etc.), and when it's dropped m_fallStartZ is never
+            // reset, permanently blocking the bot from moving again. Clear it here
+            // directly so landing doesn't depend on that fragile round-trip.
+            bot->SetFallInformation(0, 0.0f);
+
             jumpTime = 0;
             fallAfterJump = false;
             ResetJumpDestination();
