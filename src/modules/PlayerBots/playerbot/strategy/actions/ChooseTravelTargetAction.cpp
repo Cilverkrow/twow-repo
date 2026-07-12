@@ -626,7 +626,7 @@ bool RefreshTravelTargetAction::Execute(Event& event)
     {
         std::list<uint8> chancesToGoFar = { 10,20,90 }; //Closest map, grid, cell.
         newPosition = oldDestination->GetNextPoint(*target->GetPosition(), chancesToGoFar);
-        if (newPosition && sTravelMgr.IsLocationLevelValid(*newPosition, info))
+        if (newPosition && sTravelMgr.IsLocationLevelValid(*newPosition, info, (uint32)oldDestination->GetPurpose()))
             break;        
     }
 

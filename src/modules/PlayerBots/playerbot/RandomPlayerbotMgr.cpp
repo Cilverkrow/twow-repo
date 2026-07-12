@@ -2282,26 +2282,26 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
             ai->GetAiObjectContext()->ClearExpiredValues();
 
         //Randomize/teleport bot
-        if (!sPlayerbotAIConfig.disableRandomLevels)
+        // Note: ProcessBot() itself skips Randomize() (which reassigns level/spec) when
+        // disableRandomLevels is set, but still runs ChangeStrategy()/RandomTeleportForLevel()
+        // for idle bots - so this must not be skipped wholesale for disableRandomLevels=1.
+        if (player->GetGroup() || player->IsTaxiFlying())
+            return false;
+
+        bool update = true;
+        if (ai)
         {
-            if (player->GetGroup() || player->IsTaxiFlying())
-                return false;
+            if (!sRandomPlayerbotMgr.IsRandomBot(player))
+                update = false;
 
-            bool update = true;
-            if (ai)
-            {
-                if (!sRandomPlayerbotMgr.IsRandomBot(player))
-                    update = false;
+            if (player->GetGroup() && ai->GetGroupMaster() && (!ai->GetGroupMaster()->GetPlayerbotAI() || ai->GetGroupMaster()->GetPlayerbotAI()->IsRealPlayer()))
+                update = false;
 
-                if (player->GetGroup() && ai->GetGroupMaster() && (!ai->GetGroupMaster()->GetPlayerbotAI() || ai->GetGroupMaster()->GetPlayerbotAI()->IsRealPlayer()))
-                    update = false;
-
-                if (ai->HasPlayerNearby())
-                    update = false;
-            }
-            if (update)
-                ProcessBot(player);
+            if (ai->HasPlayerNearby())
+                update = false;
         }
+        if (update)
+            ProcessBot(player);
 
         uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime * 5);
         SetEventValue(bot, "update", 1, randomTime);
@@ -2338,7 +2338,10 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
     if (idleBot)
     {
         uint32 randomize = GetEventValue(bot, "randomize");
-        if (!randomize)
+        // Randomize() reassigns level/spec - never call it when levels are pinned
+        // (DisableRandomLevels=1). Falls through to the changeStrategy/teleport checks
+        // below so idle bots still get RandomTeleportForLevel()'s zone relocation.
+        if (!sPlayerbotAIConfig.disableRandomLevels && !randomize)
         {
             bool randomiser = true;
             if (player->GetGuildId())
@@ -2665,8 +2668,14 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation> 
                 continue;
 
             z = 0.05f + ground;
+            // area_name is a char* (aliased via a union with Name in Map.h), not a
+            // locale array - area_name[0] was dereferencing it to a single char and
+            // handing that raw value to %s as if it were a pointer, segfaulting the
+            // instant the format machinery tried to read a string from it. It can
+            // also be null (e.g. custom zones with incomplete DBC data), same
+            // nullability WorldPosition::getAreaName() already guards against.
             sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f (%u/%zu locations)",
-                bot->GetName(), area->area_name[0], x, y, z, attemtps, tlocs.size());
+                bot->GetName(), area->area_name ? area->area_name : "", x, y, z, attemtps, tlocs.size());
 
             if (bot->IsTaxiFlying())
                 bot->GetMotionMaster()->MovementExpired();

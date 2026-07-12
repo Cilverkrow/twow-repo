@@ -2660,7 +2660,7 @@ void TravelMgr::GetPartitionsLock(bool getLock)
     sTravelMgr.getDestinationVar.notify_one();
 }
 
-bool TravelMgr::IsLocationLevelValid(const WorldPosition& position, const PlayerTravelInfo& info)
+bool TravelMgr::IsLocationLevelValid(const WorldPosition& position, const PlayerTravelInfo& info, uint32 purposeFlag)
 {
     bool canFightElite = info.GetBoolValue("can fight elite");
     int32 botLevel = (int32)info.GetLevel();
@@ -2690,6 +2690,24 @@ bool TravelMgr::IsLocationLevelValid(const WorldPosition& position, const Player
 
     if (!areaLevel || (uint32)botLevel < areaLevel) //Skip points that are in a area that is too high level.
         return false;
+
+    // Grind-specific: don't grind in a zone whose overall level is at/below the bot's
+    // own floor for acceptable mobs - mirrors the per-mob minLevel window already used
+    // in GrindTravelDestination::IsPossible(), applied to the zone as a whole so a
+    // starting zone's own top-tier mobs can't keep a wildly over-leveled bot latched
+    // there with no reason to ever travel farther. Scoped to Grind only (not Rpg/Quest/
+    // Gather/Explore) so vendor/quest-turn-in/gather trips to a bot's home zone are
+    // unaffected.
+    if (purposeFlag & (uint32)TravelDestinationPurpose::Grind)
+    {
+        int32 rawLevel = (int32)info.GetLevel();
+        uint8 botPowerLevel = info.GetUint8Value("durability");
+        float levelMod = botPowerLevel / 500.0f;
+        float levelBoost = botPowerLevel / 50.0f;
+        int32 grindMinLevel = std::max(rawLevel * (0.4f + levelMod), rawLevel - 12.0f + levelBoost);
+        if ((int32)areaLevel <= grindMinLevel)
+            return false;
+    }
 
     return true;
 }
@@ -2721,7 +2739,7 @@ PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, cons
 
         for (auto& position : points)
         {
-            if (!IsLocationLevelValid(*position, info))
+            if (!IsLocationLevelValid(*position, info, purposeFlag))
                 continue;
 
             float distance = position->distance(center);
