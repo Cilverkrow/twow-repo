@@ -121,27 +121,6 @@ bool MoveToRpgTargetAction::Execute(Event& event)
     float z = wo->GetPositionZ();
     float mapId = wo->GetMapId();
 
-    // Reject rpg targets that are on a different terrain layer (cave below,
-    // ledge above, etc). PossibleRpgTargetsValue does a 3D range search, so a
-    // target can be "close" in straight-line distance while being a large,
-    // physically-disconnected vertical drop/climb away. Without this check
-    // MoveTo below sends the bot in a near-straight line to that Z, causing a
-    // large, sudden jump right after combat ends / target selection changes.
-    float rpgZDiff = fabs(z - bot->GetPositionZ());
-    float rpgXYDist = sqrt(guidP.sqDistance2d(bot));
-    if (rpgZDiff > 10.0f && rpgZDiff > rpgXYDist * 1.5f)
-    {
-        AI_VALUE(std::set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
-
-        RESET_AI_VALUE(GuidPosition, "rpg target");
-
-        if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
-        {
-            ai->TellPlayerNoFacing(GetMaster(), "Rpg target on different terrain layer (zDiff too large). Drop target");
-        }
-        return false;
-    }
-
     if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
     {
         std::string name = chat->formatWorldobject(wo);
