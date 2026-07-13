@@ -1213,7 +1213,12 @@ bool MovementAction::MoveTo2(const WorldPosition& endPos, bool idle, bool react,
     if (totalDistance > sPlayerbotAIConfig.reactDistance && !detailedMove)
     {
         WorldPosition teleportPosition = movePath.getBack();
-        if (!ai->HasPlayerNearby(teleportPosition))
+        // Only skip the walk animation via a hard teleport if nobody is
+        // watching from either end -- checking just the destination let a
+        // bot teleport away in full view of a player standing at its
+        // current position, which reads as the bot "zooming" instantly to
+        // its new spot instead of walking there.
+        if (!ai->HasPlayerNearby(teleportPosition) && !ai->HasPlayerNearby(startPos))
         {
             time_t now = time(0);
             lastMove.nextTeleport = now + (time_t)MoveDelay(startPos.distance(teleportPosition));
