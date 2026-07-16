@@ -80,14 +80,18 @@ Edit `mangosd.conf`:
 
 Edit `aiplayerbot.conf` — key settings to get a first cohort running:
 - `AiPlayerbot.Enabled = 1`
+- `AiPlayerbot.RandomBotAutoCreate = 1` (default) — on any boot where fewer than
+  `MinRandomBots` exist, it creates more automatically. This is all you need for
+  a brand-new database; no special flag is required for the very first start.
 - `AiPlayerbot.MinRandomBots` / `MaxRandomBots` — start small (e.g. `20`) for a
   first run; the bots' equipment/talent cache is (re)built from the world DB on
   every boot where new random bots need creating, which takes longer at higher
   counts.
-- `AiPlayerbot.DeleteRandomBotAccounts = 1` for exactly one server start, to
-  create the initial cohort of bot accounts/characters from scratch — **set it
-  back to `0` after that first start**, or it will wipe and recreate the cohort
-  every restart.
+- `AiPlayerbot.DeleteRandomBotAccounts` — leave at `0` normally. Only set it to
+  `1` for exactly one server start when you want to wipe and fully recreate an
+  *existing* cohort from scratch (e.g. after changing bot count or class/race
+  probabilities) — **set it back to `0` after that reset start**, or it will
+  wipe and recreate the cohort on every subsequent restart.
 
 ## 5. Run
 
