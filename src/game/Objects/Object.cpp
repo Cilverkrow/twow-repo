@@ -4049,6 +4049,7 @@ int32 WorldObject::MagicSpellHitChance(Unit* pVictim, SpellEntry const* spell, S
 
     // Increase hit chance from attacker SPELL_AURA_MOD_SPELL_HIT_CHANCE and attacker ratings
     if (Unit* pUnit = ToUnit())
+    {
         modHitChance += int32(pUnit->m_modSpellHitChance);
         if (pUnit->IsPet())
         {

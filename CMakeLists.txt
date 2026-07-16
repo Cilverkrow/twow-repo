@@ -605,10 +605,15 @@ if (BUILD_PLAYERBOTS)
         ${CMAKE_SOURCE_DIR}/src/framework/Network
         ${ACE_ROOT}
         ${BOOST_ROOT}
-        ${CMAKE_SOURCE_DIR}/dep/windows/include
-        ${CMAKE_SOURCE_DIR}/dep/windows/include/mysql
         ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
+        ${MYSQL_INCLUDE_DIR}
     )
+    if (WIN32)
+        target_include_directories(playerbots PUBLIC
+            ${CMAKE_SOURCE_DIR}/dep/windows/include
+            ${CMAKE_SOURCE_DIR}/dep/windows/include/mysql
+        )
+    endif()
 endif()
 
 if (USE_EXTRACTORS OR USE_REALMMERGE)
