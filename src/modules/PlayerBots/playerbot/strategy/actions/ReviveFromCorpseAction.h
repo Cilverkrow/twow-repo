@@ -25,12 +25,4 @@ namespace ai
         virtual bool Execute(Event& event) override;
         virtual bool isUseful() override;
     };
-
-    class CheckRevivalSafetyAction : public MovementAction
-    {
-    public:
-        CheckRevivalSafetyAction(PlayerbotAI* ai) : MovementAction(ai, "flee revival danger") {}
-        virtual bool Execute(Event& event) override;
-        virtual bool isUseful() override;
-    };
 }

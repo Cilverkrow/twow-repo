@@ -1170,11 +1170,6 @@ void PlayerbotAI::OnResurrected()
         }
 
         ChangeEngine(BotState::BOT_STATE_NON_COMBAT);
-
-        // Revival happens wherever the bot died, at only 50% HP, with no grace period -
-        // if that spot is still dangerous, flee immediately instead of waiting for the
-        // next normal target-selection cycle to notice.
-        DoSpecificAction("flee revival danger", Event(), true);
     }
 }
 
