@@ -59,7 +59,7 @@ bool ai::AttackAnythingAction::Execute(Event& event)
             std::string grindName = grindTarget->GetName();
             if (!grindName.empty())
             {
-                sPlayerbotAIConfig.logEvent(ai, "AttackAnythingAction", grindName, std::to_string(grindTarget->GetEntry()));
+                sPlayerbotAIConfig.logEvent(ai, "AttackAnythingAction", grindName + " (lvl " + std::to_string(grindTarget->GetLevel()) + ")", std::to_string(grindTarget->GetEntry()));
 
                 if (ai->HasStrategy("pull", BotState::BOT_STATE_COMBAT))
                 {

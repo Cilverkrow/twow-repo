@@ -61,9 +61,14 @@ void TravelStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
         {"",TravelDestinationPurpose::GatherHerbalism, 6.5f},                                                  // 90%/40% in group
         {"",TravelDestinationPurpose::GatherFishing, 6.5f},                                                    // 90%/40% in group
         {"",TravelDestinationPurpose::Boss, 6.4f},                                                             // 50%
+        // Grind was 6.27 here - dead last, one step below GenericRpg (6.28). Live data
+        // (bot_intention.csv over a 7hr/20-bot run) confirmed this: GenericRpg got picked
+        // over 2x as often as Grind (5.4% vs 2.5% of samples) whenever a bot had any
+        // active travel purpose at all. Moved above Explore/GenericRpg so unconditional
+        // grinding wins that priority race instead of losing to aimless wandering.
+        {"",TravelDestinationPurpose::Grind, 6.35f},                                                          // 100%
         {"",TravelDestinationPurpose::Explore, 6.29f},                                                         // 10%
         {"",TravelDestinationPurpose::GenericRpg, 6.28f},                                                      // 50%
-        {"",TravelDestinationPurpose::Grind, 6.27f},                                                           // 100%
     };
 
     for (auto& [condition, purpose, relevance] : PurposeActions)
