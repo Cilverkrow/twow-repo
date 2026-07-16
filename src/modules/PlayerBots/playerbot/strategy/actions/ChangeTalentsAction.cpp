@@ -384,6 +384,9 @@ bool ChangeTalentsAction::AutoSelectTalents(Player* bot, std::ostringstream* out
 TalentSpec* ChangeTalentsAction::GetBestPremadeSpec(Player* bot, int specId)
 {
     TalentPath* path = getPremadePath(bot->getClass(), specId);
+    if (!path)
+        return &sPlayerbotAIConfig.classSpecs[bot->getClass()].baseSpec;
+
     for (auto& spec : path->talentSpec)
     {
         if (spec.points >= bot->CalculateTalentsPoints())
@@ -392,7 +395,7 @@ TalentSpec* ChangeTalentsAction::GetBestPremadeSpec(Player* bot, int specId)
     if (path->talentSpec.size())
         return &path->talentSpec.back();
 
-    return &sPlayerbotAIConfig.classSpecs[bot->getClassMask()].baseSpec;
+    return &sPlayerbotAIConfig.classSpecs[bot->getClass()].baseSpec;
 }
 
 bool AutoSetTalentsAction::Execute(Event& event)
