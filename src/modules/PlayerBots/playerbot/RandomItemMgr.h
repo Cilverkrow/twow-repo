@@ -177,7 +177,7 @@ class RandomItemMgr
         uint32 ItemStatWeight(Player* player, ItemQualifier& qualifier);
         uint32 ItemStatWeight(Player* player, Item* item);
 
-        uint32 CalculateSingleStatWeight(uint8 playerclass, uint8 spec, std::string stat, uint32 value);
+        uint32 CalculateSingleStatWeight(uint8 playerclass, uint8 spec, std::string stat, int32 value);
         bool CanEquipArmor(uint8 clazz, uint8 spec, uint32 level, ItemPrototype const* proto);
         bool ShouldEquipArmorForSpec(uint8 playerclass, uint8 spec, ItemPrototype const* proto);
         bool CanEquipWeapon(uint8 clazz, ItemPrototype const* proto);

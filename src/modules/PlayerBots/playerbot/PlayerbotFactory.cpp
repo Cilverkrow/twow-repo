@@ -227,8 +227,11 @@ void PlayerbotFactory::Randomize(bool incremental, bool syncWithMaster)
 
     pmo = sPerformanceMonitor.start(PERF_MON_RNDBOT, "PlayerbotFactory_Talents");
     sLog.outDetail("Initializing talents...");
-    //InitTalentsTree(incremental);
-    //sRandomPlayerbotMgr.SetValue(bot->GetGUIDLow(), "specNo", 0);
+    // Assign a premade spec (specNo), then let the "auto talents" action apply the
+    // matching premade build. If no premade spec is configured for the class, the
+    // action falls back to its generic per-tree auto-selection.
+    if (!incremental)
+        SelectPremadeSpecNo();
     ai->DoSpecificAction("auto talents");
 
     if (!incremental && isRandomBot)
@@ -2481,6 +2484,40 @@ void PlayerbotFactory::InitSpells()
 {
     for (int i = 0; i < 15; i++)
         InitAvailableSpells();
+}
+
+bool PlayerbotFactory::SelectPremadeSpecNo()
+{
+    uint8 cls = bot->getClass();
+    std::vector<TalentPath>& paths = sPlayerbotAIConfig.classSpecs[cls].talentPath;
+    if (paths.empty())
+        return false;
+
+    // Weighted roll across the configured premade specs (currently one PvE spec per
+    // class, but this keeps working if more are added). GetBestPremadeSpec indexes
+    // getPremadePath(cls, specNo - 1) by TalentPath::id, so store id + 1.
+    uint32 totalProbability = 0;
+    for (TalentPath& path : paths)
+        totalProbability += std::max(0, path.probability);
+
+    TalentPath* chosen = &paths.front();
+    if (totalProbability > 0)
+    {
+        uint32 roll = urand(0, totalProbability - 1);
+        uint32 cumulative = 0;
+        for (TalentPath& path : paths)
+        {
+            cumulative += std::max(0, path.probability);
+            if (roll < cumulative)
+            {
+                chosen = &path;
+                break;
+            }
+        }
+    }
+
+    sRandomPlayerbotMgr.SetValue(bot, "specNo", chosen->id + 1);
+    return true;
 }
 
 void PlayerbotFactory::InitTalentsTree(bool incremental)

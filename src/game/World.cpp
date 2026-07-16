@@ -744,12 +744,6 @@ void World::LoadConfigSettingsCommonPart(bool reload)
     sLog.outString("VMap support included. LineOfSight: %i | getHeight: %i | indoorCheck: %i.", enableLOS, enableHeight, getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) ? 1 : 0);
     sLog.outString("MMap pathfinding %sabled.", getConfig(CONFIG_BOOL_MMAP_ENABLED) ? "en" : "dis");
 
-    // initialize bot config + managers.
-    // InitPlayerbotsAtStartup is in src/modules/PlayerBots/playerbot/HostHooks.cpp; it loads
-    // aiplayerbot.conf, instantiates sPlayerbotAIConfig / sRandomPlayerbotMgr / sAhBot, and
-    // logs the bot subsystem state. No-op if config absent or AiPlayerbot.Enabled = 0.
-    InitPlayerbotsAtStartup();
-
     sLog.outString("Anticrash: 0x%x rearm after %u seconds.", getConfig(CONFIG_UINT32_ANTICRASH_OPTIONS), getConfig(CONFIG_UINT32_ANTICRASH_REARM_TIMER) / 1000);
     sLog.outString("Pathfinding: [%s]", getConfig(CONFIG_BOOL_MMAP_ENABLED) ? "Enabled" : "Disabled");
 
@@ -2291,7 +2285,8 @@ void LoadPlayerEggLoot();
     sLog.outString("Caching player pets...");
 	sCharacterDatabaseCache.LoadAll();
     // Penqle's "Loading player bot manager... / sPlayerBotMgr.Load()" removed.
-    // cmangos's RandomPlayerbotMgr is instantiated by InitPlayerbotsAtStartup() below.
+    // cmangos's RandomPlayerbotMgr is instantiated by InitPlayerbotsAtStartup(), called near the
+    // end of this function (just before FinalizePlayerbotsPostPlayerInfo).
     sLog.outString("Loading faction change reputations...");
 	sObjectMgr.LoadFactionChangeReputations();
     sLog.outString("Loading faction change spells...");
@@ -2384,6 +2379,14 @@ void LoadPlayerEggLoot();
             honorUpdateFile << "0";
     }
 
+    // Initialize bot config + managers. InitPlayerbotsAtStartup (HostHooks.cpp) loads
+    // aiplayerbot.conf, instantiates sPlayerbotAIConfig / sRandomPlayerbotMgr / sAhBot, and runs
+    // PlayerbotAIConfig::Initialize() — which builds the equipment cache (RandomItemMgr::Init →
+    // BuildEquipCache, scans sItemStorage) and validates the premade talent specs (LoadTalentSpecs,
+    // reads Talent.dbc). It MUST run after LoadDBCStores() and LoadItemPrototypes() above, otherwise
+    // those caches build against empty data on first boot. No-op if AiPlayerbot.Enabled = 0.
+    // FinalizePlayerbotsPostPlayerInfo() then creates random bots using the populated caches.
+    InitPlayerbotsAtStartup();
     FinalizePlayerbotsPostPlayerInfo();
     sLog.outString("Current content phase is set to %u.", GetContentPhase() + 1);
     uint32 uStartInterval = WorldTimer::getMSTimeDiff(uStartTime, WorldTimer::getMSTime());

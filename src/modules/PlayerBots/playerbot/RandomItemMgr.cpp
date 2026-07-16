@@ -1459,10 +1459,10 @@ void RandomItemMgr::BuildItemInfoCache()
 
         for (int i = 1; i <= MAX_STAT_SCALES; ++i)
         {
-            if (cacheInfo->weights[i])
-                stmt.addUInt32(cacheInfo->weights[i]);
-            else
-                stmt.addUInt32(0);
+            // Safety net: scale_* are signed MEDIUMINT (max 8388607). Clamp so a single
+            // pathological weight can never overflow the column and abort the build.
+            uint32 w = cacheInfo->weights[i] > 8388607u ? 8388607u : cacheInfo->weights[i];
+            stmt.addUInt32(w);
         }
 
         stmt.Execute();
@@ -2487,16 +2487,22 @@ uint32 RandomItemMgr::ItemStatWeight(Player* player, Item* item)
     return ItemStatWeight(player, itemQualifier);
 }
 
-uint32 RandomItemMgr::CalculateSingleStatWeight(uint8 playerclass, uint8 spec, std::string stat, uint32 value)
+uint32 RandomItemMgr::CalculateSingleStatWeight(uint8 playerclass, uint8 spec, std::string stat, int32 value)
 {
     uint32 statWeight = 0;
     for (std::vector<WeightScaleStat>::iterator i = m_weightScales[spec].stats.begin(); i != m_weightScales[spec].stats.end(); ++i)
     {
         if (stat == i->stat)
         {
-            statWeight = i->weight * value;
-            if (statWeight)
-                sLog.outDetail("stat: %s, val: %d, weight: %d, total: %d, class: %d, spec: %s", stat.c_str(), value, i->weight, statWeight, playerclass, m_weightScales[spec].info.name.c_str());
+            // Compute in 64-bit and ignore non-positive contributions. A negative stat
+            // value (item stat penalties, or negative aura EffectBasePoints) must not wrap
+            // to a huge uint32 here — that both inflates the item's score and overflows the
+            // signed MEDIUMINT scale_* cache columns, aborting the cache build on first boot.
+            int64 weighted = (int64)i->weight * (int64)value;
+            if (weighted <= 0)
+                return 0;
+            statWeight = (uint32)weighted;
+            sLog.outDetail("stat: %s, val: %d, weight: %d, total: %d, class: %d, spec: %s", stat.c_str(), value, i->weight, statWeight, playerclass, m_weightScales[spec].info.name.c_str());
             return statWeight;
         }
     }
@@ -3332,6 +3338,9 @@ void RandomItemMgr::BuildEquipCache()
                 MAX_CLASSES, MAX_STAT_SCALES, maxLevel, EQUIPMENT_SLOT_END, ITEM_QUALITY_ARTIFACT, sItemStorage.GetMaxEntry(), total);
 
         BarGoLink bar(total);
+        // Tracks how many items were cached for each stat-weight spec, so we can
+        // emit a visible progress line per (class, spec) as the build advances.
+        std::map<uint32, uint64> specItemCounts;
         RandomItemList tabardsList;
         RandomItemList shirtsList;
         BotEquipKey tabardKey(60, 1, 1, EQUIPMENT_SLOT_TABARD, 1);
@@ -3453,12 +3462,25 @@ void RandomItemMgr::BuildEquipCache()
                             }
 
                             equipCache[key] = items;
+                            specItemCounts[spec] += items.size();
                             bar.step();
                             sLog.outDetail("Equipment cache for class: %d, level %d, slot %d, quality %d: %zu items",
                                 clazz, level, slot, quality, items.size());
                         }
                     }
                 }
+            }
+
+            // The class loop is outermost, so once we leave a class body every spec
+            // belonging to that class is fully built. Emit one visible line per spec.
+            for (uint32 spec = 1; spec <= MAX_STAT_SCALES; ++spec)
+            {
+                if (!m_weightScales[spec].info.id || m_weightScales[spec].info.classId != clazz)
+                    continue;
+
+                sLog.outBasic("[GearCache] class %u spec %u (%s): cached %llu items",
+                    clazz, spec, m_weightScales[spec].info.name.c_str(),
+                    (unsigned long long)specItemCounts[spec]);
             }
         }
         equipCache[tabardKey] = tabardsList;
