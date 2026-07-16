@@ -180,11 +180,19 @@ target_link_libraries(${LIBRARY_NAME}
   PRIVATE shared
   PRIVATE Detour
   PRIVATE g3dlite
-  PRIVATE zlib
 )
 if(WIN32)
   target_link_libraries(${LIBRARY_NAME}
+    PRIVATE zlib
     PRIVATE ws2_32
+  )
+else()
+  find_package(Boost 1.70 REQUIRED COMPONENTS thread filesystem system)
+  target_link_libraries(${LIBRARY_NAME}
+    PRIVATE ZLIB::ZLIB
+    PRIVATE Boost::thread
+    PRIVATE Boost::filesystem
+    PRIVATE Boost::system
   )
 endif()
 

@@ -4151,6 +4151,24 @@ bool PlayerbotAI::HasSpell(uint32 spellid) const
     return false;
 }
 
+SpellCastResult PlayerbotAI::CheckSpellTargetAlignment(SpellEntry const* spellInfo, Unit* target)
+{
+    // Consider neutral spells (spells that are neither positive or negative (e.g. feign death, hunter traps, ...)
+    const std::list<uint32> neutralSpells = { 1499, 5384, 13795, 13809, 13813, 14302, 14303, 14304, 14305, 14310, 14311, 14316, 14317, 27023, 27025, 34600, 49055, 49056, 49066, 49067 };
+    const bool neutralSpell = std::find(neutralSpells.begin(), neutralSpells.end(), spellInfo->Id) != neutralSpells.end();
+    if (neutralSpell)
+        return SPELL_CAST_OK;
+
+    const bool positiveSpell = IsPositiveSpell(spellInfo);
+    if (positiveSpell && sServerFacade.IsHostileTo(bot, target))
+        return SPELL_FAILED_TARGET_ENEMY;
+
+    if (!positiveSpell && sServerFacade.IsFriendlyTo(bot, target))
+        return SPELL_FAILED_TARGET_FRIENDLY;
+
+    return SPELL_CAST_OK;
+}
+
 bool PlayerbotAI::CanCastSpell(std::string name, Unit* target, uint8 effectMask, Item* itemTarget, bool ignoreRange, bool ignoreInCombat, bool ignoreMount, SpellCastResult* checkResult)
 {
     return CanCastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, 0, true, itemTarget, ignoreRange, ignoreInCombat, ignoreMount, checkResult);
