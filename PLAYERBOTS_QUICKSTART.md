@@ -25,9 +25,12 @@ checkout; consult a MaNGOS/CMaNGOS extraction guide if you don't already have th
 ```
 git clone <this-repo-url> tortoise-wow
 cd tortoise-wow
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_PLAYERBOTS=ON
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_PLAYERBOTS=ON -DALLOW_TURTLE_ADDONS=ON
 cmake --build build --target mangosd -j$(nproc)
 ```
+
+> Login without `-DALLOW_TURTLE_ADDONS=ON` can throw a client-side login error —
+> a known issue, so build with that flag on.
 
 `BUILD_PLAYERBOTS=ON` is required to compile the bot module at all; it's `OFF` by
 default so the core still builds standalone without it.
