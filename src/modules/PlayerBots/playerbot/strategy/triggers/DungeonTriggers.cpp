@@ -168,6 +168,59 @@ std::list<ObjectGuid> CloseToGameObjectHazardTrigger::GetPossibleHazards()
     return AI_VALUE2(std::list<ObjectGuid>, "nearest game objects no los", gameObjectID);
 }
 
+bool EnvironmentalHazardTrigger::IsActive()
+{
+    bool closeToHazard = false;
+
+    if (bot->IsInWorld() && !bot->IsBeingTeleported())
+    {
+        for (const ObjectGuid& guid : AI_VALUE(std::list<ObjectGuid>, "nearest game objects"))
+        {
+            GameObject* go = ai->GetGameObject(guid);
+            if (!go)
+                continue;
+
+            if (!sServerFacade.IsEnvironmentalDamageTrap(go))
+                continue;
+
+            GameObjectInfo const* goInfo = go->GetGOInfo();
+
+            // React a bit before the real damage boundary (goInfo->trap.radius is exactly
+            // what GameObject::Update uses to decide who to hit) - a small fixed margin, not
+            // a large floor. Many of these traps (e.g. damage-only "Campfire"/"Fire" GOs -
+            // distinct objects from the buff-only "Cozy Fire" campfires, which carry no
+            // damage effect and aren't flagged as hazards at all) have a real radius of ~1
+            // yard and sit right next to a legitimate bot destination (trainer/anvil/vendor);
+            // a big floor here (previously max(radius*1.3, 5.0)) made the bot treat "close
+            // enough to interact" as "too close to the hazard," so it kept getting shoved away
+            // and walking straight back through the real danger zone to reach its actual goal.
+            // A tight margin lets the bot approach its real destination without
+            // false-triggering, while still reacting before the literal damage radius for
+            // genuinely bigger hazards.
+            float reactRadius = goInfo->trap.radius + 2.0f;
+            float distance = bot->GetDistance(go) + go->GetObjectBoundingRadius();
+            if (distance <= reactRadius)
+                closeToHazard = true;
+
+            // The radius registered here is deliberately bigger than reactRadius above -
+            // it's what MoveAwayFromHazard uses to compute how
+            // far to flee (frand(radius, radius*1.5)) and what movement/pathing uses to reject
+            // a destination near this GO. Found via live testing that some bots have a fixed
+            // wander/idle anchor point sitting almost exactly on a trap tile (e.g. a campfire
+            // in a Dun Morogh social hub); fleeing only reactRadius+50% (~4-5 yards for a
+            // 1-yard trap) never got them outside the zone their own wander logic considers
+            // "close enough to stop," so they kept drifting straight back onto the death tile
+            // every couple of minutes. A bigger registered radius makes the escape distance -
+            // and any future destination-picking near this GO - actually clear that zone.
+            float registeredRadius = std::max(reactRadius, 12.0f);
+            Hazard hazard(guid, hazardDuration, registeredRadius);
+            SET_AI_VALUE(Hazard, "add hazard", std::move(hazard));
+        }
+    }
+
+    return closeToHazard;
+}
+
 std::list<ObjectGuid> CloseToCreatureHazardTrigger::GetPossibleHazards()
 {
     std::list<ObjectGuid> possibleHazards;

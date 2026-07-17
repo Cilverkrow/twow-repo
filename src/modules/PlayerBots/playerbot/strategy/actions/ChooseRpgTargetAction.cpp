@@ -184,6 +184,15 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
             //Ignore objects that are too high or low compared to the bot.
             if (fabs(go->GetPositionZ() - bot->GetPositionZ()) > 20.f)
                 SkipRpgTarget("Go is too high/low compared to bot.");
+
+            // Never pick an environmental-damage trap (e.g. a "Campfire" GO that also deals
+            // fire damage) as an RPG destination - reactive avoidance alone can't fully
+            // protect a bot when its actual goal is to walk up to and "use" this exact object
+            // (RpgUseTrigger treats GAMEOBJECT_TYPE_TRAP as usable, RpgTriggers.cpp:578),
+            // which sends it straight into the real damage radius on arrival regardless of
+            // how tight the reactive flee radius is.
+            if (sServerFacade.IsEnvironmentalDamageTrap(go))
+                SkipRpgTarget("Go is an environmental-damage trap, not a real RPG destination.");
         }
         else if (guidP.IsPlayer())
         {

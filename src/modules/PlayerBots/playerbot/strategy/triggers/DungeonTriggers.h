@@ -103,6 +103,34 @@ namespace ai
         uint32 gameObjectID;
     };
 
+    // Not dungeon-specific despite living in this file - lives here because it wants the
+    // same "add hazard"/HazardsValue plumbing CloseToHazardTrigger uses. Detects any nearby
+    // GAMEOBJECT_TYPE_TRAP GameObject that auto-fires environmental damage (no owner, spell
+    // effect SPELL_EFFECT_ENVIRONMENTAL_DAMAGE - matches the exact condition
+    // GameObject::Update uses to hit any player in range, src/game/Objects/GameObject.cpp:459-538),
+    // e.g. overworld braziers, generically - no per-entry allowlist needed. Registered on the
+    // reaction engine (see ReactionStrategy) so it fires regardless of the bot's
+    // combat/non-combat state.
+    //
+    // Doesn't subclass CloseToHazardTrigger (unlike the other hazard triggers below) because
+    // that base class uses one fixed radius for every hazard it tracks - here each GameObject
+    // has its own real danger radius (goInfo->trap.radius, the same value the core engine
+    // itself uses to decide who to hit), so this reacts at the actual danger boundary instead
+    // of a guessed constant, and registers that same accurate radius into "hazards" so
+    // pathing (MovementAction::GeneratePathAvoidingHazards) bends around the real zone too.
+    class EnvironmentalHazardTrigger : public Trigger
+    {
+    public:
+        EnvironmentalHazardTrigger(PlayerbotAI* ai, std::string name = "environmental hazard nearby", time_t hazardDuration = 60)
+        : Trigger(ai, name, 1)
+        , hazardDuration(hazardDuration) {}
+
+        bool IsActive() override;
+
+    private:
+        time_t hazardDuration;
+    };
+
     class CloseToCreatureHazardTrigger : public CloseToHazardTrigger
     {
     public:

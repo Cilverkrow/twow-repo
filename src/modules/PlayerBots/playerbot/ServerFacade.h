@@ -191,6 +191,37 @@ class ServerFacade
 #endif
         }
 
+        // True for an ownerless GAMEOBJECT_TYPE_TRAP whose spell deals
+        // SPELL_EFFECT_ENVIRONMENTAL_DAMAGE - e.g. a "Campfire" GO that also carries a
+        // fire-damage aura (matches the exact condition GameObject::Update uses to hit any
+        // player in range, src/game/Objects/GameObject.cpp:459-538). Shared by
+        // EnvironmentalHazardTrigger (reactive avoidance) and ChooseRpgTargetAction (so bots
+        // never pick this GO as an RPG destination in the first place - the reactive fix alone
+        // can't fully solve this when the hazard sits at/right next to a legitimate RPG/social
+        // spot, e.g. a campfire with chairs around it).
+        bool IsEnvironmentalDamageTrap(GameObject* go)
+        {
+            if (!go)
+                return false;
+
+            GameObjectInfo const* goInfo = go->GetGOInfo();
+            if (!goInfo || goInfo->type != GAMEOBJECT_TYPE_TRAP)
+                return false;
+
+            if (!go->GetOwnerGuid().IsEmpty())
+                return false;
+
+            SpellEntry const* spellInfo = LookupSpellInfo(goInfo->trap.spellId);
+            if (!spellInfo)
+                return false;
+
+            for (uint32 effect : spellInfo->Effect)
+                if (effect == SPELL_EFFECT_ENVIRONMENTAL_DAMAGE)
+                    return true;
+
+            return false;
+        }
+
         SpellRangeEntry const* LookupSpellRangeEntry(uint32 rangeIndex)
         {
             return sSpellRangeStore.LookupEntry(rangeIndex);

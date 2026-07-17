@@ -1088,7 +1088,6 @@ void PlayerbotAI::OnDeath()
         AiObjectContext* context = aiObjectContext;
         if (!HasActivePlayerMaster() && !bot->InBattleGround())
         {
-
             SET_AI_VALUE(uint32, "death count", AI_VALUE(uint32, "death count") + 1);
 
             if (sPlayerbotAIConfig.hasLog("deaths.csv"))

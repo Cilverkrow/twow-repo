@@ -496,9 +496,15 @@ bool AttackersValue::IgnoreTarget(Unit* target, Player* playerToCheckAgainst)
 #define TRAINING_DUMMY_NPC_ENTRY3 190015
 #define THERAMORE_COMBAT_DUMMY 4952
 #define NAXXRAMAS_COMBAT_DUMMY 16211
-#ifdef MANGOSBOT_TWO  
+#ifdef MANGOSBOT_TWO
 #define INITATES_TRAINING_DUMMY 32541
 #endif
+// This server's custom capital-city training dummies (custom_npc_training_dummy,
+// sql/base/tw_world_creature_template.sql) - previously unrecognized here, which let
+// bots latch onto them permanently since their 1,000,000 HP never dies.
+#define HEROIC_TRAINING_DUMMY 50514
+#define APPRENTICE_TRAINING_DUMMY 50515
+#define EXPERT_TRAINING_DUMMY 50516
 
         switch (entry)
         {
@@ -507,9 +513,12 @@ bool AttackersValue::IgnoreTarget(Unit* target, Player* playerToCheckAgainst)
         case TRAINING_DUMMY_NPC_ENTRY3:
         case THERAMORE_COMBAT_DUMMY:
         case NAXXRAMAS_COMBAT_DUMMY:
-#ifdef MANGOSBOT_TWO     
+#ifdef MANGOSBOT_TWO
         case INITATES_TRAINING_DUMMY:
 #endif
+        case HEROIC_TRAINING_DUMMY:
+        case APPRENTICE_TRAINING_DUMMY:
+        case EXPERT_TRAINING_DUMMY:
             isDummy = true;
         }
 
