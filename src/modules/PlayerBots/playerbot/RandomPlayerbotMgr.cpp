@@ -2558,7 +2558,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation> 
             {
                 if ((zoneId == 12 || zoneId == 40) && bot->getRace() != RACE_HUMAN && bot->getRace() != RACE_HIGH_ELF)
                     return true;
-                if ((zoneId == 1 || zoneId == 38) && bot->getRace() != RACE_DWARF)
+                if ((zoneId == 1 || zoneId == 38) && bot->getRace() != RACE_DWARF && bot->getRace() != RACE_GNOME)
                     return true;
                 if ((zoneId == 85 || zoneId == 130) && bot->getRace() != RACE_UNDEAD)
                     return true;
@@ -4099,8 +4099,20 @@ void RandomPlayerbotMgr::RandomTeleportForRpg(Player* bot, bool activeOnly)
 {
     uint32 race = bot->getRace();
     uint32 level = bot->GetLevel();
-    sLog.outDetail("Random teleporting bot %s for RPG (%zu locations available)", bot->GetName(), rpgLocsCacheLevel[race][level].size());
-    RandomTeleport(bot, rpgLocsCacheLevel[race][level], true, activeOnly);
+
+    // Some races (e.g. custom playable races) have no dedicated ai_playerbot_rpg_races
+    // rows, or their low-level rows reference creature templates that were never
+    // actually placed anywhere - leaving rpgLocsCacheLevel[race][level] empty and the
+    // bot permanently stuck with no RPG/hearth destination. Fall back to the
+    // race-neutral RPG cache, then to the general grind-spot cache, rather than failing.
+    std::vector<WorldLocation>* locs = &rpgLocsCacheLevel[race][level];
+    if (locs->empty())
+        locs = &rpgLocsCacheLevel[0][level];
+    if (locs->empty())
+        locs = &locsPerLevelCache[level];
+
+    sLog.outDetail("Random teleporting bot %s for RPG (%zu locations available)", bot->GetName(), locs->size());
+    RandomTeleport(bot, *locs, true, activeOnly);
     Refresh(bot);
 
     //Travel cooldown for 10 minutes.
