@@ -262,6 +262,49 @@ struct spell_rogue_improved_ambush : public AuraScript
     }
 };
 
+struct spell_rogue_shadow_of_death : public AuraScript
+{
+    uint8 m_comboPoints = 0;
+    int32 m_maxDamage = 0;
+    int32 m_accumulatedDamage = 0;
+
+    void OnAfterApply(Aura* aura, bool apply) override
+    {
+        Unit* caster = aura->GetCaster();
+        if (apply)
+        {
+            if (caster && caster->IsPlayer())
+            {
+                m_comboPoints = caster->ToPlayer()->GetComboPoints();
+                m_maxDamage = int32(caster->GetTotalAttackPowerValue(BASE_ATTACK) * m_comboPoints) / 2;
+            }
+        }
+        else
+        {
+            Unit* target = aura->GetTarget();
+
+            if (m_accumulatedDamage > 0 && target->IsAlive() && caster && caster->IsAlive())
+                caster->CastCustomSpell(target, 52711, &m_accumulatedDamage, nullptr, nullptr, true, nullptr, aura);
+        }
+    }
+
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 damage, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        Unit* auraCaster = aura->GetCaster();
+        if (!auraCaster || !auraCaster->IsAlive() || !m_comboPoints)
+            return SPELL_AURA_PROC_FAILED;
+
+        m_accumulatedDamage = std::min(m_accumulatedDamage + int32(damage * 0.1f * m_comboPoints), m_maxDamage);
+
+        bool const capped = m_accumulatedDamage >= m_maxDamage;
+
+        if (capped)
+            owner->RemoveAurasDueToSpell(52710);
+
+        return SPELL_AURA_PROC_OK;
+    }
+};
+
 struct spell_rogue_improved_sap_vanish : public SpellScript
 {
     void OnEffectExecuted(Spell* spell, SpellEffectIndex effIdx) const override
@@ -286,5 +329,6 @@ void AddSC_rogue_spell_scripts()
     RegisterAuraScript("spell_rogue_clean_escape", &GetAuraScript<spell_rogue_clean_escape>);
     RegisterAuraScript("spell_rogue_blade_flurry", &GetAuraScript<spell_rogue_blade_flurry>);
     RegisterAuraScript("spell_rogue_improved_ambush", &GetAuraScript<spell_rogue_improved_ambush>);
+    RegisterAuraScript("spell_rogue_shadow_of_death", &GetAuraScript<spell_rogue_shadow_of_death>);
     RegisterSpellScript("spell_rogue_improved_sap_vanish", &GetSpellScript<spell_rogue_improved_sap_vanish>);
 }
