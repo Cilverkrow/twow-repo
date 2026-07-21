@@ -9,6 +9,7 @@ enum DruidSpells
     SPELL_DRUID_FRENZIED_REGENERATION = 22842,
     SPELL_DRUID_FRENZIED_REGENERATION_RANK_2 = 22895,
     SPELL_DRUID_FRENZIED_REGENERATION_RANK_3 = 22896,
+    SPELL_DRUID_EFFLORESCENCE = 51397,
     SPELL_DRUID_RESHIFT = 47379,
     SPELL_DRUID_AESSINAS_BLOOM = 52567,
 };
@@ -452,16 +453,67 @@ struct spell_druid_frenzied_regeneration : public AuraScript
             return;
         }
 
-        int32 lifePerRage = aura->GetModifier()->m_amount;
+        int32 staminaPercentPerRage = aura->GetModifier()->m_amount;
         int32 rage = target->GetPower(POWER_RAGE);
         if (rage > 100)
             rage = 100;
 
         target->ModifyPower(POWER_RAGE, -rage);
-        int32 heal = int32(rage * lifePerRage / 10);
-        heal += int32((rage / 10.0f) * (target->GetStat(STAT_STAMINA) / 10.0f));
+        int32 heal = int32((rage / 10.0f) * target->GetStat(STAT_STAMINA) * staminaPercentPerRage / 100.0f);
         target->CastCustomSpell(target, 22845, &heal, nullptr, nullptr, true, nullptr, aura);
         spellInfo = nullptr;
+    }
+};
+
+struct spell_druid_efflorescence : public AuraScript
+{
+    void OnAfterApply(Aura* aura, bool apply) override
+    {
+        if (apply || aura->GetHolder()->GetRemoveMode() != AURA_REMOVE_BY_STACK)
+            return;
+
+        if (aura->GetModifier()->m_auraname != SPELL_AURA_PERIODIC_HEAL)
+            return;
+
+        SpellEntry const* spellInfo = aura->GetSpellProto();
+        if (!spellInfo || !spellInfo->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_REJUVENATION, CF_DRUID_REGROWTH>())
+            return;
+
+        Unit* caster = aura->GetCaster();
+        Unit* target = aura->GetTarget();
+        if (!caster || !target || !target->IsAlive())
+            return;
+
+        Aura* efflorescence = caster->GetAura(SPELL_DRUID_EFFLORESCENCE, EFFECT_INDEX_0);
+        if (!efflorescence)
+            return;
+
+        int32 const remainingDuration = aura->GetAuraDuration();
+        uint32 const period = aura->GetModifier()->periodictime;
+        int32 const tickHeal = aura->GetModifier()->m_amount;
+        if (remainingDuration <= 0 || !period || tickHeal <= 0)
+            return;
+
+        int32 const remainingValue = int32(float(tickHeal) * float(remainingDuration) / float(period));
+        int32 const heal = remainingValue * efflorescence->GetModifier()->m_amount / 100;
+        if (heal > 0)
+            caster->DealHeal(target, uint32(heal), efflorescence->GetSpellProto());
+    }
+};
+
+struct spell_druid_rip : public AuraScript
+{
+    int32 OnDurationCalculate(WorldObject const* caster, Unit const* /*target*/, int32 /*duration*/) override
+    {
+        Player const* player = caster ? caster->ToPlayer() : nullptr;
+        if (!player)
+            return 0;
+
+        uint8 comboPoints = player->GetComboPoints();
+        if (comboPoints > 5)
+            comboPoints = 5;
+
+        return comboPoints ? int32(8000 + comboPoints * 2000) : 0;
     }
 };
 
@@ -535,6 +587,8 @@ void AddSC_druid_spell_scripts()
     RegisterSpellScript("spell_druid_ferocious_bite", &GetSpellScript<spell_druid_ferocious_bite>);
     RegisterAuraScript("spell_druid_thorns_explosion", &GetAuraScript<spell_druid_thorns_explosion>);
     RegisterAuraScript("spell_druid_frenzied_regeneration", &GetAuraScript<spell_druid_frenzied_regeneration>);
+    RegisterAuraScript("spell_druid_efflorescence", &GetAuraScript<spell_druid_efflorescence>);
+    RegisterAuraScript("spell_druid_rip", &GetAuraScript<spell_druid_rip>);
     RegisterAuraScript("spell_druid_moonclaw", &GetAuraScript<spell_druid_moonclaw>);
     RegisterAuraScript("spell_druid_berserk_form_swap", &GetAuraScript<spell_druid_berserk_form_swap>);
     RegisterAuraScript("spell_druid_tree_of_life_aura", &GetAuraScript<spell_druid_tree_of_life_aura>);

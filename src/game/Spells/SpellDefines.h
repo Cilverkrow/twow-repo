@@ -897,6 +897,7 @@ enum SpellAttributesCustom
     SPELL_CUSTOM_TEMPORARY_HEALTH_BONUS     = 0x100000,  // Increases max health and current health together
     SPELL_CUSTOM_AURA_STACKS_WITH_EXCLUSIVE = 0x200000,  // Aura stacks with normally exclusive aura categories
     SPELL_CUSTOM_AURA_EFFECT0_STACKS_WITH_EXCLUSIVE = 0x400000, // Effect 0 stacks with normally exclusive aura categories
+    SPELL_CUSTOM_BONUS_COEFF_USES_AP        = 0x800000,  // Uses attack power instead of spell power for effectBonusCoefficient
 };
 
 // Custom flags assigned by the core based on spell template data

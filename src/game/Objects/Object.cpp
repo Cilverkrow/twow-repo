@@ -5018,6 +5018,18 @@ int32 WorldObject::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
 
 int32 WorldObject::SpellBonusWithCoeffs(SpellEntry const* spellProto, SpellEffectIndex effectIndex, int32 total, int32 benefit, int32 ap_benefit, DamageEffectType damagetype, bool donePart, WorldObject* pCaster, Spell* spell) const
 {
+    if (donePart && spellProto->Custom & SPELL_CUSTOM_BONUS_COEFF_USES_AP)
+    {
+        Unit const* caster = pCaster ? pCaster->ToUnit() : ToUnit();
+        if (caster)
+        {
+            WeaponAttackType attackType = spellProto->IsSpellRequiresRangedAP() ? RANGED_ATTACK : BASE_ATTACK;
+            benefit = int32(caster->GetTotalAttackPowerValue(attackType)) + ap_benefit;
+        }
+        else
+            benefit = 0;
+    }
+
     if (benefit)
     {
         float coeff;

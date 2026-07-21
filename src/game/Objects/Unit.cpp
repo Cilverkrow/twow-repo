@@ -3912,7 +3912,7 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder *holder)
         {
             // Nostalrius - fix stack same HoT rank / diff caster
             if (firstInChain && !allowPeriodicHealStacking)
-                RemoveAurasDueToSpell(i_spellId);
+                RemoveAurasDueToSpell(i_spellId, nullptr, AURA_REMOVE_BY_STACK);
             else switch (spellId)
             {
             // Blessing of Light does not stack between casters.
@@ -3975,7 +3975,7 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder *holder)
                 continue;
             }
             DETAIL_LOG("[STACK][%u/%u] SpellSpecPerTarget ou SpellSpecPerCaster", spellId, i_spellId);
-            RemoveAurasDueToSpell(i_spellId);
+            RemoveAurasDueToSpell(i_spellId, nullptr, firstInChain ? AURA_REMOVE_BY_STACK : AURA_REMOVE_BY_DEFAULT);
 
             if (m_spellAuraHolders.empty())
                 break;
@@ -4004,7 +4004,7 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder *holder)
                 continue;
             }
             DETAIL_LOG("[STACK][%u/%u] SpellPerTarget", spellId, i_spellId);
-            RemoveAurasDueToSpell(i_spellId);
+            RemoveAurasDueToSpell(i_spellId, nullptr, firstInChain ? AURA_REMOVE_BY_STACK : AURA_REMOVE_BY_DEFAULT);
 
             if (m_spellAuraHolders.empty())
                 break;
