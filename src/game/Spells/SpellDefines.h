@@ -539,6 +539,7 @@ enum AuraState
     AURA_STATE_HEALTHLESS_35_PERCENT        = 12, // custom
     AURA_STATE_SPELL_RESISTED               = 13, // custom: recently had a spell resist
     AURA_STATE_TARGET_DODGED                = 14, // custom: target recently dodged caster attack
+    AURA_STATE_SHAPESHIFTED                 = 16, // custom: shapeshift form active
 };
 
 // Spell mechanics
@@ -888,6 +889,14 @@ enum SpellAttributesCustom
     SPELL_CUSTOM_PERSISTENT_NO_STACK        = 0x1000,    // Makes persistent area auras not stack between casters
     SPELL_CUSTOM_DEATH_DUNGEON_PERSISTENT   = 0x2000,
     SPELL_CUSTOM_STACK_WITH_SPELL_SPECIFIC  = 0x4000,    // Stacks with other auras from caster with same spell specific type
+    SPELL_CUSTOM_TRIGGER_WEAPON_PROCS       = 0x8000,    // Can trigger weapon enchants and on hit effects
+    SPELL_CUSTOM_AURA_NON_EXCLUSIVE         = 0x10000,   // Aura stacks with normally exclusive auras
+    SPELL_CUSTOM_AURA_EXCLUSIVE             = 0x20000,   // Aura is always treated as exclusive
+    SPELL_CUSTOM_MOUNT_SPEED_100            = 0x40000,   // Mount aura is always normalized to 100% speed
+    SPELL_CUSTOM_IGNORE_RIDING_SKILL_MOUNT_SPEED = 0x80000, // Mount aura keeps DBC speed amount
+    SPELL_CUSTOM_TEMPORARY_HEALTH_BONUS     = 0x100000,  // Increases max health and current health together
+    SPELL_CUSTOM_AURA_STACKS_WITH_EXCLUSIVE = 0x200000,  // Aura stacks with normally exclusive aura categories
+    SPELL_CUSTOM_AURA_EFFECT0_STACKS_WITH_EXCLUSIVE = 0x400000, // Effect 0 stacks with normally exclusive aura categories
 };
 
 // Custom flags assigned by the core based on spell template data

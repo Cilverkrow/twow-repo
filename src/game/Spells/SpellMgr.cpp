@@ -26,6 +26,7 @@
 #include "World.h"
 #include "Chat.h"
 #include "Spell.h"
+#include "ScriptMgr.h"
 #include "BattleGroundMgr.h"
 #include "MapManager.h"
 #include "Unit.h"
@@ -3514,6 +3515,7 @@ void SpellMgr::LoadSpells()
         spell->DmgMultiplier[1] = fields[143].GetFloat();
         spell->DmgMultiplier[2] = fields[144].GetFloat();
         spell->Custom = fields[148].GetUInt32();
+        spell->ScriptId = sScriptMgr.GetScriptId(fields[149].GetString());
         ParseTooltip(spell.get());
 
      

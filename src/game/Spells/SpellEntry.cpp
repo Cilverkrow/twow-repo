@@ -3,6 +3,7 @@
 #include "SpellAuraDefines.h"
 #include "SpellMgr.h"
 #include "Spell.h"
+#include "ScriptMgr.h"
 
 using namespace Spells;
 
@@ -794,6 +795,17 @@ float SpellEntry::CalculateCustomCoefficient(WorldObject const* caster, DamageEf
     return coeff;
 }
 
+bool SpellEntry::CanTriggerWeaponProcs() const
+{
+    // All weapon based abilities can trigger weapon procs,
+    // even if they do no damage, or break on damage, like Sap.
+    // https://www.youtube.com/watch?v=klMsyF_Kz5o
+    if (EquippedItemClass == ITEM_CLASS_WEAPON && rangeIndex == SPELL_RANGE_IDX_COMBAT)
+        return true;
+
+    return Custom & SPELL_CUSTOM_TRIGGER_WEAPON_PROCS;
+}
+
 int32 SpellEntry::GetDuration() const
 {
     SpellDurationEntry const *du = sSpellDurationStore.LookupEntry(DurationIndex);
@@ -811,7 +823,7 @@ int32 SpellEntry::GetMaxDuration() const
     return (du->Duration[2] == -1) ? -1 : abs(du->Duration[2]);
 }
 
-int32 SpellEntry::CalculateDuration(WorldObject const* caster) const
+int32 SpellEntry::CalculateDuration(WorldObject const* caster, Unit const* target, AuraScript* auraScript) const
 {
     int32 duration = GetDuration();
 
@@ -822,6 +834,9 @@ int32 SpellEntry::CalculateDuration(WorldObject const* caster) const
         if (duration != maxduration)
             if (Player const* pPlayer = caster->ToPlayer())
                 duration += int32((maxduration - duration) * pPlayer->GetComboPoints() / 5);
+
+        if (auraScript)
+            duration = auraScript->OnDurationCalculate(caster, target, duration);
 
         if (Unit const* pUnit = caster->ToUnit())
         {
@@ -834,6 +849,8 @@ int32 SpellEntry::CalculateDuration(WorldObject const* caster) const
             }
         }
     }
+    else if (auraScript)
+        duration = auraScript->OnDurationCalculate(caster, target, duration);
 
     return duration;
 }

@@ -32,6 +32,7 @@ class Spell;
 class Unit;
 class WorldObject;
 class SpellEntry;
+struct AuraScript;
 
 namespace Spells
 {
@@ -633,6 +634,7 @@ public:
     uint32 MinTargetLevel = 0;                                 // 162
     uint32 Custom = 0;                                         // 176
     uint32 Internal = 0;                                       // Assigned by the core.
+    uint32 ScriptId = 0;
     std::string ParsedTooltip;
 protected:
     bool _isBinary = false;
@@ -1097,7 +1099,7 @@ public:
 
     int32 GetDuration() const;
     int32 GetMaxDuration() const;
-    int32 CalculateDuration(WorldObject const* caster = nullptr) const;
+    int32 CalculateDuration(WorldObject const* caster = nullptr, Unit const* target = nullptr, AuraScript* auraScript = nullptr) const;
     uint32 GetCastTime(WorldObject* caster, Spell* spell = nullptr) const;
     char* GetIcon(uint32 ID) const;
     uint32 GetCastTimeForBonus(DamageEffectType damagetype) const;
@@ -1105,6 +1107,7 @@ public:
     WeaponAttackType GetWeaponAttackType() const;
     float CalculateDefaultCoefficient(DamageEffectType const damagetype) const;
     float CalculateCustomCoefficient(WorldObject const* caster, DamageEffectType const damageType, float coeff, Spell* spell, bool donePart) const;
+    bool CanTriggerWeaponProcs() const;
     SpellCastResult GetErrorAtShapeshiftedCast(uint32 form) const;
     bool IsTargetInRange(WorldObject const* pCaster, WorldObject const* pTarget) const; // to be used in scripts for simple pre-cast range checks
     uint32 GetMechanic() const { return Mechanic; }
