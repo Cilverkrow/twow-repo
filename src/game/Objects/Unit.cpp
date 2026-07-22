@@ -5876,6 +5876,9 @@ bool Unit::IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellS
         }
     }
     // percent done
+    if (spell)
+        spell->OnSpellCritChanceCalculate(pVictim, crit_chance);
+
     // only players use intelligence for critical chance computations
     if (Player* modOwner = GetSpellModOwner())
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CRITICAL_CHANCE, crit_chance, spell);

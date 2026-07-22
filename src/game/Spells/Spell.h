@@ -464,6 +464,7 @@ class Spell
         WorldObject* GetCastingObject() const;
 
         uint32 GetPowerCost() const { return m_powerCost; }
+        void OnSpellCritChanceCalculate(Unit const* victim, float& critChance);
         void AddHealthLeech(int32 amount) { m_healthLeech += amount; }
 
         void UpdatePointers();                              // must be used at call Spell code after time delay (non triggered spell cast/update spell call/etc)

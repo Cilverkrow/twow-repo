@@ -1388,6 +1388,7 @@ struct SpellScript
     virtual std::optional<uint32> OnCalculatePowerCost(SpellEntry const* /*spellInfo*/, Unit* /*caster*/, Spell* /*spell*/, Item* /*castItem*/) const { return std::nullopt; }
     virtual bool OnTakePower(Spell* /*spell*/) const { return true; }
     virtual void OnEffectDamageCalculate(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, float& /*damage*/) const {}
+    virtual void OnSpellCritChanceCalculate(Spell* /*spell*/, Unit const* /*victim*/, float& /*critChance*/) const {}
     virtual bool OnEffectHealCalculate(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, int32& /*heal*/) const { return true; }
     virtual bool OnEffectExecute(Spell* /*spell*/, SpellEffectIndex /*effIdx*/) const { return true; }
     virtual void OnEffectExecuted(Spell* /*spell*/, SpellEffectIndex /*effIdx*/) const {}
@@ -1427,6 +1428,7 @@ struct AuraScript
     virtual void OnAbsorb(Aura* /*aura*/, int32& /*currentAbsorb*/, int32& /*remainingDamage*/, bool& /*dropCharge*/, DamageEffectType /*damageType*/) {}
     virtual void OnManaAbsorb(Aura* /*aura*/, int32& /*currentAbsorb*/, int32& /*remainingDamage*/) {}
     virtual void OnPeriodicCalculateAmount(Aura* /*aura*/, float& /*amount*/) {}
+    virtual void OnPeriodicHealingBonus(Aura* /*periodicAura*/, Aura* /*modifierAura*/, Unit* /*caster*/, Unit* /*target*/, uint32& /*amount*/) {}
     virtual void OnPeriodicTick(Aura* /*aura*/) {}
     virtual void OnPeriodicTrigger(Aura* /*aura*/, Unit* /*caster*/, Unit* /*target*/, WorldObject* /*targetObject*/, SpellEntry const*& /*spellInfo*/) {}
     virtual void OnPeriodicDummy(Aura* /*aura*/) {}

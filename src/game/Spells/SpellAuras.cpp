@@ -5834,25 +5834,7 @@ void Aura::PeriodicTick(SpellEntry const* sProto, AuraType auraType, uint32 data
 
             // SpellDamageBonus for magic spells
             if (spellProto->DmgClass == SPELL_DAMAGE_CLASS_NONE || spellProto->DmgClass == SPELL_DAMAGE_CLASS_MAGIC)
-            {
                 pdamage = target->SpellDamageBonusTaken(pCaster, spellProto, GetEffIndex(), pdamage, DOT, GetStackAmount());
-
-                // Genesis: boost periodic magical damage
-                if (pCaster && spellProto->School != SPELL_SCHOOL_NORMAL)
-                {
-                    int32 genesisBonus = 0;
-                    Unit::AuraList const& overrides = pCaster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                    for (const auto aura : overrides)
-                    {
-                        if (aura->GetModifier()->m_miscvalue != 5063)
-                            continue;
-                        genesisBonus = std::max(genesisBonus, aura->GetModifier()->m_amount);
-                    }
-
-                    if (genesisBonus)
-                        pdamage += pdamage * genesisBonus / 100;
-                }
-            }
             // MeleeDamagebonus for weapon based spells
             else
             {
@@ -6014,56 +5996,16 @@ void Aura::PeriodicTick(SpellEntry const* sProto, AuraType auraType, uint32 data
                 pdamage = dither(std::max(amount, 0.0f));
 
             pdamage = target->SpellHealingBonusTaken(pCaster, spellProto, GetEffIndex(), pdamage, DOT, GetStackAmount());
-
-            // Preservation: boost Regrowth HoT ticks if the target already has the caster's Rejuvenation
-            if (pCaster && spellProto->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_REGROWTH>())
+            Unit::SpellAuraHolderMap const& casterAuras = pCaster->GetSpellAuraHolderMap();
+            for (auto const& itr : casterAuras)
             {
-                bool hasRejuvenation = false;
-                Unit::AuraList const& periodicHeals = target->GetAurasByType(SPELL_AURA_PERIODIC_HEAL);
-                for (const auto aura : periodicHeals)
-                {
-                    if (aura->GetCasterGuid() != pCaster->GetObjectGuid())
-                        continue;
+                SpellAuraHolder* holder = itr.second;
+                if (!holder || holder->IsDeleted() || !holder->GetAuraScript())
+                    continue;
 
-                    if (aura->GetSpellProto()->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_REJUVENATION>())
-                    {
-                        hasRejuvenation = true;
-                        break;
-                    }
-                }
-
-                if (hasRejuvenation)
-                {
-                    int32 preservationBonus = 0;
-                    Unit::AuraList const& overrides = pCaster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                    for (const auto aura : overrides)
-                    {
-                        if (aura->GetModifier()->m_miscvalue != 5064) // Preservation script id
-                            continue;
-
-                        if (aura->GetModifier()->m_amount > preservationBonus)
-                            preservationBonus = aura->GetModifier()->m_amount;
-                    }
-
-                    if (preservationBonus)
-                        pdamage += pdamage * preservationBonus / 100;
-                }
-            }
-
-            // Genesis: boost periodic magical healing
-            if (pCaster && spellProto->School != SPELL_SCHOOL_NORMAL)
-            {
-                int32 genesisBonus = 0;
-                Unit::AuraList const& overrides = pCaster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                for (const auto aura : overrides)
-                {
-                    if (aura->GetModifier()->m_miscvalue != 5063)
-                        continue;
-                    genesisBonus = std::max(genesisBonus, aura->GetModifier()->m_amount);
-                }
-
-                if (genesisBonus)
-                    pdamage += pdamage * genesisBonus / 100;
+                for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+                    if (Aura* modifierAura = holder->GetAuraByEffectIndex(SpellEffectIndex(i)))
+                        holder->GetAuraScript()->OnPeriodicHealingBonus(this, modifierAura, pCaster, target, pdamage);
             }
 
             uint32 const originalAmount = pdamage;

@@ -7202,6 +7202,12 @@ uint32 Spell::CalculatePowerCost(SpellEntry const* spellInfo, Unit* caster, Spel
     return powerCost;
 }
 
+void Spell::OnSpellCritChanceCalculate(Unit const* victim, float& critChance)
+{
+    if (m_spellScript)
+        m_spellScript->OnSpellCritChanceCalculate(this, victim, critChance);
+}
+
 SpellCastResult Spell::CheckPower() const
 {
     // item cast not used power

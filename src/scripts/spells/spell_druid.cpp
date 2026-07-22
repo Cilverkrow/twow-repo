@@ -11,7 +11,23 @@ enum DruidSpells
     SPELL_DRUID_FRENZIED_REGENERATION_RANK_3 = 22896,
     SPELL_DRUID_EFFLORESCENCE = 51397,
     SPELL_DRUID_RESHIFT = 47379,
-    SPELL_DRUID_AESSINAS_BLOOM = 52567,
+    SPELL_DRUID_AESSINAS_BLOOM_RANK_1 = 51446,
+    SPELL_DRUID_AESSINAS_BLOOM_RANK_2 = 51447,
+    SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_1 = 46788,
+    SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_2 = 46789,
+    SPELL_DRUID_AESSINAS_BLOOM_MANA = 52567,
+    SPELL_DRUID_PRESERVATION_RANK_1 = 51448,
+    SPELL_DRUID_PRESERVATION_RANK_2 = 51449,
+    SPELL_DRUID_PRESERVATION_RANK_3 = 51450,
+    SPELL_DRUID_BALANCE_OF_ALL_THINGS_RANK_1 = 51433,
+    SPELL_DRUID_BALANCE_OF_ALL_THINGS_RANK_2 = 51434,
+    SPELL_DRUID_BALANCE_OF_ALL_THINGS_RANK_3 = 51435,
+    SPELL_DRUID_ECLIPSE = 51444,
+    SPELL_DRUID_ECLIPSE_ARCANE = 51445,
+    SPELL_DRUID_NATURE_ECLIPSE = 51442,
+    SPELL_DRUID_ARCANE_ECLIPSE = 51443,
+    SPELL_DRUID_CARNAGE_HEAL = 52735,
+    SPELL_DRUID_CARNAGE_COMBO_POINT = 52736,
 };
 
 template <class T>
@@ -47,36 +63,57 @@ uint32 CountDruidBleedsOnTarget(Unit* target, Player* caster)
     if (!target || !caster)
         return 0;
 
-    static uint32 const bleedSpellIds[] =
-    {
-        1822, 1823, 1824, 9904,
-        1079, 9493, 9752, 9894, 9896,
-        9007, 9824, 9826
-    };
-
     uint32 bleedCount = 0;
     ObjectGuid casterGuid = caster->GetObjectGuid();
-    for (uint32 bleedId : bleedSpellIds)
+    Unit::AuraList const& periodic = target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
+    for (Aura const* aura : periodic)
     {
-        if (target->GetSpellAuraHolder(bleedId, casterGuid))
+        if (aura->GetCasterGuid() != casterGuid)
+            continue;
+
+        SpellEntry const* auraSpell = aura->GetSpellProto();
+        if (auraSpell && (auraSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_RAKE_CLAW>() || auraSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_RIP_BITE>()))
             ++bleedCount;
     }
 
-    if (!bleedCount)
-    {
-        Unit::AuraList const& periodic = target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
-        for (Aura const* aura : periodic)
-        {
-            if (aura->GetCasterGuid() != casterGuid)
-                continue;
+    return bleedCount;
+}
 
-            SpellEntry const* auraSpell = aura->GetSpellProto();
-            if (auraSpell && (auraSpell->IsFitToFamilyMask<CF_DRUID_RAKE_CLAW>() || auraSpell->IsFitToFamilyMask<CF_DRUID_RIP_BITE>()))
-                ++bleedCount;
-        }
+template <ClassFlag... Args>
+bool TargetHasDruidPeriodicAuraFromCaster(Unit const* target, ObjectGuid casterGuid)
+{
+    if (!target)
+        return false;
+
+    Unit::AuraList const& periodic = target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
+    for (Aura const* aura : periodic)
+    {
+        if (aura->GetCasterGuid() != casterGuid)
+            continue;
+
+        SpellEntry const* auraSpell = aura->GetSpellProto();
+        if (auraSpell && auraSpell->IsFitToFamily<SPELLFAMILY_DRUID, Args...>())
+            return true;
     }
 
-    return bleedCount;
+    return false;
+}
+
+template <ClassFlag... Args>
+bool TargetHasDruidPeriodicHeal(Unit const* target)
+{
+    if (!target)
+        return false;
+
+    Unit::AuraList const& periodic = target->GetAurasByType(SPELL_AURA_PERIODIC_HEAL);
+    for (Aura const* aura : periodic)
+    {
+        SpellEntry const* auraSpell = aura->GetSpellProto();
+        if (auraSpell && auraSpell->IsFitToFamily<SPELLFAMILY_DRUID, Args...>())
+            return true;
+    }
+
+    return false;
 }
 
 int32 GetOpenWoundsBonus(Player* caster, bool forClaw)
@@ -93,6 +130,58 @@ int32 GetOpenWoundsBonus(Player* caster, bool forClaw)
     }
 
     return bonus;
+}
+
+int32 GetBalanceOfAllThingsStarfireCritBonus(Unit* caster)
+{
+    if (!caster)
+        return 0;
+
+    int32 bonus = 0;
+    Unit::AuraList const& overrides = caster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
+    for (Aura const* aura : overrides)
+    {
+        if (aura->GetModifier()->m_miscvalue != 5060)
+            continue;
+
+        switch (aura->GetId())
+        {
+            case SPELL_DRUID_BALANCE_OF_ALL_THINGS_RANK_1:
+            case SPELL_DRUID_BALANCE_OF_ALL_THINGS_RANK_2:
+            case SPELL_DRUID_BALANCE_OF_ALL_THINGS_RANK_3:
+                bonus = std::max(bonus, aura->GetModifier()->m_amount);
+                break;
+        }
+    }
+
+    return bonus;
+}
+
+bool IsDruidFerociousBite(SpellEntry const* spellInfo)
+{
+    return spellInfo && spellInfo->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_RIP_BITE>() &&
+            spellInfo->HasEffect(SPELL_EFFECT_SCHOOL_DAMAGE);
+}
+
+void RefreshDruidCarnageBleed(Unit* target, ObjectGuid casterGuid, uint64 classMask, uint32 spellIconId)
+{
+    if (!target)
+        return;
+
+    Unit::AuraList const& periodic = target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
+    for (Aura* aura : periodic)
+    {
+        if (aura->GetCasterGuid() != casterGuid)
+            continue;
+
+        SpellEntry const* auraSpell = aura->GetSpellProto();
+        if (!auraSpell || !auraSpell->IsFitToFamily(SPELLFAMILY_DRUID, classMask) ||
+                auraSpell->SpellIconID != spellIconId)
+            continue;
+
+        aura->GetHolder()->RefreshHolder();
+        return;
+    }
 }
 
 SpellEntry const* GetCurrentShapeshiftSpell(Unit* caster)
@@ -186,10 +275,14 @@ struct spell_druid_swiftmend : public SpellScript
 
         int32 tickheal = targetAura->GetModifier()->m_amount;
         int32 tickcount = 0;
+        uint32 const period = targetAura->GetModifier()->periodictime;
+        if (!period)
+            return false;
+
         if (targetAura->GetSpellProto()->IsFitToFamilyMask<CF_DRUID_REGROWTH>())
-            tickcount = 6;
+            tickcount = 18000 / period;
         if (targetAura->GetSpellProto()->IsFitToFamilyMask<CF_DRUID_REJUVENATION>())
-            tickcount = 4;
+            tickcount = 12000 / period;
 
         target->RemoveAurasDueToSpell(targetAura->GetId());
         heal += tickheal * tickcount;
@@ -197,28 +290,81 @@ struct spell_druid_swiftmend : public SpellScript
     }
 };
 
-struct spell_druid_aessinas_bloom : public SpellScript
+struct spell_druid_aessinas_bloom : public AuraScript
 {
-    void OnEffectDamageCalculate(Spell* spell, SpellEffectIndex /*effIdx*/, float& damage) const override
+    std::optional<SpellProcEventTriggerCheck> OnCheckProc(Unit const* /*owner*/, Unit* victim, SpellAuraHolder* holder, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procExtra*/, WeaponAttackType /*attType*/, bool /*isVictim*/) override
     {
-        Unit* target = spell->GetUnitTarget();
-        if (!target || !spell->m_casterUnit)
+        switch (holder->GetId())
+        {
+            case SPELL_DRUID_AESSINAS_BLOOM_RANK_1:
+            case SPELL_DRUID_AESSINAS_BLOOM_RANK_2:
+                if (!procSpell || !procSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_HEALING_TOUCH>())
+                    return SPELL_PROC_TRIGGER_FAILED;
+
+                if (!TargetHasDruidPeriodicHeal<CF_DRUID_REJUVENATION, CF_DRUID_REGROWTH>(victim))
+                    return SPELL_PROC_TRIGGER_FAILED;
+
+                return std::nullopt;
+            case SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_1:
+            case SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_2:
+                if (!procSpell || !procSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_HEALING_TOUCH>())
+                    return SPELL_PROC_TRIGGER_FAILED;
+
+                return std::nullopt;
+            default:
+                return std::nullopt;
+        }
+    }
+
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        if (!owner || !aura || !procSpell)
+            return SPELL_AURA_PROC_FAILED;
+
+        switch (aura->GetId())
+        {
+            case SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_1:
+            case SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_2:
+                break;
+            default:
+                return std::nullopt;
+        }
+
+        return SPELL_AURA_PROC_CANT_TRIGGER;
+    }
+};
+
+struct spell_druid_healing_touch : public SpellScript
+{
+    void OnFinish(Spell* spell, bool ok) const override
+    {
+        if (!ok || !spell || !spell->m_casterUnit || !spell->GetPowerCost())
             return;
 
-        Unit::AuraList const& periodicHeals = target->GetAurasByType(SPELL_AURA_PERIODIC_HEAL);
-        for (Aura* aura : periodicHeals)
+        int32 refundPct = 0;
+        for (SpellModifier const* mod : spell->m_appliedMods)
         {
-            if (aura->GetCasterGuid() == spell->m_casterUnit->GetObjectGuid() &&
-                    aura->GetSpellProto()->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_REGROWTH>())
+            if (!mod || !mod->ownerAura)
+                continue;
+
+            switch (mod->ownerAura->GetId())
             {
-                int32 tickAmount = aura->GetSpellProto()->CalculateSimpleValue(EFFECT_INDEX_1);
-                if (tickAmount > 0)
-                    spell->m_casterUnit->DealHeal(target, uint32(tickAmount * 2), spell->m_spellInfo);
-                break;
+                case SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_1:
+                case SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_2:
+                    if (SpellEntry const* bloomInfo = mod->ownerAura->GetSpellProto())
+                        refundPct = std::max(refundPct, bloomInfo->CalculateSimpleValue(EFFECT_INDEX_0));
+                    break;
+                default:
+                    break;
             }
         }
 
-        damage = -1;
+        if (refundPct <= 0)
+            return;
+
+        int32 const refund = spell->GetPowerCost() * uint32(refundPct) / 100;
+        if (refund > 0)
+            spell->m_casterUnit->CastCustomSpell(spell->m_casterUnit, SPELL_DRUID_AESSINAS_BLOOM_MANA, &refund, nullptr, nullptr, true, nullptr);
     }
 };
 
@@ -305,6 +451,44 @@ struct spell_druid_tree_of_life_aura : public AuraScript
             return value;
 
         return caster->GetStat(STAT_SPIRIT) * (float(value) / 100.0f);
+    }
+};
+
+struct spell_druid_preservation : public AuraScript
+{
+    void OnPeriodicHealingBonus(Aura* periodicAura, Aura* modifierAura, Unit* caster, Unit* target, uint32& amount) override
+    {
+        if (!periodicAura || !modifierAura || !caster || !target)
+            return;
+
+        switch (modifierAura->GetId())
+        {
+            case SPELL_DRUID_PRESERVATION_RANK_1:
+            case SPELL_DRUID_PRESERVATION_RANK_2:
+            case SPELL_DRUID_PRESERVATION_RANK_3:
+                break;
+            default:
+                return;
+        }
+
+        SpellEntry const* periodicSpell = periodicAura->GetSpellProto();
+        if (!periodicSpell || !periodicSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_REGROWTH>())
+            return;
+
+        ObjectGuid const casterGuid = caster->GetObjectGuid();
+        Unit::AuraList const& periodicHeals = target->GetAurasByType(SPELL_AURA_PERIODIC_HEAL);
+        for (Aura const* aura : periodicHeals)
+        {
+            if (aura->GetCasterGuid() != casterGuid)
+                continue;
+
+            SpellEntry const* auraSpell = aura->GetSpellProto();
+            if (!auraSpell || !auraSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_REJUVENATION>())
+                continue;
+
+            amount += amount * modifierAura->GetModifier()->m_amount / 100;
+            return;
+        }
     }
 };
 
@@ -419,12 +603,6 @@ struct spell_druid_ferocious_bite : public SpellScript
             }
         }
 
-        if (uint32 bleeds = CountDruidBleedsOnTarget(spell->GetUnitTarget(), player))
-        {
-            int32 bonusPerBleed = GetOpenWoundsBonus(player, false);
-            if (bonusPerBleed > 0)
-                damage = int32(float(damage) * (100.0f + bonusPerBleed * bleeds) / 100.0f);
-        }
     }
 };
 
@@ -440,6 +618,143 @@ struct spell_druid_thorns_explosion : public AuraScript
 
         owner->CastSpell(victim, aura->GetSpellProto()->EffectTriggerSpell[aura->GetEffIndex()], true, nullptr, aura);
         return SPELL_AURA_PROC_OK;
+    }
+};
+
+struct spell_druid_balance_of_all_things : public AuraScript
+{
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* victim, uint32 damage, int32 /*originalAmount*/, Aura* aura, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        if (!owner || !procSpell)
+            return SPELL_AURA_PROC_FAILED;
+
+        if (aura->GetEffIndex() != EFFECT_INDEX_0)
+            return SPELL_AURA_PROC_CANT_TRIGGER;
+
+        if (!damage || !procSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_WRATH>())
+            return SPELL_AURA_PROC_OK;
+
+        if (!TargetHasDruidPeriodicAuraFromCaster<CF_DRUID_INSECT_SWARM>(victim, owner->GetObjectGuid()))
+            return SPELL_AURA_PROC_OK;
+
+        int32 const refund = Spell::CalculatePowerCost(procSpell, owner) * uint32(aura->GetModifier()->m_amount) / 100;
+        if (refund > 0)
+            owner->CastCustomSpell(owner, 51671, &refund, nullptr, nullptr, true, nullptr, aura);
+
+        return SPELL_AURA_PROC_OK;
+    }
+};
+
+struct spell_druid_carnage : public AuraScript
+{
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* victim, uint32 damage, int32 /*originalAmount*/, Aura* aura, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        if (!owner || !procSpell || !damage)
+            return SPELL_AURA_PROC_FAILED;
+
+        switch (aura->GetEffIndex())
+        {
+            case EFFECT_INDEX_0:
+            {
+                if (!procSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_MAUL_SWIPE, CF_DRUID_SAVAGE_BITE>())
+                    return SPELL_AURA_PROC_CANT_TRIGGER;
+
+                int32 const heal = int32(float(damage) * float(aura->GetModifier()->m_amount) / 100.0f);
+                if (heal <= 0)
+                    return SPELL_AURA_PROC_FAILED;
+
+                owner->CastCustomSpell(owner, SPELL_DRUID_CARNAGE_HEAL, &heal, nullptr, nullptr, true, nullptr, aura);
+                return SPELL_AURA_PROC_OK;
+            }
+            case EFFECT_INDEX_1:
+            {
+                Player* player = owner->ToPlayer();
+                if (!player || !victim || !IsDruidFerociousBite(procSpell))
+                    return SPELL_AURA_PROC_CANT_TRIGGER;
+
+                uint8 const comboPoints = player->GetComboPoints();
+                if (!comboPoints)
+                    return SPELL_AURA_PROC_FAILED;
+
+                float const chance = float(aura->GetSpellProto()->CalculateSimpleValue(EFFECT_INDEX_0) * 2 * comboPoints);
+                if (!roll_chance_f(chance))
+                    return SPELL_AURA_PROC_FAILED;
+
+                RefreshDruidCarnageBleed(victim, owner->GetObjectGuid(), UI64LIT(1) << CF_DRUID_RAKE_CLAW, 494);
+                RefreshDruidCarnageBleed(victim, owner->GetObjectGuid(), UI64LIT(1) << CF_DRUID_RIP_BITE, 108);
+
+                if (Spell* spell = owner->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                    spell->AddTriggeredSpell(SPELL_DRUID_CARNAGE_COMBO_POINT);
+                else
+                    owner->CastSpell(victim, SPELL_DRUID_CARNAGE_COMBO_POINT, true, nullptr, aura);
+
+                return SPELL_AURA_PROC_OK;
+            }
+            default:
+                break;
+        }
+
+        return SPELL_AURA_PROC_CANT_TRIGGER;
+    }
+};
+
+struct spell_druid_eclipse : public AuraScript
+{
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 damage, int32 /*originalAmount*/, Aura* aura, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 cooldown) override
+    {
+        if (!owner || !procSpell)
+            return SPELL_AURA_PROC_FAILED;
+
+        if (aura->GetEffIndex() != EFFECT_INDEX_0)
+            return SPELL_AURA_PROC_CANT_TRIGGER;
+
+        uint32 const triggerSpellId = aura->GetSpellProto()->EffectTriggerSpell[aura->GetEffIndex()];
+        uint32 excludedSpellId = 0;
+        switch (triggerSpellId)
+        {
+            case SPELL_DRUID_ARCANE_ECLIPSE:
+                if (!procSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_WRATH>())
+                    return SPELL_AURA_PROC_CANT_TRIGGER;
+                excludedSpellId = SPELL_DRUID_NATURE_ECLIPSE;
+                break;
+            case SPELL_DRUID_NATURE_ECLIPSE:
+                if (!procSpell->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_STARFIRE>())
+                    return SPELL_AURA_PROC_CANT_TRIGGER;
+                excludedSpellId = SPELL_DRUID_ARCANE_ECLIPSE;
+                break;
+            default:
+                return SPELL_AURA_PROC_FAILED;
+        }
+
+        if (!damage || owner->HasAura(triggerSpellId) || owner->HasAura(excludedSpellId) || owner->HasSpellCooldown(triggerSpellId))
+            return SPELL_AURA_PROC_FAILED;
+
+        SpellEntry const* triggerSpellInfo = sSpellMgr.GetSpellEntry(triggerSpellId);
+        if (!triggerSpellInfo)
+            return SPELL_AURA_PROC_FAILED;
+
+        int32 bonus = triggerSpellInfo->CalculateSimpleValue(EFFECT_INDEX_0);
+        if (Player* player = owner->ToPlayer())
+            bonus += int32(player->GetSpellCritPercent(GetFirstSchoolInMask(procSpell->GetSpellSchoolMask())) * float(aura->GetModifier()->m_amount) / 100.0f);
+
+        owner->CastCustomSpell(owner, triggerSpellId, &bonus, nullptr, nullptr, true, nullptr, aura);
+        owner->AddSpellCooldown(triggerSpellId, 0, time(nullptr) + (cooldown ? cooldown : 30));
+        return SPELL_AURA_PROC_OK;
+    }
+};
+
+struct spell_druid_starfire : public SpellScript
+{
+    void OnSpellCritChanceCalculate(Spell* spell, Unit const* victim, float& critChance) const override
+    {
+        if (!spell->m_spellInfo->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_STARFIRE>())
+            return;
+
+        Unit* caster = spell->m_casterUnit;
+        if (!caster || !TargetHasDruidPeriodicAuraFromCaster<CF_DRUID_MOONFIRE>(victim, caster->GetObjectGuid()))
+            return;
+
+        critChance += GetBalanceOfAllThingsStarfireCritBonus(caster);
     }
 };
 
@@ -503,6 +818,18 @@ struct spell_druid_efflorescence : public AuraScript
 
 struct spell_druid_rip : public AuraScript
 {
+    void OnPeriodicCalculateAmount(Aura* aura, float& amount) override
+    {
+        Unit* caster = aura->GetCaster();
+        Player* player = caster ? caster->ToPlayer() : nullptr;
+        if (!player)
+            return;
+
+        int32 const bonusPct = GetOpenWoundsBonus(player, false);
+        if (bonusPct > 0)
+            amount = amount * (100.0f + bonusPct) / 100.0f;
+    }
+
     int32 OnDurationCalculate(WorldObject const* caster, Unit const* /*target*/, int32 /*duration*/) override
     {
         Player const* player = caster ? caster->ToPlayer() : nullptr;
@@ -579,19 +906,25 @@ void AddSC_druid_spell_scripts()
 {
     RegisterSpellScript("spell_druid_reshift", &GetSpellScript<spell_druid_reshift>);
     RegisterSpellScript("spell_druid_swiftmend", &GetSpellScript<spell_druid_swiftmend>);
-    RegisterSpellScript("spell_druid_aessinas_bloom", &GetSpellScript<spell_druid_aessinas_bloom>);
+    RegisterSpellScript("spell_druid_healing_touch", &GetSpellScript<spell_druid_healing_touch>);
     RegisterSpellScript("spell_druid_berserk", &GetSpellScript<spell_druid_berserk>);
     RegisterSpellScript("spell_druid_enrage", &GetSpellScript<spell_druid_enrage>);
     RegisterSpellScript("spell_druid_shapeshift_root_snare_removal", &GetSpellScript<spell_druid_shapeshift_root_snare_removal>);
     RegisterSpellScript("spell_druid_open_wounds", &GetSpellScript<spell_druid_open_wounds>);
     RegisterSpellScript("spell_druid_ferocious_bite", &GetSpellScript<spell_druid_ferocious_bite>);
+    RegisterSpellScript("spell_druid_starfire", &GetSpellScript<spell_druid_starfire>);
+    RegisterAuraScript("spell_druid_aessinas_bloom", &GetAuraScript<spell_druid_aessinas_bloom>);
     RegisterAuraScript("spell_druid_thorns_explosion", &GetAuraScript<spell_druid_thorns_explosion>);
+    RegisterAuraScript("spell_druid_balance_of_all_things", &GetAuraScript<spell_druid_balance_of_all_things>);
+    RegisterAuraScript("spell_druid_carnage", &GetAuraScript<spell_druid_carnage>);
+    RegisterAuraScript("spell_druid_eclipse", &GetAuraScript<spell_druid_eclipse>);
     RegisterAuraScript("spell_druid_frenzied_regeneration", &GetAuraScript<spell_druid_frenzied_regeneration>);
     RegisterAuraScript("spell_druid_efflorescence", &GetAuraScript<spell_druid_efflorescence>);
     RegisterAuraScript("spell_druid_rip", &GetAuraScript<spell_druid_rip>);
     RegisterAuraScript("spell_druid_moonclaw", &GetAuraScript<spell_druid_moonclaw>);
     RegisterAuraScript("spell_druid_berserk_form_swap", &GetAuraScript<spell_druid_berserk_form_swap>);
     RegisterAuraScript("spell_druid_tree_of_life_aura", &GetAuraScript<spell_druid_tree_of_life_aura>);
+    RegisterAuraScript("spell_druid_preservation", &GetAuraScript<spell_druid_preservation>);
     RegisterAuraScript("spell_druid_glyph_of_the_moon", &GetAuraScript<spell_druid_glyph_of_the_moon>);
     RegisterAuraScript("spell_druid_primal_fury", &GetAuraScript<spell_druid_primal_fury>);
 }
