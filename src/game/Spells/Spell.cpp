@@ -4871,7 +4871,7 @@ void Spell::SendLogExecute()
                 case SPELL_EFFECT_ATTACK_ME:
                 case SPELL_EFFECT_SKIN_PLAYER_CORPSE:
                 case SPELL_EFFECT_MODIFY_THREAT_PERCENT:
-                case SPELL_EFFECT_126:
+                case SPELL_EFFECT_STEAL_BENEFICIAL_BUFF:
                 case SPELL_EFFECT_OPEN_LOCK:
                 case SPELL_EFFECT_OPEN_LOCK_ITEM:
                 case SPELL_EFFECT_DISMISS_PET:

@@ -3070,6 +3070,7 @@ namespace SpellInternal
                 case SPELL_EFFECT_APPLY_AREA_AURA_ENEMY:
                 case SPELL_EFFECT_APPLY_AREA_AURA_FRIEND:
                 case SPELL_EFFECT_APPLY_AREA_AURA_OWNER:
+                case SPELL_EFFECT_APPLY_AURA_PET:
                 return true;
                 default:
                     break;
@@ -3127,7 +3128,9 @@ namespace SpellInternal
 
         for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
         {
-            if (SpellEffects(spellInfo->Effect[i]) == SPELL_EFFECT_APPLY_AURA || SpellEffects(spellInfo->Effect[i]) == SPELL_EFFECT_APPLY_AREA_AURA_PARTY)
+            if (SpellEffects(spellInfo->Effect[i]) == SPELL_EFFECT_APPLY_AURA ||
+                SpellEffects(spellInfo->Effect[i]) == SPELL_EFFECT_APPLY_AURA_PET ||
+                SpellEffects(spellInfo->Effect[i]) == SPELL_EFFECT_APPLY_AREA_AURA_PARTY)
                 return false;
         }
 

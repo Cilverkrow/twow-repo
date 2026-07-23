@@ -263,12 +263,12 @@ enum SpellEffects
     SPELL_EFFECT_APPLY_AREA_AURA_PET       = 119,
     SPELL_EFFECT_TELEPORT_GRAVEYARD        = 120,
     SPELL_EFFECT_NORMALIZED_WEAPON_DMG     = 121,
-    SPELL_EFFECT_122                       = 122,
+    SPELL_EFFECT_REPUTATION_QUEST_REWARD   = 122,
     SPELL_EFFECT_SEND_TAXI                 = 123,
     SPELL_EFFECT_PLAYER_PULL               = 124,
     SPELL_EFFECT_MODIFY_THREAT_PERCENT     = 125,
-    SPELL_EFFECT_126                       = 126,
-    SPELL_EFFECT_127                       = 127,
+    SPELL_EFFECT_STEAL_BENEFICIAL_BUFF     = 126,
+    SPELL_EFFECT_PROSPECTING               = 127,
     // Effets "backportes" depuis MaNGOS BC+.
     SPELL_EFFECT_APPLY_AREA_AURA_FRIEND    = 128,
     SPELL_EFFECT_APPLY_AREA_AURA_ENEMY     = 129,
@@ -277,7 +277,8 @@ enum SpellEffects
     SPELL_EFFECT_NOSTALRIUS                = 131,
     SPELL_EFFECT_APPLY_AREA_AURA_RAID      = 132,
     SPELL_EFFECT_APPLY_AREA_AURA_OWNER     = 133,
-    TOTAL_SPELL_EFFECTS                    = 134
+    SPELL_EFFECT_APPLY_AURA_PET            = 134,
+    TOTAL_SPELL_EFFECTS                    = 135
 };
 
 enum SpellCastResult
@@ -515,8 +516,13 @@ enum SpellModOp
     SPELLMOD_DOT                    = 22,
     SPELLMOD_HASTE                  = 23,
     SPELLMOD_SPELL_BONUS_DAMAGE     = 24,
+    SPELLMOD_PROC_CHANCE            = 26,
     SPELLMOD_MULTIPLE_VALUE         = 27,
     SPELLMOD_RESIST_DISPEL_CHANCE   = 28,
+    SPELLMOD_PROC_COOLDOWN          = 29,
+    SPELLMOD_POWER_GAIN             = 30,
+    SPELLMOD_CUSTOM_VALUE_1         = 31,
+    SPELLMOD_CUSTOM_VALUE_2         = 32,
     SPELLMOD_CHANCE_TO_NOT_CONSUME  = 33,
     MAX_SPELLMOD                    = 34,
 };
@@ -529,7 +535,7 @@ enum AuraState
     AURA_STATE_BERSERKING                   = 3,            // C   |
     AURA_STATE_FROZEN                       = 4,            //     | frozen target (but not used for any spells in 1.12.1 at client side)
     AURA_STATE_JUDGEMENT                    = 5,            // C   |
-    //AURA_STATE_UNKNOWN6                   = 6,            //     | not used
+    AURA_STATE_CRIT                         = 6,            // C   | caster recently critically hit
     AURA_STATE_HUNTER_PARRY                 = 7,            // C   |
     AURA_STATE_ROGUE_ATTACK_FROM_STEALTH    = 8,            // C   | FIX ME: not implemented yet!
     // Custom aura states - not based on spell data:
@@ -539,6 +545,7 @@ enum AuraState
     AURA_STATE_HEALTHLESS_35_PERCENT        = 12, // custom
     AURA_STATE_SPELL_RESISTED               = 13, // custom: recently had a spell resist
     AURA_STATE_TARGET_DODGED                = 14, // custom: target recently dodged caster attack
+    AURA_STATE_PET_CRIT                     = 15, // custom: caster's pet recently critically hit
     AURA_STATE_SHAPESHIFTED                 = 16, // custom: shapeshift form active
 };
 

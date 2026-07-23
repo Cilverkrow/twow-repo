@@ -434,6 +434,7 @@ namespace Spells
             case SPELL_EFFECT_APPLY_AREA_AURA_FRIEND:
             case SPELL_EFFECT_APPLY_AREA_AURA_ENEMY:
             case SPELL_EFFECT_APPLY_AREA_AURA_OWNER:
+            case SPELL_EFFECT_APPLY_AURA_PET:
                 return true;
         }
 

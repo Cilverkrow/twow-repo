@@ -9428,6 +9428,25 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, uint32 procFlag, 
             }
             else //For attacker
             {
+                // Kill Command on critting victim
+                if ((procExtra & PROC_EX_CRITICAL_HIT) && pTarget)
+                {
+                    if (IsPlayer() && GetClass() == CLASS_HUNTER)
+                    {
+                        ModifyAuraState(AURA_STATE_CRIT, true);
+                        StartReactiveTimer(REACTIVE_CRIT, pTarget->GetObjectGuid());
+                    }
+                    // Deprecated in 1.18.1 - Baited Shot on pet critting victim
+                     else if (Unit* owner = GetOwner())
+                     {
+                         if (owner->IsPlayer() && owner->GetClass() == CLASS_HUNTER)
+                         {
+                             owner->ModifyAuraState(AURA_STATE_PET_CRIT, true);
+                             owner->StartReactiveTimer(REACTIVE_PET_CRIT, pTarget->GetObjectGuid());
+                         }
+                     }
+                }
+
                 // Overpower on victim dodge
                 if (procExtra & PROC_EX_DODGE && IsPlayer() && GetClass() == CLASS_WARRIOR)
                 {
@@ -9901,6 +9920,11 @@ void Unit::ClearAllReactives()
         ModifyAuraState(AURA_STATE_DEFENSE, false);
     if (GetClass() == CLASS_HUNTER && HasAuraState(AURA_STATE_HUNTER_PARRY))
         ModifyAuraState(AURA_STATE_HUNTER_PARRY, false);
+    if (HasAuraState(AURA_STATE_CRIT))
+        ModifyAuraState(AURA_STATE_CRIT, false);
+    // Deprecated in 1.18.1 for Baited Shot.
+    if (GetClass() == CLASS_HUNTER && HasAuraState(AURA_STATE_PET_CRIT))
+        ModifyAuraState(AURA_STATE_PET_CRIT, false);
     if (GetClass() == CLASS_ROGUE && HasAuraState(AURA_STATE_TARGET_DODGED))
         ModifyAuraState(AURA_STATE_TARGET_DODGED, false);
     if (GetClass() == CLASS_WARRIOR && IsPlayer())
@@ -9930,6 +9954,15 @@ void Unit::UpdateReactives(uint32 p_time)
                 case REACTIVE_HUNTER_PARRY:
                     if (GetClass() == CLASS_HUNTER && HasAuraState(AURA_STATE_HUNTER_PARRY))
                         ModifyAuraState(AURA_STATE_HUNTER_PARRY, false);
+                    break;
+                case REACTIVE_CRIT:
+                    if (GetClass() == CLASS_HUNTER && HasAuraState(AURA_STATE_CRIT))
+                        ModifyAuraState(AURA_STATE_CRIT, false);
+                    break;
+                // Deprecated in 1.18.1 for Baited Shot.
+                case REACTIVE_PET_CRIT:
+                    if (GetClass() == CLASS_HUNTER && HasAuraState(AURA_STATE_PET_CRIT))
+                        ModifyAuraState(AURA_STATE_PET_CRIT, false);
                     break;
                 case REACTIVE_OVERPOWER:
                     if (GetClass() == CLASS_WARRIOR && IsPlayer())

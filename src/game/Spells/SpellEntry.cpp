@@ -945,6 +945,7 @@ bool SpellEntry::IsPositiveEffect(SpellEffectIndex effIndex, WorldObject const* 
             }
         // non-positive aura use
         case SPELL_EFFECT_APPLY_AURA:
+        case SPELL_EFFECT_APPLY_AURA_PET:
         {
             switch (EffectApplyAuraName[effIndex])
             {
