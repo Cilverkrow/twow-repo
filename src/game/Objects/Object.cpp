@@ -4047,6 +4047,21 @@ int32 WorldObject::MagicSpellHitChance(Unit* pVictim, SpellEntry const* spell, S
     if (Unit* pUnit = ToUnit())
     {
         modHitChance += int32(pUnit->m_modSpellHitChance);
+        if (Creature const* creature = pUnit->ToCreature())
+        {
+            Totem const* totem = creature->IsTotem() ? creature->ToTotem() : nullptr;
+            Unit* owner = totem && totem->GetTotemType() != TOTEM_STATUE ? pUnit->GetOwner() : nullptr;
+            Player const* playerOwner = owner ? owner->ToPlayer() : nullptr;
+
+            if (playerOwner && playerOwner->GetClass() == CLASS_SHAMAN &&
+                playerOwner->GetTotem(TOTEM_SLOT_FIRE) == totem &&
+                (spell->GetSpellSchoolMask() & SPELL_SCHOOL_MASK_FIRE) &&
+                spell->HasEffect(SPELL_EFFECT_SCHOOL_DAMAGE))
+            {
+                modHitChance += int32(playerOwner->m_modSpellHitChance);
+            }
+        }
+
         if (pUnit->IsPet())
         {
             if (Unit* owner = pUnit->GetOwner())

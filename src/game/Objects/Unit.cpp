@@ -4813,6 +4813,11 @@ void Unit::HandleTriggers(Unit* pVictim, uint32 procExtra, uint32 amount, int32 
         uint32 cooldown = 0;
         if (spellProcEvent && spellProcEvent->cooldown)
             cooldown = spellProcEvent->cooldown;
+        if (cooldown)
+        {
+            if (Player* modOwner = triggeredByHolder->GetTarget()->GetSpellModOwner())
+                modOwner->ApplySpellMod(triggeredByHolder->GetId(), SPELLMOD_PROC_COOLDOWN, cooldown);
+        }
 
         for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
         {
@@ -4868,6 +4873,9 @@ void Unit::HandleTriggers(Unit* pVictim, uint32 procExtra, uint32 amount, int32 
             // If last charge dropped add spell to remove list
             if (triggeredByHolder->DropAuraCharge())
                 removedSpells.push_back(RemovedSpellData(triggeredByHolder->GetId(), caster));
+
+            if (triggeredByHolder->GetAuraScript())
+                triggeredByHolder->GetAuraScript()->OnAuraChargesChanged(triggeredByHolder);
         }
 
         triggeredByHolder->SetInUse(false);
@@ -5806,8 +5814,23 @@ bool Unit::IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellS
                     crit_chance = ((Player*)this)->GetSpellCritPercent(GetFirstSchoolInMask(schoolMask));
                 else
                 {
-                    crit_chance = float(m_baseSpellCritChance);
-                    crit_chance += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, schoolMask);
+                    Creature const* creature = ToCreature();
+                    Totem const* totem = creature && creature->IsTotem() ? creature->ToTotem() : nullptr;
+                    Unit* owner = totem && totem->GetTotemType() != TOTEM_STATUE ? GetOwner() : nullptr;
+                    Player const* playerOwner = owner ? owner->ToPlayer() : nullptr;
+
+                    if (playerOwner && playerOwner->GetClass() == CLASS_SHAMAN &&
+                        playerOwner->GetTotem(TOTEM_SLOT_FIRE) == totem &&
+                        (spellProto->GetSpellSchoolMask() & SPELL_SCHOOL_MASK_FIRE) &&
+                        spellProto->HasEffect(SPELL_EFFECT_SCHOOL_DAMAGE))
+                    {
+                        crit_chance = playerOwner->GetSpellCritPercent(GetFirstSchoolInMask(schoolMask));
+                    }
+                    else
+                    {
+                        crit_chance = float(m_baseSpellCritChance);
+                        crit_chance += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, schoolMask);
+                    }
                 }
                 if (IsPet())
                 {
@@ -5917,16 +5940,11 @@ uint32 Unit::SpellHealingBonusTaken(WorldObject* pCaster, SpellEntry const* spel
         return healamount < 0 ? 0 : healamount;
     }
 
-    // Taken mods
-    // Healing Wave cast
-    if (spellProto->IsFitToFamily<SPELLFAMILY_SHAMAN, CF_SHAMAN_HEALING_WAVE>())
-    {
-        // Search for Healing Way on Victim
-        Unit::AuraList const& auraDummy = GetAurasByType(SPELL_AURA_DUMMY);
-        for (const auto& itr : auraDummy)
-            if (itr->GetId() == 29203)
-                takenTotalMod *= (itr->GetModifier()->m_amount + 100.0f) / 100.0f;
-    }
+    // Scripted target-side healing taken mods
+    Unit::AuraList const& auraDummy = GetAurasByType(SPELL_AURA_DUMMY);
+    for (const auto& itr : auraDummy)
+        if (AuraScript* script = itr->GetAuraScript())
+            script->OnSpellHealingBonusTaken(itr, pCaster, spellProto, effectIndex, healamount, damagetype, stack, spell, takenTotalMod);
 
     // Healing Done
     // Done total percent damage auras
