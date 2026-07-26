@@ -260,7 +260,7 @@ pAuraProcHandler AuraProcHandler[TOTAL_AURAS] =
     &Unit::HandleNULLProc,                                  //221 SPELL_AURA_MOD_ATTACK_POWER_AREA
     &Unit::HandleNULLProc,                                  //222 SPELL_AURA_MOD_ATTACK_POWER_PERCENT_AREA
     &Unit::HandleNULLProc,                                  //223 SPELL_AURA_MOD_ITEM_PROC_CHANCE
-    &Unit::HandleNULLProc,                                  //224 SPELL_AURA_MOD_BLOCK_DAMAGE_PERCENT
+    &Unit::HandleModBlockDamagePercentAuraProc,             //224 SPELL_AURA_MOD_BLOCK_DAMAGE_PERCENT
     &Unit::HandleNULLProc,                                  //225 SPELL_AURA_MOD_GATHERING_ITEM_CHANCE
     &Unit::HandleModRageFromDamageDealtAuraProc,            //226 SPELL_AURA_MOD_RAGE_FROM_DAMAGE_DEALT
 };
@@ -450,6 +450,11 @@ SpellAuraProcResult Unit::HandleNULLProc(Unit* /*pVictim*/, uint32 /*damage*/, i
 
     // no proc handler for this aura type
     return SPELL_AURA_PROC_OK;
+}
+
+SpellAuraProcResult Unit::HandleModBlockDamagePercentAuraProc(Unit* /*pVictim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* /*triggeredByAura*/, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 procEx, uint32 /*cooldown*/)
+{
+    return (procEx & PROC_EX_BLOCK) ? SPELL_AURA_PROC_OK : SPELL_AURA_PROC_CANT_TRIGGER;
 }
 
 SpellAuraProcResult Unit::HandleHasteAuraProc(Unit *pVictim, uint32 damage, int32 /*originalAmount*/, Aura* triggeredByAura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 procEx, uint32 cooldown)

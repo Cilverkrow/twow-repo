@@ -115,7 +115,7 @@ SpellSpecific Spells::GetSpellSpecific(uint32 spellId)
             if (spellInfo->IsFitToFamilyMask(UI64LIT(0x0000000010000100)))
                 return SPELL_BLESSING;
 
-            if ((spellInfo->IsFitToFamilyMask(UI64LIT(0x180400))) && spellInfo->baseLevel != 0)
+            if (spellInfo->IsJudgementSpell() && spellInfo->baseLevel != 0)
                 return SPELL_JUDGEMENT;
 
             // Old Judgement of Command
@@ -736,25 +736,6 @@ float SpellEntry::CalculateCustomCoefficient(WorldObject const* caster, DamageEf
     {
         case SPELLFAMILY_PALADIN:
         {
-            // Seal of Righteousness
-            if (IsFitToFamilyMask(UI64LIT(0x0000000008000000)) && SpellIconID == 25)
-            {
-                coeff = 0.092f;
-                float speed = BASE_ATTACK_TIME;
-
-                if (caster->IsPlayer())
-                {
-                    if (Item *item = ((Player*)caster)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
-                    {
-                        coeff = item->isOneHandedWeapon() ? 0.092f : 0.108f;
-                        speed = item->GetProto()->Delay;
-                    }
-                }
-
-                speed /= 1000.0f;
-
-                return speed * coeff;
-            }
             // Seal of Command
             if (Id == 20424)
             {

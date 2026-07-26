@@ -2,6 +2,98 @@
 
 namespace
 {
+enum PaladinSpells
+{
+    SPELL_PALADIN_DEVOTION_AURA_R1                  = 465,
+    SPELL_PALADIN_DEVOTION_AURA_R2                  = 10290,
+    SPELL_PALADIN_DEVOTION_AURA_R3                  = 643,
+    SPELL_PALADIN_DEVOTION_AURA_R4                  = 10291,
+    SPELL_PALADIN_DEVOTION_AURA_R5                  = 1032,
+    SPELL_PALADIN_DEVOTION_AURA_R6                  = 10292,
+    SPELL_PALADIN_DEVOTION_AURA_R7                  = 10293,
+    SPELL_PALADIN_FORBEARANCE                       = 25771,
+    SPELL_PALADIN_JUDGEMENT                         = 20271,
+    SPELL_PALADIN_ILLUMINATION_ENERGIZE             = 20272,
+    SPELL_PALADIN_FLASH_OF_LIGHT_HEAL               = 19993,
+    SPELL_PALADIN_DEVOTION_AURA_DAMAGE_REDUCTION    = 45073,
+    SPELL_PALADIN_CONVICTION_PROC_1                 = 45619,
+    SPELL_PALADIN_CONVICTION_PROC_2                 = 45620,
+    SPELL_PALADIN_SPIRIT_ARMOR_DEPRECATED           = 45953,
+    SPELL_PALADIN_SANCTIFIED_COMMAND_DEPRECATED     = 45954,
+    SPELL_PALADIN_SANCTIFIED_COMMAND_MANA           = 45987,
+    SPELL_PALADIN_HOLY_SHOCK_R1                    = 20473,
+    SPELL_PALADIN_HOLY_SHOCK_R2                    = 20929,
+    SPELL_PALADIN_HOLY_SHOCK_R3                    = 20930,
+    SPELL_PALADIN_HOLY_SHOCK_R4                    = 51786,
+    SPELL_PALADIN_HOLY_SHOCK_DAMAGE_R1             = 25912,
+    SPELL_PALADIN_HOLY_SHOCK_DAMAGE_R2             = 25911,
+    SPELL_PALADIN_HOLY_SHOCK_DAMAGE_R3             = 25902,
+    SPELL_PALADIN_HOLY_SHOCK_DAMAGE_R4             = 52012,
+    SPELL_PALADIN_HOLY_SHOCK_HEAL_R1               = 25914,
+    SPELL_PALADIN_HOLY_SHOCK_HEAL_R2               = 25913,
+    SPELL_PALADIN_HOLY_SHOCK_HEAL_R3               = 25903,
+    SPELL_PALADIN_HOLY_SHOCK_HEAL_R4               = 51787,
+    SPELL_PALADIN_HOLY_SHOCK_RESET_CHANCE          = 51825,
+    SPELL_PALADIN_RIGHTEOUS_FURY                   = 25780,
+    SPELL_PALADIN_RIGHTEOUS_STRIKES_R1             = 51341,
+    SPELL_PALADIN_RIGHTEOUS_STRIKES_R2             = 51342,
+    SPELL_PALADIN_RIGHTEOUS_STRIKES_R3             = 51343,
+    SPELL_PALADIN_RIGHTEOUS_STRIKES_R4             = 51344,
+    SPELL_PALADIN_RIGHTEOUS_STRIKES_R5             = 51345,
+    SPELL_PALADIN_ZEALOUS_DEFENSE_R1               = 51336,
+    SPELL_PALADIN_ZEALOUS_DEFENSE_R2               = 51337,
+    SPELL_PALADIN_ZEALOUS_DEFENSE_R3               = 51338,
+    SPELL_PALADIN_ZEALOUS_DEFENSE_R4               = 51339,
+    SPELL_PALADIN_ZEALOUS_DEFENSE_R5               = 51340,
+    SPELL_PALADIN_VENGEANCE_HELPER_R1              = 20050,
+    SPELL_PALADIN_VENGEANCE_HELPER_R2              = 20052,
+    SPELL_PALADIN_VENGEANCE_HELPER_R3              = 20053,
+    SPELL_PALADIN_VENGEANCE_HELPER_R4              = 20054,
+    SPELL_PALADIN_VENGEANCE_HELPER_R5              = 20055,
+    SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R1          = 20467,
+    SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R2          = 20963,
+    SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R3          = 20964,
+    SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R4          = 20965,
+    SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R5          = 20966,
+    SPELL_PALADIN_SEAL_OF_COMMAND_R1               = 20375,
+    SPELL_PALADIN_SEAL_OF_COMMAND_R2               = 20915,
+    SPELL_PALADIN_SEAL_OF_COMMAND_R3               = 20918,
+    SPELL_PALADIN_SEAL_OF_COMMAND_R4               = 20919,
+    SPELL_PALADIN_SEAL_OF_COMMAND_R5               = 20920,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_R1            = 20185,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_R2            = 20344,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_R3            = 20345,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_R4            = 20346,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_PROC_R1       = 20267,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_PROC_R2       = 20341,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_PROC_R3       = 20342,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_PROC_R4       = 20343,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R1           = 20186,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R2           = 20354,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R3           = 20355,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R4           = 51751,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R5           = 51752,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R1      = 20268,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R2      = 20352,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R3      = 20353,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R4      = 51749,
+    SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R5      = 51750,
+    SPELL_PALADIN_JUDGEMENT_OF_LIGHT_BONUS         = 28775,
+    SPELL_PALADIN_FLASH_OF_LIGHT_BONUS_41          = 28851,
+    SPELL_PALADIN_FLASH_OF_LIGHT_BONUS_53          = 28853,
+    SPELL_PALADIN_REPENTANCE_R1                    = 20066,
+    SPELL_PALADIN_REPENTANCE_R2                    = 51557,
+    SPELL_PALADIN_REPENTANCE_R3                    = 51558,
+    SPELL_PALADIN_REPENT_AURA_R1                   = 51360,
+    SPELL_PALADIN_REPENT_AURA_R2                   = 51561,
+    SPELL_PALADIN_REPENT_AURA_R3                   = 51562,
+    SPELL_PALADIN_ITEM_SHAHRAM                     = 16602,
+    SPELL_PALADIN_ITEM_ARMOR_SHATTER               = 16928,
+    SPELL_PALADIN_ITEM_ANCESTORS_VENGEANCE         = 16939,
+    SPELL_PALADIN_ITEM_SPELL_VULNERABILITY         = 23605,
+    SPELL_PALADIN_ITEM_ROLFENS_FURY                = 48102,
+};
+
 template <class T>
 SpellScript* GetSpellScript(SpellEntry const*)
 {
@@ -39,12 +131,68 @@ void RegisterSpellAndAuraScript(char const* name, SpellScript* (*spellGetter)(Sp
     script->RegisterSelf();
 }
 
+uint32 CalculateHolyShockSelfResetChance(Unit* caster)
+{
+    uint32 chance = 5;
+
+    int32 healingPower = caster->SpellBaseHealingBonusDone(SPELL_SCHOOL_MASK_HOLY);
+    if (healingPower > 0)
+        chance += uint32(healingPower / 100);
+
+    // Holy Shock Cooldown Reset Chance.
+    if (caster->HasAura(SPELL_PALADIN_HOLY_SHOCK_RESET_CHANCE))
+        chance += 15;
+
+    return chance > 100 ? 100 : chance;
+}
+
+void ResetHolyShockCooldowns(Player* player)
+{
+    std::vector<uint32> spellsToClear;
+    for (const auto& cdEntry : player->GetSpellCooldownMap())
+    {
+        SpellEntry const* cdSpell = sSpellMgr.GetSpellEntry(cdEntry.first);
+        if (cdSpell && cdSpell->SpellFamilyName == SPELLFAMILY_PALADIN && cdSpell->IsFitToFamily<SPELLFAMILY_PALADIN, CF_PALADIN_HOLY_SHOCK>())
+            spellsToClear.push_back(cdEntry.first);
+    }
+
+    for (uint32 spellId : spellsToClear)
+        player->RemoveSpellCooldown(spellId, true);
+}
+
+// Coeffs not driven by spell data for SoR so that 1 handed and 2 handed weapons can have separate coeffs
+int32 CalculateSealOfRighteousnessSpellPowerBonus(Player* player, SpellEntry const* spellProto)
+{
+    constexpr float oneHandedCoefficient = 0.10f;
+    constexpr float twoHandedCoefficient = 0.125f;
+
+    float coefficient = oneHandedCoefficient;
+    float weaponSpeed = BASE_ATTACK_TIME / 1000.0f;
+
+    if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+    {
+        coefficient = item->isOneHandedWeapon() ? oneHandedCoefficient : twoHandedCoefficient;
+        weaponSpeed = item->GetProto()->Delay / 1000.0f;
+    }
+
+    coefficient *= weaponSpeed;
+    if (Player* modOwner = player->GetSpellModOwner())
+    {
+        coefficient *= 100.0f;
+        modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_SPELL_BONUS_DAMAGE, coefficient, nullptr);
+        coefficient /= 100.0f;
+    }
+
+    int32 const spellPower = player->SpellBaseDamageBonusDone(spellProto->GetSpellSchoolMask());
+    return int32(spellPower * coefficient);
+}
+
 struct spell_paladin_invulnerability_forbearance : public SpellScript
 {
     void OnCast(Spell* spell) const override
     {
-        if (spell->m_spellInfo->Id != 25771)
-            spell->AddPrecastSpell(25771);
+        if (spell->m_spellInfo->Id != SPELL_PALADIN_FORBEARANCE)
+            spell->AddPrecastSpell(SPELL_PALADIN_FORBEARANCE);
     }
 };
 
@@ -89,7 +237,7 @@ struct spell_paladin_judgement_of_command_dummy : public SpellScript
         if (!target)
             return false;
 
-        if (spell->m_spellInfo->Id == 45954 || spell->m_spellInfo->Id == 45953)
+        if (spell->m_spellInfo->Id == SPELL_PALADIN_SANCTIFIED_COMMAND_DEPRECATED || spell->m_spellInfo->Id == SPELL_PALADIN_SPIRIT_ARMOR_DEPRECATED)
             return false;
 
         uint32 spellId = spell->m_currentBasePoints[effIdx];
@@ -127,11 +275,11 @@ struct spell_paladin_judgement_of_the_crusader : public SpellScript
 
                 if (SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(spellData.SpellId))
                 {
-                    if (spellInfo->Id == 16602 ||
-                        spellInfo->Id == 16928 ||
-                        spellInfo->Id == 16939 ||
-                        spellInfo->Id == 23605 ||
-                        spellInfo->Id == 48102 ||
+                    if (spellInfo->Id == SPELL_PALADIN_ITEM_SHAHRAM ||
+                        spellInfo->Id == SPELL_PALADIN_ITEM_ARMOR_SHATTER ||
+                        spellInfo->Id == SPELL_PALADIN_ITEM_ANCESTORS_VENGEANCE ||
+                        spellInfo->Id == SPELL_PALADIN_ITEM_SPELL_VULNERABILITY ||
+                        spellInfo->Id == SPELL_PALADIN_ITEM_ROLFENS_FURY ||
                         spellInfo->IsCCSpell() ||
                         spellInfo->HasAura(SPELL_AURA_MOD_CONFUSE) ||
                         spellInfo->HasAura(SPELL_AURA_MOD_DECREASE_SPEED) ||
@@ -150,7 +298,7 @@ struct spell_paladin_judgement_of_the_crusader : public SpellScript
 
         if (!hasProc)
         {
-            if (SpellEntry const* judgement = sSpellMgr.GetSpellEntry(20271))
+            if (SpellEntry const* judgement = sSpellMgr.GetSpellEntry(SPELL_PALADIN_JUDGEMENT))
             {
                 uint32 manaCost = Spell::CalculatePowerCost(judgement, player);
                 player->ModifyPower(POWER_MANA, manaCost);
@@ -163,6 +311,18 @@ struct spell_paladin_judgement_of_the_crusader : public SpellScript
 
 struct spell_paladin_holy_shock : public SpellScript
 {
+    void OnFinish(Spell* spell, bool ok) const override
+    {
+        if (!ok)
+            return;
+
+        Player* player = spell->m_caster->ToPlayer();
+        if (!player || !roll_chance_i(CalculateHolyShockSelfResetChance(player)))
+            return;
+
+        ResetHolyShockCooldowns(player);
+    }
+
     SpellCastResult OnCheckCast(Spell* spell, bool /*strict*/) const override
     {
         Unit* target = spell->m_targets.getUnitTarget();
@@ -185,9 +345,10 @@ struct spell_paladin_holy_shock : public SpellScript
         uint32 healSpellId = 0;
         switch (spell->m_spellInfo->Id)
         {
-            case 20473: damageSpellId = 25912; healSpellId = 25914; break;
-            case 20929: damageSpellId = 25911; healSpellId = 25913; break;
-            case 20930: damageSpellId = 25902; healSpellId = 25903; break;
+            case SPELL_PALADIN_HOLY_SHOCK_R1: damageSpellId = SPELL_PALADIN_HOLY_SHOCK_DAMAGE_R1; healSpellId = SPELL_PALADIN_HOLY_SHOCK_HEAL_R1; break;
+            case SPELL_PALADIN_HOLY_SHOCK_R2: damageSpellId = SPELL_PALADIN_HOLY_SHOCK_DAMAGE_R2; healSpellId = SPELL_PALADIN_HOLY_SHOCK_HEAL_R2; break;
+            case SPELL_PALADIN_HOLY_SHOCK_R3: damageSpellId = SPELL_PALADIN_HOLY_SHOCK_DAMAGE_R3; healSpellId = SPELL_PALADIN_HOLY_SHOCK_HEAL_R3; break;
+            case SPELL_PALADIN_HOLY_SHOCK_R4: damageSpellId = SPELL_PALADIN_HOLY_SHOCK_DAMAGE_R4; healSpellId = SPELL_PALADIN_HOLY_SHOCK_HEAL_R4; break;
             default:
                 sLog.outError("spell_paladin_holy_shock: Spell %u not handled", spell->m_spellInfo->Id);
                 return false;
@@ -225,6 +386,38 @@ struct spell_paladin_holy_strike : public SpellScript
         }
 
         return true;
+    }
+};
+
+struct spell_paladin_crusader_strike : public SpellScript
+{
+    void OnHit(Spell* spell, SpellMissInfo missInfo) const override
+    {
+        if (missInfo != SPELL_MISS_NONE || !spell->m_casterUnit)
+            return;
+
+        uint32 triggerSpellId = GetZealousDefenseSpell(spell->m_casterUnit);
+        if (!triggerSpellId)
+            return;
+
+        spell->m_casterUnit->CastSpell(spell->m_casterUnit, triggerSpellId, true);
+    }
+
+private:
+    static uint32 GetZealousDefenseSpell(Unit const* caster)
+    {
+        if (caster->HasAura(SPELL_PALADIN_RIGHTEOUS_STRIKES_R5))
+            return SPELL_PALADIN_ZEALOUS_DEFENSE_R5;
+        if (caster->HasAura(SPELL_PALADIN_RIGHTEOUS_STRIKES_R4))
+            return SPELL_PALADIN_ZEALOUS_DEFENSE_R4;
+        if (caster->HasAura(SPELL_PALADIN_RIGHTEOUS_STRIKES_R3))
+            return SPELL_PALADIN_ZEALOUS_DEFENSE_R3;
+        if (caster->HasAura(SPELL_PALADIN_RIGHTEOUS_STRIKES_R2))
+            return SPELL_PALADIN_ZEALOUS_DEFENSE_R2;
+        if (caster->HasAura(SPELL_PALADIN_RIGHTEOUS_STRIKES_R1))
+            return SPELL_PALADIN_ZEALOUS_DEFENSE_R1;
+
+        return 0;
     }
 };
 
@@ -266,7 +459,7 @@ struct spell_paladin_conviction_seals : public AuraScript
 {
     std::optional<SpellProcEventTriggerCheck> OnCheckProc(Unit const* /*owner*/, Unit* /*victim*/, SpellAuraHolder* holder, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procExtra*/, WeaponAttackType /*attType*/, bool /*isVictim*/) override
     {
-        if (!procSpell || (procSpell->Id != 45619 && procSpell->Id != 45620))
+        if (!procSpell || (procSpell->Id != SPELL_PALADIN_CONVICTION_PROC_1 && procSpell->Id != SPELL_PALADIN_CONVICTION_PROC_2))
             return std::nullopt;
 
         SpellEntry const* auraSpell = holder->GetSpellProto();
@@ -296,11 +489,11 @@ struct spell_paladin_sanctified_command : public AuraScript
         uint32 sealSpellId = 0;
         switch (procSpell->Id)
         {
-            case 20467: sealSpellId = 20375; break;
-            case 20963: sealSpellId = 20915; break;
-            case 20964: sealSpellId = 20918; break;
-            case 20965: sealSpellId = 20919; break;
-            case 20966: sealSpellId = 20920; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R1: sealSpellId = SPELL_PALADIN_SEAL_OF_COMMAND_R1; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R2: sealSpellId = SPELL_PALADIN_SEAL_OF_COMMAND_R2; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R3: sealSpellId = SPELL_PALADIN_SEAL_OF_COMMAND_R3; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R4: sealSpellId = SPELL_PALADIN_SEAL_OF_COMMAND_R4; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_COMMAND_R5: sealSpellId = SPELL_PALADIN_SEAL_OF_COMMAND_R5; break;
             default: return SPELL_AURA_PROC_FAILED;
         }
 
@@ -309,7 +502,7 @@ struct spell_paladin_sanctified_command : public AuraScript
             return SPELL_AURA_PROC_FAILED;
 
         int32 mana = seal->manaCost * aura->GetModifier()->m_amount / 100;
-        owner->CastCustomSpell(owner, 45987, &mana, nullptr, nullptr, true);
+        owner->CastCustomSpell(owner, SPELL_PALADIN_SANCTIFIED_COMMAND_MANA, &mana, nullptr, nullptr, true);
         return SPELL_AURA_PROC_OK;
     }
 };
@@ -337,7 +530,7 @@ struct spell_paladin_seal_of_righteousness : public AuraScript
 {
     std::optional<SpellProcEventTriggerCheck> OnCheckProc(Unit const* /*owner*/, Unit* /*victim*/, SpellAuraHolder* /*holder*/, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procExtra*/, WeaponAttackType /*attType*/, bool /*isVictim*/) override
     {
-        if (!procSpell || (procSpell->Id != 45619 && procSpell->Id != 45620))
+        if (!procSpell || (procSpell->Id != SPELL_PALADIN_CONVICTION_PROC_1 && procSpell->Id != SPELL_PALADIN_CONVICTION_PROC_2))
             return std::nullopt;
 
         return roll_chance_u(50) ? SPELL_PROC_TRIGGER_OK : SPELL_PROC_TRIGGER_ROLL_FAILED;
@@ -364,11 +557,7 @@ struct spell_paladin_seal_of_righteousness : public AuraScript
 
         SpellEntry const* auraSpell = aura->GetSpellProto();
         if (damagePoint >= 0)
-        {
-            int32 const spellPowerBonus = owner->SpellBonusWithCoeffs(auraSpell, EFFECT_INDEX_0, 0,
-                owner->SpellBaseDamageBonusDone(auraSpell->GetSpellSchoolMask()), 0, SPELL_DIRECT_DAMAGE, true, owner);
-            damagePoint += spellPowerBonus;
-        }
+            damagePoint += CalculateSealOfRighteousnessSpellPowerBonus(player, auraSpell);
 
         uint32 const triggerSpellId = auraSpell->EffectTriggerSpell[EFFECT_INDEX_0];
         if (!triggerSpellId)
@@ -395,18 +584,31 @@ struct spell_paladin_blessed_strikes : public AuraScript
         if (!player)
             return SPELL_AURA_PROC_FAILED;
 
-        std::vector<uint32> spellsToClear;
-        for (const auto& cdEntry : player->GetSpellCooldownMap())
+        ResetHolyShockCooldowns(player);
+        return SPELL_AURA_PROC_OK;
+    }
+};
+
+struct spell_paladin_vengeance : public AuraScript
+{
+    int32 OnAuraValueCalculate(Aura* /*aura*/, Unit* /*caster*/, Unit* target, SpellEntry const* spellProto, SpellEffectIndex effIdx, Item* /*castItem*/, int32 value) override
+    {
+        if (target && target->HasAura(SPELL_PALADIN_RIGHTEOUS_FURY) && spellProto->EffectApplyAuraName[effIdx] == SPELL_AURA_MOD_THREAT)
         {
-            SpellEntry const* cdSpell = sSpellMgr.GetSpellEntry(cdEntry.first);
-            if (cdSpell && cdSpell->SpellFamilyName == SPELLFAMILY_PALADIN && cdSpell->IsFitToFamily<SPELLFAMILY_PALADIN, CF_PALADIN_HOLY_SHOCK>())
-                spellsToClear.push_back(cdEntry.first);
+            switch (spellProto->Id)
+            {
+                case SPELL_PALADIN_VENGEANCE_HELPER_R1:
+                case SPELL_PALADIN_VENGEANCE_HELPER_R2:
+                case SPELL_PALADIN_VENGEANCE_HELPER_R3:
+                case SPELL_PALADIN_VENGEANCE_HELPER_R4:
+                case SPELL_PALADIN_VENGEANCE_HELPER_R5:
+                    return 0;
+                default:
+                    break;
+            }
         }
 
-        for (uint32 spellId : spellsToClear)
-            player->RemoveSpellCooldown(spellId, true);
-
-        return SPELL_AURA_PROC_OK;
+        return value;
     }
 };
 
@@ -414,7 +616,7 @@ struct spell_paladin_righteous_defense : public AuraScript
 {
     std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
     {
-        if (!owner->HasAura(25780))
+        if (!owner->HasAura(SPELL_PALADIN_RIGHTEOUS_FURY))
             return SPELL_AURA_PROC_FAILED;
 
         uint32 triggerSpellId = aura->GetSpellProto()->EffectTriggerSpell[aura->GetEffIndex()];
@@ -433,13 +635,15 @@ struct spell_paladin_judgement_of_light_wisdom : public AuraScript
         uint32 triggerSpellId = 0;
         switch (aura->GetId())
         {
-            case 20185: triggerSpellId = 20267; break;
-            case 20344: triggerSpellId = 20341; break;
-            case 20345: triggerSpellId = 20342; break;
-            case 20346: triggerSpellId = 20343; break;
-            case 20186: triggerSpellId = 20268; break;
-            case 20354: triggerSpellId = 20352; break;
-            case 20355: triggerSpellId = 20353; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_LIGHT_R1: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_LIGHT_PROC_R1; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_LIGHT_R2: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_LIGHT_PROC_R2; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_LIGHT_R3: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_LIGHT_PROC_R3; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_LIGHT_R4: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_LIGHT_PROC_R4; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R1: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R1; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R2: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R2; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R3: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R3; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R4: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R4; break;
+            case SPELL_PALADIN_JUDGEMENT_OF_WISDOM_R5: triggerSpellId = SPELL_PALADIN_JUDGEMENT_OF_WISDOM_PROC_R5; break;
         }
 
         if (!victim || !triggerSpellId)
@@ -457,7 +661,7 @@ struct spell_paladin_judgement_of_light_wisdom_proc : public SpellScript
         if (effIdx == EFFECT_INDEX_0 &&
                 spell->m_spellInfo->IsFitToFamilyMask<CF_PALADIN_JUDGEMENT_OF_WISDOM_LIGHT>() &&
                 spell->m_spellInfo->SpellIconID == 299 &&
-                spell->m_casterUnit && spell->m_casterUnit->HasAura(28775))
+                spell->m_casterUnit && spell->m_casterUnit->HasAura(SPELL_PALADIN_JUDGEMENT_OF_LIGHT_BONUS))
             spell->m_currentBasePoints[effIdx] = 20;
 
         return true;
@@ -510,14 +714,14 @@ struct spell_paladin_flash_of_light : public SpellScript
         int32 heal = spell->damage;
         if (spell->m_casterUnit)
         {
-            if (spell->m_casterUnit->HasAura(28853))
+            if (spell->m_casterUnit->HasAura(SPELL_PALADIN_FLASH_OF_LIGHT_BONUS_53))
                 heal += 53;
-            if (spell->m_casterUnit->HasAura(28851))
+            if (spell->m_casterUnit->HasAura(SPELL_PALADIN_FLASH_OF_LIGHT_BONUS_41))
                 heal += 41;
         }
 
         int32 spellId = spell->m_spellInfo->Id;
-        spell->m_caster->CastCustomSpell(target, 19993, &heal, &spellId, nullptr, true);
+        spell->m_caster->CastCustomSpell(target, SPELL_PALADIN_FLASH_OF_LIGHT_HEAL, &heal, &spellId, nullptr, true);
         return false;
     }
 };
@@ -553,9 +757,10 @@ struct spell_paladin_illumination : public AuraScript
             uint32 originalSpellId = 0;
             switch (procSpell->Id)
             {
-                case 25914: originalSpellId = 20473; break;
-                case 25913: originalSpellId = 20929; break;
-                case 25903: originalSpellId = 20930; break;
+                case SPELL_PALADIN_HOLY_SHOCK_HEAL_R1: originalSpellId = SPELL_PALADIN_HOLY_SHOCK_R1; break;
+                case SPELL_PALADIN_HOLY_SHOCK_HEAL_R2: originalSpellId = SPELL_PALADIN_HOLY_SHOCK_R2; break;
+                case SPELL_PALADIN_HOLY_SHOCK_HEAL_R3: originalSpellId = SPELL_PALADIN_HOLY_SHOCK_R3; break;
+                case SPELL_PALADIN_HOLY_SHOCK_HEAL_R4: originalSpellId = SPELL_PALADIN_HOLY_SHOCK_R4; break;
                 default: return SPELL_AURA_PROC_FAILED;
             }
             originalSpell = sSpellMgr.GetSpellEntry(originalSpellId);
@@ -565,9 +770,129 @@ struct spell_paladin_illumination : public AuraScript
             return SPELL_AURA_PROC_FAILED;
 
         int32 mana = originalSpell->manaCost * aura->GetModifier()->m_amount / 100;
-        owner->CastCustomSpell(owner, 20272, &mana, nullptr, nullptr, true, nullptr, aura);
+        owner->CastCustomSpell(owner, SPELL_PALADIN_ILLUMINATION_ENERGIZE, &mana, nullptr, nullptr, true, nullptr, aura);
         return SPELL_AURA_PROC_OK;
     }
+};
+
+struct spell_paladin_consecration : public AuraScript
+{
+    void OnPeriodicDamageCalculateAmount(Aura* aura, float& amount) override
+    {
+        static constexpr float tickMultipliers[] = { 1.56f, 1.40f, 1.24f, 1.08f, 0.92f, 0.76f, 0.60f, 0.44f };
+
+        Unit* caster = aura->GetCaster();
+        Unit* target = aura->GetTarget();
+        if (!caster || !target)
+            return;
+
+        amount = caster->SpellDamageBonusDone(target, aura->GetSpellProto(), aura->GetEffIndex(), aura->GetBasePoints(), DOT, aura->GetStackAmount());
+
+        uint32 tick = aura->GetAuraTicks();
+        if (!tick)
+            return;
+
+        uint32 tickIndex = tick - 1;
+        uint32 const lastTickIndex = sizeof(tickMultipliers) / sizeof(tickMultipliers[0]) - 1;
+        if (tickIndex > lastTickIndex)
+            tickIndex = lastTickIndex;
+
+        amount *= tickMultipliers[tickIndex];
+    }
+};
+
+struct spell_paladin_daybreak_heal : public SpellScript
+{
+    void OnSpellCritChanceCalculate(Spell* /*spell*/, Unit const* /*victim*/, float& critChance) const override
+    {
+        critChance = 0.0f;
+    }
+};
+
+struct spell_paladin_daybreak_proc : public AuraScript
+{
+    std::optional<SpellAuraProcResult> OnProc(Unit* /*owner*/, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        Unit* caster = aura->GetCaster();
+        Unit* target = aura->GetTarget();
+        if (!caster || !target || !target->IsAlive())
+            return SPELL_AURA_PROC_FAILED;
+
+        uint32 const triggerSpellId = aura->GetSpellProto()->EffectTriggerSpell[aura->GetEffIndex()];
+        if (!triggerSpellId)
+            return SPELL_AURA_PROC_FAILED;
+
+        target->CastSpell(target, triggerSpellId, true, nullptr, aura, caster->GetObjectGuid());
+        return SPELL_AURA_PROC_OK;
+    }
+};
+
+struct spell_paladin_repentance_passive : public AuraScript
+{
+    std::optional<SpellProcEventTriggerCheck> OnCheckProc(Unit const* /*owner*/, Unit* victim, SpellAuraHolder* /*holder*/, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 procExtra, WeaponAttackType /*attType*/, bool isVictim) override
+    {
+        if (isVictim || !victim || victim->IsPlayer() || !procSpell)
+            return SPELL_PROC_TRIGGER_FAILED;
+
+        if (!(procExtra & (PROC_EX_RESIST | PROC_EX_IMMUNE)))
+            return SPELL_PROC_TRIGGER_FAILED;
+
+        return GetRepentAura(procSpell->Id) ? SPELL_PROC_TRIGGER_OK : SPELL_PROC_TRIGGER_FAILED;
+    }
+
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* victim, uint32 /*damage*/, int32 /*originalAmount*/, Aura* /*aura*/, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 procEx, uint32 /*cooldown*/) override
+    {
+        if (!owner || !victim || victim->IsPlayer() || !procSpell)
+            return SPELL_AURA_PROC_FAILED;
+
+        if (!(procEx & (PROC_EX_RESIST | PROC_EX_IMMUNE)))
+            return SPELL_AURA_PROC_FAILED;
+
+        uint32 const repentAuraId = GetRepentAura(procSpell->Id);
+        if (!repentAuraId)
+            return SPELL_AURA_PROC_FAILED;
+
+        owner->CastSpell(victim, repentAuraId, true, nullptr, nullptr, owner->GetObjectGuid());
+        return SPELL_AURA_PROC_OK;
+    }
+
+private:
+    static uint32 GetRepentAura(uint32 spellId)
+    {
+        switch (spellId)
+        {
+            case SPELL_PALADIN_REPENTANCE_R1: return SPELL_PALADIN_REPENT_AURA_R1;
+            case SPELL_PALADIN_REPENTANCE_R2: return SPELL_PALADIN_REPENT_AURA_R2;
+            case SPELL_PALADIN_REPENTANCE_R3: return SPELL_PALADIN_REPENT_AURA_R3;
+            default: return 0;
+        }
+    }
+};
+
+struct spell_paladin_repent : public AuraScript
+{
+    std::optional<SpellAuraProcResult> OnProc(Unit* /*owner*/, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        uint32 const now = WorldTimer::getMSTime();
+        if (m_lastProcTime && WorldTimer::getMSTimeDiff(m_lastProcTime, now) < 500)
+            return SPELL_AURA_PROC_FAILED;
+
+        Unit* caster = aura->GetCaster();
+        Unit* target = aura->GetTarget();
+        if (!caster || !target || !target->IsAlive())
+            return SPELL_AURA_PROC_FAILED;
+
+        uint32 const triggerSpellId = aura->GetSpellProto()->EffectTriggerSpell[aura->GetEffIndex()];
+        if (!triggerSpellId)
+            return SPELL_AURA_PROC_FAILED;
+
+        target->CastSpell(target, triggerSpellId, true, nullptr, aura, caster->GetObjectGuid(), nullptr, procSpell);
+        m_lastProcTime = now;
+        return SPELL_AURA_PROC_OK;
+    }
+
+private:
+    uint32 m_lastProcTime = 0;
 };
 
 struct spell_paladin_improved_devotion_aura : public AuraScript
@@ -580,7 +905,7 @@ struct spell_paladin_improved_devotion_aura : public AuraScript
     void OnAfterApply(Aura* aura, bool apply) override
     {
         if (!apply)
-            aura->GetTarget()->RemoveAurasDueToSpell(45073);
+            aura->GetTarget()->RemoveAurasDueToSpell(SPELL_PALADIN_DEVOTION_AURA_DAMAGE_REDUCTION);
     }
 
     void OnPeriodicDummy(Aura* aura) override
@@ -588,35 +913,45 @@ struct spell_paladin_improved_devotion_aura : public AuraScript
         Unit* target = aura->GetTarget();
         if (HasDevotionAura(target))
         {
-            if (!target->HasAura(45073))
-                target->CastSpell(target, 45073, true, nullptr, aura);
+            if (!target->HasAura(SPELL_PALADIN_DEVOTION_AURA_DAMAGE_REDUCTION))
+                target->CastSpell(target, SPELL_PALADIN_DEVOTION_AURA_DAMAGE_REDUCTION, true, nullptr, aura);
         }
-        else if (target->HasAura(45073))
-            target->RemoveAurasDueToSpell(45073);
+        else if (target->HasAura(SPELL_PALADIN_DEVOTION_AURA_DAMAGE_REDUCTION))
+            target->RemoveAurasDueToSpell(SPELL_PALADIN_DEVOTION_AURA_DAMAGE_REDUCTION);
     }
 
 private:
     static bool HasDevotionAura(Unit const* target)
     {
-        return target->HasAura(465) ||
-            target->HasAura(10290) ||
-            target->HasAura(643) ||
-            target->HasAura(10291) ||
-            target->HasAura(1032) ||
-            target->HasAura(10292) ||
-            target->HasAura(10293);
+        return target->HasAura(SPELL_PALADIN_DEVOTION_AURA_R1) ||
+            target->HasAura(SPELL_PALADIN_DEVOTION_AURA_R2) ||
+            target->HasAura(SPELL_PALADIN_DEVOTION_AURA_R3) ||
+            target->HasAura(SPELL_PALADIN_DEVOTION_AURA_R4) ||
+            target->HasAura(SPELL_PALADIN_DEVOTION_AURA_R5) ||
+            target->HasAura(SPELL_PALADIN_DEVOTION_AURA_R6) ||
+            target->HasAura(SPELL_PALADIN_DEVOTION_AURA_R7);
     }
 };
 
 struct spell_paladin_shield_specialization : public AuraScript
 {
-    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 cooldown) override
     {
+        uint32 const triggerSpellId = aura->GetSpellProto()->EffectTriggerSpell[aura->GetEffIndex()];
+        if (!triggerSpellId)
+            return SPELL_AURA_PROC_FAILED;
+
+        if (cooldown && owner->HasSpellCooldown(triggerSpellId))
+            return SPELL_AURA_PROC_FAILED;
+
         int32 const mana = int32(owner->GetMaxPower(POWER_MANA) * 0.02f);
         if (!mana)
             return SPELL_AURA_PROC_FAILED;
 
-        owner->EnergizeBySpell(owner, aura->GetSpellProto()->EffectTriggerSpell[aura->GetEffIndex()], mana, POWER_MANA);
+        owner->EnergizeBySpell(owner, triggerSpellId, mana, POWER_MANA);
+        if (cooldown)
+            owner->AddSpellCooldown(triggerSpellId, 0, time(nullptr) + cooldown);
+
         return SPELL_AURA_PROC_OK;
     }
 };
@@ -631,6 +966,7 @@ void AddSC_paladin_spell_scripts()
     RegisterSpellScript("spell_paladin_judgement_of_the_crusader", &GetSpellScript<spell_paladin_judgement_of_the_crusader>);
     RegisterSpellScript("spell_paladin_holy_shock", &GetSpellScript<spell_paladin_holy_shock>);
     RegisterSpellScript("spell_paladin_holy_strike", &GetSpellScript<spell_paladin_holy_strike>);
+    RegisterSpellScript("spell_paladin_crusader_strike", &GetSpellScript<spell_paladin_crusader_strike>);
     RegisterSpellScript("spell_paladin_judgement", &GetSpellScript<spell_paladin_judgement>);
     RegisterAuraScript("spell_paladin_conviction_seals", &GetAuraScript<spell_paladin_conviction_seals>);
     RegisterAuraScript("spell_paladin_sanctified_command", &GetAuraScript<spell_paladin_sanctified_command>);
@@ -638,11 +974,17 @@ void AddSC_paladin_spell_scripts()
     RegisterAuraScript("spell_paladin_improved_lay_on_hands", &GetAuraScript<spell_paladin_improved_lay_on_hands>);
     RegisterAuraScript("spell_paladin_seal_of_righteousness", &GetAuraScript<spell_paladin_seal_of_righteousness>);
     RegisterAuraScript("spell_paladin_blessed_strikes", &GetAuraScript<spell_paladin_blessed_strikes>);
+    RegisterAuraScript("spell_paladin_vengeance", &GetAuraScript<spell_paladin_vengeance>);
     RegisterAuraScript("spell_paladin_righteous_defense", &GetAuraScript<spell_paladin_righteous_defense>);
     RegisterSpellAndAuraScript("spell_paladin_judgement_of_light_wisdom", &GetSpellScript<spell_paladin_judgement_of_light_wisdom_proc>, &GetAuraScript<spell_paladin_judgement_of_light_wisdom>);
     RegisterSpellScript("spell_paladin_flash_of_light", &GetSpellScript<spell_paladin_flash_of_light>);
     RegisterSpellScript("spell_paladin_seal_of_fury_proc", &GetSpellScript<spell_paladin_seal_of_fury_proc>);
     RegisterAuraScript("spell_paladin_illumination", &GetAuraScript<spell_paladin_illumination>);
+    RegisterAuraScript("spell_paladin_consecration", &GetAuraScript<spell_paladin_consecration>);
+    RegisterSpellScript("spell_paladin_daybreak_heal", &GetSpellScript<spell_paladin_daybreak_heal>);
+    RegisterAuraScript("spell_paladin_daybreak_proc", &GetAuraScript<spell_paladin_daybreak_proc>);
+    RegisterAuraScript("spell_paladin_repentance_passive", &GetAuraScript<spell_paladin_repentance_passive>);
+    RegisterAuraScript("spell_paladin_repent", &GetAuraScript<spell_paladin_repent>);
     RegisterSpellScript("spell_paladin_reckoning", &GetSpellScript<spell_paladin_reckoning>);
     RegisterAuraScript("spell_paladin_improved_devotion_aura", &GetAuraScript<spell_paladin_improved_devotion_aura>);
     RegisterAuraScript("spell_paladin_shield_specialization", &GetAuraScript<spell_paladin_shield_specialization>);
