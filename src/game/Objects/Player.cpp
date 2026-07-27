@@ -13661,16 +13661,26 @@ void Player::ApplyEnchantment(Item *item, EnchantmentSlot slot, bool apply, bool
                 {
                     if (GetClass() == CLASS_SHAMAN)
                     {
-                        float addValue = 0.0f;
-                        if (item->GetSlot() == EQUIPMENT_SLOT_MAINHAND)
+                        if (enchant_spell_id)
                         {
-                            addValue = float(enchant_amount * item->GetProto()->Delay / 1000.0f);
-                            HandleStatModifier(UNIT_MOD_DAMAGE_MAINHAND, TOTAL_VALUE, addValue, apply);
+                            if (apply)
+                                CastSpell(this, enchant_spell_id, true, item);
+                            else
+                                RemoveAurasDueToItemSpell(item, enchant_spell_id);
                         }
-                        else if (item->GetSlot() == EQUIPMENT_SLOT_OFFHAND)
+                        else
                         {
-                            addValue = float(enchant_amount * item->GetProto()->Delay / 1000.0f);
-                            HandleStatModifier(UNIT_MOD_DAMAGE_OFFHAND, TOTAL_VALUE, addValue, apply);
+                            float addValue = 0.0f;
+                            if (item->GetSlot() == EQUIPMENT_SLOT_MAINHAND)
+                            {
+                                addValue = float(enchant_amount * item->GetProto()->Delay / 1000.0f);
+                                HandleStatModifier(UNIT_MOD_DAMAGE_MAINHAND, TOTAL_VALUE, addValue, apply);
+                            }
+                            else if (item->GetSlot() == EQUIPMENT_SLOT_OFFHAND)
+                            {
+                                addValue = float(enchant_amount * item->GetProto()->Delay / 1000.0f);
+                                HandleStatModifier(UNIT_MOD_DAMAGE_OFFHAND, TOTAL_VALUE, addValue, apply);
+                            }
                         }
                     }
                     break;
