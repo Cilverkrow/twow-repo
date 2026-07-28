@@ -2482,6 +2482,81 @@ void TotalMoneyCallback(QueryResult* result, uint32 money)
 }
 
 
+// custom: AutoWorldBuff per-buff timer (2026-07-28) - see the call sites in
+// World::Update() and World.h's WorldBuffTimerState for context. Handles one
+// independent buff's warning/reroll/cast cycle; called once per configured
+// buff so they don't all fire simultaneously.
+void World::UpdateWorldBuffTimer(uint32 diff, WorldBuffTimerState& state, uint32 spellId,
+    std::string const& announceLabel, std::function<bool(Player*)> const& eligible)
+{
+    // Einmalige Vorwarnung pro Zyklus, kurz bevor der Buff erneuert wird.
+    if (!state.warned && state.warningMs > 0 && state.timer <= state.warningMs)
+    {
+        state.warned = true;
+        uint32 warnMinutes = std::max<uint32>(1, state.warningMs / 60000);
+        SendWorldText(3 /* LANG_SYSTEMMESSAGE */,
+            string_format("{} will be refreshed in {} minute(s)!", announceLabel, warnMinutes).c_str());
+    }
+
+    if (state.timer <= diff)
+    {
+        uint32 minMs, maxMs;
+        if (state.firstSinceRestart)
+        {
+            // Kurzes Intervall fuer den allerersten Wurf nach einem (Neu-)
+            // Start, damit haeufige Neustarts die Buffs nicht jedes Mal um
+            // ein komplettes langes Intervall verzoegern.
+            minMs = sConfig.GetIntDefault("AutoWorldBuff.FirstMinInterval", 600000);   // 10min
+            maxMs = sConfig.GetIntDefault("AutoWorldBuff.FirstMaxInterval", 7200000);  // 2h
+            state.firstSinceRestart = false;
+        }
+        else
+        {
+            minMs = sConfig.GetIntDefault("AutoWorldBuff.MinInterval", 3600000);  // 1h
+            maxMs = sConfig.GetIntDefault("AutoWorldBuff.MaxInterval", 10800000); // 3h
+        }
+        if (maxMs < minMs)
+            maxMs = minMs;
+        state.timer = minMs + (maxMs > minMs ? urand(0, maxMs - minMs) : 0);
+
+        state.warningMs = sConfig.GetIntDefault("AutoWorldBuff.WarningInterval", 600000); // 10min
+        if (state.warningMs >= state.timer)
+            state.warningMs = state.timer / 2; // Sicherheitsnetz falls Warnzeit > Intervall
+        state.warned = false;
+
+        uint32 buffedCount = 0;
+        for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        {
+            WorldSession* worldBuffSession = itr->second;
+            if (!worldBuffSession)
+                continue;
+            Player* worldBuffPlayer = worldBuffSession->GetPlayer();
+            if (!worldBuffPlayer || !worldBuffPlayer->IsInWorld())
+                continue;
+
+            // Random-Bots laufen auf RNDBOT-Accounts (Session hat keinen
+            // Username, daher ueber die Account-ID nachschlagen). Der
+            // Discord-Bruecken-Charakter (Account DISCORD) ist ebenfalls
+            // eine echte WoW-Session, aber kein Spieler -> ausschliessen.
+            std::string worldBuffAccName;
+            sAccountMgr.GetName(worldBuffSession->GetAccountId(), worldBuffAccName);
+            if (worldBuffAccName.rfind("RNDBOT", 0) == 0 || worldBuffAccName == "DISCORD")
+                continue;
+
+            if (eligible(worldBuffPlayer))
+            {
+                worldBuffPlayer->CastSpell(worldBuffPlayer, spellId, true);
+                ++buffedCount;
+            }
+        }
+
+        if (buffedCount)
+            SendWorldText(3 /* LANG_SYSTEMMESSAGE */, string_format("World buff refreshed: {}!", announceLabel).c_str());
+    }
+    else
+        state.timer -= diff;
+}
+
 /// Update the World !
 void World::Update(uint32 diff)
 {
@@ -2700,6 +2775,149 @@ void World::Update(uint32 diff)
 
     // Update AutoBroadcast
     sAutoBroadCastMgr.Update(diff);
+
+    // --- Custom: AutoWorldBuff. Verpasst echten Online-Spielern (keine Bots,
+    // kein Discord-Bruecken-Charakter) periodisch Spirit of Zandalar (nur in
+    // Stranglethorn Vale), Warchief's Blessing (Horde-exklusiv, nur in
+    // Crossroads/Orgrimmar) und Rallying Cry of the Dragonslayer (BEIDE
+    // Fraktionen, jeweils in der eigenen Hauptstadt - Allianz Sturmwind,
+    // Horde Orgrimmar; siehe Korrektur-Kommentar an der Aufrufstelle).
+    // Jeder Buff hat SEIT 2026-07-28 seinen EIGENEN unabhaengigen Timer (statt
+    // eines gemeinsamen) - auf Wunsch, da vorher alle drei immer gleichzeitig
+    // kamen. Der allererste Timer-Wurf nach einem (Neu-)Start nutzt ein
+    // KURZES Intervall (FirstMinInterval..FirstMaxInterval, Default 10min-2h),
+    // damit haeufige Server-Neustarts (z.B. der geplante 8h-Neustart) die
+    // Buffs nicht jedes Mal um ein komplettes 1-3h-Intervall verzoegern -
+    // danach gilt das normale, laengere Intervall (MinInterval..MaxInterval).
+    // Siehe UpdateWorldBuffTimer() weiter unten. ---
+    if (sConfig.GetBoolDefault("AutoWorldBuff.Enable", false))
+    {
+        // Zonen-/Area-IDs aus turtle_world.area_template (2026-07-27):
+        // Stranglethorn Vale (33), Orgrimmar (1637) und Stormwind City
+        // (1519) sind selbst Top-Level-Zoneneintraege (zone_id 0), The
+        // Crossroads dagegen nur eine AREA innerhalb der Barrens (entry
+        // 380, zone_id 17) - deshalb dafuer GetAreaId() statt GetZoneId().
+        const uint32 ZONE_STRANGLETHORN_VALE = 33;
+        const uint32 ZONE_ORGRIMMAR = 1637;
+        const uint32 ZONE_STORMWIND_CITY = 1519;
+        const uint32 AREA_THE_CROSSROADS = 380;
+
+        UpdateWorldBuffTimer(diff, m_zandalarBuffTimer, 24425, "Spirit of Zandalar (in Stranglethorn Vale)",
+            [ZONE_STRANGLETHORN_VALE](Player* p) { return p->GetZoneId() == ZONE_STRANGLETHORN_VALE; });
+
+        UpdateWorldBuffTimer(diff, m_warchiefBuffTimer, 16609, "Warchief's Blessing (in Crossroads/Orgrimmar)",
+            [ZONE_ORGRIMMAR, AREA_THE_CROSSROADS](Player* p) {
+                return p->GetTeam() == HORDE && (p->GetAreaId() == AREA_THE_CROSSROADS || p->GetZoneId() == ZONE_ORGRIMMAR);
+            });
+
+        // Rallying Cry ist NICHT fraktionsexklusiv (Korrektur 2026-07-28): der
+        // Buff stammt vom Onyxia-/Nefarian-Kopf, der in BEIDEN Hauptstaedten
+        // abgegeben wird - Horde in Orgrimmar, Allianz in Sturmwind. Vorher war
+        // er faelschlich nur fuer die Allianz in Sturmwind freigegeben, weil ich
+        // ihn als "Allianz-Pendant zu Warchief's Blessing" eingeordnet hatte.
+        // Horde-exklusiv ist nur Warchief's Blessing (oben).
+        UpdateWorldBuffTimer(diff, m_dragonslayerBuffTimer, 22888, "Rallying Cry of the Dragonslayer (in Stormwind City/Orgrimmar)",
+            [ZONE_STORMWIND_CITY, ZONE_ORGRIMMAR](Player* p) {
+                return (p->GetTeam() == ALLIANCE && p->GetZoneId() == ZONE_STORMWIND_CITY) ||
+                       (p->GetTeam() == HORDE && p->GetZoneId() == ZONE_ORGRIMMAR);
+            });
+    }
+
+    // --- Custom: AutoDonationPoints. Vergibt echten Online-Spielern (keine
+    // Bots, kein Discord-Bruecken-Charakter) automatisch Donation-Points
+    // (shop_coins, dieselbe Tabelle/Waehrung wie ShopMgr) fuer jede volle
+    // Stunde Online-Zeit. Pro Account ein eigener Akkumulator statt eines
+    // gemeinsamen Timers, damit es keine Rolle spielt, wann genau jemand
+    // eingeloggt ist - jeder bekommt seine eigene volle Stunde.
+    //
+    // Der Fortschritt wird SEIT 2026-07-28 in `donation_point_progress`
+    // (Login-DB) persistiert. Vorher lag er nur im RAM und fing nach JEDEM
+    // Server-Neustart wieder bei 0 an - bei haeufigen Neustarts (z.B. dem
+    // geplanten 8h-Neustart oder Deployments) erreichte ein normaler Spieler
+    // damit praktisch nie eine volle Stunde am Stueck, waehrend die dauerhaft
+    // verbundene Discord-Bruecke als einzige "Sitzung" lange genug lief.
+    // Geladen wird pro Account einmalig beim ersten Antreffen nach dem Start,
+    // geschrieben bei jeder Gutschrift sowie regelmaessig (FlushIntervalMs),
+    // damit nicht jeder Tick eine DB-Query ausloest. ---
+    if (sConfig.GetBoolDefault("AutoDonationPoints.Enable", false))
+    {
+        uint32 dpIntervalMs = sConfig.GetIntDefault("AutoDonationPoints.IntervalMs", 3600000); // 1h
+        uint32 dpAmount = sConfig.GetIntDefault("AutoDonationPoints.Amount", 1);
+        uint32 dpFlushMs = sConfig.GetIntDefault("AutoDonationPoints.FlushIntervalMs", 300000); // 5min
+
+        bool dpShouldFlush = false;
+        if (m_donationPointFlushTimer <= diff)
+        {
+            m_donationPointFlushTimer = dpFlushMs;
+            dpShouldFlush = true;
+        }
+        else
+            m_donationPointFlushTimer -= diff;
+
+        for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        {
+            WorldSession* dpSession = itr->second;
+            if (!dpSession)
+                continue;
+            Player* dpPlayer = dpSession->GetPlayer();
+            if (!dpPlayer || !dpPlayer->IsInWorld())
+                continue;
+
+            // Case-insensitive vergleichen (2026-07-28): der Discord-Bruecken-
+            // Account heisst in dieser DB "discord" (klein), der Vergleich lief
+            // aber gegen "DISCORD" - dadurch bekam ausgerechnet die Bruecke die
+            // Punkte, und ihre Chat-Ausgabe landete als "[Server]: Du hast ..."
+            // im Discord-Kanal. Analog fuer das RNDBOT-Praefix.
+            std::string dpAccName;
+            sAccountMgr.GetName(dpSession->GetAccountId(), dpAccName);
+            for (char& dpNameChar : dpAccName)
+                if (dpNameChar >= 'a' && dpNameChar <= 'z')
+                    dpNameChar = dpNameChar - 'a' + 'A';
+            if (dpAccName.rfind("RNDBOT", 0) == 0 || dpAccName == "DISCORD")
+                continue;
+
+            uint32 dpAccountId = dpSession->GetAccountId();
+
+            // Persistierten Fortschritt einmalig nachladen, falls dieser Account
+            // seit dem Serverstart noch nicht gesehen wurde.
+            if (m_donationPointAccumulatorMs.find(dpAccountId) == m_donationPointAccumulatorMs.end())
+            {
+                uint32 dpLoadedMs = 0;
+                std::unique_ptr<QueryResult> dpResult(LoginDatabase.PQuery(
+                    "SELECT `accumulated_ms` FROM `donation_point_progress` WHERE `account_id` = %u", dpAccountId));
+                if (dpResult)
+                    dpLoadedMs = dpResult->Fetch()[0].GetUInt32();
+                m_donationPointAccumulatorMs[dpAccountId] = dpLoadedMs;
+            }
+
+            uint32& dpAccumMs = m_donationPointAccumulatorMs[dpAccountId];
+            dpAccumMs += diff;
+
+            if (dpAccumMs >= dpIntervalMs)
+            {
+                dpAccumMs -= dpIntervalMs;
+                // insert-or-add, gleiches Muster wie ShopMgr::GetBalance's
+                // "Account noch nie im Shop gewesen"-Fall.
+                LoginDatabase.PExecute(
+                    "INSERT INTO `shop_coins` (`id`, `coins`) VALUES (%u, %u) "
+                    "ON DUPLICATE KEY UPDATE `coins` = `coins` + %u",
+                    dpAccountId, dpAmount, dpAmount);
+                LoginDatabase.PExecute(
+                    "INSERT INTO `donation_point_progress` (`account_id`, `accumulated_ms`) VALUES (%u, %u) "
+                    "ON DUPLICATE KEY UPDATE `accumulated_ms` = %u",
+                    dpAccountId, dpAccumMs, dpAccumMs);
+                ChatHandler(dpPlayer).PSendSysMessage("You received %u Donation Point(s) for your time online!", dpAmount);
+            }
+            else if (dpShouldFlush)
+            {
+                LoginDatabase.PExecute(
+                    "INSERT INTO `donation_point_progress` (`account_id`, `accumulated_ms`) VALUES (%u, %u) "
+                    "ON DUPLICATE KEY UPDATE `accumulated_ms` = %u",
+                    dpAccountId, dpAccumMs, dpAccumMs);
+            }
+        }
+    }
+
     // Update liste des ban si besoin
     sAccountMgr.Update(diff);
 

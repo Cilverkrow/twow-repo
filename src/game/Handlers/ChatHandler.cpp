@@ -1193,13 +1193,30 @@ bool WorldSession::HandleTurtleAddonMessages(uint32 lang, uint32 type, std::stri
 
             if (strstr(msg.c_str(), "Categories"))
             {
+                // Format per category is `id=parentId=name=icon;` - FOUR fields.
+                // The client (Turtle_ShopUI.lua's Shop_ProcessCategories, in
+                // patch-7.mpq) reads catEx[2] as the SUBCATEGORY PARENT id via
+                // tonumber() and then immediately does `if parentID > 0`. We
+                // used to send only three fields (`id=name=icon;`), so catEx[2]
+                // was the category NAME, tonumber() returned nil, and comparing
+                // nil > 0 threw a Lua error that aborted the whole parse loop.
+                // Symptom (confirmed live 2026-07-28): the shop window showed
+                // ONLY the "About" tab and no categories at all - About renders
+                // because the client injects it itself as a synthetic
+                // `0=0=About=about;` entry (four fields, parses fine) before
+                // the server's first real category kills the loop.
+                // This server has no subcategories (shop_categories has no
+                // parent column), so parentId is always 0 = top-level.
+                // The sibling "Entries:" reply below was already fixed for this
+                // client's 13-field format (see ObjectMgr::LoadShop) - only the
+                // category line was missed at the time.
                 std::string categories = "Categories:";
 
                 for (auto& itr : sObjectMgr.GetShopCategoriesList())
                     if (sWorld.getConfig(CONFIG_BOOL_SEA_NETWORK))
-                        categories += std::to_string(itr.first) + "=" + itr.second.Name_loc4 + "=" + itr.second.Icon + ";";
+                        categories += std::to_string(itr.first) + "=0=" + itr.second.Name_loc4 + "=" + itr.second.Icon + ";";
                     else
-                        categories += std::to_string(itr.first) + "=" + itr.second.Name + "=" + itr.second.Icon + ";";
+                        categories += std::to_string(itr.first) + "=0=" + itr.second.Name + "=" + itr.second.Icon + ";";
 
                 _player->SendAddonMessage(prefix, categories);
                 return true;

@@ -47,6 +47,7 @@
 #include <unordered_map>
 #include <atomic>
 #include <thread>
+#include <functional>
 #include <any>
 
 class Object;
@@ -1325,6 +1326,36 @@ class World
         uint32 m_ShutdownMask = 0;
 
         uint32 m_MaintenanceTimeChecker = 0;
+
+        // custom: AutoWorldBuff (2026-07-28, see World.cpp) - one independent
+        // timer per buff so Zandalar/Warchief's Blessing/Dragonslayer don't
+        // all become available at the same instant. firstSinceRestart picks
+        // a short interval for the very first roll after a (re)start so
+        // frequent restarts don't each cost a full re-roll of the long
+        // interval; later rolls use the normal, longer interval.
+        struct WorldBuffTimerState
+        {
+            uint32 timer = 0;
+            uint32 warningMs = 0;
+            bool warned = false;
+            bool firstSinceRestart = true;
+        };
+        WorldBuffTimerState m_zandalarBuffTimer;
+        WorldBuffTimerState m_warchiefBuffTimer;
+        WorldBuffTimerState m_dragonslayerBuffTimer;
+        void UpdateWorldBuffTimer(uint32 diff, WorldBuffTimerState& state, uint32 spellId,
+            std::string const& announceLabel, std::function<bool(Player*)> const& eligible);
+
+        // custom: AutoDonationPoints (2026-07-27) - pro Account akkumulierte
+        // Online-Zeit in ms seit der letzten Gutschrift, damit unterschiedliche
+        // Login-Zeitpunkte nicht auf einen gemeinsamen Takt synchronisiert
+        // werden muessen (jeder Account bekommt seine eigene volle Stunde).
+        std::unordered_map<uint32 /*accountId*/, uint32 /*accumulatedMs*/> m_donationPointAccumulatorMs;
+        // Wie lange bis zum naechsten periodischen Persistieren der obigen
+        // Akkumulatoren nach `donation_point_progress` (Login-DB) - siehe
+        // World.cpp. Ohne Persistenz fing der Fortschritt nach jedem Neustart
+        // wieder bei 0 an.
+        uint32 m_donationPointFlushTimer = 0;
 
         uint32 m_minChatLevel = 0;
         time_t m_startTime;
