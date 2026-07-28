@@ -2018,6 +2018,38 @@ BeginnersGuilds = 1
 BeginnersGuildHorde = 126
 BeginnersGuildAlliance = 126
 
+# --- Fork additions (see README About this fork) ---
+
+# AutoWorldBuff. Periodically applies world buffs to real online players (bots
+# and the Discord bridge are excluded). Each buff has its own independent timer
+# so they do not all fire at the same moment:
+#   Spirit of Zandalar               - anyone in Stranglethorn Vale
+#   Warchief's Blessing              - Horde only, in Crossroads or Orgrimmar
+#   Rallying Cry of the Dragonslayer - Alliance in Stormwind City,
+#                                      Horde in Orgrimmar
+# FirstMin/FirstMaxInterval apply to the first roll after a (re)start and are
+# kept short so frequent restarts do not delay the buffs by a full interval
+# every time. Min/MaxInterval apply to every roll after that. All values in ms.
+
+AutoWorldBuff.Enable = 0
+AutoWorldBuff.FirstMinInterval = 600000
+AutoWorldBuff.FirstMaxInterval = 7200000
+AutoWorldBuff.MinInterval = 3600000
+AutoWorldBuff.MaxInterval = 10800000
+AutoWorldBuff.WarningInterval = 600000
+
+# AutoDonationPoints. Grants donation points (shop_coins) to real online players
+# for time spent online, tracked per account. Requires the
+# donation_point_progress table in the LOGIN database - see
+# sql/logon/donation_point_progress.sql. Without it the feature still runs but
+# progress is lost on every restart. FlushIntervalMs controls how often progress
+# is written out; at worst that much time is lost on an unclean shutdown.
+
+AutoDonationPoints.Enable = 0
+AutoDonationPoints.IntervalMs = 3600000
+AutoDonationPoints.Amount = 1
+AutoDonationPoints.FlushIntervalMs = 300000
+
 # AutoBroadcast.Timer. Print broadcast messages in players chat.
 
 AutoBroadcast.Timer = 2400000

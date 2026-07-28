@@ -16,6 +16,23 @@ Upstream fixes are pulled in by merging `Penqle/main` periodically. Everything b
 
 > **Note on the client:** the core must be built with `-DALLOW_TURTLE_ADDONS=ON`, otherwise the client crashes with "interface corrupt" when entering the world.
 
+### Enabling the fork's own features
+
+Both are off by default. Cloning this repo alone is not enough to use them — they each need one extra step:
+
+| Feature | Config keys (`mangosd.conf`) | Also required |
+|---|---|---|
+| World buffs | `AutoWorldBuff.*` | – |
+| Donation points | `AutoDonationPoints.*` | `sql/logon/donation_point_progress.sql`, applied to the **login** database |
+| Beginners guild | `BeginnersGuilds`, `BeginnersGuildHorde/Alliance` | the guilds have to exist; the ids shipped in the template are placeholders |
+
+All keys are documented in `src/mangosd/mangosd.conf.dist.in`. Note that a
+generated `mangosd.conf` from an older checkout will not contain them — either
+regenerate it or copy the blocks over by hand.
+
+Everything else (client data, database content) comes from the usual Turtle
+sources and is not part of this repository.
+
 ## Client Version
 
 The client version targetted is patch 1.18.1, build 7272  
