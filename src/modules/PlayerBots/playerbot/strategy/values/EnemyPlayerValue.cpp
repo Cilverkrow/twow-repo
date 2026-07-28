@@ -32,6 +32,27 @@ std::list<ObjectGuid> EnemyPlayersValue::Calculate()
                 result = AI_VALUE(std::list<ObjectGuid>, "possible attack targets");
                 ApplyFilter(result, getOne);
             }
+
+            // "possible attack targets" is built exclusively from "attackers" -
+            // units already in an active combat/threat relationship with the
+            // bot (2026-07-27, confirmed live via debug logging: hasEnemy was
+            // 0 for every bot standing right next to an untouched enemy). That
+            // meant bots never proactively engaged anyone - only native combat
+            // (a human player actually landing a hit) ever created a real
+            // threat entry, so bots only fought back once directly attacked,
+            // and other nearby bots never "assisted" either since this whole
+            // value only ever looked at the bot's OWN attacker list. Falling
+            // back to "possible targets" - a genuine proximity scan
+            // (AnyUnfriendlyUnitInObjectRangeCheck via Cell::VisitAllObjects,
+            // see PossibleTargetsValue.cpp) with no threat-table dependency -
+            // gives bots a real "is anyone hostile nearby" signal. Scoped to
+            // InBattleGround() only so normal world PvE bot behavior against
+            // real players elsewhere doesn't change.
+            if (result.empty() && bot->InBattleGround())
+            {
+                result = AI_VALUE(std::list<ObjectGuid>, "possible targets");
+                ApplyFilter(result, getOne);
+            }
         }
     }
 

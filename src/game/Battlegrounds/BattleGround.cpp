@@ -312,6 +312,16 @@ void BattleGround::Update(uint32 diff)
     /***           BATTLEGROUND BALLANCE SYSTEM            ***/
     /*********************************************************/
 
+    // Custom: hard time limit for WSG/AB so bot-heavy matches that never cap flags/nodes
+    // (bots standing around instead of fighting) don't run forever. Whoever leads on
+    // points/flags when the clock runs out wins, same resolution as premature-finish.
+    if (!IsArena() && GetStatus() == STATUS_IN_PROGRESS &&
+        (GetTypeID() == BATTLEGROUND_WS || GetTypeID() == BATTLEGROUND_AB) &&
+        m_StartTime > 20 * MINUTE * IN_MILLISECONDS)
+    {
+        EndBattleGround(GetWinningTeam());
+    }
+
     // if less then minimum players are in on one side, then start premature finish timer
     if (!IsArena() && GetStatus() == STATUS_IN_PROGRESS && sBattleGroundMgr.GetPrematureFinishTime() && (GetPlayersCountByTeam(ALLIANCE) < GetMinPlayersPerTeam() || GetPlayersCountByTeam(HORDE) < GetMinPlayersPerTeam()))
     {

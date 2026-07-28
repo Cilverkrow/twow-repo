@@ -2958,6 +2958,27 @@ bool BGTactics::moveToStart(bool force)
     return true;
 }
 
+// (2026-07-28) Whether a REAL player (not a bot) is on the given TEAM in
+// this battleground - deliberately scoped to one team, not "anyone in the
+// match", since a solo human always counts as present on their OWN team;
+// what actually matters is whether the OPPOSING (all-bot) team has nobody
+// driving it. Used to let bots on an all-bot team go fetch the enemy flag
+// on their own initiative again, since otherwise that team never even
+// tries to cap and a human playing solo against bots always wins trivially
+// (see selectObjective()'s WSG branch, "Stop WSG bots from proactively
+// fetching the enemy flag", 2026-07-27 - correct for real PvP matches with
+// humans on both sides, but makes solo/bots-only testing one-sided).
+static bool BgTeamHasRealPlayer(BattleGround* bg, Team team)
+{
+    for (auto const& itr : bg->GetPlayers())
+    {
+        if (Player* p = sObjectMgr.GetPlayer(itr.first))
+            if (!p->GetPlayerbotAI() && p->GetTeam() == team)
+                return true;
+    }
+    return false;
+}
+
 bool BGTactics::selectObjective(bool reset)
 {
     BattleGround *bg = bot->GetBattleGround();
@@ -3012,30 +3033,23 @@ bool BGTactics::selectObjective(bool reset)
 
         if (bot->HasAura(BG_WS_SPELL_WARSONG_FLAG) || bot->HasAura(BG_WS_SPELL_SILVERWING_FLAG))
         {
+            // Always head straight for home base with the flag, even if the
+            // enemy also currently holds our own flag (teamFlagTaken()) -
+            // previously this sent the carrier to a random "hiding spot"
+            // instead in that case, and resetObjective()'s "don't switch
+            // hiding spots" guard (see its comment: "disabled for now until
+            // hiding spots reimplemented since it causes bots to stop
+            // moving") then permanently refused to ever re-pick a new
+            // objective once the bot arrived there - the flag carrier would
+            // freeze in the middle of the field forever, confirmed live
+            // 2026-07-27. Heading home unconditionally sidesteps that: the
+            // bot just waits at its own base (worst case) instead of
+            // freezing at an arbitrary hiding spot, and can still capture
+            // the instant our flag comes home.
             if (bot->GetTeam() == ALLIANCE)
-            {
-                if (teamFlagTaken())
-                {
-                    Position hidePos = WS_FLAG_HIDE_ALLIANCE[urand(0, 4)];
-                    pos.Set(hidePos.x, hidePos.y, hidePos.z, bot->GetMapId());
-                }
-                else
-                {
-                    pos.Set(WS_FLAG_POS_ALLIANCE.x, WS_FLAG_POS_ALLIANCE.y, WS_FLAG_POS_ALLIANCE.z, bot->GetMapId());
-                }
-            }
+                pos.Set(WS_FLAG_POS_ALLIANCE.x, WS_FLAG_POS_ALLIANCE.y, WS_FLAG_POS_ALLIANCE.z, bot->GetMapId());
             else
-            {
-                if (teamFlagTaken())
-                {
-                    Position hidePos = WS_FLAG_HIDE_HORDE[urand(0, 4)];
-                    pos.Set(hidePos.x, hidePos.y, hidePos.z, bot->GetMapId());
-                }
-                else
-                {
-                    pos.Set(WS_FLAG_POS_HORDE.x, WS_FLAG_POS_HORDE.y, WS_FLAG_POS_HORDE.z, bot->GetMapId());
-                }
-            }
+                pos.Set(WS_FLAG_POS_HORDE.x, WS_FLAG_POS_HORDE.y, WS_FLAG_POS_HORDE.z, bot->GetMapId());
         }
         else
         {
@@ -3069,16 +3083,28 @@ bool BGTactics::selectObjective(bool reset)
                         //out << "Attacking " << (bot->GetTeam() == ALLIANCE ? "Horde FC" : "Alliance FC");
                         //bot->Say(out.str(), LANG_UNIVERSAL);
                     }
-                    else
+                    else if (!BgTeamHasRealPlayer(bg, bot->GetTeam()))
                     {
+                        // No real player in this match at all (solo/testing
+                        // against an all-bot team) - go fetch the enemy flag
+                        // like before 2026-07-27, since otherwise the enemy
+                        // team never even tries to cap and a human always
+                        // wins trivially.
                         if (bot->GetTeam() == ALLIANCE)
                             pos.Set(WS_FLAG_POS_HORDE.x, WS_FLAG_POS_HORDE.y, WS_FLAG_POS_HORDE.z, bot->GetMapId());
                         else
                             pos.Set(WS_FLAG_POS_ALLIANCE.x, WS_FLAG_POS_ALLIANCE.y, WS_FLAG_POS_ALLIANCE.z, bot->GetMapId());
-
-                        //ostringstream out;
-                        //out << "Going to " << (bot->GetTeam() == ALLIANCE ? "take Horde flag" : "take Alliance flag");
-                        //bot->Say(out.str(), LANG_UNIVERSAL);
+                    }
+                    else
+                    {
+                        // Was: proactively head to the enemy flag spawn to go
+                        // grab it. Disabled on request (2026-07-27) - bots
+                        // should defend/return flags but not actively go
+                        // fetch the enemy one themselves in a real match with
+                        // a human opponent present. Patrol instead.
+                        float rx, ry, rz;
+                        bot->GetRandomPoint(1227.446f, 1476.235f, 307.484f, 150.0f, rx, ry, rz);
+                        pos.Set(rx, ry, rz, bot->GetMapId());
                     }
                 }
             }
@@ -3093,28 +3119,25 @@ bool BGTactics::selectObjective(bool reset)
                     //out << "Attacking " << (bot->GetTeam() == ALLIANCE ? "Horde FC" : "Alliance FC");
                     //bot->Say(out.str(), LANG_UNIVERSAL);
                 }
+                else if (!BgTeamHasRealPlayer(bg, bot->GetTeam()))
+                {
+                    // Same as the supporter branch above - fetch the enemy
+                    // flag when there's no real player in the match at all.
+                    if (bot->GetTeam() == ALLIANCE)
+                        pos.Set(WS_FLAG_POS_HORDE.x, WS_FLAG_POS_HORDE.y, WS_FLAG_POS_HORDE.z, bot->GetMapId());
+                    else
+                        pos.Set(WS_FLAG_POS_ALLIANCE.x, WS_FLAG_POS_ALLIANCE.y, WS_FLAG_POS_ALLIANCE.z, bot->GetMapId());
+                }
                 else
                 {
-                    if (role > 9)  // test patrol
-                    {
-                        float rx, ry, rz;
-                        bot->GetRandomPoint(1227.446f, 1476.235f, 307.484f, 150.0f, rx, ry, rz);
-                        pos.Set(rx, ry, rz, bot->GetMapId());
-                        //ostringstream out;
-                        //out << "Patrolling battlefield";
-                        //bot->Say(out.str(), LANG_UNIVERSAL);
-                    }
-                    else
-                    {
-                        if (bot->GetTeam() == ALLIANCE)
-                            pos.Set(WS_FLAG_POS_HORDE.x, WS_FLAG_POS_HORDE.y, WS_FLAG_POS_HORDE.z, bot->GetMapId());
-                        else
-                            pos.Set(WS_FLAG_POS_ALLIANCE.x, WS_FLAG_POS_ALLIANCE.y, WS_FLAG_POS_ALLIANCE.z, bot->GetMapId());
-
-                        //ostringstream out;
-                        //out << "Going to " << (bot->GetTeam() == ALLIANCE ? "take Horde flag" : "take Alliance flag");
-                        //bot->Say(out.str(), LANG_UNIVERSAL);
-                    }
+                    // Was: patrol only if role>9, otherwise proactively go
+                    // grab the enemy flag. Now always patrols when a real
+                    // player is present - see the "supporter" branch above
+                    // for why the offensive flag-fetch was removed
+                    // (2026-07-27).
+                    float rx, ry, rz;
+                    bot->GetRandomPoint(1227.446f, 1476.235f, 307.484f, 150.0f, rx, ry, rz);
+                    pos.Set(rx, ry, rz, bot->GetMapId());
                 }
             }
         }

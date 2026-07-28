@@ -95,7 +95,17 @@ bool AttackEnemyPlayerAction::isUseful()
 bool AttackEnemyFlagCarrierAction::isUseful()
 {
     Unit* target = context->GetValue<Unit*>("enemy flag carrier")->Get();
-    return target && sServerFacade.IsDistanceLessOrEqualThan(sServerFacade.GetDistance2d(bot, target), 75.0f) && (bot->HasAura(23333) || bot->HasAura(23335) || bot->HasAura(34976));
+    // Was bot->HasAura(...) (2026-07-27, fixed) - that's the "am I personally
+    // carrying a flag" check used correctly one function above in
+    // DpsAssistAction::isUseful() ("if carry flag, do not start fight"), but
+    // it was copy-pasted here unchanged. Requiring the ATTACKING bot to
+    // already be a flag carrier made this action nearly always false for a
+    // normal bot chasing the enemy flag carrier, since regular chasers don't
+    // carry a flag - confirmed live: bots chased flag carriers relentlessly
+    // but never actually attacked once they caught up. The check belongs on
+    // the TARGET (confirming it's genuinely still an active flag carrier),
+    // not on the attacker.
+    return target && sServerFacade.IsDistanceLessOrEqualThan(sServerFacade.GetDistance2d(bot, target), 75.0f) && (target->HasAura(23333) || target->HasAura(23335) || target->HasAura(34976));
 }
 
 bool SelectNewTargetAction::Execute(Event& event)
