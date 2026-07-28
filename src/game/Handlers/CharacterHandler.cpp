@@ -775,6 +775,30 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         SendNotification("WARNING: %s", warning);
     }
 
+    // --- Beginners-Gilde (custom): neue, gildenlose echte Spieler beim ersten
+    //     Einloggen automatisch in die konfigurierte Willkommensgilde aufnehmen.
+    //     Bots (GetPlayerbotAI) ausgeschlossen; nur bis Level 5. ---
+    if (sConfig.GetBoolDefault("BeginnersGuilds", false)
+        && pCurrChar->GetGuildId() == 0
+        && !pCurrChar->GetPlayerbotAI()
+        && pCurrChar->GetLevel() <= 5)
+    {
+        // Random-Bots laufen auf RNDBOT-Accounts. Deren Session hat keinen
+        // Username (GetUsername() ist leer), daher den Account-Namen zuverlaessig
+        // ueber die ID holen und Bots ausschliessen.
+        std::string beginnersAccName;
+        sAccountMgr.GetName(GetAccountId(), beginnersAccName);
+        if (beginnersAccName.rfind("RNDBOT", 0) != 0)
+        {
+            uint32 beginnersGuildId = (pCurrChar->GetTeam() == HORDE)
+                ? sConfig.GetIntDefault("BeginnersGuildHorde", 0)
+                : sConfig.GetIntDefault("BeginnersGuildAlliance", 0);
+            if (beginnersGuildId)
+                if (Guild* beginnersGuild = sGuildMgr.GetGuildById(beginnersGuildId))
+                    beginnersGuild->AddMember(pCurrChar->GetObjectGuid(), beginnersGuild->GetLowestRank());
+        }
+    }
+
     if (Guild* guild = sGuildMgr.GetGuildById(pCurrChar->GetGuildId()))
     {
         WorldPacket data(SMSG_GUILD_EVENT, (2 + guild->GetMOTD().size() + 1));
