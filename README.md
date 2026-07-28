@@ -5,6 +5,17 @@ This is an unofficial, community driven, restoration of the 1.18.1 patch of Turt
 This project is not to be used for profit or to misrepresent itself, or anyone using it, as the original creators  
 This project targets version 1.18.1 build 7272
 
+## About this fork
+
+This repository is a fork of **[Penqle/tortoise-wow](https://github.com/Penqle/tortoise-wow)** (the upstream project described below), used to run a small private server. It differs from upstream in two ways:
+
+1. **Playerbots are integrated and actually in use** — the integration comes from **[r-o-sh/tortoise-wow, branch `playerbots-integration-gh`](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh)**, which vendors [ike3's playerbots][20] under `src/modules/PlayerBots/`. Build with `-DBUILD_PLAYERBOTS=ON`; runtime activation is gated by `AiPlayerbot.Enabled` in `aiplayerbot.conf`.
+2. **A handful of server-side features and fixes of my own** — automatic zone-restricted world buffs, hourly donation points, a beginners guild, several playerbot battleground fixes (queueing, combat, flag carriers), battleground graveyard resurrection, and a donation shop category fix. These are maintained separately as standalone patches at **[Shyalya/turtle-1.18-server-features](https://github.com/Shyalya/turtle-1.18-server-features)** so they can be applied to any compatible tree.
+
+Upstream fixes are pulled in by merging `Penqle/main` periodically. Everything below is upstream's own documentation and applies to this fork as well, except where noted.
+
+> **Note on the client:** the core must be built with `-DALLOW_TURTLE_ADDONS=ON`, otherwise the client crashes with "interface corrupt" when entering the world.
+
 ## Client Version
 
 The client version targetted is patch 1.18.1, build 7272  
@@ -18,10 +29,10 @@ Additions will be added as the core code reaches feature completion
 - **Autoscale** - Rudimentary toggleable dungeon/raid auto scaling system, found in mangosd.conf
 - **Leech** - Basic toggleable leech system designed for solo play, found in mangosd.conf
 - **Additional Talent Points** - Mostly used for testing, found in tw_char.characters
+- **[Playerbots][20]** *(this fork)* - Integrated from [r-o-sh's branch](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh) and in active use. Upstream still lists this as planned/not ready.
 
 #### Planned Additions
 
-- **[Playerbots][20]** - Currently implemented in a very basic fashion, not ready for use
 - **[Eluna][19]** - The WoW lua engine
 
 ## Operating Systems
@@ -53,11 +64,33 @@ To build this project follow any MaNGOS/MaNGOS Zero build guide, with the additi
 
 This will be streamlined once the core is more up to date
 
+> **Caveat for this fork:** step 3 relies on the DB auto-updater
+> (`Database.AutoUpdate.Enabled` in mangosd.conf). That works on a database
+> built up through the auto-updater from the start. On a database that was
+> instead restored from a full dump, the `migrations` table won't line up with
+> the files in `sql/database_updates/`, and enabling the auto-updater makes it
+> try to replay old migrations until one fails on a duplicate key — the server
+> then refuses to start. If that applies to you, keep it disabled and apply new
+> migration files by hand, recording each one afterwards:
+>
+> ```sql
+> INSERT INTO migrations (Name, Hash, AppliedAt)
+> VALUES ('20260726112016_world', 'manual', NOW());
+> ```
+
 ## Contributing
 
-Contributions are welcome, but I may be slow to review and merge PRs
+**For this fork:** improvements to the core itself are best directed at
+[upstream](https://github.com/Penqle/tortoise-wow) rather than here — this fork
+exists to run a private server and only tracks upstream plus the additions
+listed at the top. The standalone server features live in their own repo:
+[Shyalya/turtle-1.18-server-features](https://github.com/Shyalya/turtle-1.18-server-features).
 
-See `CONTRIBUTING.md` for ways to get started.
+Upstream's note follows:
+
+> Contributions are welcome, but I may be slow to review and merge PRs
+>
+> See `CONTRIBUTING.md` for ways to get started.
 
 
 [1]: http://git-scm.com/ "Git - Distributed version control system"
