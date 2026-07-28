@@ -67,12 +67,21 @@ enum BG_WS_FlagState
     BG_WS_FLAG_STATE_ON_GROUND    = 3
 };
 
+// IDs 769-772 are the standard vanilla WorldSafeLocs.dbc IDs for these
+// graveyards, but this server's WorldSafeLocs.dbc (extracted from the
+// Turtle WoW 1.18 client) only has 174 entries total and doesn't include
+// them at all - sWorldSafeLocsStore.LookupEntry() silently returned NULL
+// for every single WSG death, confirmed live 2026-07-27/28 (players stuck
+// at their corpse instead of teleporting to the graveyard on release
+// spirit). The same graveyard locations DO exist in this DBC, just under
+// different IDs (97-100) - matched by cross-referencing map_id=489 entries'
+// coordinates against the known Alliance/Horde base positions.
 enum BG_WS_Graveyards
 {
-    WS_GRAVEYARD_FLAGROOM_ALLIANCE = 769,
-    WS_GRAVEYARD_FLAGROOM_HORDE    = 770,
-    WS_GRAVEYARD_MAIN_ALLIANCE     = 771,
-    WS_GRAVEYARD_MAIN_HORDE        = 772
+    WS_GRAVEYARD_FLAGROOM_ALLIANCE = 97,
+    WS_GRAVEYARD_FLAGROOM_HORDE    = 98,
+    WS_GRAVEYARD_MAIN_ALLIANCE     = 99,
+    WS_GRAVEYARD_MAIN_HORDE        = 100
 };
 
 // Nostalrius
