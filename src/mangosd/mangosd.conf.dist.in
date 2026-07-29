@@ -2155,6 +2155,23 @@ Leech.Enable = 0
 # Sets the percentage of damage to leech
 Leech.Amount = 0.05
 
+# Leech-Eingrenzungen. Ohne diese wirkt der Leech auf jeden Spieler - also auch
+# auf die Random-Bots - und ebenso im PvP.
+#   PvEOnly          nur gegen Nicht-Spieler
+#   RealPlayersOnly  keine Random-Bots (RNDBOT-Accounts)
+#   SoloOnly         nur ohne Gruppe/Raid
+Leech.PvEOnly = 1
+Leech.RealPlayersOnly = 1
+Leech.SoloOnly = 1
+#   DungeonOnly      nur in Instanzen (Dungeons/Raids), nicht in der offenen Welt
+Leech.DungeonOnly = 1
+
+# SoloDungeonRepopAlive. Wer ALLEIN in einer Instanz stirbt, kommt beim
+# Geist-Freilassen lebendig am Instanzeingang an statt den Leichnamslauf machen
+# zu muessen. Sobald eine Gruppe dabei ist, greift es nicht (die kann ja
+# wiederbeleben). Gilt via Map::IsDungeon() auch fuer Raids.
+SoloDungeonRepopAlive.Enable = 0
+
 # AutoScaler.Enable. Enable or disable instance auto-scaling. 0 = off, 1 = on.
 AutoScalerEnable = 0
 

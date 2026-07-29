@@ -721,6 +721,15 @@ enum eConfigBoolValues
     CONFIG_BOOL_HOLIDAY_EVENT,
     CONFIG_BOOL_PERFORMANCE_ENABLE,
     CONFIG_BOOL_LEECH_ENABLE,
+    // Leech restrictions: without them the leech applies to EVERY player,
+    // including the ~1000 random bots, and in PvP too, which skews fights
+    // server wide. See Unit::DealDamage.
+    CONFIG_BOOL_LEECH_PVE_ONLY,
+    CONFIG_BOOL_LEECH_REAL_PLAYERS_ONLY,
+    CONFIG_BOOL_LEECH_SOLO_ONLY,
+    CONFIG_BOOL_LEECH_DUNGEON_ONLY,
+    // Solo dungeon resurrection, see Player::RepopAtGraveyard
+    CONFIG_BOOL_SOLO_DUNGEON_REPOP_ALIVE,
     CONFIG_BOOL_AUTOSCALER_ENABLE,
     CONFIG_BOOL_VALUE_COUNT
 };
