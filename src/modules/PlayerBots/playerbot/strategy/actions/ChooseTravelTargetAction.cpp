@@ -321,6 +321,52 @@ inline std::string PrintPartion(uint32 sqPartition)
     return "> " + std::to_string(prevPartition);
 }
 
+namespace
+{
+    // Is this destination point inside the enemy faction's home territory?
+    //
+    // The existing faction checks only ever look at the destination NPC itself
+    // (RpgTravelDestination::IsActive, GrindTravelDestination::IsActive). That
+    // is not enough: neutral faction 35 NPCs are friendly to both sides, yet
+    // some of them stand in the middle of enemy towns. Gather/skin/mine nodes
+    // are not faction checked at all.
+    //
+    // Observed live: Alliance bots walked across the Barrens into The
+    // Crossroads (a Horde town) to skin gazelles and pick herbs, did not fight
+    // back - a gather node is not a combat target - and were cut down by the
+    // eleven level 40 Horde Guards. After releasing they came straight back,
+    // because the destination was still valid.
+    //
+    // The check sits here rather than in one destination type on purpose: this
+    // is where the real coordinates of the chosen point are available, so it
+    // covers explore, quest, rpg and gather destinations alike.
+    //
+    // Contested zones (team NONE, e.g. Stranglethorn Vale) stay open on
+    // purpose - only territory owned by the other side is blocked.
+    bool IsEnemyHomeZone(WorldPosition const& pos, Team team)
+    {
+        // Do NOT use WorldPosition::GetArea(): it passes an area *flag* to
+        // AreaEntry::GetById(), which expects an area *id*. That returns
+        // unrelated areas - measured live, a position in the Barrens (Kalimdor)
+        // reported "Silverpine Forest" (Eastern Kingdoms).
+        // GetByAreaFlagAndMap resolves flag plus map correctly.
+        AreaEntry const* area = AreaEntry::GetByAreaFlagAndMap(pos.getAreaFlag(), pos.getMapId());
+        if (!area)
+            return false;
+
+        uint32 areaTeam = area->Team;
+
+        // Sub-areas such as "The Crossroads" carry no team of their own and
+        // inherit it from their zone (The Barrens = AREATEAM_HORDE).
+        if (areaTeam == AREATEAM_NONE && area->ZoneId)
+            if (AreaEntry const* zone = AreaEntry::GetById(area->ZoneId))
+                areaTeam = zone->Team;
+
+        return (areaTeam == AREATEAM_ALLY  && team == HORDE)
+            || (areaTeam == AREATEAM_HORDE && team == ALLIANCE);
+    }
+}
+
 //Sets the target to the best destination.
 bool ChooseTravelTargetAction::SetBestTarget(Player* requester, TravelTarget* target, PartitionedTravelList& partitionedList, bool onlyActive)
 {
@@ -352,6 +398,15 @@ bool ChooseTravelTargetAction::SetBestTarget(Player* requester, TravelTarget* ta
 
             if (target->IsForced() || (isActive[destination] = destination->IsActive(bot, PlayerTravelInfo(bot))))
             {
+                // Checked after IsActive so the area lookup only happens for
+                // the point that was actually selected.
+                if (!target->IsForced() && position && IsEnemyHomeZone(*position, bot->GetTeam()))
+                {
+                    ai->TellDebug(requester, "Skipping " + destination->GetTitle() + " - enemy home zone", "debug travel");
+
+                    continue;
+                }
+
                 if (partition != std::prev(partitionedList.end())->first && !urand(0, 10)) //10% chance to skip to a longer partition.
                 {
                     ai->TellDebug(requester, "Skipping range " + PrintPartion(partition), "debug travel");

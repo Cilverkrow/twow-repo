@@ -170,6 +170,20 @@ bool RpgTaxiAction::Execute(Event& event)
         TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(i);
         if (entry && entry->from == node && (bot->m_taxi.IsTaximaskNodeKnown(entry->to) || bot->isTaxiCheater()))
         {
+            // Only destinations usable by the bot's own faction. Previously
+            // the sole check was whether the flight point is KNOWN - but with
+            // "AllFlightPaths = 1" (or isTaxiCheater) every node counts as
+            // known, including the enemy's. The randomly drawn destination
+            // therefore flew bots straight into enemy towns, where they landed
+            // at the flight master (observed live: Alliance bots in The
+            // Crossroads and Orgrimmar, Horde bots in Stormwind).
+            // A flight point is only usable by a faction if it has a mount
+            // entry for it - the same check the core does in
+            // ObjectMgr::GetNearestTaxiNode.
+            TaxiNodesEntry const* toNode = sObjectMgr.GetTaxiNodeEntry(entry->to);
+            if (!toNode || !toNode->MountCreatureID[bot->GetTeam() == ALLIANCE ? 1 : 0])
+                continue;
+
             nodes.push_back(i);
         }
     }

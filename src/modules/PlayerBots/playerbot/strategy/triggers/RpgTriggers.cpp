@@ -33,6 +33,13 @@ bool RpgTaxiTrigger::IsActive()
     if (!guidP.HasNpcFlag(UNIT_NPC_FLAG_FLIGHTMASTER))
         return false;
 
+    // An enemy flight master cannot be used anyway. Without this check bots
+    // walk up to opposing faction flight masters (observed live: Alliance bots
+    // inside the Horde town of The Crossroads). The other rpg triggers in this
+    // file already perform the same check.
+    if (guidP.IsHostileTo(bot))
+        return false;
+
     uint32 node = sObjectMgr.GetNearestTaxiNode(guidP.getX(), guidP.getY(), guidP.getZ(), guidP.getMapId(), bot->GetTeam());
 
     if (!node)
@@ -59,6 +66,11 @@ bool RpgDiscoverTrigger::IsActive()
     GuidPosition guidP(getGuidP());
 
     if (!guidP.HasNpcFlag(UNIT_NPC_FLAG_FLIGHTMASTER))
+        return false;
+
+    // See RpgTaxiTrigger: the bot can never discover an enemy flight point,
+    // so walking there is wasted time (and leads into enemy settlements).
+    if (guidP.IsHostileTo(bot))
         return false;
 
     if (bot->isTaxiCheater())
