@@ -4033,7 +4033,7 @@ void Aura::HandleAuraProcTriggerSpell(bool apply, bool Real)
             if (apply)
                 GetTarget()->RemoveAurasDueToSpell(33006);
             else if (m_removeMode == AURA_REMOVE_BY_DEFAULT)
-                GetTarget()->CastSpell(GetTarget(), 33006, true);
+                GetTarget()->AddAura(33006, ADD_AURA_POSITIVE, GetTarget());
             break;
         }
         // Drain Soul
@@ -5813,12 +5813,9 @@ void Aura::PeriodicTick(SpellEntry const* sProto, AuraType auraType, uint32 data
                 pdamage = dither(std::max(fdamage, 0.0f));
             }
 
-            // Consecration: recalculate the damage on each tick
-            if (spellProto->IsFitToFamily<SPELLFAMILY_PALADIN, CF_PALADIN_CONSECRATION>())
-                pdamage = pCaster->SpellDamageBonusDone(target, GetSpellProto(), GetEffIndex(), m_currentBasePoints, DOT, GetStackAmount());
             // TODO: once dithering is implemented properly it should get removed from there
             // Curse of Agony damage-per-tick calculation
-            else if (spellProto->IsFitToFamily<SPELLFAMILY_WARLOCK, CF_WARLOCK_CURSE_OF_AGONY>())
+            if (spellProto->IsFitToFamily<SPELLFAMILY_WARLOCK, CF_WARLOCK_CURSE_OF_AGONY>())
             {
                 double d = (-1 + ((int)GetAuraTicks() - 1) / 4) * (spellProto->CalculateSimpleValue(EFFECT_INDEX_0) / 2.0);
                 d = std::max(d, 0.);
@@ -5830,6 +5827,13 @@ void Aura::PeriodicTick(SpellEntry const* sProto, AuraType auraType, uint32 data
                 double d = (-1 + ((int)GetAuraTicks() - 1) / 2) * (spellProto->CalculateSimpleValue(EFFECT_INDEX_0) / 3.0);
                 d = std::max(d, 0.);
                 pdamage = dither(pdamage + d);
+            }
+
+            if (GetAuraScript())
+            {
+                float fdamage = pdamage;
+                GetAuraScript()->OnPeriodicDamageCalculateAmount(this, fdamage);
+                pdamage = dither(std::max(fdamage, 0.0f));
             }
 
             // SpellDamageBonus for magic spells

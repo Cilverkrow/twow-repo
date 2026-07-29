@@ -811,6 +811,15 @@ public:
         return IsFitToFamily<SPELLFAMILY_PALADIN, CF_PALADIN_SEAL_OF_THE_CRUSADER, CF_PALADIN_SEAL_OF_COMMAND, CF_PALADIN_SEALS>();
     }
 
+    inline bool IsJudgementSpell() const
+    {
+        return IsFitToFamily<SPELLFAMILY_PALADIN,
+            CF_PALADIN_JUDGEMENT_OF_RIGHTEOUSNESS,
+            CF_PALADIN_JUDGEMENT_OF_WISDOM_LIGHT,
+            CF_PALADIN_JUDGEMENT_OF_JUSTICE,
+            CF_PALADIN_JUDGEMENT_OF_THE_CRUSADER>();
+    }
+
     inline bool IsElementalShield() const
     {
         // family flags 10 (Lightning), 42 (Earth), 37 (Water), proc shield from T2 8 pieces bonus
