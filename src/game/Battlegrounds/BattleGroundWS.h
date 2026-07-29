@@ -44,7 +44,10 @@ enum BG_WS_SpellId
     BG_WS_SPELL_WARSONG_FLAG            = 23333,
     BG_WS_SPELL_WARSONG_FLAG_DROPPED    = 23334,
     BG_WS_SPELL_SILVERWING_FLAG         = 23335,
-    BG_WS_SPELL_SILVERWING_FLAG_DROPPED = 23336
+    BG_WS_SPELL_SILVERWING_FLAG_DROPPED = 23336,
+    // Stacking +10% damage taken, applied by the flag aura itself every 60s
+    // (23333/23335 effect 3). Cleared on capture, see EventPlayerCapturedFlag.
+    BG_WS_SPELL_FOCUSED_ASSAULT         = 44094
 };
 
 enum BG_WS_WorldStates
