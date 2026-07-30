@@ -2183,6 +2183,26 @@ SoloDungeonRepopAlive.Enable = 0
 GuildBank.NpcEntriesAlliance = 80917
 GuildBank.NpcEntriesHorde = 80918
 
+# LFT.BotFill. Fills a waiting player's dungeon queue with random bots.
+#
+# Bots are put into the same queue real players sit in, so the existing matcher
+# handles roles, faction, hardcore and group building. Getting to the dungeon is
+# not automated: the party leader types "summon" in party chat.
+#
+#   DelaySeconds  how long a real player waits before bots are added. Filling
+#                 instantly would mean nobody ever waits for a human again.
+#   LevelRange    bots may be this many levels above or below the waiting
+#                 player. The instance names the client sends carry no level
+#                 information, so the player is the reference.
+#
+# Real players always take priority: when one joins the queue, every bot that is
+# not already part of an offer is dropped again. An offer already sent out is
+# left alone rather than breaking a group mid-formation.
+LFT.BotFill.Enable = 0
+LFT.BotFill.DelaySeconds = 90
+LFT.BotFill.LevelRange = 5
+
+
 # AutoScaler.Enable. Enable or disable instance auto-scaling. 0 = off, 1 = on.
 AutoScalerEnable = 0
 

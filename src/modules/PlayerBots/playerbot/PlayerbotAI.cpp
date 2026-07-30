@@ -2616,6 +2616,18 @@ void PlayerbotAI::ResetStrategies(bool autoLoad)
     AiFactory::AddDefaultReactionStrategies(bot, this, reactionEngine);
     if (autoLoad && HasPlayerRelation()) sPlayerbotDbStore.Load(this);
 
+    // A role handed out by the dungeon finder wins over both the talent spec
+    // and the stored strategy set - hence applied last. addStrategy() drops the
+    // sibling spec strategy by itself and does nothing for classes that cannot
+    // fill the role, so a mage stays a mage.
+    if (m_forcedRole)
+    {
+        char const* roleStrategy = m_forcedRole == 1 ? "tank" : (m_forcedRole == 2 ? "heal" : "dps");
+        engines[(uint8)BotState::BOT_STATE_COMBAT]->addStrategy(roleStrategy);
+        engines[(uint8)BotState::BOT_STATE_NON_COMBAT]->addStrategy(roleStrategy);
+        sLog.outBasic("LFT: %s strategies rebuilt as %s", bot->GetName(), roleStrategy);
+    }
+
     for (uint8 i = 0; i < (uint8)BotState::BOT_STATE_ALL; i++)
     {
         engines[i]->initMode = false;

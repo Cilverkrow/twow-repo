@@ -734,6 +734,14 @@ public:
     bool GetShouldLogOut() { return shouldLogOut; }
 
     PlayerTalentSpec GetTalentSpec();
+
+        // Role handed out by the dungeon finder (LFT_ROLE_* bits: 1 tank,
+        // 2 heal, 4 damage; 0 = none). Overrides the talent-derived combat
+        // strategy in AiFactory, and survives ResetStrategies() - which is the
+        // whole point, since that runs whenever the master changes, i.e. right
+        // when the bot joins the player's group.
+        void SetForcedRole(uint8 role) { m_forcedRole = role; }
+        uint8 GetForcedRole() const { return m_forcedRole; }
     void UpdateTalentSpec(PlayerTalentSpec spec = PlayerTalentSpec::TALENT_SPEC_INVALID);
 
     bool CanEnterArea(const AreaTrigger* area);
@@ -763,6 +771,7 @@ private:
 protected:
 	Player* bot;
 	Player* master;
+	uint8 m_forcedRole = 0;
 	// GUID-shadow of `master` so we can verify the pointer is still
 	// alive each tick without dereferencing it. Set in SetMaster().
 	// Used by RevalidateMasterPointer() at the top of UpdateAI.

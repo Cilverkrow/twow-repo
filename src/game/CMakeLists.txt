@@ -130,6 +130,7 @@ set (game_SRCS
     HttpApi/TransferController.cpp
     HttpApi/TransferController.hpp
     LFG/LFGMgr.cpp
+    LFT/LFTBotFill.cpp
     LFT/LFTMgr.cpp
     LFT/LFTQeueue.cpp
     LFT/LFTUserGroups.cpp

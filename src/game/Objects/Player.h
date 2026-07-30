@@ -3337,6 +3337,9 @@ bool Player_DispatchBotOutgoingPacket(Player* player, class WorldPacket const& p
 // fed to their PlayerbotAI::HandleCommand for parsing as a bot command (/party "co" etc).
 // Implementation in HostHooks.cpp.
 void Player_DispatchBotChatCommand(Player* master, uint32 type, std::string const& msg, uint32 lang, std::string const& to = "");
+// Tell a bot which role the dungeon finder gave it (LFT_ROLE_* bits, 0 clears).
+// No-op for anything that is not a bot.
+void Playerbot_SetForcedRole(Player* bot, uint8 role);
 
 // "the bodies of template functions must be made available in a header file"
 template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T &basevalue, Spell* spell)

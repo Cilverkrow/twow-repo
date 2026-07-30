@@ -12,13 +12,6 @@ namespace
     static uint32 const LFT_ROLECHECK_TIMEOUT = 90 * IN_MILLISECONDS;
     static uint32 const LFT_OFFER_TIMEOUT = 90 * IN_MILLISECONDS;
 
-    enum LFTRoles
-    {
-        LFT_ROLE_TANK   = 0x01,
-        LFT_ROLE_HEALER = 0x02,
-        LFT_ROLE_DAMAGE = 0x04
-    };
-
     std::vector<std::string> SplitPreserveEmpty(std::string const& value, char delimiter)
     {
         std::vector<std::string> parts;

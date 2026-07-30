@@ -13,6 +13,15 @@
 class Group;
 class Player;
 
+// Moved here from LFTQeueue.cpp's anonymous namespace: the bot fill in
+// LFTBotFill.cpp needs them too.
+enum LFTRoles
+{
+    LFT_ROLE_TANK   = 0x01,
+    LFT_ROLE_HEALER = 0x02,
+    LFT_ROLE_DAMAGE = 0x04
+};
+
 class LFTManager
 {
     public:
@@ -149,6 +158,15 @@ class LFTManager
         void RecountListing(Listing& listing) const;
         void CleanupPlayer(ObjectGuid const& guid);
 
+        // Bot fill - see LFTBotFill.cpp
+        void UpdateBotFill(uint32 diff);
+        void DropUnneededFillBots();
+        void FillInstanceWithBots(std::string const& instance, QueuedPlayer const& waiter);
+        void AcceptOffersForFillBots();
+        void ForgetFillBot(ObjectGuid const& guid);
+        bool IsFillBot(ObjectGuid const& guid) const;
+        bool RealPlayerWaitsFor(std::string const& instance, time_t& oldestJoin) const;
+
         ListingsMap m_listings;
         QueueMap m_queue;
         RolecheckMap m_rolechecks;
@@ -158,6 +176,10 @@ class LFTManager
         uint32 m_nextOfferId;
         uint64 m_nextQueueOrder;
         bool m_listingsLoaded;
+
+        // Queue entries we created ourselves to fill a real player's group.
+        std::set<ObjectGuid> m_fillBots;
+        uint32 m_botFillTimer;
 };
 
 extern LFTManager sLFTMgr;
