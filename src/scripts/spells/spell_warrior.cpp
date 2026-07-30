@@ -375,13 +375,56 @@ struct spell_warrior_sweeping_strikes : public AuraScript
         holder->SetRemovedOnShapeLost(false);
     }
 
-    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* victim, uint32 damage, int32 /*originalAmount*/, Aura* aura, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
     {
-        Unit* target = owner->SelectRandomUnfriendlyTarget(nullptr, 5.0f, false, true);
-        if (!target)
+        if (!victim || !victim->IsAlive())
             return SPELL_AURA_PROC_FAILED;
 
-        owner->CastSpell(target, SPELL_WARRIOR_SWEEPING_STRIKES_EXTRA_ATTACK, true, nullptr, aura);
+        if (procSpell && (procSpell->Id == SPELL_WARRIOR_SWEEPING_STRIKES_EXTRA_ATTACK || procSpell->Id == SPELL_WARRIOR_SWEEPING_STRIKES_TRIGGER))
+            return SPELL_AURA_PROC_FAILED;
+
+        if (procSpell && !procSpell->IsDirectDamageSpell())
+            return SPELL_AURA_PROC_FAILED;
+
+        if (!damage)
+            return SPELL_AURA_PROC_FAILED;
+
+        float radius = ATTACK_DISTANCE;
+        if (procSpell && procSpell->Id == SPELL_WARRIOR_WHIRLWIND)
+            radius = 8.0f;
+
+        Unit* target = owner->SelectRandomUnfriendlyTarget(victim, radius, false, true, true);
+        if (!target)
+            return SPELL_AURA_PROC_OK;
+
+        int32 basepoints = 0;
+        uint32 triggerSpellId = SPELL_WARRIOR_SWEEPING_STRIKES_TRIGGER;
+        if (procSpell && procSpell->Id == SPELL_WARRIOR_EXECUTE_TRIGGER)
+        {
+            if (victim->GetHealthPercent() <= 20.0f && target->GetHealthPercent() <= 20.0f)
+            {
+                int32 const initialDamage = damage * 100 / owner->CalcArmorReducedDamage(victim, 100);
+                basepoints = initialDamage * owner->CalcArmorReducedDamage(target, 100) / 100;
+            }
+            else if (victim->GetHealthPercent() <= 20.0f)
+                triggerSpellId = SPELL_WARRIOR_SWEEPING_STRIKES_EXTRA_ATTACK;
+            else
+            {
+                int32 const initialDamage = damage * 100 / owner->CalcArmorReducedDamage(victim, 100);
+                basepoints = initialDamage * owner->CalcArmorReducedDamage(target, 100) / 100;
+            }
+        }
+        else
+        {
+            int32 const initialDamage = damage * 100 / owner->CalcArmorReducedDamage(victim, 100);
+            basepoints = initialDamage * owner->CalcArmorReducedDamage(target, 100) / 100;
+        }
+
+        if (basepoints)
+            owner->CastCustomSpell(target, triggerSpellId, &basepoints, nullptr, nullptr, true, nullptr, aura);
+        else
+            owner->CastSpell(target, triggerSpellId, true, nullptr, aura);
+
         return SPELL_AURA_PROC_OK;
     }
 };
