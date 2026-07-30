@@ -603,7 +603,14 @@ if (BUILD_PLAYERBOTS)
         ${CMAKE_SOURCE_DIR}/src/shared/Util
         ${CMAKE_SOURCE_DIR}/src/framework
         ${CMAKE_SOURCE_DIR}/src/framework/Network
+        # ACE_ROOT is only the search hint a builder may pass in; the path that
+        # find_package(ACE) actually resolved is ACE_INCLUDE_DIR, which is what
+        # src/game and src/shared use. Without it this target gets no ACE include
+        # path whenever ACE was found any other way - via the environment, a
+        # system install, or CMake's own search. On Linux that goes unnoticed
+        # because ACE sits in /usr/include; on Windows the build fails outright.
         ${ACE_ROOT}
+        ${ACE_INCLUDE_DIR}
         ${BOOST_ROOT}
         ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
         ${MYSQL_INCLUDE_DIR}
