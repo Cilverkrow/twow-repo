@@ -611,7 +611,10 @@ if (BUILD_PLAYERBOTS)
         # because ACE sits in /usr/include; on Windows the build fails outright.
         ${ACE_ROOT}
         ${ACE_INCLUDE_DIR}
+        # Same story as ACE above: BOOST_ROOT is the hint, Boost_INCLUDE_DIRS is
+        # what find_package actually resolved.
         ${BOOST_ROOT}
+        ${Boost_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
         ${MYSQL_INCLUDE_DIR}
     )

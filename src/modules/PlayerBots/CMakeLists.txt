@@ -182,6 +182,13 @@ target_link_libraries(${LIBRARY_NAME}
   PRIVATE g3dlite
 )
 if(WIN32)
+  # Header-only as far as this module is concerned, but the headers still have
+  # to be found. find_package(Boost) used to live in the else() branch alone,
+  # so on Windows nothing ever located Boost and the only include path was
+  # ${BOOST_ROOT} from the top-level CMakeLists - the search hint, empty unless
+  # the builder passes it. botpch.h includes boost/algorithm/string.hpp
+  # unconditionally, so the module could not compile at all.
+  find_package(Boost 1.70 REQUIRED)
   target_link_libraries(${LIBRARY_NAME}
     PRIVATE zlib
     PRIVATE ws2_32
