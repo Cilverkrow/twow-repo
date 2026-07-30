@@ -142,11 +142,19 @@ declared in `SystemConfig.h` and used nowhere. The rate settings live in
 Database credentials go into `mangosd.conf` and `realmd.conf`. Everything the
 fork adds is off by default:
 
+`mangosd.conf`:
+
 ```
-AiPlayerbot.Enabled = 1
 LFT.BotFill.Enable = 1
 SoloDungeonRepopAlive.Enable = 1
 Leech.Enable = 1
+```
+
+`aiplayerbot.conf` — this one is not a `mangosd.conf` key, which is easy to trip
+over since every other switch is:
+
+```
+AiPlayerbot.Enabled = 1
 ```
 
 `create_databases.sql` creates the `realmlist` table in `tw_logon` but leaves it

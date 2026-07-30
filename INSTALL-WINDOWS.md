@@ -228,11 +228,19 @@ again.
 
 ### Switches that default to off
 
+`mangosd.conf`:
+
 ```
-AiPlayerbot.Enabled = 1
 LFT.BotFill.Enable = 1
 SoloDungeonRepopAlive.Enable = 1
 Leech.Enable = 1
+```
+
+`aiplayerbot.conf` — this one is not a `mangosd.conf` key, which is easy to trip
+over since every other switch is:
+
+```
+AiPlayerbot.Enabled = 1
 ```
 
 ## 7. Realm entry and an account
