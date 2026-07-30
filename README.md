@@ -25,7 +25,7 @@ Every one of them is off by default. Cloning this repo alone is not enough — t
 | World buffs | `AutoWorldBuff.*` | – |
 | Donation points | `AutoDonationPoints.*` | `sql/logon/donation_point_progress.sql`, applied to the **login** database |
 | Beginners guild | `BeginnersGuilds`, `BeginnersGuildHorde/Alliance` | the guilds have to exist; the ids shipped in the template are placeholders |
-| Guild bank outside Stormwind and Orgrimmar | `GuildBank.NpcEntriesAlliance/Horde` | `sql/guildbank_trigger.sql` from the [features repo][22] — the vault keepers need a gossip menu whose text is the string the client addon listens for |
+| Guild bank outside Stormwind and Orgrimmar | `GuildBank.NpcEntriesAlliance/Horde` | nothing — the gossip menu the client addon listens for ships as a migration |
 | Dungeon finder fills with bots | `LFT.BotFill.Enable`, `.DelaySeconds`, `.LevelRange` | – |
 | Solo dungeon resurrection, leech limits | `SoloDungeonRepopAlive.Enable`, `Leech.*` | – |
 | Playerbot talent specs | already in `aiplayerbot.conf.dist.in` | a `aiplayerbot.conf` generated from an **older** checkout keeps the stock vanilla links, every one of which Turtle's reworked trees reject — regenerate it or copy the `AiPlayerbot.PremadeSpec*` block across |
@@ -38,8 +38,25 @@ either regenerate it or copy the blocks over by hand.
 Several fixes need no config at all and are simply in the code: bots vote on
 group loot instead of letting every countdown expire, they stay out of enemy
 territory, they no longer equip items with no stats whatsoever, and a bot group
-that wipes in an instance survives it. Graveyard and PvP trinket fixes are data
-rather than code and ship as SQL in the [features repo][22].
+that wipes in an instance survives it.
+
+Four more are data rather than code and ship as **migrations**, so a fresh
+setup gets them without doing anything: graveyard coverage for The Barrens and
+Arathi (without it, releasing among the Crossroads guards drops the ghost onto
+its own corpse and it dies again immediately), graveyard coverage for the
+dungeon sub-zones Turtle splits up, the guild bank gossip trigger, and the PvP
+trinket no longer dropping the battleground flag.
+
+Two are deliberately left manual, in `sql/tools/`, because both depend on data
+that differs per server:
+
+- `graveyards_turtle_dungeons.sql` — the five Turtle-built dungeons with no
+  graveyard on their map at all. Needs `tools/dbc/add_worldsafelocs.py` run
+  first, because it references WorldSafeLocs ids a stock DBC does not have; it
+  stops at 174.
+- `playerbot_bypass_crossroads.sql` — routes bots around The Crossroads instead
+  of past a guard 21 yards from a travel node. Rewrites travel graph links by
+  id, so check your own node ids first.
 
 The **world database is in this repository** — `sql/base` holds 186 files,
 131 MB of it, plus 95 migrations under `sql/database_updates`. Only the client
