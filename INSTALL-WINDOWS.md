@@ -20,10 +20,29 @@ a game client — see step 4. You need a **Turtle WoW 1.18.1 client, build
 | Visual Studio 2022 | workload **Desktop development with C++** |
 | CMake | 3.16 or newer, on `PATH` |
 | MariaDB or MySQL | server plus the command line client, on `PATH` |
+| **ACE 7.x or 8.x** | **not** bundled — install it and pass `-DACE_ROOT=` if CMake cannot find it |
 
-OpenSSL ships with the repository under `dep/include-windows/openssl`, and
-Recast, G3D, libmpq, fmt and the rest live under `dep/`. You do not need to
-install those separately.
+MySQL, OpenSSL and zlib are bundled under `dep/windows`, and Recast, G3D,
+libmpq and fmt under `dep/`. Those need no separate install. ACE is the one
+dependency you have to supply yourself.
+
+> **The ACE version matters.** This tree is built as C++17, which removed
+> dynamic exception specifications. ACE 6.x still uses them, so its headers
+> produce a cascade of exception-specification errors in `WorldSocketMgr.cpp`
+> and anything that includes it. That is ACE, not this code — the core's own
+> headers contain no `throw()` at all, and patching them only moves the error.
+> Verified working: **ACE 8.0.2**.
+
+> **Do not add the vcpkg toolchain file.** The `if(WIN32)` branch of the
+> top-level `CMakeLists.txt` deliberately pins MySQL, OpenSSL and zlib to the
+> copies under `dep/windows` — `find_package(OpenSSL)` is only called on UNIX.
+> Passing `-DCMAKE_TOOLCHAIN_FILE=...vcpkg.cmake` puts vcpkg's OpenSSL 3.x
+> headers ahead of the bundled 1.1.1 ones while the hard-coded 1.1.1 import
+> libraries still win at link time. The result is exactly two unresolved
+> symbols, `OSSL_PROVIDER_load` and `SSL_get1_peer_certificate` — both of which
+> the code guards by version and would otherwise never reference. If you have
+> already configured with the toolchain, delete the build directory; the cached
+> variables survive a re-run.
 
 ## 2. Configure and build
 
@@ -42,6 +61,11 @@ Two flags matter:
 
 `ALLOW_TURTLE_ADDONS` is already on by default. It has to stay on: without it
 the client crashes with *"interface corrupt"* the moment you enter the world.
+
+If the link fails on `World::FinalizePlayerbotsPostPlayerInfo` or
+`Player_DispatchBotChatCommand`, the checkout predates the stub fix — pull, or
+see `src/game/PlayerbotStubs.cpp`. Those two only ever surface with
+`BUILD_PLAYERBOTS=OFF`, the one configuration nobody builds on Linux.
 
 ## 3. Install into one folder
 
