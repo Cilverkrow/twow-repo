@@ -288,6 +288,8 @@ if(WIN32)
   endif()
   if(NOT OPENSSL_LIBRARIES)
     set(OPENSSL_LIBRARIES ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_release/libssl.lib ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_release/libcrypto.lib)
+    # Remembered so the install step knows whether to ship the matching runtime.
+    set(USING_BUNDLED_OPENSSL TRUE)
   endif()
   if(NOT OPENSSL_DEBUG_LIBRARIES)
     set(OPENSSL_DEBUG_LIBRARIES ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_debug/libssl.lib ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_debug/libcrypto.lib)
@@ -511,6 +513,36 @@ if(WIN32)
     DESTINATION ${LIBS_DIR}
     CONFIGURATIONS Debug
   )
+
+  # libeay32.dll above is the OpenSSL 1.0 runtime, but what actually gets linked
+  # is libssl.lib and libcrypto.lib - the 1.1 import libraries, whose runtime is
+  # named libssl-1_1[-x64].dll and libcrypto-1_1[-x64].dll. Both sit in the same
+  # directory; the wrong pair was simply picked, so a freshly installed server
+  # could not find its OpenSSL at all. Shipped only when the bundled copy is in
+  # use - anyone pointing OPENSSL_LIBRARIES at their own build brings their own.
+  if(USING_BUNDLED_OPENSSL)
+    if(DEP_ARCH STREQUAL "x64")
+      set(BUNDLED_SSL_SUFFIX "-x64")
+    else()
+      set(BUNDLED_SSL_SUFFIX "")
+    endif()
+    install(
+      FILES
+        ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_release/libssl-1_1${BUNDLED_SSL_SUFFIX}.dll
+        ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_release/libcrypto-1_1${BUNDLED_SSL_SUFFIX}.dll
+      DESTINATION ${LIBS_DIR}
+      CONFIGURATIONS Release
+      OPTIONAL
+    )
+    install(
+      FILES
+        ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_debug/libssl-1_1${BUNDLED_SSL_SUFFIX}.dll
+        ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_debug/libcrypto-1_1${BUNDLED_SSL_SUFFIX}.dll
+      DESTINATION ${LIBS_DIR}
+      CONFIGURATIONS Debug
+      OPTIONAL
+    )
+  endif()
   if(PLATFORM MATCHES X86)
     # Copy dll's Windows needs
     install(
