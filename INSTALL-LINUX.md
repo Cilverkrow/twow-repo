@@ -157,6 +157,19 @@ over since every other switch is:
 AiPlayerbot.Enabled = 1
 ```
 
+While you are in that file, turn the population down for the first run. The
+shipped template asks for a thousand:
+
+```
+AiPlayerbot.MinRandomBots = 10
+AiPlayerbot.MaxRandomBots = 10
+```
+
+Those characters are created and geared before the world finishes coming up, so
+a thousand of them turns the first start into a long wait for no benefit. Raise
+it once everything works — this realm runs a thousand comfortably, but that is a
+tuning question, not a setup one.
+
 `create_databases.sql` creates the `realmlist` table in `tw_logon` but leaves it
 **empty**. Insert a row with your server's address, and put the same address in
 the client's `realmlist.wtf`.
