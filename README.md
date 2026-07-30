@@ -18,20 +18,36 @@ Upstream fixes are pulled in by merging `Penqle/main` periodically. Everything b
 
 ### Enabling the fork's own features
 
-Both are off by default. Cloning this repo alone is not enough to use them — they each need one extra step:
+Every one of them is off by default. Cloning this repo alone is not enough — they each need at least one extra step:
 
-| Feature | Config keys (`mangosd.conf`) | Also required |
+| Feature | Config keys | Also required |
 |---|---|---|
 | World buffs | `AutoWorldBuff.*` | – |
 | Donation points | `AutoDonationPoints.*` | `sql/logon/donation_point_progress.sql`, applied to the **login** database |
 | Beginners guild | `BeginnersGuilds`, `BeginnersGuildHorde/Alliance` | the guilds have to exist; the ids shipped in the template are placeholders |
+| Guild bank outside Stormwind and Orgrimmar | `GuildBank.NpcEntriesAlliance/Horde` | `sql/guildbank_trigger.sql` from the [features repo][22] — the vault keepers need a gossip menu whose text is the string the client addon listens for |
+| Dungeon finder fills with bots | `LFT.BotFill.Enable`, `.DelaySeconds`, `.LevelRange` | – |
+| Solo dungeon resurrection, leech limits | `SoloDungeonRepopAlive.Enable`, `Leech.*` | – |
+| Playerbot talent specs | already in `aiplayerbot.conf.dist.in` | a `aiplayerbot.conf` generated from an **older** checkout keeps the stock vanilla links, every one of which Turtle's reworked trees reject — regenerate it or copy the `AiPlayerbot.PremadeSpec*` block across |
 
-All keys are documented in `src/mangosd/mangosd.conf.dist.in`. Note that a
-generated `mangosd.conf` from an older checkout will not contain them — either
-regenerate it or copy the blocks over by hand.
+Config keys live in `src/mangosd/mangosd.conf.dist.in`, except the playerbot
+ones, which are in `src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in`.
+Note that a generated config from an older checkout will not contain them —
+either regenerate it or copy the blocks over by hand.
 
-Everything else (client data, database content) comes from the usual Turtle
-sources and is not part of this repository.
+Several fixes need no config at all and are simply in the code: bots vote on
+group loot instead of letting every countdown expire, they stay out of enemy
+territory, they no longer equip items with no stats whatsoever, and a bot group
+that wipes in an instance survives it. Graveyard and PvP trinket fixes are data
+rather than code and ship as SQL in the [features repo][22].
+
+The **world database is in this repository** — `sql/base` holds 186 files,
+131 MB of it, plus 95 migrations under `sql/database_updates`. Only the client
+data (maps, DBC, vmaps, mmaps) has to come from a game client; extract it with
+the tools under `tools/`.
+
+**Setting up on Windows?** See [`INSTALL-WINDOWS.md`](INSTALL-WINDOWS.md) for a
+walkthrough that covers the parts this page glosses over.
 
 ## Client Version
 
@@ -127,4 +143,5 @@ Upstream's note follows:
 [15]: http://windows.microsoft.com/ "Microsoft Windows"
 [19]: https://github.com/ElunaLuaEngine/Eluna
 [20]: https://github.com/ike3/mangosbot-bots
+[22]: https://github.com/Shyalya/turtle-1.18-server-features
 [21]: http://github.com/memononen/recastnavigation "Recast - Navigation-mesh Toolset for Games"
