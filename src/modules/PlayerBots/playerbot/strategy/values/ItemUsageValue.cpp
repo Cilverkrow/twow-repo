@@ -647,6 +647,23 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemQualifier& itemQualifier, P
     }
 
 
+    // An item with no stats, no armour, no weapon damage and no spell does
+    // nothing for the bot. Without this it falls through to BAD_EQUIP below,
+    // which bots without a real player master happily put on - that is how 74
+    // of them ended up wearing a Forever-Lovely Rose on their head and another
+    // 34 a rabbit headband or a carnival mask. Shirt and tabard are cosmetic
+    // slots and stay exempt.
+    if (!statWeight && slot != EQUIPMENT_SLOT_BODY && slot != EQUIPMENT_SLOT_TABARD)
+    {
+        bool const contributes = itemProto->Armor > 0
+            || itemProto->Block > 0
+            || itemProto->Damage[0].DamageMax > 0.0f
+            || itemProto->Spells[0].SpellId > 0;
+
+        if (!contributes)
+            return ItemUsage::ITEM_USAGE_NONE;
+    }
+
     //No item equiped
     if (!oldItem)
     {
