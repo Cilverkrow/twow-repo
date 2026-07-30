@@ -18,6 +18,7 @@
 
 #include "GuildBank.h"
 #include "Guild.h"
+#include "Config/Config.h"   // GuildBank.NpcEntries* - which NPCs may open the bank
 #include "World.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
@@ -87,8 +88,34 @@ enum BankCommLimits
 	ADDON_MAX_PACKET_SIZE = 2096,
 };
 
-constexpr uint32 AllianceGuildNpcEntry = 80917;
-constexpr uint32 HordeGuildNpcEntry = 80918;
+// Which creature entries a player has to stand next to for guild bank actions
+// to be accepted. Configurable so extra vault keepers can be placed in other
+// cities without a rebuild - Turtle ships decorative ones in Ironforge,
+// Darnassus, Undercity and Thunder Bluff that were never wired up.
+// Parsed once on first use; defaults reproduce the previous hardcoded pair.
+static std::set<uint32> const& GetGuildBankNpcEntries(bool horde)
+{
+    static std::set<uint32> allianceEntries;
+    static std::set<uint32> hordeEntries;
+    static bool loaded = false;
+
+    if (!loaded)
+    {
+        loaded = true;
+        auto parse = [](std::string const& list, std::set<uint32>& out)
+        {
+            std::string number;
+            std::istringstream stream(list);
+            while (std::getline(stream, number, ','))
+                if (uint32 entry = uint32(atoi(number.c_str())))
+                    out.insert(entry);
+        };
+        parse(sConfig.GetStringDefault("GuildBank.NpcEntriesAlliance", "80917"), allianceEntries);
+        parse(sConfig.GetStringDefault("GuildBank.NpcEntriesHorde", "80918"), hordeEntries);
+    }
+
+    return horde ? hordeEntries : allianceEntries;
+}
 
 GuildBank::GuildBank(bool isInfenoBank)
 {
@@ -122,9 +149,17 @@ void GuildBank::HandleAddonMessages(std::string msg, Player* player)
 
 
 	//Should rather do a full search on all nearby creatures and check their flag for GOSSIP_FLAG_GUILD_BANKER but this works for now..
-	const uint32 findCreatureEntry = player->GetTeamId() == TEAM_HORDE ? HordeGuildNpcEntry : AllianceGuildNpcEntry;
+	bool nearVaultKeeper = false;
+	for (uint32 entry : GetGuildBankNpcEntries(player->GetTeamId() == TEAM_HORDE))
+	{
+		if (player->FindNearestCreature(entry, INTERACTION_DISTANCE))
+		{
+			nearVaultKeeper = true;
+			break;
+		}
+	}
 
-	if (!player->FindNearestCreature(findCreatureEntry, INTERACTION_DISTANCE))
+	if (!nearVaultKeeper)
 		return;
 
 	if (b_saveLock)

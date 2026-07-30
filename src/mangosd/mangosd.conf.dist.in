@@ -2155,22 +2155,33 @@ Leech.Enable = 0
 # Sets the percentage of damage to leech
 Leech.Amount = 0.05
 
-# Leech-Eingrenzungen. Ohne diese wirkt der Leech auf jeden Spieler - also auch
-# auf die Random-Bots - und ebenso im PvP.
-#   PvEOnly          nur gegen Nicht-Spieler
-#   RealPlayersOnly  keine Random-Bots (RNDBOT-Accounts)
-#   SoloOnly         nur ohne Gruppe/Raid
+# Leech restrictions. Without them the leech applies to every player -
+# including the random bots - and in PvP as well.
+#   PvEOnly          against non-players only
+#   RealPlayersOnly  no random bots (RNDBOT accounts)
+#   SoloOnly         only while not in a party or raid
+#   DungeonOnly      instances only (dungeons and raids), not the open world
 Leech.PvEOnly = 1
 Leech.RealPlayersOnly = 1
 Leech.SoloOnly = 1
-#   DungeonOnly      nur in Instanzen (Dungeons/Raids), nicht in der offenen Welt
 Leech.DungeonOnly = 1
 
-# SoloDungeonRepopAlive. Wer ALLEIN in einer Instanz stirbt, kommt beim
-# Geist-Freilassen lebendig am Instanzeingang an statt den Leichnamslauf machen
-# zu muessen. Sobald eine Gruppe dabei ist, greift es nicht (die kann ja
-# wiederbeleben). Gilt via Map::IsDungeon() auch fuer Raids.
+# SoloDungeonRepopAlive. A player who dies ALONE inside an instance is brought
+# back alive just inside the entrance instead of having to walk their corpse
+# back - solo there is nobody who could resurrect them. Does nothing while in a
+# group, since a group can resurrect. Map::IsDungeon() covers raids too.
 SoloDungeonRepopAlive.Enable = 0
+
+# GuildBank.NpcEntries*. Which creatures count as guild vault keepers - a player
+# has to stand next to one of them for guild bank actions to be accepted.
+# Previously 80917/80918 were hardcoded, so only Stormwind and Orgrimmar worked.
+# Turtle places decorative vault keepers in the other capitals that were never
+# wired up; they are listed here.
+#   62008 Faredin (Darnassus), 62009 Lorien (gnome bank), 62011 Golgan (Ironforge)
+#   62010 Gewana (Thunder Bluff), 62012 Arthur (Undercity)
+# They also need gossip_menu_id set, see sql/guildbank_trigger.sql.
+GuildBank.NpcEntriesAlliance = 80917
+GuildBank.NpcEntriesHorde = 80918
 
 # AutoScaler.Enable. Enable or disable instance auto-scaling. 0 = off, 1 = on.
 AutoScalerEnable = 0
