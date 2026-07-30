@@ -6409,8 +6409,35 @@ void Player::RepopAtGraveyard()
     // Deliberately solo only - with a group present someone can resurrect, and
     // this would be a free pass. Map::IsDungeon() covers raids and excludes
     // battlegrounds, which are their own map type.
-    if (!IsAlive() && sWorld.getConfig(CONFIG_BOOL_SOLO_DUNGEON_REPOP_ALIVE) &&
-        !GetGroup() && GetMap() && GetMap()->IsDungeon())
+    // Bots get this regardless of the config and regardless of a group: they
+    // cannot walk back in through an instance portal (LfgTeleportAction is
+    // MANGOSBOT_TWO only), so a wipe would strand them as ghosts at the outdoor
+    // graveyard for good and the group would be over. Not a perk - the only way
+    // back to the party.
+    // "Solo" means nobody who could resurrect you: no group, or a group whose
+    // only other members are bots. After a wipe a bot party is no more help
+    // than an empty one, and releasing the spirit already means you chose not
+    // to wait for a resurrection.
+    bool noHumanHelp = !GetGroup();
+    if (!noHumanHelp)
+    {
+        noHumanHelp = true;
+        for (GroupReference* itr = GetGroup()->GetFirstMember(); itr; itr = itr->next())
+        {
+            Player* member = itr->getSource();
+            if (member && member != this && !member->GetPlayerbotAI())
+            {
+                noHumanHelp = false;
+                break;
+            }
+        }
+    }
+
+    bool const repopAtEntrance =
+        (sWorld.getConfig(CONFIG_BOOL_SOLO_DUNGEON_REPOP_ALIVE) && noHumanHelp) ||
+        GetPlayerbotAI() != nullptr;
+
+    if (!IsAlive() && repopAtEntrance && GetMap() && GetMap()->IsDungeon())
     {
         if (AreaTriggerTeleport const* entrance = sObjectMgr.GetMapEntranceTrigger(GetMapId()))
         {
