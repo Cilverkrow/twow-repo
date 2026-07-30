@@ -19,7 +19,7 @@ a game client — see step 4. You need a **Turtle WoW 1.18.1 client, build
 |---|---|
 | Visual Studio 2022 | workload **Desktop development with C++** |
 | CMake | 3.16 or newer, on `PATH` |
-| MariaDB or MySQL | server plus the command line client, on `PATH` |
+| MariaDB or MySQL | the server, plus its command line client on `PATH` — the installer's "add to PATH" box is easy to miss |
 | **ACE 7.x or 8.x** | **not** bundled — install it and pass `-DACE_ROOT=` if CMake cannot find it |
 
 MySQL, OpenSSL and zlib are bundled under `dep/windows`, and Recast, G3D,
@@ -134,8 +134,14 @@ Move all four resulting folders next to `mangosd.exe`.
 Four of them: `tw_world`, `tw_char`, `tw_logon`, `tw_logs`.
 
 ```
-mysql -u root -p < sql\create_databases.sql
+mariadb -u root -p < sql\create_databases.sql
 ```
+
+On MariaDB the client is called `mariadb`; `mysql` is the older name and may not
+be there at all. `sql\setup_databases.bat` looks for both, in that order. If
+neither is found, the binaries were installed but not put on `PATH` — they live
+in `C:\Program Files\MariaDB <version>\bin`, and the full path works just as
+well as fixing `PATH`.
 
 Then import **every file in `sql\base`** into `tw_world`. This is the actual
 world content — creatures, quests, items, the lot.
