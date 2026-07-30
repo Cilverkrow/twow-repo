@@ -289,6 +289,18 @@ a thousand of them turns the first start into a long wait for no benefit. Raise
 it once everything works — this realm runs a thousand comfortably, but that is a
 tuning question, not a setup one.
 
+Also worth turning off before the first start:
+
+```
+LogSQL = 0
+```
+
+The template ships it as `1`, which writes every single SQL statement to disk.
+With playerbots the first start computes the gear cache for every class, spec
+and level — tens of thousands of inserts, each one a disk write. The cache is
+built once and read back on later starts, so this only really hurts the first
+time, but it hurts a lot.
+
 ## 7. Realm entry and an account
 
 `create_databases.sql` creates the `realmlist` table in `tw_logon` but leaves it
