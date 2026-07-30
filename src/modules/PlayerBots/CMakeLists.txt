@@ -182,16 +182,23 @@ target_link_libraries(${LIBRARY_NAME}
   PRIVATE g3dlite
 )
 if(WIN32)
-  # Header-only as far as this module is concerned, but the headers still have
-  # to be found. find_package(Boost) used to live in the else() branch alone,
-  # so on Windows nothing ever located Boost and the only include path was
-  # ${BOOST_ROOT} from the top-level CMakeLists - the search hint, empty unless
-  # the builder passes it. botpch.h includes boost/algorithm/string.hpp
+  # find_package(Boost) used to live in the else() branch alone, so on Windows
+  # nothing ever located Boost. The only include path left was ${BOOST_ROOT}
+  # from the top-level CMakeLists - the search hint, empty unless the builder
+  # passes it - while botpch.h includes boost/algorithm/string.hpp
   # unconditionally, so the module could not compile at all.
-  find_package(Boost 1.70 REQUIRED)
+  #
+  # The same components as below: the module reaches for nine Boost libraries
+  # and two of them, filesystem and thread, are compiled rather than
+  # header-only. Windows linked neither, which would have failed at link time
+  # once the headers were finally found.
+  find_package(Boost 1.70 REQUIRED COMPONENTS thread filesystem system)
   target_link_libraries(${LIBRARY_NAME}
     PRIVATE zlib
     PRIVATE ws2_32
+    PRIVATE Boost::thread
+    PRIVATE Boost::filesystem
+    PRIVATE Boost::system
   )
 else()
   find_package(Boost 1.70 REQUIRED COMPONENTS thread filesystem system)
