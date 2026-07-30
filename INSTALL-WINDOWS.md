@@ -1,4 +1,12 @@
-# Installing on Windows
+
+
+With  you also need Boost. Install the nine libraries the
+module actually includes rather than the  meta-package - that one drags in
+, which needs C++20 and does not build under Visual Studio 2019:
+
+
+
+Then add  to the configure line.# Installing on Windows
 
 Start to finish, for someone who has just unpacked this repository and has
 nothing else set up yet. Written against the `playerbots-integration-gh`
