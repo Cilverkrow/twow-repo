@@ -220,14 +220,19 @@ target_include_directories(${LIBRARY_NAME}
 )
 
 # Install config files
-if ( ${CMAKE_PROJECT_NAME} MATCHES "Classic")
-	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/playerbot/aiplayerbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist)
-endif()	
+#
+# The expansion is chosen by project name, and vanilla is the default rather
+# than a third named case: this project is called TurtleWoW, so none of the
+# three names matched and aiplayerbot.conf.dist was never generated at all -
+# on any platform. The install(FILES ...) below refers to it unconditionally,
+# so cmake --install failed for everyone. It stayed hidden because the server
+# is normally run straight out of the build tree.
 if ( ${CMAKE_PROJECT_NAME} MATCHES "TBC")
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/playerbot/aiplayerbot.conf.dist.in.tbc ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist)
-endif()	
-if ( ${CMAKE_PROJECT_NAME} MATCHES "WoTLK")
+elseif ( ${CMAKE_PROJECT_NAME} MATCHES "WoTLK")
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/playerbot/aiplayerbot.conf.dist.in.wotlk ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist)
+else()
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/playerbot/aiplayerbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist)
 endif()
 if (NOT CONF_INSTALL_DIR)
   set(CONF_INSTALL_DIR ${CONF_DIR})

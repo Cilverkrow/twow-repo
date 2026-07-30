@@ -97,10 +97,22 @@ see `src/game/PlayerbotStubs.cpp`. Those two only ever surface with
 ## 3. Install into one folder
 
 ```
-cmake --install build --config Release --prefix C:\turtle-server
+cmake --install build --config Release
 ```
 
-Do this rather than running from the build tree. On Windows the CMake files put
+The target directory has to be set when you **configure**, not here:
+
+```
+cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX=C:/turtle-server ...
+```
+
+`--prefix` on the install line has no effect in this tree. `BIN_DIR`, `CONF_DIR`
+and `LIBS_DIR` are computed from `CMAKE_INSTALL_PREFIX` while configuring and
+baked into the install rules as absolute paths, so a prefix given later is
+ignored and everything lands under the configure-time default —
+`C:/Program Files/TurtleWoW`.
+
+Install rather than running from the build tree. On Windows the CMake files put
 binaries **and** config files into the same flat directory, which is exactly
 what the server expects — see the note on `aiplayerbot.conf` in step 6. Run
 `mangosd.exe` straight out of `build\src\mangosd\Release\` and the configs sit
