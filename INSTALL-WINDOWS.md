@@ -174,6 +174,25 @@ world content — creatures, quests, items, the lot.
 The 95 migrations in `sql\database_updates` are applied by the server on first
 start, provided `Database.AutoUpdate.Enabled` is on in `mangosd.conf`.
 
+### Playerbot tables
+
+Built with `-DBUILD_PLAYERBOTS=ON`? Then the module's own tables have to go in as
+well, or the server aborts on startup with `Table 'ai_playerbot_weightscales'
+doesn't exist` — and it aborts through an assertion, so the message scrolls past
+in a stack trace rather than telling you plainly what to do.
+
+```
+cd src\modules\PlayerBots\sql
+for %f in (world\*.sql world\classic\*.sql) do mariadb -u root -p tw_world < "%f"
+for %f in (characters\*.sql) do mariadb -u root -p tw_char < "%f"
+```
+
+Eight files into the world database, six into the characters one. `world\classic`
+is the vanilla set; the `tbc` and `wotlk` siblings do not apply here. Anything
+under `sql\other` is maintenance — deleting and resetting bots — not part of a
+first install.
+
+
 > **Caveat.** The auto-updater only works on a database built through it from
 > the beginning. On a database restored from a full dump the `migrations` table
 > does not line up with the files on disk, the updater replays old migrations
