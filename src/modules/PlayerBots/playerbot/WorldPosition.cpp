@@ -453,6 +453,24 @@ AreaTableEntry const* WorldPosition::GetArea() const
     return AreaEntry::GetById(getAreaFlag());
 }
 
+bool WorldPosition::isEnemyHomeZoneFor(Team team) const
+{
+    // Deliberately not GetArea(): that passes an area *flag* to
+    // AreaEntry::GetById(), which expects an area *id*, and returns unrelated
+    // areas - a position in the Barrens reported "Silverpine Forest".
+    AreaEntry const* area = AreaEntry::GetByAreaFlagAndMap(getAreaFlag(), getMapId());
+    if (!area)
+        return false;
+
+    uint32 areaTeam = area->Team;
+    if (areaTeam == AREATEAM_NONE && area->ZoneId)
+        if (AreaEntry const* zone = AreaEntry::GetById(area->ZoneId))
+            areaTeam = zone->Team;
+
+    return (areaTeam == AREATEAM_ALLY  && team == HORDE)
+        || (areaTeam == AREATEAM_HORDE && team == ALLIANCE);
+}
+
 std::string WorldPosition::getAreaName(const bool fullName, const bool zoneName) const
 {
     if (!isOverworld())

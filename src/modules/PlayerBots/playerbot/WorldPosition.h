@@ -311,6 +311,11 @@ namespace ai
             loadVMap();
             return isValid() && isVmapLoaded() ? sTerrainMgr.GetAreaFlag(getMapId(), coord_x, coord_y, coord_z) : 0; };
         AreaTableEntry const* GetArea() const;
+
+        // Does this position sit in the home territory of the faction opposing
+        // 'team'? Contested zones (team NONE) are not. Sub-areas inherit their
+        // zone's team - "The Crossroads" itself carries none, The Barrens does.
+        bool isEnemyHomeZoneFor(Team team) const;
         std::string getAreaName(const bool fullName = true, const bool zoneName = false) const;
         // Penqle's TerrainInfo has no AreaNameInfo or GetAreaName method.
         // Stub to empty string (loses WMO area-override lookup; would need a Penqle-side equivalent).

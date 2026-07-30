@@ -2452,6 +2452,24 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation> 
     //Do not teleport to maps disabled in config
     tlocs.erase(std::remove_if(tlocs.begin(), tlocs.end(), [](const WorldPosition& l) {std::vector<uint32>::iterator i = find(sPlayerbotAIConfig.randomBotMaps.begin(), sPlayerbotAIConfig.randomBotMaps.end(), l.getMapId()); return i == sPlayerbotAIConfig.randomBotMaps.end(); }), tlocs.end());
 
+    // Do not drop bots into the enemy faction's home territory. The teleport
+    // cache (ai_playerbot_tele_cache) only knows level, map and coordinates -
+    // no faction - so an Alliance bot was as likely to land in Durotar as in
+    // Elwynn. There is nothing for it to do there and the city guards kill it
+    // on sight, over and over. Contested zones stay open.
+    // Skipped if it would leave too little to choose from, so a level bracket
+    // that only exists in enemy territory does not strand its bots.
+    {
+        std::vector<WorldPosition> friendly;
+        friendly.reserve(tlocs.size());
+        for (WorldPosition const& loc : tlocs)
+            if (!loc.isEnemyHomeZoneFor(bot->GetTeam()))
+                friendly.push_back(loc);
+
+        if (friendly.size() >= tlocs.size() / 4)
+            tlocs = friendly;
+    }
+
     //Random shuffle based on distance. Closer distances are more likely (but not exclusively) to be at the begin of the list.
     tlocs = WorldPosition(bot).GetNextPoint(tlocs, 0);
 
