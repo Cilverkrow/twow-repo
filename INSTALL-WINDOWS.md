@@ -1,12 +1,4 @@
-
-
-With  you also need Boost. Install the nine libraries the
-module actually includes rather than the  meta-package - that one drags in
-, which needs C++20 and does not build under Visual Studio 2019:
-
-
-
-Then add  to the configure line.# Installing on Windows
+# Installing on Windows
 
 Start to finish, for someone who has just unpacked this repository and has
 nothing else set up yet. Written against the `playerbots-integration-gh`
@@ -41,6 +33,19 @@ pulling in the whole toolchain, which would break OpenSSL as described below:
 vcpkg install ace:x64-windows
 cmake -B build -A x64 -DBUILD_PLAYERBOTS=ON -DUSE_EXTRACTORS=ON -DACE_ROOT=C:/vcpkg/installed/x64-windows
 ```
+
+With `-DBUILD_PLAYERBOTS=ON` you need Boost as well. Install the nine libraries
+the module actually includes rather than the `boost` meta-package — that one
+drags in `boost-cobalt`, which needs C++20 and does not build under Visual
+Studio 2019:
+
+```
+vcpkg install boost-algorithm:x64-windows boost-asio:x64-windows boost-bimap:x64-windows boost-bind:x64-windows boost-filesystem:x64-windows boost-functional:x64-windows boost-smart-ptr:x64-windows boost-stacktrace:x64-windows boost-thread:x64-windows boost-system:x64-windows
+```
+
+Then add `-DBOOST_ROOT=C:/vcpkg/installed/x64-windows` to the configure line.
+Two of those, `filesystem` and `thread`, are compiled libraries rather than
+header-only, so they have to be linked and not merely found.
 
 `FindACE.cmake` looks for `ace/ACE.h` under `${ACE_ROOT}` and `${ACE_ROOT}/include`
 and for the library under `${ACE_ROOT}/lib`, which is exactly vcpkg's layout.
