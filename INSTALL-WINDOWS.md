@@ -211,6 +211,21 @@ server starts perfectly happily, logs one line saying the file could not be
 opened, and runs with no bots. Following step 3 puts it in the right place
 already.
 
+`ahbot.conf` next to it follows the *other* rule: `AhBotConfig.cpp` uses
+`SYSCONFDIR"ahbot.conf"` with no platform branch, and `SYSCONFDIR` is a compile
+definition set from `CMAKE_INSTALL_PREFIX`. So that one is looked up at an
+absolute path baked into the binary. Two files in the same directory, found two
+different ways.
+
+The practical consequence: changing `CMAKE_INSTALL_PREFIX` changes a
+preprocessor definition, so everything that sees it gets recompiled. Decide
+where the server should live before the first build rather than after.
+
+Note also that `cmake --install` on its own never re-runs the configure step.
+Install rules and generated templates — `aiplayerbot.conf.dist` and
+`ahbot.conf.dist` among them — only appear after `cmake -B build ...` has run
+again.
+
 ### Switches that default to off
 
 ```
