@@ -8464,6 +8464,10 @@ void Player::_ApplyWeaponDependentAuraMods(Item *item, WeaponAttackType attackTy
     AuraList const& auraDamagePCTList = GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
     for (const auto itr : auraDamagePCTList)
         _ApplyWeaponDependentAuraDamageMod(item, attackType, itr, apply);
+
+    AuraList const& auraResistanceList = GetAurasByType(SPELL_AURA_MOD_RESISTANCE);
+    for (const auto itr : auraResistanceList)
+        _ApplyWeaponDependentAuraResistanceMod(item, attackType, itr, apply);
 }
 
 void Player::_ApplyWeaponDependentAuraCritMod(Item *item, WeaponAttackType attackType, Aura* aura, bool apply)
@@ -8551,6 +8555,24 @@ void Player::_ApplyWeaponDependentAuraDamageMod(Item *item, WeaponAttackType att
 
     if (item->IsFitToSpellRequirements(aura->GetSpellProto()))
         HandleStatModifier(unitMod, unitModType, float(modifier->m_amount), apply);
+}
+
+void Player::_ApplyWeaponDependentAuraResistanceMod(Item* item, WeaponAttackType attackType, Aura* aura, bool apply)
+{
+    if (aura->GetSpellProto()->EquippedItemClass == -1)
+        return;
+
+    if (attackType != BASE_ATTACK)
+        return;
+
+    if (aura->IsApplied() == apply)
+        return;
+
+    if (apply && (item->IsBroken() || !CanUseEquippedWeapon(attackType)))
+        return;
+
+    if (item->IsFitToSpellRequirements(aura->GetSpellProto()))
+        aura->ApplyModifier(apply, true);
 }
 
 void Player::ApplyItemEquipSpell(Item *item, bool apply, bool form_change)

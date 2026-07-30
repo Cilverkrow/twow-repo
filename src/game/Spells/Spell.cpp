@@ -7058,7 +7058,7 @@ SpellCastResult Spell::CheckRange(bool strict)
                         range_mod += modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, base, this);
                     }
 
-                    range_mod += m_casterUnit->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE) / 1000.0f / ATTACK_DISTANCE;
+                    range_mod += m_casterUnit->GetTotalAuraRangeModifier(SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE) / 1000.0f / ATTACK_DISTANCE;
                 }
                 
                 // with additional 5 dist for non stricted case (some melee spells have delay in apply
@@ -7081,7 +7081,7 @@ SpellCastResult Spell::CheckRange(bool strict)
         if (Player* modOwner = m_casterUnit->GetSpellModOwner())
             modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, max_range, this);
 
-        max_range += m_casterUnit->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE) / 1000.0f;
+        max_range += m_casterUnit->GetTotalAuraRangeModifier(SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE) / 1000.0f;
     }
 
     max_range += range_mod;
