@@ -50,8 +50,22 @@ header-only, so they have to be linked and not merely found.
 `FindACE.cmake` looks for `ace/ACE.h` under `${ACE_ROOT}` and `${ACE_ROOT}/include`
 and for the library under `${ACE_ROOT}/lib`, which is exactly vcpkg's layout.
 Watch the configure output for `Found ACE headers:` — if it is missing, nothing
-else will work. At runtime `ACE.dll` has to sit next to `mangosd.exe`; vcpkg
-keeps it in `installed/x64-windows/bin`.
+else will work.
+
+Anything you take from vcpkg is built as a DLL, and those have to sit next to
+`mangosd.exe` or it will not start. Copy them once the install is done:
+
+```
+copy C:\vcpkg\installed\x64-windows\bin\ACE.dll C:\turtle-server\
+copy C:\vcpkg\installed\x64-windows\bin\boost_*.dll C:\turtle-server\
+copy C:\vcpkg\installed\x64-windows\bin\lib*-3-x64.dll C:\turtle-server\
+```
+
+The wildcard on Boost is deliberate — `thread` pulls in `atomic` and `chrono`,
+and chasing them one missing-DLL dialog at a time is a waste of an evening. The
+third line is OpenSSL 3.x and only applies if you pointed `OPENSSL_LIBRARIES` at
+vcpkg; with the bundled OpenSSL the install brings its own. `libmySQL.dll` comes
+with the install either way.
 
 > **The ACE version matters.** This tree is built as C++17, which removed
 > dynamic exception specifications. ACE 6.x still uses them, so its headers

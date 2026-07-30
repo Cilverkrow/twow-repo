@@ -356,7 +356,15 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket & recv_data)
         SendTrainingSuccess(guid, spellId);
     }
     else
+    {
+        // Worth saying out loud: the client shows nothing for TRAIN_FAIL_UNAVAILABLE,
+        // so without this a failed purchase is invisible on both ends - the player
+        // clicks, nothing happens, and the log stays silent about why.
+        sLog.outError("HandleTrainerBuySpellOpcode: %s could not learn spell %u from %s, cast result %u.",
+            _player->GetGuidStr().c_str(), spellId, guid.GetString().c_str(), uint32(cast_result));
+
         SendTrainingFailure(guid, spellId, TRAIN_FAIL_UNAVAILABLE);
+    }
 }
 
 void WorldSession::HandleGossipHelloOpcode(WorldPacket & recv_data)
