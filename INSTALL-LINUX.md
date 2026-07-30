@@ -89,6 +89,12 @@ Four of them: `tw_world`, `tw_char`, `tw_logon`, `tw_logs`.
 mysql -u root -p < sql/create_databases.sql
 ```
 
+That one file does more than its name suggests: besides creating the four
+databases it brings 415 table definitions with it, the complete schema for
+`tw_char`, `tw_logon` and `tw_logs` included. Only the world *content* is
+kept separate, which is what `sql/base` holds — all 186 files there are
+`tw_world_*`, so there is no `characters.sql` to look for.
+
 Then import **every file in `sql/base`** into `tw_world` — that is the actual
 world content. `sql/setup_databases.sh` exists but skips `sql/base` entirely, so
 if you use it, import the base data yourself in between.

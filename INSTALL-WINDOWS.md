@@ -137,6 +137,12 @@ Four of them: `tw_world`, `tw_char`, `tw_logon`, `tw_logs`.
 mariadb -u root -p < sql\create_databases.sql
 ```
 
+That one file does more than its name suggests: besides creating the four
+databases it brings 415 table definitions with it, the complete schema for
+`tw_char`, `tw_logon` and `tw_logs` included. Only the world *content* is
+kept separate, which is what `sql/base` holds — all 186 files there are
+`tw_world_*`, so there is no `characters.sql` to look for.
+
 On MariaDB the client is called `mariadb`; `mysql` is the older name and may not
 be there at all. `sql\setup_databases.bat` looks for both, in that order. If
 neither is found, the binaries were installed but not put on `PATH` — they live
