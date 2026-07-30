@@ -63,8 +63,9 @@ The **world database is in this repository** — `sql/base` holds 186 files,
 data (maps, DBC, vmaps, mmaps) has to come from a game client; extract it with
 the tools under `tools/`.
 
-**Setting up on Windows?** See [`INSTALL-WINDOWS.md`](INSTALL-WINDOWS.md) for a
-walkthrough that covers the parts this page glosses over.
+**Setting it up?** [`INSTALL-LINUX.md`](INSTALL-LINUX.md) and
+[`INSTALL-WINDOWS.md`](INSTALL-WINDOWS.md) are start-to-finish walkthroughs
+covering the parts this page glosses over.
 
 ## Client Version
 
