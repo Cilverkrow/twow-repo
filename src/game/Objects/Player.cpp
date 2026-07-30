@@ -21881,6 +21881,13 @@ uint32 Player::GetResurrectionSpellId() const
 // Used in triggers for check "Only to targets that grant experience or honor" req
 bool Player::IsHonorOrXPTarget(Unit* pVictim) const
 {
+    // A kill proc can fire with no victim pointer at all - see the
+    // PROC_FLAG_KILL branch in Unit::IsTriggeredAtSpellProcEvent, which passed
+    // it straight through and crashed the server on GetLevel(). No victim means
+    // nothing to award honour or experience for, so the answer is simply no.
+    if (!pVictim)
+        return false;
+
     uint32 v_level = pVictim->GetLevel();
     uint32 k_grey  = MaNGOS::XP::GetGrayLevel(GetLevel());
 
