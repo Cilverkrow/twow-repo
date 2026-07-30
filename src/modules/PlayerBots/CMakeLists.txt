@@ -239,6 +239,12 @@ if (NOT CONF_INSTALL_DIR)
 endif()
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist DESTINATION ${CONF_INSTALL_DIR})
 
+# AhBotConfig.cpp reads SYSCONFDIR"ahbot.conf", but the template was never
+# generated or installed, so AHBot could not be switched on from a clean
+# install at all - it just logs that it cannot open the file and stays off.
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahbot/ahbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/ahbot.conf.dist)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahbot.conf.dist DESTINATION ${CONF_INSTALL_DIR})
+
 set_target_properties(${LIBRARY_NAME} PROPERTIES PROJECT_LABEL "PlayerBots")
 
 # Generate PCH

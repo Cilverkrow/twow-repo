@@ -125,8 +125,19 @@ The 95 migrations under `sql/database_updates` are applied on first start when
 
 ## 6. Configuration
 
-Copy each `.dist` in `<prefix>/etc` and drop the suffix: `mangosd.conf`,
-`realmd.conf`, `rate.conf`, `mods.conf`, `aiplayerbot.conf`, `ahbot.conf`.
+Copy each `.dist` in `<prefix>/etc` and drop the suffix:
+
+| Template | Becomes |
+|---|---|
+| `mangosd.conf.dist` | `mangosd.conf` |
+| `realmd.conf.dist` | `realmd.conf` |
+| `aiplayerbot.conf.dist` | `aiplayerbot.conf` |
+| `ahbot.conf.dist` | `ahbot.conf` |
+
+Those four are all there is. `rate.conf` and `mods.conf` have templates in the
+source tree but nothing reads them — `_RATE_CONFIG` and `_MODS_CONFIG` are
+declared in `SystemConfig.h` and used nowhere. The rate settings live in
+`mangosd.conf`.
 
 Database credentials go into `mangosd.conf` and `realmd.conf`. Everything the
 fork adds is off by default:

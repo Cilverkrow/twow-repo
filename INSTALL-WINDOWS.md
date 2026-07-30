@@ -181,10 +181,13 @@ suffix:
 |---|---|
 | `mangosd.conf.dist` | `mangosd.conf` |
 | `realmd.conf.dist` | `realmd.conf` |
-| `rate.conf.dist` | `rate.conf` |
-| `mods.conf.dist` | `mods.conf` |
 | `aiplayerbot.conf.dist` | `aiplayerbot.conf` |
 | `ahbot.conf.dist` | `ahbot.conf` |
+
+Those four are all there is. `rate.conf` and `mods.conf` have templates in the
+source tree but nothing reads them — `_RATE_CONFIG` and `_MODS_CONFIG` are
+declared in `SystemConfig.h` and used nowhere. The rate settings live in
+`mangosd.conf`.
 
 Put your database credentials into `mangosd.conf` and `realmd.conf`.
 
