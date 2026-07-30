@@ -26,6 +26,20 @@ MySQL, OpenSSL and zlib are bundled under `dep/windows`, and Recast, G3D,
 libmpq and fmt under `dep/`. Those need no separate install. ACE is the one
 dependency you have to supply yourself.
 
+Installing ACE through vcpkg is fine — just point at it directly instead of
+pulling in the whole toolchain, which would break OpenSSL as described below:
+
+```
+vcpkg install ace:x64-windows
+cmake -B build -A x64 -DBUILD_PLAYERBOTS=ON -DUSE_EXTRACTORS=ON -DACE_ROOT=C:/vcpkg/installed/x64-windows
+```
+
+`FindACE.cmake` looks for `ace/ACE.h` under `${ACE_ROOT}` and `${ACE_ROOT}/include`
+and for the library under `${ACE_ROOT}/lib`, which is exactly vcpkg's layout.
+Watch the configure output for `Found ACE headers:` — if it is missing, nothing
+else will work. At runtime `ACE.dll` has to sit next to `mangosd.exe`; vcpkg
+keeps it in `installed/x64-windows/bin`.
+
 > **The ACE version matters.** This tree is built as C++17, which removed
 > dynamic exception specifications. ACE 6.x still uses them, so its headers
 > produce a cascade of exception-specification errors in `WorldSocketMgr.cpp`

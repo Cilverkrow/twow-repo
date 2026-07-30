@@ -239,7 +239,7 @@ MangosSocketMgr<SocketType>::MangosSocketMgr():
 }
 
 template <typename SocketType>
-MangosSocketMgr<SocketType>::~MangosSocketMgr()
+MangosSocketMgr<SocketType>::~MangosSocketMgr() noexcept
 {
     delete [] m_NetThreads;
     delete m_Acceptor;
