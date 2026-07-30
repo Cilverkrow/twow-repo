@@ -235,7 +235,11 @@ BotRoles AiFactory::GetPlayerRoles(uint8 cls, uint8 tab)
             }
             else if (tab == 1)
             {
-                role = BOT_ROLE_DPS;
+                // Feral counts as tank here. The dungeon finder can put a druid
+                // on the tank slot, and this mapping decides which premade
+                // talent build it gets - with DPS it would be handed a balance
+                // build and try to tank in caster form.
+                role = BOT_ROLE_TANK;
             }
             else if (tab == 2)
             {
@@ -724,6 +728,7 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             combatEngine->addStrategies("behind", "stealth", "poisons", "buff", NULL);
         }
     }
+
 }
 
 Engine* AiFactory::createCombatEngine(Player* player, PlayerbotAI* const facade, AiObjectContext* AiObjectContext)
@@ -1159,6 +1164,7 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
 #endif
         }
     }
+
 }
 
 Engine* AiFactory::createNonCombatEngine(Player* player, PlayerbotAI* const facade, AiObjectContext* AiObjectContext) 

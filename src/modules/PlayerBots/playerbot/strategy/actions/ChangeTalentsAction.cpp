@@ -18,7 +18,7 @@ bool ChangeTalentsAction::Execute(Event& event)
     {
         if (param.find("auto") != std::string::npos)
         {
-            AutoSelectTalents(bot, &out);
+            AutoSelectTalents(bot, &out, ai ? (BotRoles)ai->GetForcedRole() : BotRoles::BOT_ROLE_NONE);
         }
         else  if (param.find("list ") != std::string::npos)
         {
@@ -415,7 +415,7 @@ bool AutoSetTalentsAction::Execute(Event& event)
         return false;
     }
 
-    AutoSelectTalents(bot, &out);
+    AutoSelectTalents(bot, &out, ai ? (BotRoles)ai->GetForcedRole() : BotRoles::BOT_ROLE_NONE);
 
     ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
