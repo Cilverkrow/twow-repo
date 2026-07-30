@@ -522,15 +522,11 @@ void ActiveRolls::CleanUp(Player* bot, LootRollMap& rollMap, ObjectGuid guid, ui
 			continue;
 		}
 
-		Loot* loot = sLootMgr.GetLoot(bot, roll->first);
-		if (!loot)
-		{
-			roll = rollMap.erase(roll);
-			continue;
-		}
-
-		GroupLootRoll* lootRoll = loot->GetRollForSlot(roll->second);
-		if (!lootRoll)
+		// Ask the group, not the loot object: this core keeps rolls in
+		// Group::RollId and Loot::GetRollForSlot is a stub returning nullptr,
+		// which used to wipe every entry the moment it was added.
+		Group* group = bot->GetGroup();
+		if (!group || !group->GetActiveRoll(roll->first, roll->second))
 		{
 			roll = rollMap.erase(roll);
 			continue;

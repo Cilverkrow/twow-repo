@@ -964,6 +964,15 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     return false;
 }
 
+Roll const* Group::GetActiveRoll(ObjectGuid const& lootedTarget, uint32 itemSlot) const
+{
+    for (Roll const* roll : RollId)
+        if (roll && roll->lootedTargetGUID == lootedTarget && roll->itemSlot == itemSlot)
+            return roll;
+
+    return nullptr;
+}
+
 void Group::StartLootRoll(Creature* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot)
 {
     if (itemSlot >= loot->items.size())

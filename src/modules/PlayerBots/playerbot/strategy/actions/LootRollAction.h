@@ -50,6 +50,9 @@ namespace ai
         virtual ItemQualifier GetRollItem(ObjectGuid lootGuid, uint32 slot);
         virtual RollVote CalculateRollVote(ItemQualifier& itemQualifier);
         virtual bool RollOnItemInSlot(RollVote type, ObjectGuid lootGuid, uint32 slot);
+        bool RollWithEtiquette(ObjectGuid lootGuid, uint32 slot);
+        bool HumansStillDeciding(ObjectGuid lootGuid, uint32 slot, bool& humanNeeds);
+        bool RollAboutToExpire(ObjectGuid lootGuid);
     };
 
     class LootRollAction : public RollAction 

@@ -364,6 +364,10 @@ class Group
         void NeedBeforeGreed(Creature* creature, Loot* loot);
         void MasterLoot(Creature* creature, Loot* loot, Player* player);
         bool CountRollVote(Player* player, ObjectGuid const& lootedTarget, uint32 itemSlot, RollVote vote);
+        // Read-only view of a running roll. Playerbots need to see how the
+        // humans in the group voted before casting their own vote, without
+        // opening up the roll list itself.
+        Roll const* GetActiveRoll(ObjectGuid const& lootedTarget, uint32 itemSlot) const;
         void StartLootRoll(Creature* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot);
         void EndRoll(Loot* loot);
 

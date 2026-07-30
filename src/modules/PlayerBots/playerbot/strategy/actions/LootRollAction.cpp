@@ -3,6 +3,8 @@
 #include "LootRollAction.h"
 #include "playerbot/strategy/values/ItemUsageValue.h"
 #include "playerbot/strategy/values/LootValues.h"
+#include "Group/Group.h"
+#include "Maps/Map.h"
 
 using namespace ai;
 
@@ -36,18 +38,28 @@ bool LootStartRollAction::Execute(Event& event)
 
     LootRollMap lootRolls = AI_VALUE(LootRollMap, "active rolls");
 
-    if (lootRolls.find(creatureGuid) != lootRolls.end())
+    if (!bot->GetGroup())
         return false;
 
-    Loot* loot = sLootMgr.GetLoot(bot, creatureGuid);
-    if (!loot)
-        return false;
+    // One packet is sent per item, so remember exactly this slot. The old
+    // code walked every loot slot through Loot::GetRollForSlot and found
+    // nothing, and bailed out entirely once the creature was known - which
+    // would have dropped the second item of any corpse anyway.
+    bool known = false;
+    auto range = lootRolls.equal_range(creatureGuid);
+    for (auto itr = range.first; itr != range.second; ++itr)
+    {
+        if (itr->second == itemSlot)
+        {
+            known = true;
+            break;
+        }
+    }
 
-    for(uint8 i=0;i< MAX_NR_LOOT_ITEMS;i++)
-        if(loot->GetRollForSlot(i))
-            lootRolls.insert({ creatureGuid, i });
-        
-    ActiveRolls::CleanUp(bot,lootRolls);
+    if (!known)
+        lootRolls.insert({ creatureGuid, itemSlot });
+
+    ActiveRolls::CleanUp(bot, lootRolls);
 
     SET_AI_VALUE(LootRollMap, "active rolls", lootRolls);
 
@@ -164,16 +176,17 @@ bool RollAction::Execute(Event& event)
 
 ItemQualifier RollAction::GetRollItem(ObjectGuid lootGuid, uint32 slot)
 {
-    Loot* loot = sLootMgr.GetLoot(bot, lootGuid);
-    if (!loot)
-        return ItemQualifier();
+    if (Loot* loot = sLootMgr.GetLoot(bot, lootGuid))
+        if (LootItem* item = loot->GetLootItemInSlot(slot))
+            return ItemQualifier(item);
 
-    LootItem* item = loot->GetLootItemInSlot(slot);
+    // The loot object is only reachable while the bot has the corpse open.
+    // The group's roll carries the same item and lasts the whole countdown.
+    if (Group* group = bot->GetGroup())
+        if (Roll const* roll = group->GetActiveRoll(lootGuid, slot))
+            return ItemQualifier(roll->itemid, roll->itemRandomPropId);
 
-    if (!item)
-        return ItemQualifier();
-
-    return ItemQualifier(item);
+    return ItemQualifier();
 }
 
 RollVote RollAction::CalculateRollVote(ItemQualifier& itemQualifier)
@@ -239,32 +252,86 @@ RollVote RollAction::CalculateRollVote(ItemQualifier& itemQualifier)
 
 bool RollAction::RollOnItemInSlot(RollVote vote, ObjectGuid lootGuid, uint32 slot)
 {
-    Loot* loot = sLootMgr.GetLoot(bot, lootGuid);
-    if (!loot)
+    Group* group = bot->GetGroup();
+    if (!group || !group->GetActiveRoll(lootGuid, slot))
         return false;
 
-    LootItem* item = loot->GetLootItemInSlot(slot);
-    ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(item->itemId);
-    if (!proto)
+    if (vote != ROLL_NEED && vote != ROLL_GREED && vote != ROLL_PASS)
+        vote = ROLL_PASS;
+
+    // Same entry point the client uses via CMSG_LOOT_ROLL. The core checks
+    // eligibility and resolves the roll once everyone has voted.
+    group->CountRollVote(bot, lootGuid, slot, vote);
+
+    LootRollMap lootRolls = AI_VALUE(LootRollMap, "active rolls");
+
+    ActiveRolls::CleanUp(bot, lootRolls, lootGuid, slot);
+
+    SET_AI_VALUE(LootRollMap, "active rolls", lootRolls);
+
+    return true;
+}
+
+// Do any real players still have the roll dialog open, and did one of them
+// ask for need? Bots are ignored - they are expected to sort themselves out.
+bool RollAction::HumansStillDeciding(ObjectGuid lootGuid, uint32 slot, bool& humanNeeds)
+{
+    humanNeeds = false;
+
+    Group* group = bot->GetGroup();
+    if (!group)
         return false;
 
-    // Penqle has no GroupLootRoll system; GetRollForSlot returns nullptr.
-    void* lootRoll = loot->GetRollForSlot(slot);
-    if (!lootRoll)
+    Roll const* roll = group->GetActiveRoll(lootGuid, slot);
+    if (!roll)
         return false;
 
-    bool didRoll = false; // Wiring group-roll properly is future work.
-
-    if (didRoll)
+    bool waiting = false;
+    for (auto const& vote : roll->playerVote)
     {
-        LootRollMap lootRolls = AI_VALUE(LootRollMap, "active rolls");
+        Player* voter = sObjectMgr.GetPlayer(vote.first);
+        if (!voter || voter->GetPlayerbotAI())
+            continue;
 
-        ActiveRolls::CleanUp(bot, lootRolls, lootGuid, slot);
-
-        SET_AI_VALUE(LootRollMap, "active rolls", lootRolls);
+        if (vote.second == ROLL_NEED)
+            humanNeeds = true;
+        else if (vote.second == ROLL_NOT_EMITED_YET)
+            waiting = true;
     }
 
-    return didRoll;
+    return waiting;
+}
+
+// Half the countdown is gone. Past that the bot votes regardless, so one
+// player who walked away cannot make the whole group wait out the timer.
+bool RollAction::RollAboutToExpire(ObjectGuid lootGuid)
+{
+    Creature* target = bot->GetMap() ? bot->GetMap()->GetCreature(lootGuid) : nullptr;
+    if (!target)
+        return true;
+
+    uint32 const left = target->GetGroupLootTimer();
+    return left == 0 || left < 30 * IN_MILLISECONDS;
+}
+
+// Vote on one item the polite way.
+bool RollAction::RollWithEtiquette(ObjectGuid lootGuid, uint32 slot)
+{
+    bool humanNeeds = false;
+    if (HumansStillDeciding(lootGuid, slot, humanNeeds) && !RollAboutToExpire(lootGuid))
+        return false;
+
+    ItemQualifier itemQualifier = GetRollItem(lootGuid, slot);
+    if (!itemQualifier.GetId())
+        return false;
+
+    RollVote vote = CalculateRollVote(itemQualifier);
+
+    // A player asked for it. Never roll need against them.
+    if (humanNeeds && vote == ROLL_NEED)
+        vote = ROLL_GREED;
+
+    return RollOnItemInSlot(vote, lootGuid, slot);
 }
 
 bool LootRollAction::Execute(Event& event)
@@ -280,32 +347,18 @@ bool LootRollAction::Execute(Event& event)
     p >> slot; //number of players invited to roll
     p >> rollType; //need,greed or pass on roll
 
-    ItemQualifier itemQualifier = GetRollItem(guid, slot);
-
-    if (!itemQualifier.GetId())
-        return false;
-
-    RollVote vote = CalculateRollVote(itemQualifier);
-
-    return RollOnItemInSlot(vote, guid, slot);
+    return RollWithEtiquette(guid, slot);
 }
 
 bool AutoLootRollAction::Execute(Event& event)
 {
     LootRollMap lootRolls = AI_VALUE(LootRollMap, "active rolls");
-
-    auto currentRoll = lootRolls.begin();
-
-    currentRoll = std::next(currentRoll, urand(0, lootRolls.size() - 1));
-
-    ItemQualifier itemQualifier = GetRollItem(currentRoll->first, currentRoll->second);
-
-    if (!itemQualifier.GetId())
+    if (lootRolls.empty())
         return false;
 
-    RollVote vote = CalculateRollVote(itemQualifier);
+    auto currentRoll = std::next(lootRolls.begin(), urand(0, lootRolls.size() - 1));
 
-    return RollOnItemInSlot(vote, currentRoll->first, currentRoll->second);
+    return RollWithEtiquette(currentRoll->first, currentRoll->second);
 }
 
 bool AutoLootRollAction::isPossible()
