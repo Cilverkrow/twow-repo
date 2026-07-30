@@ -22,9 +22,10 @@ void Player::UpdatePlayerbotHooks(uint32)     {}
 
 void World::UpdatePlayerbotsTick(uint32)      {}
 void World::InitPlayerbotsAtStartup()         {}
+void World::FinalizePlayerbotsPostPlayerInfo() {}
 
 bool Player_DispatchBotOutgoingPacket(Player*, WorldPacket const&) { return false; }
-void Player_DispatchBotChatCommand(Player*, uint32, std::string const&, uint32) {}
+void Player_DispatchBotChatCommand(Player*, uint32, std::string const&, uint32, std::string const&) {}
 void Playerbot_SetForcedRole(Player*, uint8) {}
 
 void BotActionLog_LogCastStart  (WorldObject*, uint32, uint64, uint32)         {}
