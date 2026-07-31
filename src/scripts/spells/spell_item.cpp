@@ -993,18 +993,32 @@ struct spell_jewel_of_wild_magics : public SpellScript
 // rapidly heal ... This effect can trigger only once every 3 min."
 //
 // The three minutes come from spell_proc_event; only the health gate needs code.
-// It belongs in OnCheckProc rather than OnProc because that runs before the proc
-// event is looked up - a hit taken at full health is turned down without
-// spending the cooldown, which is what would otherwise silence the bonus at the
-// moment it is meant to fire.
+//
+// It has to account for the damage of the hit that is proccing it. Procs run
+// first and damage second - Unit::AttackerStateUpdate calls ProcDamageAndSpell
+// and only then DealMeleeDamage - so on the blow that takes you under the
+// threshold your health here is still the health you had before it. Reading it
+// as it stands would refuse exactly the moment the bonus exists for.
+//
+// That rules out OnCheckProc, which is not given the damage. Checking in OnProc
+// instead costs nothing: HandleProcTriggerSpellAuraProc tests the cooldown
+// before casting and only sets it afterwards, so turning a proc down here never
+// spends it. Returning std::nullopt means "no opinion" and lets the default
+// handler cast 44069 and start the three minutes.
 struct spell_item_wild_regeneration : public AuraScript
 {
-    static constexpr float HEALTH_THRESHOLD = 35.0f;
+    static constexpr float HEALTH_THRESHOLD = 0.35f;
 
-    std::optional<SpellProcEventTriggerCheck> OnCheckProc(Unit const* owner, Unit* /*victim*/, SpellAuraHolder* /*holder*/, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procExtra*/, WeaponAttackType /*attType*/, bool /*isVictim*/) override
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 damage, int32 /*originalAmount*/, Aura* /*aura*/, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
     {
-        if (!owner || owner->GetHealthPercent() >= HEALTH_THRESHOLD)
-            return SPELL_PROC_TRIGGER_FAILED;
+        if (!owner)
+            return SPELL_AURA_PROC_FAILED;
+
+        uint32 const health = owner->GetHealth();
+        uint32 const remaining = damage >= health ? 0 : health - damage;
+
+        if (float(remaining) >= float(owner->GetMaxHealth()) * HEALTH_THRESHOLD)
+            return SPELL_AURA_PROC_FAILED;
 
         return std::nullopt;
     }
