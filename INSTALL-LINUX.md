@@ -309,6 +309,15 @@ older checkout and still carries the stock vanilla talent links — every one of
 them is rejected against Turtle's reworked trees, and the bots end up with no
 talents at all.
 
+## A note on the bot event log
+
+`AiPlayerbot.AllowedLogFiles` ships with `bot_events.csv,deaths.csv`, and the
+lines written there used to be passed to `vfprintf` as a format string. Any
+percent sign in a bot or mob name was read as a conversion specifier. glibc
+prints nonsense and carries on, so on Linux the only symptom was garbled rows in
+the CSV; the same bug killed the Windows server outright. Fixed — but if you
+have older CSVs lying around, that is where the mangled lines came from.
+
 ## Troubleshooting
 
 | Symptom | Cause |

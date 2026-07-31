@@ -125,6 +125,25 @@ Two flags matter:
 - **`USE_EXTRACTORS`** builds the tools you need in step 4. Skip it only if you
   already have `dbc`, `maps`, `vmaps` and `mmaps` from elsewhere.
 
+### Pass `ACE_ROOT` as a cache entry, not an environment variable
+
+The tree unsets `ACE_INCLUDE_DIR`, `ACE_LIBRARIES` and `ACE_LIBRARIES_DIR` from
+the cache at the top of every configure, so ACE is searched for again from
+scratch each time — including on the automatic reconfigure Visual Studio runs
+through `ZERO_CHECK` whenever a `CMakeLists.txt` changes. That reconfigure does
+not inherit the environment of the shell you first configured in, so an
+`ACE_ROOT` set with `set` is gone and the build stops at
+
+```
+CMake Error at CMakeLists.txt:232 (message):
+  This project requires ACE installed.
+```
+
+Give it on the command line instead — `-DACE_ROOT=C:/vcpkg/installed/x64-windows`
+— and it survives in the cache. If it still fails, reconfigure from a command
+prompt with `cmake -S . -B build`: the full output names what the find module is
+missing, which the Error List truncates to nothing useful.
+
 `ALLOW_TURTLE_ADDONS` is already on by default. It has to stay on: without it
 the client crashes with *"interface corrupt"* the moment you enter the world.
 
@@ -410,6 +429,31 @@ talent links — every one of them is rejected against Turtle's reworked talent
 trees, and the bots end up with no talents at all. Regenerate the file, or copy
 the `AiPlayerbot.PremadeSpec*` block out of `aiplayerbot.conf.dist`.
 
+## Reading a crash dump
+
+mangosd catches its own crashes and writes `crash_<timestamp>.dmp` beside the
+executable. Release builds carry debug information, so those dumps are readable:
+`mangosd.pdb` is produced next to `mangosd.exe` and Visual Studio finds it
+without being told.
+
+Open the `.dmp` through **File → Open → File**, then pick **Debug with Native
+Only** on the summary page that appears. The debugger stops at the point of the
+crash and the call stack names the function.
+
+The top few frames are always the crash handler itself —
+`Mangosd_WriteCrashDump`, `MangosdSignalHandler`,
+`MangosdInvalidParameterHandler`. The first frame *below* those is where the
+fault actually happened.
+
+Two things worth knowing before you spend an afternoon on it:
+
+- **Running mangosd under F5 tells you nothing.** The handler is installed
+  before anything else runs, so Visual Studio never sees an exception; the
+  process just ends with code 3. The dump is the only way in.
+- **Bare addresses instead of names** mean the `.pdb` does not match the `.exe`.
+  Rebuild, reproduce the crash, and read the new dump — both then come from the
+  same build.
+
 ## Troubleshooting
 
 | Symptom | Cause |
@@ -420,3 +464,5 @@ the `AiPlayerbot.PremadeSpec*` block out of `aiplayerbot.conf.dist`.
 | `No premade specs found!!` | old `aiplayerbot.conf` with the stock talent links |
 | Server refuses to start after applying migrations | auto-updater against a dump-restored database — see step 5 |
 | World is empty, no creatures | `sql\base` was never imported |
+| `invalid-parameter (0xc0000420)` then SIGABRT, seconds after the bots come up | checkout predates the logger fix; as a stopgap, empty `AiPlayerbot.AllowedLogFiles` |
+| `CMake Error ... requires ACE installed` on a rebuild that worked before | `ACE_ROOT` was an environment variable — see step 2 |
