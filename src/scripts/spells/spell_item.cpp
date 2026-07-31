@@ -987,6 +987,29 @@ struct spell_jewel_of_wild_magics : public SpellScript
     }
 };
 
+// Embrace of the Viper, five piece bonus. The aura procs on any damage taken,
+// at 100% chance, so on its own it healed on every single hit. Its description
+// carries the rule the data never did: "When your health drops below 35%, you
+// rapidly heal ... This effect can trigger only once every 3 min."
+//
+// The three minutes come from spell_proc_event; only the health gate needs code.
+// It belongs in OnCheckProc rather than OnProc because that runs before the proc
+// event is looked up - a hit taken at full health is turned down without
+// spending the cooldown, which is what would otherwise silence the bonus at the
+// moment it is meant to fire.
+struct spell_item_wild_regeneration : public AuraScript
+{
+    static constexpr float HEALTH_THRESHOLD = 35.0f;
+
+    std::optional<SpellProcEventTriggerCheck> OnCheckProc(Unit const* owner, Unit* /*victim*/, SpellAuraHolder* /*holder*/, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procExtra*/, WeaponAttackType /*attType*/, bool /*isVictim*/) override
+    {
+        if (!owner || owner->GetHealthPercent() >= HEALTH_THRESHOLD)
+            return SPELL_PROC_TRIGGER_FAILED;
+
+        return std::nullopt;
+    }
+};
+
 struct spell_loop_of_infused_renewal : public AuraScript
 {
     std::optional<SpellProcEventTriggerCheck> OnCheckProc(Unit const* /*owner*/, Unit* /*victim*/, SpellAuraHolder* /*holder*/, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procExtra*/, WeaponAttackType /*attType*/, bool /*isVictim*/) override
@@ -1097,6 +1120,7 @@ void AddSC_item_spell_scripts()
     RegisterSpellScript("spell_goblin_jumper_cables", &GetSpellScript<spell_goblin_jumper_cables>);
     RegisterSpellScript("spell_goblin_jumper_cables_xl", &GetSpellScript<spell_goblin_jumper_cables_xl>);
     RegisterSpellScript("spell_jewel_of_wild_magics", &GetSpellScript<spell_jewel_of_wild_magics>);
+    RegisterAuraScript("spell_item_wild_regeneration", &GetAuraScript<spell_item_wild_regeneration>);
     RegisterAuraScript("spell_loop_of_infused_renewal", &GetAuraScript<spell_loop_of_infused_renewal>);
     RegisterSpellScript("spell_sayges_dark_fortune", &GetSpellScript<spell_sayges_dark_fortune>);
 }
