@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_zone_level` (
   `id` bigint(20) NOT NULL,
   `level` bigint(20) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci;
 
 -- Dumping data for table classicplayerbots.ai_playerbot_zone_level: ~3.488 rows (approximately)
 /*!40000 ALTER TABLE `ai_playerbot_zone_level` DISABLE KEYS */;

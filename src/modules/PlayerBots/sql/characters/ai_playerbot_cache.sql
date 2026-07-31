@@ -8,7 +8,7 @@ CREATE TABLE `ai_playerbot_equip_cache` (
   `quality` mediumint(8) NOT NULL,
   `item` mediumint(8) NOT NULL,
 PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI equip Cache';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI equip Cache';
 
 DROP TABLE IF EXISTS `ai_playerbot_rarity_cache`;
 CREATE TABLE `ai_playerbot_rarity_cache` (
@@ -16,7 +16,7 @@ CREATE TABLE `ai_playerbot_rarity_cache` (
   `item` mediumint(8) NOT NULL,
   `rarity` float NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI Rarity Cache';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI Rarity Cache';
 
 DROP TABLE IF EXISTS `ai_playerbot_rnditem_cache`;
 CREATE TABLE `ai_playerbot_rnditem_cache` (
@@ -25,7 +25,7 @@ CREATE TABLE `ai_playerbot_rnditem_cache` (
   `type` mediumint(8) NOT NULL,
   `item` mediumint(8) NOT NULL,
 PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI Random Item Cache';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI Random Item Cache';
 
 DROP TABLE IF EXISTS `ai_playerbot_tele_cache`;
 CREATE TABLE `ai_playerbot_tele_cache` (
@@ -36,7 +36,7 @@ CREATE TABLE `ai_playerbot_tele_cache` (
   `y` float(8) NOT NULL,
   `z` float(8) NOT NULL,
 PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI Tele Cache';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI Tele Cache';
 
 DROP TABLE IF EXISTS `ai_playerbot_item_info_cache`;
 CREATE TABLE IF NOT EXISTS `ai_playerbot_item_info_cache` (
@@ -82,5 +82,5 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_item_info_cache` (
   `scale_31` mediumint(8) DEFAULT NULL,
   `scale_32` mediumint(8) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI item info Cache';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI item info Cache';
 

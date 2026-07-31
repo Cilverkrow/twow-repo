@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_named_location` (
   `orientation` decimal(40,20) NOT NULL,
   `description` varchar(255) NOT NULL,
   PRIMARY KEY (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI Named Location';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI Named Location';
 
 -- Dumping data for table classicmangos.ai_playerbot_named_location: 54.055 rows
 /*!40000 ALTER TABLE `ai_playerbot_named_location` DISABLE KEYS */;

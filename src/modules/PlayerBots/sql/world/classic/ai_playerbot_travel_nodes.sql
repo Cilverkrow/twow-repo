@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_travelnode` (
   `z` float NOT NULL,
   `linked` tinyint(2) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI Travel Node';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI Travel Node';
 
 -- Dumping data for table classicmangos.ai_playerbot_travelnode: 0 rows
 /*!40000 ALTER TABLE `ai_playerbot_travelnode` DISABLE KEYS */;
@@ -1886,7 +1886,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_travelnode_link` (
   `max_creature_1` tinyint(2) NOT NULL,
   `max_creature_2` tinyint(2) NOT NULL,
   PRIMARY KEY (`node_id`,`to_node_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI Travel Node link';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI Travel Node link';
 
 -- Dumping data for table classicmangos.ai_playerbot_travelnode_link: 6.190 rows
 /*!40000 ALTER TABLE `ai_playerbot_travelnode_link` DISABLE KEYS */;
@@ -8104,7 +8104,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_travelnode_path` (
   `y` float NOT NULL,
   `z` float NOT NULL,
   PRIMARY KEY (`node_id`,`to_node_id`,`nr`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI Travel Node path';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI Travel Node path';
 
 -- Dumping data for table classicmangos.ai_playerbot_travelnode_path: 414.126 rows
 /*!40000 ALTER TABLE `ai_playerbot_travelnode_path` DISABLE KEYS */;

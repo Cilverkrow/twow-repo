@@ -15,7 +15,7 @@ CREATE TABLE `ahbot_history` (
   KEY `won` (`won`),
   KEY `category` (`category`),
   KEY `auction_house` (`auction_house`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci;
 
 CREATE TABLE `ahbot_category` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -25,7 +25,7 @@ CREATE TABLE `ahbot_category` (
   `expire_time` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `helper` (`category`, `multiplier`, `expire_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci;
 
 CREATE TABLE `ahbot_price` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -34,7 +34,7 @@ CREATE TABLE `ahbot_price` (
   `auction_house` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `ahbot_price_item` (`item`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci;
 
 create index idx_ahbot_history_item on ahbot_history(item);
 create index idx_ahbot_history_buytime on ahbot_history(buytime);

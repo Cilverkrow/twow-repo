@@ -4,7 +4,7 @@ CREATE TABLE `ai_playerbot_arena_team_names` (
   `name` varchar(24) NOT NULL UNIQUE,
   `type` TINYINT(3) NOT NULL,
   PRIMARY KEY (`name_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI arena team names';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI arena team names';
 
 LOCK TABLES `ai_playerbot_arena_team_names` WRITE;
 INSERT INTO `ai_playerbot_arena_team_names` (`name_id`,`name`, `type`) VALUES
@@ -315,7 +315,7 @@ CREATE TABLE `ai_playerbot_guild_names` (
   `name_id` mediumint(8) NOT NULL AUTO_INCREMENT UNIQUE,
   `name` varchar(24) NOT NULL UNIQUE,
   PRIMARY KEY (`name_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI guild names';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI guild names';
 
 LOCK TABLES `ai_playerbot_guild_names` WRITE;
 INSERT INTO `ai_playerbot_guild_names` (`name_id`, `name`) VALUES
@@ -729,7 +729,7 @@ CREATE TABLE `ai_playerbot_names` (
   `gender` tinyint(3) unsigned NOT NULL,
   PRIMARY KEY (`name_id`),
   UNIQUE KEY `name_id` (`name_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI RandomBot names';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='PlayerbotAI RandomBot names';
 
 LOCK TABLES `ai_playerbot_names` WRITE;
 INSERT INTO `ai_playerbot_names` (`name_id`,`name`,`gender`) VALUES

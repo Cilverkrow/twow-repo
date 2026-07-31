@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_help_texts` (
   `text_loc8` text NOT NULL,
   `locs_updated` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'locs_updated - Have the loc texts been updated?',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2424 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=2424 DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 INSERT INTO `ai_playerbot_help_texts` (`id`, `name`, `template_changed`, `template_text`, `text`, `text_loc1`, `text_loc2`, `text_loc3`, `text_loc4`, `text_loc5`, `text_loc6`, `text_loc7`, `text_loc8`, `locs_updated`) VALUES
 	(1, 'help:main', 0, '----This is the main help page----\r\nPlease copy a link (shift click to chat in a whisper to a bot) to get more information about a topic.\r\nObjects: [h:object:strategy|strategies][h:object:trigger|triggers][h:object:action|actions][h:object:value|values][h:object:chatfilter|chatfilters]', '', '', '', '', '', '', '', '', '', 0),
@@ -2959,7 +2959,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_texts` (
   `text_loc7` varchar(1024) NOT NULL DEFAULT '',
   `text_loc8` varchar(1024) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 INSERT INTO `ai_playerbot_texts` (`name`, `text`, `say_type`, `reply_type`, `text_loc1`, `text_loc2`, `text_loc3`, `text_loc4`, `text_loc5`, `text_loc6`, `text_loc7`, `text_loc8`) VALUES
 
@@ -4425,7 +4425,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_texts_chance` (
   `name` varchar(255) NOT NULL,
   `probability` bigint(20) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 INSERT INTO `ai_playerbot_texts_chance` (`id`, `name`, `probability`) VALUES
 	(1, 'taunt', 30),

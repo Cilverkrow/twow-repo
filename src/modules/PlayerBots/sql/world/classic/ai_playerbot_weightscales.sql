@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_weightscales` (
   `name` varchar(32) NOT NULL,
   `class` tinyint(3) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8 ROW_FORMAT=COMPACT;
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci ROW_FORMAT=COMPACT;
 
 -- Dumping data for table classicplayerbots.ai_playerbot_weightscales: ~32 rows (approximately)
 /*!40000 ALTER TABLE `ai_playerbot_weightscales` DISABLE KEYS */;
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_weightscale_data` (
   `field` varchar(18) NOT NULL,
   `val` smallint(6) unsigned NOT NULL,
   KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci;
 
 -- Dumping data for table classicplayerbots.ai_playerbot_weightscale_data: ~272 rows (approximately)
 /*!40000 ALTER TABLE `ai_playerbot_weightscale_data` DISABLE KEYS */;

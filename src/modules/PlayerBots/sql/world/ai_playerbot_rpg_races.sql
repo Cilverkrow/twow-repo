@@ -11,7 +11,7 @@ delete FROM gossip_menu_option where option_id = 99;
     `maxl` bigint(20),
     PRIMARY KEY (`id`),
     KEY `entry` (`entry`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci;
   
   DELETE FROM `ai_playerbot_rpg_races`;
   

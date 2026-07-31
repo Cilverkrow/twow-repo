@@ -8,7 +8,7 @@ CREATE TABLE `ai_playerbot_custom_strategy` (
   `action_line` varchar(1024) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb3_general_ci;
 
 DELETE FROM `ai_playerbot_custom_strategy`;
 
