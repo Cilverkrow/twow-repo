@@ -247,6 +247,23 @@ time, but it hurts a lot.
 **empty**. Insert a row with your server's address, and put the same address in
 the client's `realmlist.wtf`.
 
+```sql
+INSERT INTO tw_logon.realmlist (name, address, port, icon, realmflags, timezone, allowedSecurityLevel)
+VALUES ('TurtleWoW', '127.0.0.1', 8090, 0, 0, 1, 0);
+```
+
+Two fields decide whether this works at all:
+
+**`port` must match `WorldServerPort` in `mangosd.conf`.** The defaults disagree
+with each other — the config ships `8090`, while the column default on
+`realmlist.port` is `8085`. Take the config's value. Get this wrong and login
+succeeds, the realm appears in the list, and the client then hangs before
+character selection: it was handed a port nobody is listening on.
+
+**`realmflags` has to be 0.** The default is `2`, which means offline — the world
+server sets and clears that itself. Left at 2 the realm shows as permanently
+offline.
+
 ## 7. Running it
 
 `realmd` first, then `mangosd`. Two systemd units and an ordering dependency are
