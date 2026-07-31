@@ -171,8 +171,48 @@ world content — creatures, quests, items, the lot.
 > **skips `sql\base` entirely**. If you use it, import the base data yourself in
 > between the two.
 
-The 95 migrations in `sql\database_updates` are applied by the server on first
-start, provided `Database.AutoUpdate.Enabled` is on in `mangosd.conf`.
+### The migrations, and why the auto-updater cannot do this for you
+
+Turn the auto-updater **off** for the first start:
+
+```
+Database.AutoUpdate.Enabled = 0
+```
+
+Then apply the migrations yourself, tolerating errors, and record them as done:
+
+```
+cd sql
+for %f in (database_updates\*.sql) do mariadb --force -u root -p tw_world < "%f"
+```
+
+Record them as applied so the updater does not retry — `%~nf` is the filename
+without its extension, which is exactly what the table wants:
+
+```
+for %f in (database_updates\*.sql) do mariadb -u root -p tw_world -e "INSERT IGNORE INTO migrations (Name,Hash,AppliedAt) VALUES ('%~nf','manual',NOW());"
+```
+
+Afterwards switch `Database.AutoUpdate.Enabled` back on, and future updates apply
+normally.
+
+**Why the detour.** `sql/base` is not the state "the first N migrations were
+applied". It is a mixed snapshot: of the 101 migration files, 37 contain keys
+that are already in the base data — some entirely, one to 91%, another to 5% —
+while 38 are wholly new and 26 only change the schema. So there is no set of
+rows you could put into the `migrations` table that would let the updater run
+cleanly. Left to itself it replays everything, collides on the first duplicate
+key, and the server refuses to start.
+
+`--force` is what makes it work: duplicate-key errors are skipped, the `ALTER
+TABLE` statements land, and the database ends up on the current schema. It does
+also swallow genuine errors, which is the price. Verify afterwards:
+
+```
+mariadb -u root -p -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='tw_world' AND TABLE_NAME='spell_template' AND COLUMN_NAME='script_name';"
+```
+
+A `1` means the schema changes went in.
 
 ### Playerbot tables
 
