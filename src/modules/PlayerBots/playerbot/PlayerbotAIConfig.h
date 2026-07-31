@@ -425,7 +425,19 @@ public:
     bool hasLog(std::string fileName) { return std::find(allowedLogFiles.begin(), allowedLogFiles.end(), fileName) != allowedLogFiles.end(); };
     bool openLog(std::string fileName, char const* mode = "a", bool haslog = false);
     bool isLogOpen(std::string fileName) { auto it = logFiles.find(fileName); return it != logFiles.end() && it->second.second;}
-    void log(std::string fileName, const char* str, ...);
+    // Writes the line verbatim. Nearly every caller here hands over text it has
+    // already assembled, and a percent sign anywhere in it - a bot name, a mob
+    // name, an item name - used to be read as a conversion specifier. glibc
+    // printed nonsense; the Microsoft runtime aborted the server.
+    void log(std::string fileName, const char* line);
+
+    // The formatting variant, for the callers that actually pass arguments.
+#if defined(__GNUC__) || defined(__clang__)
+    void logf(std::string fileName, const char* format, ...)
+        __attribute__((format(printf, 3, 4)));
+#else
+    void logf(std::string fileName, const char* format, ...);
+#endif
 
     void logEvent(PlayerbotAI* ai, std::string eventName, std::string info1 = "", std::string info2 = "");
     void logEvent(PlayerbotAI* ai, std::string eventName, ObjectGuid guid, std::string info2);

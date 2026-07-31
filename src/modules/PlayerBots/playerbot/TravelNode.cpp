@@ -3247,7 +3247,7 @@ void TravelNodeMap::printNodeStore()
     sPlayerbotAIConfig.log(nodeStore, "    public:");
     sPlayerbotAIConfig.log(nodeStore, "    static void loadNodes()");
     sPlayerbotAIConfig.log(nodeStore, "    {");
-    sPlayerbotAIConfig.log(nodeStore, "        TravelNode** nodes = new TravelNode*[%d];", anodes.size());
+    sPlayerbotAIConfig.logf(nodeStore, "        TravelNode** nodes = new TravelNode*[%d];", (int)anodes.size());
 
     for (uint32 i = 0; i < anodes.size(); i++)
     {

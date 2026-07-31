@@ -1024,9 +1024,29 @@ bool PlayerbotAIConfig::openLog(std::string fileName, char const* mode, bool has
     return true;
 }
 
-void PlayerbotAIConfig::log(std::string fileName, const char* str, ...)
+void PlayerbotAIConfig::log(std::string fileName, const char* line)
 {
-    if (!str)
+    if (!line)
+        return;
+
+    std::lock_guard<std::mutex> guard(m_logMtx);
+
+    if (!isLogOpen(fileName))
+        if (!openLog(fileName, "a"))
+            return;
+
+    FILE* file = logFiles.find(fileName)->second.first;
+
+    fputs(line, file);
+    fputc('\n', file);
+    fflush(file);
+
+    fflush(stdout);
+}
+
+void PlayerbotAIConfig::logf(std::string fileName, const char* format, ...)
+{
+    if (!format)
         return;
 
     std::lock_guard<std::mutex> guard(m_logMtx);
@@ -1038,10 +1058,10 @@ void PlayerbotAIConfig::log(std::string fileName, const char* str, ...)
     FILE* file = logFiles.find(fileName)->second.first;
 
     va_list ap;
-    va_start(ap, str);
-    vfprintf(file, str, ap);
-    fprintf(file, "\n");
+    va_start(ap, format);
+    vfprintf(file, format, ap);
     va_end(ap);
+    fputc('\n', file);
     fflush(file);
 
     fflush(stdout);
