@@ -2,6 +2,7 @@
 #include "CompanionManager.hpp"
 #include "MountManager.hpp"
 #include "ToyManager.hpp"
+#include "Pet.h"
 
 namespace
 {
@@ -1206,6 +1207,50 @@ struct spell_turtle_mount_collection : public SpellScript
     }
 };
 
+struct spell_turtle_glyph_of_the_beastkeeper : public SpellScript
+{
+    enum
+    {
+        RequiredStableSlots = 3,
+    };
+
+    SpellCastResult OnCheckCast(Spell* spell, bool /*strict*/) const override
+    {
+        Player* player = spell->m_caster->ToPlayer();
+        if (!player || !spell->m_CastItem)
+            return SPELL_CAST_OK;
+
+        if (player->m_stableSlots < RequiredStableSlots)
+        {
+            player->GetSession()->SendNotification("You must unlock the third pet stable slot first.");
+            return SPELL_FAILED_DONT_REPORT;
+        }
+
+        if (player->m_stableSlots >= MAX_PET_STABLES)
+        {
+            player->GetSession()->SendNotification("You have already unlocked all pet stable slots.");
+            return SPELL_FAILED_DONT_REPORT;
+        }
+
+        return SPELL_CAST_OK;
+    }
+
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx != EFFECT_INDEX_0)
+            return true;
+
+        Player* player = spell->m_caster->ToPlayer();
+        if (!player || !spell->m_CastItem)
+            return false;
+
+        player->m_stableSlots = MAX_PET_STABLES;
+        player->GetSession()->SendNotification("You have unlocked the fourth pet stable slot.");
+        spell->ForceConsumeCastItem();
+        return false;
+    }
+};
+
 struct spell_turtle_taming_quest_credit : public AuraScript
 {
     void OnBeforeApply(Aura* aura, bool apply) override
@@ -1284,5 +1329,6 @@ void AddSC_turtle_spell_scripts()
     RegisterSpellScript("spell_reindeer_transformation", &GetSpellScript<spell_reindeer_transformation>);
     RegisterSpellScript("spell_turtle_companion_collection", &GetSpellScript<spell_turtle_companion_collection>);
     RegisterSpellScript("spell_turtle_mount_collection", &GetSpellScript<spell_turtle_mount_collection>);
+    RegisterSpellScript("spell_turtle_glyph_of_the_beastkeeper", &GetSpellScript<spell_turtle_glyph_of_the_beastkeeper>);
     RegisterAuraScript("spell_turtle_taming_quest_credit", &GetAuraScript<spell_turtle_taming_quest_credit>);
 }
