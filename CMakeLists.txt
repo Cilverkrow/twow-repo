@@ -491,6 +491,19 @@ if(MSVC)
   #endif()
   
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+
+  # Release builds carry debug information too. The server installs a crash
+  # handler that writes a minidump, and without a .pdb every frame in it is a
+  # bare address - the one file meant to explain a crash explains nothing.
+  # /OPT:REF and /OPT:ICF are here because /DEBUG turns them off by default;
+  # with them the generated binary is the same as before, there is simply a
+  # .pdb beside it.
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+  foreach(_linker EXE SHARED MODULE)
+    set(CMAKE_${_linker}_LINKER_FLAGS_RELEASE
+        "${CMAKE_${_linker}_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
+  endforeach()
 endif()
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
