@@ -78,8 +78,17 @@ bool SummonAction::Execute(Event& event)
     if (!requester || requester->IsBeingTeleported())
         return false;
 
+    // Say something either way. The meeting stone and innkeeper routes below
+    // both report what happened; this one used to return in silence, which is
+    // indistinguishable from the command not arriving at all.
     if (requester->GetSession()->GetSecurity() > SEC_PLAYER || sPlayerbotAIConfig.nonGmFreeSummon)
-        return Teleport(requester, requester, bot);
+    {
+        if (!Teleport(requester, requester, bot))
+            return false;
+
+        ai->TellPlayerNoFacing(requester, BOT_TEXT("hello"));
+        return true;
+    }
 
     if(bot->GetMapId() == requester->GetMapId() && !WorldPosition(bot).canPathTo(requester, bot) && bot->GetDistance(requester) < sPlayerbotAIConfig.sightDistance) //We can't walk to requester so fine to short-range teleport.
         return Teleport(requester, requester, bot);
@@ -207,7 +216,22 @@ bool SummonAction::Teleport(Player* requester, Player *summoner, Player *player)
                 }
 
                 player->GetMotionMaster()->Clear();
-                player->TeleportTo(mapId, x, y, z, 0);
+
+                // TeleportTo can refuse - in combat, mid flight, or when the
+                // destination map is not open to this player. Reporting success
+                // regardless left the bot standing where it was with nobody any
+                // the wiser.
+                if (!player->TeleportTo(mapId, x, y, z, 0))
+                {
+                    sLog.outError("SummonAction: %s could not be teleported to map %u at %.2f %.2f %.2f.",
+                        player->GetGuidStr().c_str(), mapId, x, y, z);
+
+                    if (summoner != player)
+                        ai->TellPlayerNoFacing(requester, "I cannot get to you from here");
+
+                    return false;
+                }
+
                 if(player->isRealPlayer())
                     player->SendHeartBeat();
 
