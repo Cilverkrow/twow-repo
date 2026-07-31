@@ -337,11 +337,21 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket & recv_data)
     _player->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_TALK);
     _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
 
+    // A seated trainer cannot teach. The learning spell is cast by the trainer,
+    // and CheckCast refuses any caster that is not standing up, so the purchase
+    // failed with SPELL_FAILED_NOT_STANDING - silently, since the client shows
+    // nothing for TRAIN_FAIL_UNAVAILABLE and no money changes hands. Turtle has
+    // trainers who sit at their tables by design, so rather than stand them up,
+    // let them cast this as triggered. Everything that check would otherwise
+    // catch has already been verified above: interaction, line of sight, that
+    // the spell is on this trainer's list, that it can be learned, and money.
+    bool const seatedTrainer = !unit->IsStandingUp();
+
     Spell *spell;
     if (proto->SpellVisual == 222)
         spell = new Spell(_player, proto, false);
     else
-        spell = new Spell(unit, proto, false);
+        spell = new Spell(unit, proto, seatedTrainer);
 
     SpellCastTargets targets;
     targets.setUnitTarget(_player);
