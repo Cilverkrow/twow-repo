@@ -14,8 +14,14 @@ ConfVersion=2019051400
 AuctionHouseBot.Seller.Enabled = 0
 AuctionHouseBot.Buyer.Enabled = 0
 
-# Replace with the new AhBot
-AhBot.Enabled = 1
+# Replace with the new AhBot.
+#
+# Off by default, because it cannot work until AhBot.GUID below names a real
+# character: with a GUID of 0 it has no bidder, starts posting auctions with no
+# item behind them, and eventually takes the server down through the C runtime's
+# invalid-parameter handler. Create a character for it, put its guid below, then
+# turn this on.
+AhBot.Enabled = 0
 
 # Character GUID of the AHBot player. Must be set to a valid character GUID for each server instance.
 AhBot.GUID = 0
