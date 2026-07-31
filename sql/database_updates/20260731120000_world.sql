@@ -17,14 +17,16 @@
 -- The cooldown belongs here. The 35% health condition cannot be expressed in
 -- this table and lives in the spell script named below.
 --
--- procFlags is copied from the spell itself so behaviour there is unchanged.
+-- procFlags stays 0: with no value here the core uses the ones on the spell
+-- itself, which is what we want. Repeating them earns field value redundant
+-- at startup and would only drift if the spell data ever changed.
 
 INSERT INTO `spell_proc_event`
     (`entry`, `SchoolMask`, `SpellFamilyName`, `SpellFamilyMask0`, `SpellFamilyMask1`,
      `SpellFamilyMask2`, `procFlags`, `procEx`, `ppmRate`, `CustomChance`, `Cooldown`)
 VALUES
-    (44070, 0, 0, 0, 0, 0, 664232, 0, 0, 0, 180)
-ON DUPLICATE KEY UPDATE `procFlags` = 664232, `Cooldown` = 180;
+    (44070, 0, 0, 0, 0, 0, 0, 0, 0, 0, 180)
+ON DUPLICATE KEY UPDATE `procFlags` = 0, `Cooldown` = 180;
 
 UPDATE `spell_template`
 SET `script_name` = 'spell_item_wild_regeneration'
