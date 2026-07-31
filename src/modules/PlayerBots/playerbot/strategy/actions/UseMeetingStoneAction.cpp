@@ -184,13 +184,26 @@ bool SummonAction::Teleport(Player* requester, Player *summoner, Player *player)
         float followAngle = GetFollowAngle();
         for (double angle = followAngle - M_PI; angle <= followAngle + M_PI; angle += M_PI / 4)
         {
+            // How far the ground beside the summoner may sit from the ground
+            // under the summoner before the spot is rejected. A slope gives a
+            // metre or two over the follow distance; a floor that was missed
+            // gives a lot more.
+            static float const MAX_GROUND_DROP = 5.0f;
+
             uint32 mapId = summoner->GetMapId();
             float x = summoner->GetPositionX() + cos(angle) * ai->GetRange("follow");
             float y = summoner->GetPositionY() + sin(angle) * ai->GetRange("follow");
             float z = summoner->GetPositionZ();
             summoner->UpdateGroundPositionZ(x, y, z);
 
-            if (!summoner->IsWithinLOS(x, y, z + player->GetCollisionHeight(), true))
+            // UpdateGroundPositionZ asks Map::GetHeight for the ground under
+            // that spot, which is not always the floor the summoner is standing
+            // on: in front of an instance portal, on a platform or a bridge it
+            // returns the terrain below. The bot then arrives underneath the
+            // world, cannot path anywhere and just stands there.
+            bool const badGround = std::fabs(z - summoner->GetPositionZ()) > MAX_GROUND_DROP;
+
+            if (badGround || !summoner->IsWithinLOS(x, y, z + player->GetCollisionHeight(), true))
             {
                 x = summoner->GetPositionX();
                 y = summoner->GetPositionY();
