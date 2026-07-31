@@ -67,6 +67,31 @@ third line is OpenSSL 3.x and only applies if you pointed `OPENSSL_LIBRARIES` at
 vcpkg; with the bundled OpenSSL the install brings its own. `libmySQL.dll` comes
 with the install either way.
 
+### OpenSSL 3 needs its legacy provider
+
+If you linked vcpkg's OpenSSL 3.x, set this as well:
+
+```
+setx OPENSSL_MODULES "C:\vcpkg\installed\x64-windows\bin" /M
+```
+
+RC4 moved into the legacy provider with OpenSSL 3.0, and the session encryption
+every client connection is built on uses RC4. vcpkg compiles a module search
+path into its OpenSSL that points at its own build directory, which no longer
+exists once the package is installed — so `legacy.dll` sits in
+`installed/x64-windows/bin` and OpenSSL never looks there.
+
+Without it, everything appears fine: the build succeeds, the server starts, the
+realm shows up, and then the login dies. Older builds crashed outright with an
+access violation in `EVP_CIPHER_CTX_set_key_length`, because three OpenSSL
+return values in `ARC4::ARC4` went unchecked; current ones log what is missing
+instead.
+
+Copying `legacy.dll` next to `mangosd.exe` does **not** help — provider modules
+are only looked for in the module directory, never beside the executable.
+Restart Visual Studio or your console after `setx`; running processes do not
+pick the variable up.
+
 > **The ACE version matters.** This tree is built as C++17, which removed
 > dynamic exception specifications. ACE 6.x still uses them, so its headers
 > produce a cascade of exception-specification errors in `WorldSocketMgr.cpp`
