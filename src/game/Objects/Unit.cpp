@@ -3491,6 +3491,41 @@ int32 Unit::GetTotalAuraModifier(AuraType auratype) const
     return modifier;
 }
 
+int32 Unit::GetTotalAuraRangeModifier(AuraType auratype) const
+{
+    int32 modifier = 0;
+
+    AuraList const& mTotalAuraList = GetAurasByType(auratype);
+    for (const auto& i : mTotalAuraList)
+    {
+        SpellEntry const* spellProto = i->GetSpellProto();
+        if (GetTypeId() == TYPEID_PLAYER && spellProto->EquippedItemClass == ITEM_CLASS_WEAPON)
+        {
+            Player const* player = static_cast<Player const*>(this);
+            bool hasMatchingWeapon = false;
+            for (int attack = 0; attack < MAX_ATTACK; ++attack)
+            {
+                WeaponAttackType const attackType = WeaponAttackType(attack);
+                if (Item* item = player->GetWeaponForAttack(attackType, true, true))
+                {
+                    if (item->IsFitToSpellRequirements(spellProto))
+                    {
+                        hasMatchingWeapon = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasMatchingWeapon)
+                continue;
+        }
+
+        modifier += i->GetModifier()->m_amount;
+    }
+
+    return modifier;
+}
+
 float Unit::GetTotalAuraMultiplier(AuraType auratype) const
 {
     float multiplier = 1.0f;
@@ -11034,6 +11069,7 @@ float Unit::GetCombatReach(Unit const* pVictim, bool ability, float flat_mod) co
         : 0.0f;
 
     float reach = GetCombatReach(true) + victimReach + flat_mod;
+    reach += GetTotalAuraRangeModifier(SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE) / 1000.0f;
 
     reach += BASE_MELEERANGE_OFFSET;
     if (reach < ATTACK_DISTANCE)

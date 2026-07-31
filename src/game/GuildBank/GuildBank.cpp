@@ -24,6 +24,7 @@
 #include "ObjectGuid.h"
 #include "Creature.h"
 #include "Object.h"
+#include "GossipDef.h"
 #include "PoolManager.h"
 #include "Language.h"
 #include "Log.h"
@@ -147,19 +148,71 @@ void GuildBank::HandleAddonMessages(std::string msg, Player* player)
 {
 	SetPlayer(player);
 
+	if (!player)
+		return;
 
-	//Should rather do a full search on all nearby creatures and check their flag for GOSSIP_FLAG_GUILD_BANKER but this works for now..
-	bool nearVaultKeeper = false;
-	for (uint32 entry : GetGuildBankNpcEntries(player->GetTeamId() == TEAM_HORDE))
+	// Two ways to be at a vault keeper, because upstream and this tree closed
+	// the same gap differently and each catches something the other misses.
+	//
+	// Upstream tests the creature the player has selected: the seven keepers by
+	// entry, plus anything whose gossip menu carries a guild banker option -
+	// that second half is the better mechanism, since a new keeper then needs a
+	// database row and no rebuild at all.
+	//
+	// It does require a selection, though. The configured entries are therefore
+	// still matched by proximity, which keeps GuildBank.NpcEntries* meaning what
+	// it always did and keeps the bank reachable with something else targeted.
+	bool canUseGuildBank = false;
+
+	if (Creature* creature = player->GetNPCIfCanInteractWith(player->GetSelectionGuid(), UNIT_NPC_FLAG_NONE))
 	{
-		if (player->FindNearestCreature(entry, INTERACTION_DISTANCE))
+		switch (creature->GetEntry())
 		{
-			nearVaultKeeper = true;
-			break;
+			case 62008: // Faredin, Darnassus
+			case 62009: // Lorien Cogmender, Gnomeregan Exiles
+			case 62010: // Gewana Mosshoof, Thunder Bluff
+			case 62011: // Golgan Maltbrew, Ironforge
+			case 62012: // Arthur Montague, Undercity
+			case 80917: // Teller Plushner, Stormwind
+			case 80918: // Are, Orgrimmar
+				canUseGuildBank = true;
+				break;
+			default:
+				break;
+		}
+
+		if (!canUseGuildBank && creature->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP))
+		{
+			uint32 menuId = creature->GetDefaultGossipMenuId();
+			GossipMenuItemsMapBounds menuItems = sObjectMgr.GetGossipMenuItemsMapBounds(menuId);
+			if (menuItems.first == menuItems.second)
+				menuItems = sObjectMgr.GetGossipMenuItemsMapBounds(0);
+
+			for (GossipMenuItemsMap::const_iterator itr = menuItems.first; itr != menuItems.second; ++itr)
+			{
+				GossipMenuItems const& item = itr->second;
+				if (item.option_id == GOSSIP_OPTION_GUILD_BANKER && (item.npc_option_npcflag & creature->GetUInt32Value(UNIT_NPC_FLAGS)))
+				{
+					canUseGuildBank = true;
+					break;
+				}
+			}
 		}
 	}
 
-	if (!nearVaultKeeper)
+	if (!canUseGuildBank)
+	{
+		for (uint32 entry : GetGuildBankNpcEntries(player->GetTeamId() == TEAM_HORDE))
+		{
+			if (player->FindNearestCreature(entry, INTERACTION_DISTANCE))
+			{
+				canUseGuildBank = true;
+				break;
+			}
+		}
+	}
+
+	if (!canUseGuildBank)
 		return;
 
 	if (b_saveLock)

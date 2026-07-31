@@ -1883,6 +1883,7 @@ class Player final: public Unit
         void _ApplyWeaponDependentAuraMods(Item* item, WeaponAttackType attackType, bool apply);
         void _ApplyWeaponDependentAuraCritMod(Item* item, WeaponAttackType attackType, Aura* aura, bool apply);
         void _ApplyWeaponDependentAuraDamageMod(Item* item, WeaponAttackType attackType, Aura* aura, bool apply);
+        void _ApplyWeaponDependentAuraResistanceMod(Item* item, WeaponAttackType attackType, Aura* aura, bool apply);
 
         void InitDataForForm(bool reapplyMods = false);
         void ApplyItemEquipSpell(Item* item, bool apply, bool form_change = false);
@@ -2266,7 +2267,16 @@ class Player final: public Unit
         * \param: bool inRestPlace  > if it was offline, is the player was in city/tavern/inn?
         * \returns: float
         **/
+        static constexpr float RESTED_XP_TAVERN_CAP = 1.0f;
+        static constexpr float RESTED_XP_TENT_CAP = 0.25f;
+        static constexpr float RESTED_XP_CLIENT_RATIO = 0.5f;
+        static constexpr float RESTED_XP_TENT_RATE = 0.000575f;
+        static constexpr uint32 RESTED_XP_KILL_BONUS_PCT = 50;
+
         float ComputeRest(time_t timePassed, bool offline = false, bool inRestPlace = false);
+        float GetRestBonusCap(float visibleRestedLevelFraction) const;
+        uint32 GetRestedKillBonusForXP(uint32 xp) const;
+        void AddRestBonus(float rest_bonus, float rest_bonus_cap);
         float GetRestBonus() const { return m_rest_bonus; }
         void SetRestBonus(float rest_bonus_new);
         RestType GetRestType() const { return rest_type; }
