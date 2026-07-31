@@ -1117,6 +1117,8 @@ void Aura::TriggerSpell()
                         Item* item = ((Player*)triggerTarget)->GetWeaponForAttack(BASE_ATTACK);
                         if (!item)
                             return;
+                        if (item->CanBeTradedEvenIfSoulBound())
+                            return;
                         uint32 enchant_id = 0;
                         switch (GetId())
                         {
