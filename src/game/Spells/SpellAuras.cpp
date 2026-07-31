@@ -273,7 +273,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS] =
     &Aura::HandleAuraModPetStatsFromOwner,                  //204 SPELL_AURA_MOD_PET_RESISTANCE_PERCENT_OF_OWNER implemented in Pet::UpdateResistances
     &Aura::HandleAuraModPetStatsFromOwner,                  //205 SPELL_AURA_MOD_PET_ATTACK_POWER_PERCENT_OF_OWNER implemented in Pet::UpdateAttackPowerAndDamage
     &Aura::HandleAuraModPetStatsFromOwner,                  //206 SPELL_AURA_MOD_PET_SPELL_DAMAGE_PERCENT_OF_OWNER implemented in WorldObject::SpellBaseDamageBonusDone and SpellBaseHealingBonusDone
-    &Aura::HandleNoImmediateEffect,                         //207 SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE implemented in Spell::CheckRange
+    &Aura::HandleNoImmediateEffect,                         //207 SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE implemented in Spell::CheckRange and Unit::GetCombatReach
     &Aura::HandleNoImmediateEffect,                         //208 SPELL_AURA_MOD_REAGENT_CONSUMPTION_CHANCE implemented in Spell::TakeReagents
     &Aura::HandleNoImmediateEffect,                         //209 SPELL_AURA_MOD_MECHANIC_DURATION implemented in SpellAuraHolder constructor
     &Aura::HandleNoImmediateEffect,                         //210 SPELL_AURA_MOD_SELF_RESURRECTION_RECOVERY implemented in Spell::EffectSelfResurrect
@@ -4426,6 +4426,17 @@ void Aura::HandleAuraModResistance(bool apply, bool /*Real*/)
         return;
 
     Unit* target = GetTarget();
+    SpellEntry const* spellProto = GetSpellProto();
+    if (spellProto->EquippedItemClass == ITEM_CLASS_WEAPON && target->GetTypeId() == TYPEID_PLAYER)
+    {
+        Player* player = static_cast<Player*>(target);
+        Item* item = player->GetWeaponForAttack(BASE_ATTACK, true, true);
+        if (!item || !item->IsFitToSpellRequirements(spellProto))
+        {
+            m_applied = !apply;
+            return;
+        }
+    }
 
     for (uint32 i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
     {
@@ -4436,10 +4447,9 @@ void Aura::HandleAuraModResistance(bool apply, bool /*Real*/)
             if (target->GetTypeId() == TYPEID_PLAYER)
                 static_cast<Player*>(target)->ApplyResistanceBuffModsMod(SpellSchools(i), (m_modifier.m_amount > 0), float(m_modifier.m_amount), apply);
         }
-}
+    }
 
     // Faerie Fire (druid versions)
-    SpellEntry const* spellProto = GetSpellProto();
     if (spellProto->SpellIconID == 109 && spellProto->IsFitToFamily<SPELLFAMILY_DRUID, CF_DRUID_FAERIE_FIRE>())
     {
         target->ApplySpellDispelImmunity(spellProto, DISPEL_STEALTH, apply);
