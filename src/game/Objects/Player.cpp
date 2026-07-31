@@ -19645,7 +19645,7 @@ unsigned int Player::GetShapeshiftDisplay(ShapeshiftForm form)
 {
     uint32 display_id = 0;
 
-    std::array<std::tuple<ShapeshiftForm, uint32, uint32, uint32, uint32, uint32>, 17> glyph_map =
+    std::array<std::tuple<ShapeshiftForm, uint32, uint32, uint32, uint32, uint32>, 18> glyph_map =
     { {
        // Move it to DB if more glyphs!
        // spell id, alliance display, horde display, default_alliance, defaut_horde 
@@ -19660,6 +19660,7 @@ unsigned int Player::GetShapeshiftDisplay(ShapeshiftForm form)
         { FORM_DIREBEAR,  53011, 20405, 20406, 2281,  2289 },  // Glyph of the Emerald Bear
         { FORM_MOONKIN,   53014, 20408, 20409, 15374, 15375 }, // Glyph of the Dreamkin
         { FORM_CAT,       53017, 20410, 20410, 892,   8571 },  // Glyph of the Panther
+        { FORM_CAT,       44085, 4435,  4435,  892,   8571 },  // Embrace of the Viper, six pieces
         { FORM_TRAVEL,    36521, 20611, 20611, 632,   632  },  // Glyph of the White Stag
         { FORM_NEW_TREE,  57571, 18031, 18031, 2451,  864  },  // Glyph of the Arcane Treant
         { FORM_NEW_TREE,  50923, 18030, 18030, 2451,  864  },  // Glyph of the Autumn Treant
