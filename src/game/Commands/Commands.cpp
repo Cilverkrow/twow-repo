@@ -16247,7 +16247,18 @@ bool ChatHandler::HandleCartographerCommand(char* args)
     {
         PSendSysMessage("You have %u areas left to explore.", count);
         if (AreaEntry const* pAreaEntry = sObjectMgr.GetAreaEntryByExploreFlag(lastUnexploredFlag))
+        {
+            if (pAreaEntry->ZoneId)
+            {
+                if (AreaEntry const* pZoneEntry = AreaEntry::GetById(pAreaEntry->ZoneId))
+                {
+                    PSendSysMessage("Next: %s (%s)", pAreaEntry->Name, pZoneEntry->Name);
+                    return true;
+                }
+            }
+
             PSendSysMessage("Next: %s", pAreaEntry->Name);
+        }
     }
     else
         SendSysMessage("You have explored all areas.");
