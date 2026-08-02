@@ -4335,6 +4335,24 @@ void PlayerbotFactory::InitAvailableSpells()
     if (bot->getClass() == CLASS_WARLOCK && !bot->HasSpell(1122) && bot->GetLevel() >= 50)
         bot->learnSpell(1122, false);
 
+    // Druid forms nobody teaches. Bear and Aquatic come from the quest "Body and
+    // Heart" and appear on no trainer at all, so a bot never sees them - on the
+    // realm this was found on, one character out of 2183 knew Bear Form while 31
+    // had Cat Form from a trainer. Dire Bear follows from that: sixteen trainers
+    // offer it at 40, but it needs Bear Form first, so nobody had it either.
+    //
+    // Without them a feral druid has no tanking shape at any level, whatever it
+    // is specced as and whatever strategy it is handed.
+    if (bot->getClass() == CLASS_DRUID)
+    {
+        if (bot->GetLevel() >= 10 && !bot->HasSpell(5487))
+            bot->learnSpell(5487, false);   // Bear Form
+        if (bot->GetLevel() >= 16 && !bot->HasSpell(1066))
+            bot->learnSpell(1066, false);   // Aquatic Form
+        if (bot->GetLevel() >= 40 && !bot->HasSpell(9634))
+            bot->learnSpell(9634, false);   // Dire Bear Form
+    }
+
 #ifdef MANGOSBOT_ZERO
     // add book spells
     if (bot->GetLevel() == 60)
