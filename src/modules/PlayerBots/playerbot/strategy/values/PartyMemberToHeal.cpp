@@ -158,7 +158,18 @@ Unit* PartyMemberToHeal::Calculate()
     }
 
     healerIndex = healerIndex % needHeals.size();
-    return needHeals[healerIndex];
+
+    // Spreading the targets over several healers is only worth doing while there
+    // is more than one worth spreading. needHeals holds every tank regardless of
+    // health, so with a single injured member the second healer's index lands on
+    // somebody at full health - the health triggers then find nothing to do, never
+    // fire, and nobody gets healed at all while the healer stands there doing
+    // damage. Fall back to whoever is worst off.
+    Unit* chosen = needHeals[healerIndex];
+    if (chosen && chosen->GetHealthPercent() >= sPlayerbotAIConfig.almostFullHealth)
+        chosen = needHeals[0];
+
+    return chosen;
 }
 
 bool PartyMemberToHeal::CanHealPet(Pet* pet)
