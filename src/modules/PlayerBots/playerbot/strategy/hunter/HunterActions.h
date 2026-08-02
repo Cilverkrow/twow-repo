@@ -254,6 +254,27 @@ public:
     {
     public:
         TameBeastAction(PlayerbotAI* ai) : CastSpellAction(ai, "tame beast") {}
+
+        // The spell brings no target of its own, so it takes whatever the bot is
+        // fighting - and Unit::GetCreatureType answers with the shapeshift form's
+        // type for a player, which makes a druid in bear or cat form read as
+        // CREATURE_TYPE_BEAST. A petless hunter bot would happily try to tame one.
+        //
+        // Spell::CheckCast does refuse it, so nothing came of it, but the bot kept
+        // casting at nothing and the druid kept seeing a cast bar aimed at them.
+        //
+        // CreatureInfo::isTameable wants a beast with a family and the tameable
+        // flag; a player has none of the three, in any shape.
+        bool isUseful() override
+        {
+            Unit* target = GetTarget();
+            if (!target || target->IsPlayer())
+                return false;
+
+            Creature* creature = target->ToCreature();
+            return creature && creature->GetCreatureInfo() &&
+                   creature->GetCreatureInfo()->isTameable();
+        }
     };
 
     class CastFlareAction : public CastSpellAction
