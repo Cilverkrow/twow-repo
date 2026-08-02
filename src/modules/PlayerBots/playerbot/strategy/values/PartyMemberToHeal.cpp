@@ -170,11 +170,10 @@ bool PartyMemberToHeal::Check(Unit* player)
 {
     bool isBg = bot->InBattleGround();
 
-    float maxDist = ai->GetRange("heal");
-    if (isBg)
-    {
-        maxDist *= 0.5f;
-    }
+    // Battlegrounds get their own figure rather than a blanket halving: the two
+    // situations want different distances, and halving whatever the open-world
+    // value happens to be ties them together for no reason.
+    float maxDist = isBg ? sPlayerbotAIConfig.healDistanceBg : ai->GetRange("heal");
 
     if (!player)
         return false;

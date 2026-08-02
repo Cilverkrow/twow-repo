@@ -128,7 +128,12 @@ bool PlayerbotAIConfig::Initialize()
     sightDistance = config.GetFloatDefault("AiPlayerbot.SightDistance", 75.0f);
     spellDistance = config.GetFloatDefault("AiPlayerbot.SpellDistance", 25.0f);
     shootDistance = config.GetFloatDefault("AiPlayerbot.ShootDistance", 25.0f);
-    healDistance = config.GetFloatDefault("AiPlayerbot.HealDistance", 125.0f);
+    // 125 was three times the reach of any heal in this expansion, and it fed
+    // target selection, the out-of-range trigger and the approach action alike -
+    // so a healer sixty yards away believed it was in position, never closed the
+    // gap, and every cast failed.
+    healDistance = config.GetFloatDefault("AiPlayerbot.HealDistance", 30.0f);
+    healDistanceBg = config.GetFloatDefault("AiPlayerbot.HealDistanceBg", 25.0f);
     reactDistance = config.GetFloatDefault("AiPlayerbot.ReactDistance", 150.0f);
     maxFreeMoveDistance = config.GetFloatDefault("AiPlayerbot.MaxFreeMoveDistance", 150.0f);
     freeMoveDelay = config.GetFloatDefault("AiPlayerbot.FreeMoveDelay", 30.0f);
