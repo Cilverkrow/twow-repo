@@ -147,6 +147,16 @@ void Player_DispatchBotChatCommand(Player* master, uint32 type, std::string cons
     sRandomPlayerbotMgr.HandleCommand(type, msg, *master, "", master->GetTeam(), lang, to);
 }
 
+uint8 Playerbot_GetAllowedRoles(Player* bot)
+{
+    if (!bot || !bot->GetPlayerbotAI())
+        return 0;
+
+    // BotRoles and LFT_ROLE_* share their bit values - tank 1, healer 2, dps 4 -
+    // so the mask carries over unchanged.
+    return uint8(AiFactory::GetPlayerRoles(bot));
+}
+
 void Playerbot_SetForcedRole(Player* bot, uint8 role)
 {
     if (!bot)

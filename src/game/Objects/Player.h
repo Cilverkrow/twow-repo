@@ -3350,6 +3350,11 @@ void Player_DispatchBotChatCommand(Player* master, uint32 type, std::string cons
 // Tell a bot which role the dungeon finder gave it (LFT_ROLE_* bits, 0 clears).
 // No-op for anything that is not a bot.
 void Playerbot_SetForcedRole(Player* bot, uint8 role);
+// Which roles this bot's AI can actually play, as LFT_ROLE_* bits. The
+// queue's own AllowedRoleMask is about what a class may sign up as; this is
+// about what the bot can deliver, and the two are not the same - a shaman may
+// queue as tank but has no tank strategy at all.
+uint8 Playerbot_GetAllowedRoles(Player* bot);
 
 // "the bodies of template functions must be made available in a header file"
 template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T &basevalue, Spell* spell)

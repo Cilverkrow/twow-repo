@@ -229,6 +229,13 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
             if (!(AllowedRoleMask(bot) & wanted))
                 continue;
 
+            // And what the bot's AI can actually do, which is not the same thing.
+            // AllowedRoleMask says a shaman may queue as tank; the bot side has no
+            // tank strategy for one at all, so it would stand there doing nothing
+            // while the group has no tank and, worse, no healer either.
+            if (!(Playerbot_GetAllowedRoles(bot) & wanted))
+                continue;
+
             chosen = bot;
             break;
         }
