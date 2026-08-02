@@ -468,7 +468,22 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
 
             if (tab == 1)
             {
-                if (player->HasSpell(16961) || player->HasSpell(16958))
+                // Bear or cat. An assigned role decides it outright: a druid the
+                // dungeon finder put on the tank slot should be a bear whether or
+                // not it has reached Primal Fury, and one sent as dps should stay
+                // a cat even if it has.
+                //
+                // Primal Fury - 16958 and 16961 - remains the fallback for bots
+                // nobody assigned anything to, which is every druid simply
+                // wandering the world. It is only a proxy for having gone down
+                // the bear side of the tree, and a poor one below the level that
+                // reaches it.
+                uint8 const role = facade->GetForcedRole();
+
+                bool const tanking = role ? (role & BOT_ROLE_TANK) != 0
+                                          : (player->HasSpell(16961) || player->HasSpell(16958));
+
+                if (tanking)
                 {
                     combatEngine->addStrategies("tank feral", "tank assist", "pull", "pull back", "close", NULL);
                 }
