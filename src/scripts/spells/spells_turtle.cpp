@@ -71,13 +71,6 @@ void GetForwardPosition(WorldObject* object, float distance, float& x, float& y,
     rot3 = cos(orientation / 2);
 }
 
-void IncreaseSurvivalSkill(Player* player)
-{
-    uint32 value = player->GetSkillValue(142);
-    if (value < 150)
-        player->SetSkill(142, value + 1, 150);
-}
-
 bool IsBusyForDeployable(Player* player)
 {
     return player->IsInCombat() || player->IsBeingTeleported() || player->GetDeathState() == CORPSE || player->IsMoving();
@@ -149,7 +142,6 @@ struct spell_item_travelers_boat : public SpellScript
         Unit* target = spell->GetUnitTarget() ? spell->GetUnitTarget() : player;
         target->AddAura(target->HasAura(8083) ? 0 : 8083);
         ChatHandler(player).SendSysMessage("You've gained +50 skill bonus to Fishing!");
-        IncreaseSurvivalSkill(player);
         return false;
     }
 };
@@ -190,7 +182,6 @@ struct spell_item_travelers_tent : public SpellScript
         float x, y, z, orientation, rot2, rot3;
         GetForwardPosition(player, 4.0f, x, y, z, orientation, rot2, rot3);
         player->SummonGameObject(player->GetTeam() == ALLIANCE ? 1000001 : 1000236, x, y, z, orientation, 0.0f, 0.0f, rot2, rot3, 1200, true);
-        IncreaseSurvivalSkill(player);
         return false;
     }
 };
