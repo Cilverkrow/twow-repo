@@ -7,6 +7,7 @@ namespace
 enum WarriorSpells
 {
     SPELL_WARRIOR_DEEP_WOUND                   = 12721,
+    SPELL_WARRIOR_SHIELD_SPECIALIZATION_RAGE   = 23602,
     SPELL_WARRIOR_DEEP_WOUNDS_R1               = 12162,
     SPELL_WARRIOR_DEEP_WOUNDS_R2               = 12850,
     SPELL_WARRIOR_DEEP_WOUNDS_R3               = 12868,
@@ -321,6 +322,36 @@ struct spell_warrior_revenge : public SpellScript
     }
 };
 
+// Shield Specialization. Every rank triggers the same spell, 23602, which
+// energizes a flat ten rage points - one rage - so ranks two to five handed out
+// rank one's rage. The per rank amount is on the talent itself, in the base
+// points of its second effect, and nothing ever passed it on.
+//
+// The aura type has to be checked: ProcDamageAndSpellFor calls OnProc once per
+// effect index, and this talent has two effects - the block rating and the
+// trigger - both carrying the same 1 to 5. Without the test the rage would be
+// granted twice. The other effect is handed back to the default handler.
+struct spell_warrior_shield_specialization : public AuraScript
+{
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        if (!owner || !aura)
+            return SPELL_AURA_PROC_FAILED;
+
+        if (aura->GetModifier()->m_auraname != SPELL_AURA_PROC_TRIGGER_SPELL)
+            return std::nullopt;
+
+        // Rage is held in tenths, and the modifier is the rage the rank grants.
+        int32 const rage = aura->GetModifier()->m_amount * 10;
+        if (rage <= 0)
+            return SPELL_AURA_PROC_FAILED;
+
+        owner->CastCustomSpell(owner, SPELL_WARRIOR_SHIELD_SPECIALIZATION_RAGE,
+                               &rage, nullptr, nullptr, true, nullptr, aura);
+        return SPELL_AURA_PROC_OK;
+    }
+};
+
 struct spell_warrior_blood_drinker : public AuraScript
 {
     std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
@@ -513,6 +544,7 @@ void AddSC_warrior_spell_scripts()
     RegisterSpellScript("spell_warrior_master_strike_polearm", &GetSpellScript<spell_warrior_master_strike_polearm>);
     RegisterSpellScript("spell_warrior_revenge", &GetSpellScript<spell_warrior_revenge>);
     RegisterSpellScript("spell_warrior_intimidating_shout", &GetSpellScript<spell_warrior_intimidating_shout>);
+    RegisterAuraScript("spell_warrior_shield_specialization", &GetAuraScript<spell_warrior_shield_specialization>);
     RegisterAuraScript("spell_warrior_blood_drinker", &GetAuraScript<spell_warrior_blood_drinker>);
     RegisterAuraScript("spell_warrior_defensive_tactics", &GetAuraScript<spell_warrior_defensive_tactics>);
     RegisterAuraScript("spell_warrior_sweeping_strikes", &GetAuraScript<spell_warrior_sweeping_strikes>);
