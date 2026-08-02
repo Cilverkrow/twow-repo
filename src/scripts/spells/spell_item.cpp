@@ -1005,6 +1005,34 @@ struct spell_jewel_of_wild_magics : public SpellScript
 // before casting and only sets it afterwards, so turning a proc down here never
 // spends it. Returning std::nullopt means "no opinion" and lets the default
 // handler cast 44069 and start the three minutes.
+// Embrace of the Viper, six pieces: the serpent bites. The set already turns
+// cat form into Cobrahn's serpent; the venom belongs to the same shape, so out
+// of cat form there is nothing there to do the biting.
+//
+// Spell 744 is the poison the Deviate Adders use in Wailing Caverns, where this
+// set drops: nature damage every three seconds for thirty, and it carries the
+// poison dispel type so it can be cured. Reusing it rather than inventing an id
+// is deliberate - the client resolves name, icon and tooltip from its own
+// Spell.dbc and would show nothing at all for an id it does not have.
+//
+// The chance lives in procChance on 44085; only the form test needs code.
+struct spell_item_viper_venom : public AuraScript
+{
+    static constexpr uint32 SPELL_DEVIATE_POISON = 744;
+
+    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* victim, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        if (!owner || !victim || !victim->IsAlive())
+            return SPELL_AURA_PROC_FAILED;
+
+        if (owner->GetShapeshiftForm() != FORM_CAT)
+            return SPELL_AURA_PROC_FAILED;
+
+        owner->CastSpell(victim, SPELL_DEVIATE_POISON, true, nullptr, aura);
+        return SPELL_AURA_PROC_OK;
+    }
+};
+
 struct spell_item_wild_regeneration : public AuraScript
 {
     static constexpr float HEALTH_THRESHOLD = 0.35f;
@@ -1134,6 +1162,7 @@ void AddSC_item_spell_scripts()
     RegisterSpellScript("spell_goblin_jumper_cables", &GetSpellScript<spell_goblin_jumper_cables>);
     RegisterSpellScript("spell_goblin_jumper_cables_xl", &GetSpellScript<spell_goblin_jumper_cables_xl>);
     RegisterSpellScript("spell_jewel_of_wild_magics", &GetSpellScript<spell_jewel_of_wild_magics>);
+    RegisterAuraScript("spell_item_viper_venom", &GetAuraScript<spell_item_viper_venom>);
     RegisterAuraScript("spell_item_wild_regeneration", &GetAuraScript<spell_item_wild_regeneration>);
     RegisterAuraScript("spell_loop_of_infused_renewal", &GetAuraScript<spell_loop_of_infused_renewal>);
     RegisterSpellScript("spell_sayges_dark_fortune", &GetSpellScript<spell_sayges_dark_fortune>);
