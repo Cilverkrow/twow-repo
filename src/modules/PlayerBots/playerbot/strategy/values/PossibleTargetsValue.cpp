@@ -111,9 +111,12 @@ bool PossibleTargetsValue::IsValid(Unit* target, Player* player, bool ignoreLos)
             return false;
         }
 
+        // Being in combat with *this* target is a reason to know where it is
+        // without seeing it. Being in combat at all is not: player->IsInCombat()
+        // used to be part of this, which meant a bot fighting anyone could pick
+        // out every stealthed player within range.
         bool isInCombatWithTarget = target->GetVictim() == player || 
-                                     target->getThreatManager().getThreat(player) > 0.0f ||
-                                     player->IsInCombat();
+                                     target->getThreatManager().getThreat(player) > 0.0f;
 
         if (!ignoreLos && !isInCombatWithTarget)
         {
