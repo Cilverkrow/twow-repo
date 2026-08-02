@@ -28,6 +28,7 @@
 #include "PoolManager.h"
 #include "Language.h"
 #include "Log.h"
+#include <limits>
 #include "MapManager.h"
 #include "BattleGroundMgr.h"
 #include "MassMailMgr.h"
@@ -846,12 +847,33 @@ void GuildBank::DepositMoney(std::string msg)
 	Tokenizer params(msg, ':', 2);
 	if (params.size() == 2)
 	{
-		money = atoi(params[1]);
+		// strtoul, not atoi: the amount is held in a uint32, and atoi returns an
+		// int. It also tells us whether there was a number there at all.
+		char* end = nullptr;
+		unsigned long const parsed = strtoul(params[1], &end, 10);
+
+		if (end == params[1] || parsed > std::numeric_limits<uint32>::max())
+		{
+			_player->SendAddonMessage(prefix, "DepositMoney:Error:WrongSyntax(" + msg + ")");
+			return;
+		}
+
+		money = uint32(parsed);
 	}
 	else
 	{
 		// wrong syntax
 		_player->SendAddonMessage(prefix, "DepositMoney:Error:WrongSyntax(" + msg + ")");
+		return;
+	}
+
+	// Refuse before taking the money, not after. An overflow here does not cap
+	// the balance, it wraps it to near zero - the gold would be gone and the
+	// depositor would already have paid for it.
+	if (money > std::numeric_limits<uint32>::max() - b_money)
+	{
+		_player->GetSession()->SendNotification("Your guild bank cannot hold that much.");
+		_player->SendAddonMessage(prefix, "DepositMoney:Error:TooMuch");
 		return;
 	}
 
@@ -882,7 +904,16 @@ void GuildBank::WithdrawMoney(std::string msg)
 	Tokenizer params(msg, ':', 2);
 	if (params.size() == 2)
 	{
-		money = atol(params[1]);
+		char* end = nullptr;
+		unsigned long const parsed = strtoul(params[1], &end, 10);
+
+		if (end == params[1] || parsed > std::numeric_limits<uint32>::max())
+		{
+			_player->SendAddonMessage(prefix, "WithdrawMoney:Error:WrongSyntax(" + msg + ")");
+			return;
+		}
+
+		money = uint32(parsed);
 	}
 	else
 	{
