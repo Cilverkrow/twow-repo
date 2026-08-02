@@ -19,6 +19,8 @@
 #include "playerbot/PlayerbotAIConfig.h"
 #include "ahbot/AhBot.h"
 #include "BotDiagnostics.h"
+#include "playerbot/AiFactory.h"
+#include "playerbot/strategy/actions/ChangeTalentsAction.h"
 
 void Player::CreatePlayerbotAI()
 {
@@ -158,5 +160,37 @@ void Playerbot_SetForcedRole(Player* bot, uint8 role)
         return;
 
     ai->SetForcedRole(role);
+
+    // Strategies alone are not enough. A balance druid handed the tank slot
+    // keeps balance talents and tanks in caster form; AutoSelectTalents does
+    // know about roles, but only when picking a spec for the first time - with
+    // one already stored it continues that one and the role never comes up.
+    //
+    // So when the tree cannot fill the role at all, drop the stored choice and
+    // let it choose again with the role in hand. Only for random bots: someone
+    // else's bot keeps the spec its owner gave it. And only on a real
+    // contradiction - a feral druid does not respec just because it alternates
+    // between tanking and dps.
+    if (role != BotRoles::BOT_ROLE_NONE &&
+        bot->GetLevel() >= 10 &&
+        sRandomPlayerbotMgr.IsRandomBot(bot))
+    {
+        BotRoles const current = AiFactory::GetPlayerRoles(bot);
+
+        if (!(current & role))
+        {
+            sRandomPlayerbotMgr.SetValue(bot->GetGUIDLow(), "specNo", 0);
+            sRandomPlayerbotMgr.SetValue(bot->GetGUIDLow(), "specLink", 0, "");
+
+            bot->ResetTalents(true);
+
+            std::ostringstream out;
+            ChangeTalentsAction::AutoSelectTalents(bot, &out, (BotRoles)role);
+
+            sLog.outBasic("LFT: %s respecced for role %u: %s",
+                bot->GetName(), uint32(role), out.str().c_str());
+        }
+    }
+
     ai->ResetStrategies();
 }
