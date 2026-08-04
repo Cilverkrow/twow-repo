@@ -1117,6 +1117,8 @@ void Aura::TriggerSpell()
                         Item* item = ((Player*)triggerTarget)->GetWeaponForAttack(BASE_ATTACK);
                         if (!item)
                             return;
+                        if (item->CanBeTradedEvenIfSoulBound())
+                            return;
                         uint32 enchant_id = 0;
                         switch (GetId())
                         {
@@ -1761,7 +1763,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                                 else
                                 {
                                     // If there is no nearby graveyard, player's ghost would spawn at the same spot.
-                                    WorldSafeLocsEntry const *ClosestGrave = casterPlayer->GetTeamId() ? sWorldSafeLocsStore.LookupEntry(10) : sWorldSafeLocsStore.LookupEntry(4);
+                                    WorldSafeLocsEntry const *ClosestGrave = casterPlayer->GetTeamId() ? sWorldSafeLocsStore.LookupEntry(9) : sWorldSafeLocsStore.LookupEntry(4);
                                     if (ClosestGrave)
                                     {
                                         casterPlayer->SetHealth(1);
@@ -4217,21 +4219,9 @@ uint32 Aura::CalculateDotDamage() const
         case SPELLFAMILY_ROGUE:
         {
             // World of Warcraft Client Patch 1.12.0 (2006-08-22)
-            // - Rupture: Rupture now increases in potency with greater attack power.
-            if (spellProto->IsFitToFamilyMask<CF_ROGUE_RUPTURE>())
-            {
-                // Dmg/tick = $AP*min(0.01*$cp, 0.03) [Like Rip: only the first three CP increase the contribution from AP]
-                if (caster->IsPlayer())
-                {
-                    uint8 cp = ((Player*)caster)->GetComboPoints();
-                    if (cp > 3) cp = 3;
-                    damage += int32(caster->GetTotalAttackPowerValue(BASE_ATTACK) * cp / 100);
-                }
-            }
-            // World of Warcraft Client Patch 1.12.0 (2006-08-22)
             // - Garrote: The damage from this ability has been increased. In
             //   addition, Garrote now increases in potency with greater attack power.
-            else if (spellProto->IsFitToFamilyMask<CF_ROGUE_GARROTE>())
+            if (spellProto->IsFitToFamilyMask<CF_ROGUE_GARROTE>())
                 damage += int32(caster->GetTotalAttackPowerValue(BASE_ATTACK) * 0.03f);
             break;
         }

@@ -1,6 +1,7 @@
 #include "scriptPCH.h"
 #include "Item.h"
 #include "Player.h"
+#include "SpellClassMask.h"
 
 namespace
 {
@@ -11,6 +12,13 @@ enum WarriorSpells
     SPELL_WARRIOR_DEEP_WOUNDS_R1               = 12162,
     SPELL_WARRIOR_DEEP_WOUNDS_R2               = 12850,
     SPELL_WARRIOR_DEEP_WOUNDS_R3               = 12868,
+    SPELL_WARRIOR_SHIELD_SPECIALIZATION_R1     = 12298,
+    SPELL_WARRIOR_SHIELD_SPECIALIZATION_R2     = 12724,
+    SPELL_WARRIOR_SHIELD_SPECIALIZATION_R3     = 12725,
+    SPELL_WARRIOR_SHIELD_SPECIALIZATION_R4     = 12726,
+    SPELL_WARRIOR_SHIELD_SPECIALIZATION_R5     = 12727,
+    SPELL_WARRIOR_SHIELD_SPECIALIZATION_TRIGGER = 23602,
+    SPELL_WARRIOR_SLAM_R1                      = 1464,
     SPELL_WARRIOR_GAG_ORDER_R1                 = 12311,
     SPELL_WARRIOR_GAG_ORDER_R2                 = 12958,
     SPELL_WARRIOR_LAST_STAND_TRIGGER           = 12976,
@@ -39,6 +47,8 @@ enum WarriorSpells
     SPELL_WARRIOR_MASTER_STRIKE_STAFF          = 54021,
     SPELL_WARRIOR_MASTER_STRIKE_DAGGER         = 54022,
 };
+
+constexpr int32 RAGE_POWER_PER_RAGE = 10;
 
 template <class T>
 SpellScript* GetSpellScript(SpellEntry const*)
@@ -110,6 +120,106 @@ struct spell_warrior_shield_slam : public SpellScript
     {
         if (spell->m_casterUnit)
             damage += int32(spell->m_casterUnit->GetShieldBlockValue());
+    }
+};
+
+struct spell_warrior_shield_specialization : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx != EFFECT_INDEX_0 || !spell->m_casterUnit)
+            return true;
+
+        Player* player = spell->m_casterUnit->ToPlayer();
+        if (!player)
+            return true;
+
+        static constexpr uint32 spellRanks[] =
+        {
+            SPELL_WARRIOR_SHIELD_SPECIALIZATION_R1,
+            SPELL_WARRIOR_SHIELD_SPECIALIZATION_R2,
+            SPELL_WARRIOR_SHIELD_SPECIALIZATION_R3,
+            SPELL_WARRIOR_SHIELD_SPECIALIZATION_R4,
+            SPELL_WARRIOR_SHIELD_SPECIALIZATION_R5,
+        };
+
+        SpellEntry const* triggerSpell = sSpellMgr.GetSpellEntry(SPELL_WARRIOR_SHIELD_SPECIALIZATION_TRIGGER);
+        if (!triggerSpell)
+            return true;
+
+        for (int32 rank = int32(sizeof(spellRanks) / sizeof(spellRanks[0])) - 1; rank >= 0; --rank)
+        {
+            if (player->HasAura(spellRanks[rank]) || player->HasSpell(spellRanks[rank]))
+            {
+                SpellEntry const* talentSpell = sSpellMgr.GetSpellEntry(spellRanks[rank]);
+                if (talentSpell)
+                    spell->damage = (talentSpell->EffectBasePoints[EFFECT_INDEX_1] + triggerSpell->EffectDieSides[effIdx]) * RAGE_POWER_PER_RAGE;
+
+                break;
+            }
+        }
+
+        return true;
+    }
+};
+
+struct spell_warrior_flurry : public AuraScript
+{
+    SpellModifier* m_slamCastTimeMod = nullptr;
+
+    void OnAfterApply(Aura* aura, bool apply) override
+    {
+        if (aura->GetEffIndex() != EFFECT_INDEX_1 || aura->GetModifier()->m_auraname != SPELL_AURA_MOD_CASTING_SPEED_NOT_STACK)
+            return;
+
+        Player* player = aura->GetTarget()->ToPlayer();
+        if (!player)
+            return;
+
+        int32 amount = aura->GetModifier()->m_amount;
+
+        aura->GetTarget()->ApplyCastTimePercentMod(amount, !apply);
+
+        if (apply)
+        {
+            if (m_slamCastTimeMod)
+                return;
+
+            SpellEntry const* slam = sSpellMgr.GetSpellEntry(SPELL_WARRIOR_SLAM_R1);
+            if (!slam)
+                return;
+
+            int32 const slamCastTime = slam->GetCastTime(nullptr);
+            if (slamCastTime <= 0)
+                return;
+
+            int32 const hastedSlamCastTime = slamCastTime * 100 / (100 + amount);
+            int32 const slamCastTimeReduction = slamCastTime - hastedSlamCastTime;
+            if (slamCastTimeReduction <= 0)
+                return;
+
+            m_slamCastTimeMod = new SpellModifier(
+                SPELLMOD_CASTING_TIME,
+                SPELLMOD_FLAT,
+                -slamCastTimeReduction,
+                aura->GetId(),
+                UI64LIT(1) << CF_WARRIOR_SLAM);
+
+            player->AddSpellMod(m_slamCastTimeMod, true);
+        }
+        else if (m_slamCastTimeMod)
+        {
+            player->AddSpellMod(m_slamCastTimeMod, false);
+            m_slamCastTimeMod = nullptr;
+        }
+    }
+
+    std::optional<SpellAuraProcResult> OnProc(Unit* /*owner*/, Unit* /*victim*/, uint32 /*amount*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
+    {
+        if (aura->GetEffIndex() == EFFECT_INDEX_1 && aura->GetModifier()->m_auraname == SPELL_AURA_MOD_CASTING_SPEED_NOT_STACK)
+            return SPELL_AURA_PROC_CANT_TRIGGER;
+
+        return std::nullopt;
     }
 };
 
@@ -322,36 +432,6 @@ struct spell_warrior_revenge : public SpellScript
     }
 };
 
-// Shield Specialization. Every rank triggers the same spell, 23602, which
-// energizes a flat ten rage points - one rage - so ranks two to five handed out
-// rank one's rage. The per rank amount is on the talent itself, in the base
-// points of its second effect, and nothing ever passed it on.
-//
-// The aura type has to be checked: ProcDamageAndSpellFor calls OnProc once per
-// effect index, and this talent has two effects - the block rating and the
-// trigger - both carrying the same 1 to 5. Without the test the rage would be
-// granted twice. The other effect is handed back to the default handler.
-struct spell_warrior_shield_specialization : public AuraScript
-{
-    std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
-    {
-        if (!owner || !aura)
-            return SPELL_AURA_PROC_FAILED;
-
-        if (aura->GetModifier()->m_auraname != SPELL_AURA_PROC_TRIGGER_SPELL)
-            return std::nullopt;
-
-        // Rage is held in tenths, and the modifier is the rage the rank grants.
-        int32 const rage = aura->GetModifier()->m_amount * 10;
-        if (rage <= 0)
-            return SPELL_AURA_PROC_FAILED;
-
-        owner->CastCustomSpell(owner, SPELL_WARRIOR_SHIELD_SPECIALIZATION_RAGE,
-                               &rage, nullptr, nullptr, true, nullptr, aura);
-        return SPELL_AURA_PROC_OK;
-    }
-};
-
 struct spell_warrior_blood_drinker : public AuraScript
 {
     std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 /*damage*/, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
@@ -533,6 +613,7 @@ void AddSC_warrior_spell_scripts()
 {
     RegisterSpellScript("spell_warrior_bloodthirst", &GetSpellScript<spell_warrior_bloodthirst>);
     RegisterSpellScript("spell_warrior_shield_slam", &GetSpellScript<spell_warrior_shield_slam>);
+    RegisterSpellScript("spell_warrior_shield_specialization", &GetSpellScript<spell_warrior_shield_specialization>);
     RegisterSpellScript("spell_warrior_execute_trigger", &GetSpellScript<spell_warrior_execute_trigger>);
     RegisterSpellScript("spell_warrior_execute", &GetSpellScript<spell_warrior_execute>);
     RegisterSpellScript("spell_warrior_warriors_wrath", &GetSpellScript<spell_warrior_warriors_wrath>);
@@ -544,7 +625,7 @@ void AddSC_warrior_spell_scripts()
     RegisterSpellScript("spell_warrior_master_strike_polearm", &GetSpellScript<spell_warrior_master_strike_polearm>);
     RegisterSpellScript("spell_warrior_revenge", &GetSpellScript<spell_warrior_revenge>);
     RegisterSpellScript("spell_warrior_intimidating_shout", &GetSpellScript<spell_warrior_intimidating_shout>);
-    RegisterAuraScript("spell_warrior_shield_specialization", &GetAuraScript<spell_warrior_shield_specialization>);
+    RegisterAuraScript("spell_warrior_flurry", &GetAuraScript<spell_warrior_flurry>);
     RegisterAuraScript("spell_warrior_blood_drinker", &GetAuraScript<spell_warrior_blood_drinker>);
     RegisterAuraScript("spell_warrior_defensive_tactics", &GetAuraScript<spell_warrior_defensive_tactics>);
     RegisterAuraScript("spell_warrior_sweeping_strikes", &GetAuraScript<spell_warrior_sweeping_strikes>);

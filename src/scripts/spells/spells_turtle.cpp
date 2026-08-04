@@ -2,6 +2,7 @@
 #include "CompanionManager.hpp"
 #include "MountManager.hpp"
 #include "ToyManager.hpp"
+#include "Pet.h"
 
 namespace
 {
@@ -68,13 +69,6 @@ void GetForwardPosition(WorldObject* object, float distance, float& x, float& y,
     orientation = remainderf(object->GetOrientation() + M_PI_F, M_PI_F * 2.0f);
     rot2 = sin(orientation / 2);
     rot3 = cos(orientation / 2);
-}
-
-void IncreaseSurvivalSkill(Player* player)
-{
-    uint32 value = player->GetSkillValue(142);
-    if (value < 150)
-        player->SetSkill(142, value + 1, 150);
 }
 
 bool IsBusyForDeployable(Player* player)
@@ -148,7 +142,6 @@ struct spell_item_travelers_boat : public SpellScript
         Unit* target = spell->GetUnitTarget() ? spell->GetUnitTarget() : player;
         target->AddAura(target->HasAura(8083) ? 0 : 8083);
         ChatHandler(player).SendSysMessage("You've gained +50 skill bonus to Fishing!");
-        IncreaseSurvivalSkill(player);
         return false;
     }
 };
@@ -189,7 +182,6 @@ struct spell_item_travelers_tent : public SpellScript
         float x, y, z, orientation, rot2, rot3;
         GetForwardPosition(player, 4.0f, x, y, z, orientation, rot2, rot3);
         player->SummonGameObject(player->GetTeam() == ALLIANCE ? 1000001 : 1000236, x, y, z, orientation, 0.0f, 0.0f, rot2, rot3, 1200, true);
-        IncreaseSurvivalSkill(player);
         return false;
     }
 };
@@ -1206,6 +1198,50 @@ struct spell_turtle_mount_collection : public SpellScript
     }
 };
 
+struct spell_turtle_glyph_of_the_beastkeeper : public SpellScript
+{
+    enum
+    {
+        RequiredStableSlots = 3,
+    };
+
+    SpellCastResult OnCheckCast(Spell* spell, bool /*strict*/) const override
+    {
+        Player* player = spell->m_caster->ToPlayer();
+        if (!player || !spell->m_CastItem)
+            return SPELL_CAST_OK;
+
+        if (player->m_stableSlots < RequiredStableSlots)
+        {
+            player->GetSession()->SendNotification("You must unlock the third pet stable slot first.");
+            return SPELL_FAILED_DONT_REPORT;
+        }
+
+        if (player->m_stableSlots >= MAX_PET_STABLES)
+        {
+            player->GetSession()->SendNotification("You have already unlocked all pet stable slots.");
+            return SPELL_FAILED_DONT_REPORT;
+        }
+
+        return SPELL_CAST_OK;
+    }
+
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx != EFFECT_INDEX_0)
+            return true;
+
+        Player* player = spell->m_caster->ToPlayer();
+        if (!player || !spell->m_CastItem)
+            return false;
+
+        player->m_stableSlots = MAX_PET_STABLES;
+        player->GetSession()->SendNotification("You have unlocked the fourth pet stable slot.");
+        spell->ForceConsumeCastItem();
+        return false;
+    }
+};
+
 struct spell_turtle_taming_quest_credit : public AuraScript
 {
     void OnBeforeApply(Aura* aura, bool apply) override
@@ -1284,5 +1320,6 @@ void AddSC_turtle_spell_scripts()
     RegisterSpellScript("spell_reindeer_transformation", &GetSpellScript<spell_reindeer_transformation>);
     RegisterSpellScript("spell_turtle_companion_collection", &GetSpellScript<spell_turtle_companion_collection>);
     RegisterSpellScript("spell_turtle_mount_collection", &GetSpellScript<spell_turtle_mount_collection>);
+    RegisterSpellScript("spell_turtle_glyph_of_the_beastkeeper", &GetSpellScript<spell_turtle_glyph_of_the_beastkeeper>);
     RegisterAuraScript("spell_turtle_taming_quest_credit", &GetAuraScript<spell_turtle_taming_quest_credit>);
 }

@@ -7512,6 +7512,10 @@ SpellCastResult Spell::CheckItems()
 
                 if (targetItem->GetProto()->ItemLevel < m_spellInfo->baseLevel)
                     return SPELL_FAILED_LOWLEVEL;
+
+                if (targetItem->CanBeTradedEvenIfSoulBound())
+                    return SPELL_FAILED_NOT_TRADEABLE;
+
                 // Not allow enchant in trade slot for some enchant type
                 if (targetItem->GetOwner() != m_caster)
                 {
@@ -7529,6 +7533,10 @@ SpellCastResult Spell::CheckItems()
                 Item *item = m_targets.getItemTarget();
                 if (!item)
                     return SPELL_FAILED_ITEM_GONE;
+
+                if (item->CanBeTradedEvenIfSoulBound())
+                    return SPELL_FAILED_NOT_TRADEABLE;
+
                 // Not allow enchant in trade slot for some enchant type
                 if (item->GetOwner() != m_caster)
                 {
