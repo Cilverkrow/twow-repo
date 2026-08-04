@@ -641,7 +641,7 @@ enum BuyBackSlots                                           // 12 slots
 enum KeyRingSlots                                           // 32 slots
 {
     KEYRING_SLOT_START          = 81,
-    KEYRING_SLOT_END            = 97
+    KEYRING_SLOT_END            = KEYRING_SLOT_START + 32
 };
 
 struct ItemPosCount
@@ -1343,7 +1343,7 @@ class Player final: public Unit
         void RemoveItemFromBuyBackSlot(uint32 slot, bool del);
         uint32 GetBuyBackItemPrice(uint32 slot) const { return GetUInt32Value(PLAYER_FIELD_BUYBACK_PRICE_1 + slot - BUYBACK_SLOT_START); }
 
-        uint32 GetMaxKeyringSize() const { return GetLevel() < 40 ? 4 : (GetLevel() < 50 ? 8 : 12); }
+        uint32 GetMaxKeyringSize() const { return KEYRING_SLOT_END - KEYRING_SLOT_START; }
 
         void SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2 = nullptr, uint32 itemid = 0) const;
         void SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 param) const;

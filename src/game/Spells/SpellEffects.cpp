@@ -2816,6 +2816,9 @@ void Spell::EffectEnchantItemPerm(SpellEffectIndex eff_idx)
     if (!item_owner)
         return;
 
+    if (itemTarget->CanBeTradedEvenIfSoulBound())
+        return;
+
     if (item_owner->HasChallenge(CHALLENGE_VAGRANT_MODE) && item_owner->GetLevel() < PLAYER_MAX_LEVEL && itemTarget->IsEquipped())
     {
         p_caster->GetSession()->SendNotification("You cannot enchant items that are currently equipped while participating in a Vagrant's Endeavor challenge.");
@@ -2875,6 +2878,9 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
     // item can be in trade slot and have owner diff. from caster
     Player* item_owner = itemTarget->GetOwner();
     if (!item_owner)
+        return;
+
+    if (itemTarget->CanBeTradedEvenIfSoulBound())
         return;
 
     if (!sWorld.getConfig(CONFIG_BOOL_GM_ALLOW_TRADES) && p_caster->GetSession()->GetSecurity() > SEC_PLAYER)
@@ -4541,6 +4547,9 @@ void Spell::EffectEnchantHeldItem(SpellEffectIndex eff_idx)
     if (!item ->IsEquipped())
         return;
 
+    if (item->CanBeTradedEvenIfSoulBound())
+        return;
+
     // Nostalrius (INTERFACTION) : Totem furie-des-vents ecrase les benes de puissance et des rois Paladin.
     /*if (m_spellInfo->SpellFamilyName == SPELLFAMILY_SHAMAN)
     {
@@ -5434,21 +5443,6 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     
     if (m_casterUnit->GetTypeId() == TYPEID_PLAYER)
     {
-        if (m_spellInfo->Id == 7359) // If Spell is Bright Campfire, increase survival skill
-        {
-            uint32 currvalue{ m_casterUnit->ToPlayer()->GetSkillValue(142) };
-            switch (currvalue)
-            {
-                case 150:
-                    break;
-                default:
-                {
-                    ++currvalue;
-                    m_casterUnit->ToPlayer()->SetSkill(142, currvalue, 150);
-                    break;
-                }
-            }
-        }
         if (Group* group{ static_cast<Player*>(m_casterUnit)->GetGroup() })
         {
             pGameObj->SetOwnerGroupId(group->GetId());
