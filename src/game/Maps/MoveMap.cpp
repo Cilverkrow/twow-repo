@@ -207,6 +207,14 @@ bool MMapManager::loadMap(uint32 mapId, int32 x, int32 y)
 
 bool MMapManager::unloadMap(uint32 mapId, int32 x, int32 y)
 {
+    // dtNavMesh::removeTile nullt tile->polys, und getTileAndPolyByRefUnsafe
+    // greift ohne Pruefung darauf zu: ein Verweis, der die Entfernung
+    // ueberlebt, wird zu nullptr + index. Solange die Kachel geladen bleibt,
+    // kann das nicht passieren - das ist billiger als jede Sperre zwischen
+    // Suchenden und Aufraeumern.
+    if (!sWorld.getConfig(CONFIG_BOOL_MMAP_TILE_UNLOAD))
+        return false;
+
     // check if we have this map loaded
     if (loadedMMaps.find(mapId) == loadedMMaps.end())
     {
@@ -250,6 +258,13 @@ bool MMapManager::unloadMap(uint32 mapId, int32 x, int32 y)
 
 bool MMapManager::unloadMap(uint32 mapId)
 {
+    // Gleicher Grund wie oben, und hier zusaetzlich: die MMapData haengt an
+    // der mapId, nicht an der Instanz. Wird eine Instanz abgeraeumt, waehrend
+    // eine zweite derselben Karte laeuft, zoege das der zweiten das Netz
+    // unter den Fuessen weg.
+    if (!sWorld.getConfig(CONFIG_BOOL_MMAP_TILE_UNLOAD))
+        return false;
+
     if (loadedMMaps.find(mapId) == loadedMMaps.end())
     {
         // file may not exist, therefore not loaded

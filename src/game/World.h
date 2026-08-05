@@ -736,6 +736,9 @@ enum eConfigBoolValues
     // See LFT/LFTBotFill.cpp
     CONFIG_BOOL_LFT_BOTFILL_ENABLE,
     CONFIG_BOOL_AUTOSCALER_ENABLE,
+    // Navmesh-Kacheln zur Laufzeit wieder entfernen. Standard aus, siehe
+    // MMapManager::unloadMap.
+    CONFIG_BOOL_MMAP_TILE_UNLOAD,
     CONFIG_BOOL_VALUE_COUNT
 };
 
