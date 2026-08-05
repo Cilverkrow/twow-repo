@@ -188,7 +188,11 @@ bool MMapManager::loadMap(uint32 mapId, int32 x, int32 y)
     dtTileRef tileRef = 0;
 
     // memory allocated for data is now managed by detour, and will be deallocated when the tile is removed
-    dtStatus dResult = mmap->navMesh->addTile(data, fileHeader.size, DT_TILE_FREE_DATA, 0, &tileRef);
+    dtStatus dResult;
+    {
+        std::unique_lock<std::shared_mutex> meshLock(mmap->navMesh_lock);
+        dResult = mmap->navMesh->addTile(data, fileHeader.size, DT_TILE_FREE_DATA, 0, &tileRef);
+    }
     if (dtStatusSucceed(dResult))
     {
         mmap->mmapLoadedTiles.insert(std::pair<uint32, dtTileRef>(packedGridPos, tileRef));
@@ -229,7 +233,11 @@ bool MMapManager::unloadMap(uint32 mapId, int32 x, int32 y)
     dtTileRef tileRef = mmap->mmapLoadedTiles[packedGridPos];
 
     // unload, and mark as non loaded
-    dtStatus dtResult = mmap->navMesh->removeTile(tileRef, nullptr, nullptr);
+    dtStatus dtResult;
+    {
+        std::unique_lock<std::shared_mutex> meshLock(mmap->navMesh_lock);
+        dtResult = mmap->navMesh->removeTile(tileRef, nullptr, nullptr);
+    }
     if (dtStatusFailed(dtResult))
     {
         // this is technically a memory leak
@@ -259,6 +267,7 @@ bool MMapManager::unloadMap(uint32 mapId)
 
     // unload all tiles from given map
     MMapData* mmap = loadedMMaps[mapId];
+    std::unique_lock<std::shared_mutex> meshLock(mmap->navMesh_lock);
     for (MMapTileSet::iterator i = mmap->mmapLoadedTiles.begin(); i != mmap->mmapLoadedTiles.end(); ++i)
     {
         uint32 x = (i->first >> 16);
@@ -413,6 +422,31 @@ bool MMapManager::loadGameObject(uint32 displayId)
     MMapData* mmap_data = new MMapData(mesh);
     loadedModels.insert(std::pair<uint32, MMapData*>(displayId, mmap_data));
     return true;
+}
+
+std::shared_mutex* MMapManager::GetNavMeshLock(uint32 mapId)
+{
+    std::shared_lock<std::shared_mutex> lock(loadedMMaps_lock);
+
+    MMapDataSet::const_iterator itr = loadedMMaps.find(mapId);
+    if (itr == loadedMMaps.end())
+        return nullptr;
+
+    // Der Zeiger bleibt gueltig: MMapData wird nur in unloadMap(mapId)
+    // freigegeben, und das laeuft beim Abraeumen der Karte, wenn dort
+    // niemand mehr sucht.
+    return &itr->second->navMesh_lock;
+}
+
+std::shared_mutex* MMapManager::GetModelNavMeshLock(uint32 displayId)
+{
+    std::unique_lock<std::mutex> lock(lockForModels);
+
+    MMapDataSet::const_iterator itr = loadedModels.find(displayId);
+    if (itr == loadedModels.end())
+        return nullptr;
+
+    return &itr->second->navMesh_lock;
 }
 
 dtNavMeshQuery const* MMapManager::GetModelNavMeshQuery(uint32 displayId)

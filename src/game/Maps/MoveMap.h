@@ -67,9 +67,40 @@ namespace MMAP
         std::shared_mutex navMeshQueries_lock;
         MMapTileSet mmapLoadedTiles; // maps [map grid coords] to [dtTile]
         std::mutex tilesLoading_lock;
+
+        // Schuetzt das dtNavMesh selbst. Geteilt, solange eine Abfrage
+        // darueber laeuft, ausschliesslich beim Hinzufuegen und Entfernen
+        // von Kacheln. Ohne das entfernt TerrainInfo::CleanUpGrids eine
+        // Kachel unter einem laufenden findPath weg.
+        std::shared_mutex navMesh_lock;
     };
 
     typedef std::unordered_map<uint32, MMapData*> MMapDataSet;
+
+    // Haelt das Leseschloss einer Karte, solange er lebt. Ein Nullzeiger
+    // ist zulaessig und bedeutet: fuer diese Karte gibt es kein Navmesh,
+    // dann ist auch nichts zu schuetzen.
+    class NavMeshReadGuard
+    {
+        public:
+            explicit NavMeshReadGuard(std::shared_mutex* mutex) : m_mutex(mutex)
+            {
+                if (m_mutex)
+                    m_mutex->lock_shared();
+            }
+
+            ~NavMeshReadGuard()
+            {
+                if (m_mutex)
+                    m_mutex->unlock_shared();
+            }
+
+            NavMeshReadGuard(NavMeshReadGuard const&) = delete;
+            NavMeshReadGuard& operator=(NavMeshReadGuard const&) = delete;
+
+        private:
+            std::shared_mutex* m_mutex;
+    };
 
     // singelton class
     // holds all all access to mmap loading unloading and meshes
@@ -101,6 +132,13 @@ namespace MMAP
             dtNavMeshQuery const* GetNavMeshQuery(uint32 mapId, uint32 /*instanceId*/) { return GetNavMeshQuery(mapId); }
             dtNavMeshQuery const* GetModelNavMeshQuery(uint32 displayId);
             dtNavMesh const* GetNavMesh(uint32 mapId);
+
+            // Das Schloss zu einer Karte. Muss ueber die gesamte Dauer der
+            // Abfrage gehalten werden, nicht nur beim Holen der Abfrage -
+            // die Polygonzeiger zeigen ins Netz und werden ungueltig,
+            // sobald eine Kachel verschwindet.
+            std::shared_mutex* GetNavMeshLock(uint32 mapId);
+            std::shared_mutex* GetModelNavMeshLock(uint32 displayId);
 
             uint32 getLoadedTilesCount() const { return loadedTiles; }
             uint32 getLoadedMapsCount() const { return loadedMMaps.size(); }
