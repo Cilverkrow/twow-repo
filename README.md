@@ -7,66 +7,105 @@ This project targets version 1.18.1 build 7272
 
 ## About this fork
 
-This repository is a fork of **[Penqle/tortoise-wow](https://github.com/Penqle/tortoise-wow)** (the upstream project described below), used to run a small private server. It differs from upstream in two ways:
+A fork of **[Penqle/tortoise-wow](https://github.com/Penqle/tortoise-wow)** running a
+small private server with **~1000 playerbots** permanently online. Upstream is merged in
+periodically; everything below is what this fork adds on top.
 
-1. **Playerbots are integrated and actually in use** — the integration comes from **[r-o-sh/tortoise-wow, branch `playerbots-integration-gh`](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh)**, which vendors [ike3's playerbots][20] under `src/modules/PlayerBots/`. Build with `-DBUILD_PLAYERBOTS=ON`; runtime activation is gated by `AiPlayerbot.Enabled` in `aiplayerbot.conf`.
-2. **A number of server-side features and fixes of my own** — automatic zone-restricted world buffs, hourly donation points, a beginners guild, a guild bank that works in every capital, several playerbot battleground fixes (queueing, combat, flag carriers), battleground graveyard resurrection, and a donation shop category fix. On the playerbot side: the dungeon finder fills a waiting group with bots and holds them to the role they were given, talent specs that Turtle's reworked trees actually accept, bots that vote on group loot instead of letting every countdown expire, bots kept out of enemy territory, and bot groups that survive a wipe inside an instance. These are maintained separately as standalone patches at **[Shyalya/turtle-1.18-server-features](https://github.com/Shyalya/turtle-1.18-server-features)** so they can be applied to any compatible tree.
+Two things shape it. First, playerbots are not a planned feature here — they run in
+production, which surfaces bugs a normal server never reaches. Second, most fixes below
+started as something that went wrong in game and was traced back to its cause, so the
+commit messages read like bug reports rather than feature notes.
 
-Upstream fixes are pulled in by merging `Penqle/main` periodically. Everything below is upstream's own documentation and applies to this fork as well, except where noted.
+### Playerbots
 
-> **Note on the client:** the core must be built with `-DALLOW_TURTLE_ADDONS=ON`, otherwise the client crashes with "interface corrupt" when entering the world.
+Integrated from [r-o-sh's branch](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh),
+which vendors [ike3's playerbots][20] under `src/modules/PlayerBots/`. Build with
+`-DBUILD_PLAYERBOTS=ON`; activation is gated by `AiPlayerbot.Enabled`.
 
-### Enabling the fork's own features
+Fixes made while running them:
 
-Every one of them is off by default. Cloning this repo alone is not enough — they each need at least one extra step:
+| Area | What was wrong |
+|---|---|
+| Battlegrounds | Bots never queued, never entered, and dropped the flag on a PvP trinket. Three separate bugs, including a call to `HandleBattlefieldPortOpcode` where `HandleBattleFieldPortOpcode` was meant — different function, same name but for one letter's case |
+| Dungeon finder | Filled a waiting group with bots and held them to the role they were given; shamans no longer land on the tank slot, and a bot whose tree does not fit its role gets respecced |
+| Druids | Never learned bear form, so a tank druid stayed in caster shape. Now learned at 10/16/40, with a backfill for existing bots |
+| Healers | Heal range was 125 yards — three times what any heal can reach — so healers walked away instead of healing. The second healer in a group picked a target already at full health and did nothing at all |
+| Targeting | Stealth breaks a bot's current target again; hunters no longer try to tame shapeshifted druids |
+| Summoning | Works without a meeting stone, reports why it failed, and no longer drops the bot under the world |
+| Group loot | Bots vote instead of letting every countdown expire |
+| Talent specs | Premade specs generated for the talent rate the config actually ships — the stock vanilla links are all rejected by Turtle's reworked trees |
+| Stability | The bot logger passed finished text to `vfprintf` as a format string; any bot name containing `%` aborted the server on MSVC |
+
+### Server features
+
+All off by default, all in `mangosd.conf`:
 
 | Feature | Config keys | Also required |
 |---|---|---|
-| World buffs | `AutoWorldBuff.*` | – |
-| Donation points | `AutoDonationPoints.*` | `sql/logon/donation_point_progress.sql`, applied to the **login** database |
-| Beginners guild | `BeginnersGuilds`, `BeginnersGuildHorde/Alliance` | the guilds have to exist; the ids shipped in the template are placeholders |
-| Guild bank outside Stormwind and Orgrimmar | `GuildBank.NpcEntriesAlliance/Horde` | nothing — the gossip menu the client addon listens for ships as a migration |
+| Zone-restricted world buffs on a timer | `AutoWorldBuff.*` | – |
+| Hourly donation points | `AutoDonationPoints.*` | `sql/logon/donation_point_progress.sql` on the **login** database |
+| Beginners guild for new characters | `BeginnersGuilds`, `BeginnersGuildHorde/Alliance` | the guilds must exist; the shipped ids are placeholders |
+| Guild bank in every capital | `GuildBank.NpcEntriesAlliance/Horde` | nothing — the gossip trigger ships as a migration |
 | Dungeon finder fills with bots | `LFT.BotFill.Enable`, `.DelaySeconds`, `.LevelRange` | – |
 | Solo dungeon resurrection, leech limits | `SoloDungeonRepopAlive.Enable`, `Leech.*` | – |
-| Playerbot talent specs | already in `aiplayerbot.conf.dist.in` | a `aiplayerbot.conf` generated from an **older** checkout keeps the stock vanilla links, every one of which Turtle's reworked trees reject — regenerate it or copy the `AiPlayerbot.PremadeSpec*` block across |
+| Keep navmesh tiles loaded | `MMapTileUnload` | – |
 
-Config keys live in `src/mangosd/mangosd.conf.dist.in`, except the playerbot
-ones, which are in `src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in`.
-Note that a generated config from an older checkout will not contain them —
-either regenerate it or copy the blocks over by hand.
+Playerbot keys live in `src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in`, the
+rest in `src/mangosd/mangosd.conf.dist.in`. A config generated from an older checkout
+will not contain them — regenerate it or copy the blocks across.
 
-Several fixes need no config at all and are simply in the code: bots vote on
-group loot instead of letting every countdown expire, they stay out of enemy
-territory, they no longer equip items with no stats whatsoever, and a bot group
-that wipes in an instance survives it.
+### Class, spell and item fixes
 
-Four more are data rather than code and ship as **migrations**, so a fresh
-setup gets them without doing anything: graveyard coverage for The Barrens and
-Arathi (without it, releasing among the Crossroads guards drops the ghost onto
-its own corpse and it dies again immediately), graveyard coverage for the
-dungeon sub-zones Turtle splits up, the guild bank gossip trigger, and the PvP
-trinket no longer dropping the battleground flag.
+| | |
+|---|---|
+| Flurry | Never spent its charges above rank 1 |
+| Shield Specialization | Granted one rage on every rank, because all five ranks trigger the same fixed-amount spell |
+| Sweeping Strikes | Moved fully to a spell script, multiproc fixed |
+| Embrace of the Viper | Both set bonuses were dead. The five-piece heal had neither condition nor cooldown; the six-piece did nothing at all and now applies a poison |
+| Wild Regeneration | Checked health before the hit landed instead of after, so it refused exactly the hit it was meant to catch |
+| Alterac items | Four effects that existed only as developer notes, now implemented |
+| Disenchanting | Restored the disenchant ids this database had lost, plus 3450 items that never had one |
+| Guild bank | Money column was signed and parsing unchecked — deposits could overflow into a negative balance |
 
-Two are deliberately left manual, in `sql/tools/`, because both depend on data
-that differs per server:
+### Content and data
 
-- `graveyards_turtle_dungeons.sql` — the five Turtle-built dungeons with no
-  graveyard on their map at all. Needs `tools/dbc/add_worldsafelocs.py` run
-  first, because it references WorldSafeLocs ids a stock DBC does not have; it
-  stops at 174.
-- `playerbot_bypass_crossroads.sql` — routes bots around The Crossroads instead
-  of past a guard 21 yards from a travel node. Rewrites travel graph links by
-  id, so check your own node ids first.
+Ship as migrations, so a fresh setup gets them automatically:
 
-The **world database is in this repository** — `sql/base` holds 186 files,
-131 MB of it, plus 95 migrations under `sql/database_updates`. Only the client
-data (maps, DBC, vmaps, mmaps) has to come from a game client; extract it with
-the tools under `tools/`.
+- Graveyard coverage for The Barrens, Arathi, and the dungeon sub-zones Turtle splits up.
+  Without it, releasing near the Crossroads guards puts the ghost on its own corpse, where
+  it dies again immediately
+- Eighteen trainers nobody could talk to, Survival's missing artisan rank, guard directions
+  to the Survival trainer, and a trainer for Alah'Thalas
+- The Syndicate quartermaster, which stocked one item out of thirteen
+- Hellador Swiftluck, who pointed at equipment that does not exist
+- The guild bank gossip trigger, and the PvP trinket no longer dropping the flag
 
-**Setting it up?** [`INSTALL-LINUX.md`](INSTALL-LINUX.md) and
-[`INSTALL-WINDOWS.md`](INSTALL-WINDOWS.md) are start-to-finish walkthroughs
-covering the parts this page glosses over.
+Two are deliberately manual, in `sql/tools/`, because both depend on per-server data:
 
+- `graveyards_turtle_dungeons.sql` — the five Turtle-built dungeons with no graveyard on
+  their map. Run `tools/dbc/add_worldsafelocs.py` first; it references WorldSafeLocs ids a
+  stock DBC does not have, which stops at 174
+- `playerbot_bypass_crossroads.sql` — routes bots around a guard 21 yards from a travel
+  node. Rewrites travel graph links by id, so check your own node ids first
+
+### Build and documentation
+
+- Release builds on MSVC ship debug symbols, so a crash dump is readable
+- `INSTALL-LINUX.md` and `INSTALL-WINDOWS.md` are start-to-finish walkthroughs, including
+  the OpenSSL 3 legacy provider, the database procedure that actually works, and reading a
+  crash dump
+- The **world database is in this repository** — `sql/base` holds 186 files, 131 MB, plus
+  the migrations under `sql/database_updates`. Only client data (maps, DBC, vmaps, mmaps)
+  has to be extracted from a game client, with the tools under `tools/`
+
+Several fixes are maintained separately as standalone patches at
+**[Shyalya/turtle-1.18-server-features](https://github.com/Shyalya/turtle-1.18-server-features)**
+so they can be applied to any compatible tree.
+
+> **Note on the client:** the core must be built with `-DALLOW_TURTLE_ADDONS=ON`, otherwise
+> the client crashes with "interface corrupt" on entering the world.
+
+Everything below is upstream's own documentation and applies to this fork as well.
 ## Client Version
 
 The client version targetted is patch 1.18.1, build 7272  
