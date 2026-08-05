@@ -77,25 +77,15 @@ bool PathInfo::calculate(Vector3 const& start, Vector3 dest, bool forceDest, boo
     // A m_navMeshQuery object is not thread safe, but a same PathInfo can be shared between threads.
     // So need to get a new one.
     MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
-    std::shared_mutex* meshMutex;
     if (m_transport)
     {
         if (!offsets)
             m_transport->CalculatePassengerOffset(dest.x, dest.y, dest.z);
 
         m_navMeshQuery = mmap->GetModelNavMeshQuery(m_transport->GetDisplayId());
-        meshMutex = mmap->GetModelNavMeshLock(m_transport->GetDisplayId());
     }
     else
-    {
         m_navMeshQuery = mmap->GetNavMeshQuery(m_sourceUnit->GetMapId());
-        meshMutex = mmap->GetNavMeshLock(m_sourceUnit->GetMapId());
-    }
-
-    // Ab hier bis zum Verlassen der Funktion darf keine Kachel entladen
-    // werden. Alles, was das Netz anfasst - HaveTiles, BuildPolyPath,
-    // BuildPointPath - laeuft innerhalb dieses Bereichs.
-    MMAP::NavMeshReadGuard meshGuard(meshMutex);
 
     if (m_navMeshQuery)
         m_navMesh = m_navMeshQuery->getAttachedNavMesh();

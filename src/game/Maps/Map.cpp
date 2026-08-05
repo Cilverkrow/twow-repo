@@ -3093,7 +3093,6 @@ bool Map::GetWalkHitPosition(Transport* transport, float srcX, float srcY, float
 
     MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
     const dtNavMeshQuery* m_navMeshQuery = transport ? mmap->GetModelNavMeshQuery(transport->GetDisplayId()) : mmap->GetNavMeshQuery(GetId());
-    MMAP::NavMeshReadGuard meshGuard(transport ? mmap->GetModelNavMeshLock(transport->GetDisplayId()) : mmap->GetNavMeshLock(GetId()));
     if (!m_navMeshQuery)
     {
         DETAIL_LOG("WalkHitPos: No nav mesh loaded !");
@@ -3226,7 +3225,6 @@ bool Map::GetWalkRandomPosition(Transport* transport, float& x, float& y, float&
     // Find the navMeshQuery.
     MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
     dtNavMeshQuery const* m_navMeshQuery = transport ? mmap->GetModelNavMeshQuery(transport->GetDisplayId()) : mmap->GetNavMeshQuery(GetId());
-    MMAP::NavMeshReadGuard meshGuard(transport ? mmap->GetModelNavMeshLock(transport->GetDisplayId()) : mmap->GetNavMeshLock(GetId()));
     float radius = maxRadius * rand_norm_f();
 
     // Find a valid position nearby.
