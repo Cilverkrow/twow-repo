@@ -342,16 +342,22 @@ struct spell_druid_healing_touch : public SpellScript
             return;
 
         int32 refundPct = 0;
+        // ownerAura ist ein roher Zeiger, der beim Anwenden des Modifikators
+        // festgehalten wurde. Laeuft die Aura ab, waehrend der Zauber noch
+        // fliegt, zeigt er auf freigegebenen Speicher - am 06.08. stand dort
+        // bereits eine Zeichenkette aus dem Bot-Modul. spellId traegt dieselbe
+        // Nummer und wird im Konstruktor aus derselben Aura gesetzt, also
+        // reicht das Feld und der Zeiger bleibt unangetastet.
         for (SpellModifier const* mod : spell->m_appliedMods)
         {
-            if (!mod || !mod->ownerAura)
+            if (!mod)
                 continue;
 
-            switch (mod->ownerAura->GetId())
+            switch (mod->spellId)
             {
                 case SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_1:
                 case SPELL_DRUID_AESSINAS_BLOOM_BUFF_RANK_2:
-                    if (SpellEntry const* bloomInfo = mod->ownerAura->GetSpellProto())
+                    if (SpellEntry const* bloomInfo = sSpellMgr.GetSpellEntry(mod->spellId))
                         refundPct = std::max(refundPct, bloomInfo->CalculateSimpleValue(EFFECT_INDEX_0));
                     break;
                 default:
