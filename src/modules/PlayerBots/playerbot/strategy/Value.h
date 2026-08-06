@@ -224,11 +224,37 @@ namespace ai
         UnitCalculatedValue(PlayerbotAI* ai, std::string name = "value", int checkInterval = 1) :
             CalculatedValue<Unit*>(ai, name, checkInterval) { this->lastCheckTime = time(0) - checkInterval / 2; }
 
+        // Die Basis merkt sich das Ergebnis fuer bis zu checkInterval/2
+        // Sekunden. Hier ist dieses Ergebnis ein roher Unit*, der sein Objekt
+        // ueberleben kann: stirbt die Kreatur in diesem Fenster, folgt der
+        // naechste Zugriff einem freigegebenen Zeiger. Am 06.08. so
+        // abgestuerzt, in AttackAction::IsTargetValid ueber IsFriendlyTo.
+        //
+        // Deshalb wird die GUID mitgefuehrt und ein gepufferter Zugriff ueber
+        // das Objektverzeichnis neu aufgeloest. Ist das Objekt weg, kommt
+        // nullptr - damit rechnen die Aufrufer ohnehin, sie pruefen alle auf
+        // Null. Die Berechnung selbst bleibt getaktet.
+        //
+        // Die Taktbedingung ist aus CalculatedValue::Get uebernommen; aendert
+        // sie sich dort, muss sie hier mitgezogen werden.
+        // Definiert in Value.cpp: PlayerbotAI ist hier nur vorwaertsdeklariert.
+        Unit* Get() override;
+        Unit* LazyGet() override;
+
+        void Set(Unit* unit) override
+        {
+            this->value = unit;
+            m_guid = unit ? unit->GetObjectGuid() : ObjectGuid();
+        }
+
         virtual std::string Format() override
         {
             Unit* unit = this->Calculate();
             return unit ? unit->GetName() : "<none>";
         }
+
+    protected:
+        ObjectGuid m_guid;
     };
 
     class CDPairCalculatedValue : public CalculatedValue<CreatureDataPair const*>
