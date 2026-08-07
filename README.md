@@ -70,6 +70,9 @@ will not contain them — regenerate it or copy the blocks across.
 | Wild Regeneration | Checked health before the hit landed instead of after, so it refused exactly the hit it was meant to catch |
 | Alterac items | Four effects that existed only as developer notes, now implemented |
 | Disenchanting | Restored the disenchant ids this database had lost, plus 3450 items that never had one |
+| Mage talents | A wide pass over 21 talents and spells — Ignite, Combustion, Amplify/Dampen Magic, Improved Blizzard, Arcane Meditation, Master of Elements, Magic Absorption, Arctic Reach, Hot Streak, Icicles and more. Taken from [faemwow/tortoise-wow](https://github.com/faemwow/tortoise-wow) |
+| Mana gain modifiers | `SPELL_AURA_MOD_MANA_GAIN_PERCENT` was never applied when a spell restored mana, so the modifier did nothing for any class. Now applied to both the amount and the threat it generates |
+| Shatter | Read its crit bonus from five hardcoded per-rank values instead of the spell modifier |
 | Healing Touch | `OnFinish` followed `mod->ownerAura`, a raw pointer captured when the modifier was applied. An aura expiring mid-cast left it dangling; `SpellModifier::spellId` carries the same id and is used instead |
 | Guild bank | Money column was signed and parsing unchecked — deposits could overflow into a negative balance |
 
@@ -107,6 +110,11 @@ Two are deliberately manual, in `sql/tools/`, because both depend on per-server 
 Several fixes are maintained separately as standalone patches at
 **[Shyalya/turtle-1.18-server-features](https://github.com/Shyalya/turtle-1.18-server-features)**
 so they can be applied to any compatible tree.
+
+Work from other forks is pulled in where it fits and credited in the commit —
+the mage pass comes from [faemwow/tortoise-wow](https://github.com/faemwow/tortoise-wow),
+whose repository is also worth a look if you would rather run this in Docker or
+build it with Nix.
 
 > **Note on the client:** the core must be built with `-DALLOW_TURTLE_ADDONS=ON`, otherwise
 > the client crashes with "interface corrupt" on entering the world.

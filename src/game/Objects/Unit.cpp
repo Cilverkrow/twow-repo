@@ -6009,19 +6009,12 @@ bool Unit::IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellS
                     {
                         // Shatter
                         case 849:
-                            if (pVictim->IsFrozen()) crit_chance += 10.0f;
-                            break;
                         case 910:
-                            if (pVictim->IsFrozen()) crit_chance += 20.0f;
-                            break;
                         case 911:
-                            if (pVictim->IsFrozen()) crit_chance += 30.0f;
-                            break;
                         case 912:
-                            if (pVictim->IsFrozen()) crit_chance += 40.0f;
-                            break;
                         case 913:
-                            if (pVictim->IsFrozen()) crit_chance += 50.0f;
+                            if (pVictim->IsFrozen())
+                                crit_chance += i->GetModifier()->m_amount;
                             break;
                         default:
                             break;
@@ -6958,6 +6951,18 @@ int32 Unit::ModifyPower(Powers power, int32 dVal)
 {
     if (dVal == 0)
         return 0;
+
+    if (power == POWER_MANA && dVal > 0)
+    {
+        int32 const manaGainMod = GetTotalAuraModifier(SPELL_AURA_MOD_MANA_GAIN_PERCENT);
+        if (manaGainMod)
+        {
+            float const multiplier = std::max(0.0f, (100.0f + manaGainMod) / 100.0f);
+            dVal = int32(float(dVal) * multiplier);
+            if (dVal <= 0)
+                return 0;
+        }
+    }
 
     int32 gain = 0;
     int32 curPower = (int32)GetPower(power);
@@ -9523,6 +9528,9 @@ uint32 CreateProcExtendMask(SpellNonMeleeDamage* damageInfo, SpellMissInfo missC
                 // On absorb
                 if (damageInfo->absorb)
                     procEx |= PROC_EX_ABSORB;
+                // On partial resist
+                if (damageInfo->resist > 0 && damageInfo->damage > 0)
+                    procEx |= PROC_EX_PARTIAL_RESIST;
                 // On crit
                 if (damageInfo->HitInfo & SPELL_HIT_TYPE_CRIT)
                     procEx |= PROC_EX_CRITICAL_HIT;
