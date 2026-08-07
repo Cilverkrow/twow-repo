@@ -11,9 +11,12 @@ A fork of **[Penqle/tortoise-wow](https://github.com/Penqle/tortoise-wow)** runn
 small private server with **~1000 playerbots** permanently online. Upstream is merged in
 periodically; everything below is what this fork adds on top.
 
-Two things shape it. First, playerbots are not a planned feature here — they run in
-production, which surfaces bugs a normal server never reaches. Second, most fixes below
-started as something that went wrong in game and was traced back to its cause, so the
+**Playerbots are the foundation of this fork, not a side feature.** Upstream still lists
+them as planned; here they are what the server is built around, and running a thousand of
+them permanently is what shapes everything else. Load like that reaches code paths a
+few dozen players never touch — stale cached pointers, an unsynchronised battleground
+queue, navmesh tiles unloaded under a running query. Most of the fixes below started as
+something that went wrong in game and was traced back to its cause, which is why the
 commit messages read like bug reports rather than feature notes.
 
 ### Playerbots
@@ -34,6 +37,8 @@ Fixes made while running them:
 | Summoning | Works without a meeting stone, reports why it failed, and no longer drops the bot under the world |
 | Group loot | Bots vote instead of letting every countdown expire |
 | Talent specs | Premade specs generated for the talent rate the config actually ships — the stock vanilla links are all rejected by Turtle's reworked trees |
+| Target values | Cached a raw `Unit*` for up to a second. If the creature died inside that window the next read followed a freed pointer — crash in `AttackAction::IsTargetValid`. The guid is carried alongside now and cached reads resolve through the object accessor |
+| Battleground queue | `BattleGroundQueue` declares a `recursive_mutex`, but all five acquisitions were left commented out during the ACE migration. A thousand bots queueing from parallel map threads tore the `std::map` apart. Restored |
 | Stability | The bot logger passed finished text to `vfprintf` as a format string; any bot name containing `%` aborted the server on MSVC |
 
 ### Server features
@@ -48,7 +53,7 @@ All off by default, all in `mangosd.conf`:
 | Guild bank in every capital | `GuildBank.NpcEntriesAlliance/Horde` | nothing — the gossip trigger ships as a migration |
 | Dungeon finder fills with bots | `LFT.BotFill.Enable`, `.DelaySeconds`, `.LevelRange` | – |
 | Solo dungeon resurrection, leech limits | `SoloDungeonRepopAlive.Enable`, `Leech.*` | – |
-| Keep navmesh tiles loaded | `MMapTileUnload` | – |
+| Keep navmesh tiles loaded | `MMapTileUnload` | off by default; `removeTile` zeroes `tile->polys` and Detour reads it unvalidated, so a surviving polyRef resolves to `nullptr + index` |
 
 Playerbot keys live in `src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in`, the
 rest in `src/mangosd/mangosd.conf.dist.in`. A config generated from an older checkout
@@ -65,6 +70,7 @@ will not contain them — regenerate it or copy the blocks across.
 | Wild Regeneration | Checked health before the hit landed instead of after, so it refused exactly the hit it was meant to catch |
 | Alterac items | Four effects that existed only as developer notes, now implemented |
 | Disenchanting | Restored the disenchant ids this database had lost, plus 3450 items that never had one |
+| Healing Touch | `OnFinish` followed `mod->ownerAura`, a raw pointer captured when the modifier was applied. An aura expiring mid-cast left it dangling; `SpellModifier::spellId` carries the same id and is used instead |
 | Guild bank | Money column was signed and parsing unchecked — deposits could overflow into a negative balance |
 
 ### Content and data
@@ -119,7 +125,7 @@ Additions will be added as the core code reaches feature completion
 - **Autoscale** - Rudimentary toggleable dungeon/raid auto scaling system, found in mangosd.conf
 - **Leech** - Basic toggleable leech system designed for solo play, found in mangosd.conf
 - **Additional Talent Points** - Mostly used for testing, found in tw_char.characters
-- **[Playerbots][20]** *(this fork)* - Integrated from [r-o-sh's branch](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh) and in active use. Upstream still lists this as planned/not ready.
+- **[Playerbots][20]** *(this fork)* - Integrated from [r-o-sh's branch](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh). Not an experiment: ~1000 of them run permanently and the fork is built around them. Upstream still lists this as planned.
 
 #### Planned Additions
 

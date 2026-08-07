@@ -65,8 +65,8 @@ Unit* UnitCalculatedValue::Get()
         return value;
     }
 
-    // Gepufferter Zugriff: ueber die GUID neu aufloesen, statt dem alten
-    // Zeiger zu folgen. Ist das Objekt weg, kommt sauber nullptr zurueck.
+    // Cached read: resolve through the guid instead of following the old
+    // pointer. If the object is gone this cleanly yields nullptr.
     value = m_guid.IsEmpty() ? nullptr : ai->GetUnit(m_guid);
     return value;
 }

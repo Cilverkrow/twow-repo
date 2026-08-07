@@ -152,6 +152,17 @@ GridUnload = 0
 
 CleanupTerrain = 1
 
+#    MMapTileUnload
+#        Remove navmesh tiles from the mesh again at runtime.
+#        dtNavMesh::removeTile zeroes tile->polys, and dtNavMeshQuery reads it
+#        through getTileAndPolyByRefUnsafe without validating - any polyRef
+#        that outlives the removal resolves to nullptr + index and takes the
+#        server down. Left off, tiles stay loaded: that costs memory but
+#        cannot go wrong.
+#        Default: 0 (off)
+
+MMapTileUnload = 0
+
 # GridCleanUpDelay. Grid clean up delay.
 
 GridCleanUpDelay = 300000

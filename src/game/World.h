@@ -736,7 +736,7 @@ enum eConfigBoolValues
     // See LFT/LFTBotFill.cpp
     CONFIG_BOOL_LFT_BOTFILL_ENABLE,
     CONFIG_BOOL_AUTOSCALER_ENABLE,
-    // Navmesh-Kacheln zur Laufzeit wieder entfernen. Standard aus, siehe
+    // Remove navmesh tiles again at runtime. Off by default, see
     // MMapManager::unloadMap.
     CONFIG_BOOL_MMAP_TILE_UNLOAD,
     CONFIG_BOOL_VALUE_COUNT
@@ -1368,7 +1368,7 @@ class World
         // Login-Zeitpunkte nicht auf einen gemeinsamen Takt synchronisiert
         // werden muessen (jeder Account bekommt seine eigene volle Stunde).
         std::unordered_map<uint32 /*accountId*/, uint32 /*accumulatedMs*/> m_donationPointAccumulatorMs;
-        // Wie lange bis zum naechsten periodischen Persistieren der obigen
+        // Time until the next periodic persist of the above
         // Akkumulatoren nach `donation_point_progress` (Login-DB) - siehe
         // World.cpp. Ohne Persistenz fing der Fortschritt nach jedem Neustart
         // wieder bei 0 an.

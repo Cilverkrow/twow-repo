@@ -224,20 +224,21 @@ namespace ai
         UnitCalculatedValue(PlayerbotAI* ai, std::string name = "value", int checkInterval = 1) :
             CalculatedValue<Unit*>(ai, name, checkInterval) { this->lastCheckTime = time(0) - checkInterval / 2; }
 
-        // Die Basis merkt sich das Ergebnis fuer bis zu checkInterval/2
-        // Sekunden. Hier ist dieses Ergebnis ein roher Unit*, der sein Objekt
-        // ueberleben kann: stirbt die Kreatur in diesem Fenster, folgt der
-        // naechste Zugriff einem freigegebenen Zeiger. Am 06.08. so
-        // abgestuerzt, in AttackAction::IsTargetValid ueber IsFriendlyTo.
+        // The base class caches its result for up to checkInterval/2 seconds.
+        // Here that result is a raw Unit* which can outlive its object: if the
+        // creature dies inside that window, the next read follows a freed
+        // pointer. Crashed exactly that way on 2026-08-06, in
+        // AttackAction::IsTargetValid via IsFriendlyTo.
         //
-        // Deshalb wird die GUID mitgefuehrt und ein gepufferter Zugriff ueber
-        // das Objektverzeichnis neu aufgeloest. Ist das Objekt weg, kommt
-        // nullptr - damit rechnen die Aufrufer ohnehin, sie pruefen alle auf
-        // Null. Die Berechnung selbst bleibt getaktet.
+        // So the guid is carried alongside and a cached read is resolved
+        // through the object accessor instead. If the object is gone the
+        // result is nullptr, which every caller already handles - they all
+        // null-check. The calculation itself stays on its interval.
         //
-        // Die Taktbedingung ist aus CalculatedValue::Get uebernommen; aendert
-        // sie sich dort, muss sie hier mitgezogen werden.
-        // Definiert in Value.cpp: PlayerbotAI ist hier nur vorwaertsdeklariert.
+        // The interval condition is copied from CalculatedValue::Get; if it
+        // changes there it has to be carried over here.
+        //
+        // Defined in Value.cpp: PlayerbotAI is only forward declared here.
         Unit* Get() override;
         Unit* LazyGet() override;
 
