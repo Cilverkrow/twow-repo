@@ -4278,7 +4278,18 @@ void WorldObject::SendHealSpellLog(Unit const* pVictim, uint32 SpellID, uint32 D
 
 void WorldObject::EnergizeBySpell(Unit* pVictim, uint32 spellId, uint32 amount, Powers powerType)
 {
-    SendEnergizeSpellLog(pVictim, spellId, amount, powerType);
+    uint32 logAmount = amount;
+    if (powerType == POWER_MANA && logAmount)
+    {
+        int32 const manaGainMod = pVictim->GetTotalAuraModifier(SPELL_AURA_MOD_MANA_GAIN_PERCENT);
+        if (manaGainMod)
+        {
+            float const multiplier = std::max(0.0f, (100.0f + manaGainMod) / 100.0f);
+            logAmount = uint32(float(logAmount) * multiplier);
+        }
+    }
+
+    SendEnergizeSpellLog(pVictim, spellId, logAmount, powerType);
 
     // Turtle: threat from power gains as per RMJ's explanations
     if (Unit* pUnit = ToUnit())
@@ -4293,7 +4304,7 @@ void WorldObject::EnergizeBySpell(Unit* pVictim, uint32 spellId, uint32 amount, 
                 multiplier = 0.5f;
                 break;
         }
-        pVictim->GetHostileRefManager().threatAssist(pUnit, amount * multiplier, sSpellMgr.GetSpellEntry(spellId));
+        pVictim->GetHostileRefManager().threatAssist(pUnit, logAmount * multiplier, sSpellMgr.GetSpellEntry(spellId));
     }
 
     // needs to be called after sending spell log
