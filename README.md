@@ -72,6 +72,7 @@ will not contain them — regenerate it or copy the blocks across.
 | Disenchanting | Restored the disenchant ids this database had lost, plus 3450 items that never had one |
 | Mage talents | A wide pass over 21 talents and spells — Ignite, Combustion, Amplify/Dampen Magic, Improved Blizzard, Arcane Meditation, Master of Elements, Magic Absorption, Arctic Reach, Hot Streak, Icicles and more. Taken from [faemwow/tortoise-wow](https://github.com/faemwow/tortoise-wow) |
 | Mana gain modifiers | `SPELL_AURA_MOD_MANA_GAIN_PERCENT` was never applied when a spell restored mana, so the modifier did nothing for any class. Now applied to both the amount and the threat it generates |
+| Damage on creatures | `Unit::DealDamage` branched on `!IsPlayer() && addThreat`, so a creature taking damage that carries no threat fell into the player-only half and was cast to `Player*` — durability loss on a creature, and an uncaught exception |
 | Shatter | Read its crit bonus from five hardcoded per-rank values instead of the spell modifier |
 | Healing Touch | `OnFinish` followed `mod->ownerAura`, a raw pointer captured when the modifier was applied. An aura expiring mid-cast left it dangling; `SpellModifier::spellId` carries the same id and is used instead |
 | Guild bank | Money column was signed and parsing unchecked — deposits could overflow into a negative balance |
