@@ -1,3 +1,4 @@
+#include "Config/Config.h"
 #include "LFTMgr.h"
 
 #include "Group.h"
@@ -301,12 +302,6 @@ void LFTManager::EnqueuePlayer(Player* player, ObjectGuid const& leaderGuid, std
     queued.roleMask = roleMask;
     queued.assignedRole = PickRole(roleMask, 0, 0, 0);
 
-    // Temporary: the instance names are client-side strings the server never
-    // interprets, and nothing records them. Logged so the seed list can be made
-    // to match exactly. Remove once confirmed.
-    for (std::string const& instance : instances)
-        sLog.outBasic("LFT: '%s' queued for instance string '%s'", player->GetName(), instance.c_str());
-
     m_queue[queued.guid] = queued;
     SendQueueJoined(player, m_queue[queued.guid]);
 }
@@ -518,6 +513,91 @@ bool LFTManager::TryBuildOfferForInstance(std::string const& instance)
     return true;
 }
 
+namespace
+{
+    // The finder's instance names are display strings; game_tele stores the
+    // entrances under squashed ones. Strip everything that only exists for
+    // reading so the two can be compared.
+    std::string SquashInstanceName(std::string const& name)
+    {
+        std::string out;
+        for (char c : name)
+            if (std::isalnum((unsigned char)c))
+                out += (char)std::tolower((unsigned char)c);
+
+        // "The Deadmines" and "The Stockade" are listed without the article.
+        if (out.compare(0, 3, "the") == 0 && out.size() > 3)
+            out = out.substr(3);
+
+        return out;
+    }
+
+    // Longest game_tele name that starts the instance name. Longest on purpose:
+    // the wings share an entrance, so "Scarlet Monastery Library" has to land on
+    // "ScarletMonastery" and not on some shorter accident. The minimum length
+    // keeps a very short tele entry from matching half the list.
+    GameTele const* FindInstanceEntrance(std::string const& instance)
+    {
+        std::string const wanted = SquashInstanceName(instance);
+        GameTele const* best = nullptr;
+        size_t bestLength = 0;
+
+        for (auto const& entry : sObjectMgr.GetGameTeleMap())
+        {
+            std::string const candidate = SquashInstanceName(entry.second.name);
+            if (candidate.size() < 5 || candidate.size() <= bestLength)
+                continue;
+
+            if (wanted.compare(0, candidate.size(), candidate) == 0)
+            {
+                best = &entry.second;
+                bestLength = candidate.size();
+            }
+        }
+
+        return best;
+    }
+}
+
+// A group that formed without anybody real in it has nowhere to be but the
+// instance, and its members are scattered across two continents - the seed for
+// one Scarlet Monastery run stood in Stranglethorn with a member in Feralas.
+// Walking that is half an hour of travel that mostly ends in a death. Move them
+// to the door instead; from there they play normally.
+//
+// Never with a person in the group. They did not ask to be moved, and bots that
+// have a real player as master follow them anyway.
+void LFTManager::TeleportBotGroupToInstance(Offer const& offer)
+{
+    if (!sConfig.GetBoolDefault("LFT.BotFill.SeedTeleport", false))
+        return;
+
+    for (auto const& role : offer.roles)
+    {
+        Player* member = GetPlayer(role.first);
+        if (!member || !member->GetPlayerbotAI())
+            return;
+    }
+
+    GameTele const* entrance = FindInstanceEntrance(offer.instance);
+    if (!entrance)
+    {
+        sLog.outError("LFT: no game_tele entrance for '%s' - group left where it stands", offer.instance.c_str());
+        return;
+    }
+
+    for (auto const& role : offer.roles)
+    {
+        Player* member = GetPlayer(role.first);
+        if (!member || member->IsInCombat() || member->IsBeingTeleported())
+            continue;
+
+        member->TeleportTo(entrance->mapId, entrance->x, entrance->y, entrance->z, entrance->o);
+    }
+
+    sLog.outBasic("LFT: bot group moved to the entrance of '%s' (%s)", offer.instance.c_str(), entrance->name.c_str());
+}
+
 bool LFTManager::CompleteOffer(uint32 offerId)
 {
     OffersMap::iterator offerItr = m_offers.find(offerId);
@@ -568,6 +648,8 @@ bool LFTManager::CompleteOffer(uint32 offerId)
         if (Player* player = GetPlayer(itr->first))
             Send(player, "S2C_OFFER_COMPLETE");
     }
+
+    TeleportBotGroupToInstance(offer);
 
     m_offers.erase(offerId);
     return true;
