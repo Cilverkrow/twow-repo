@@ -109,9 +109,9 @@ Two are deliberately manual, in `sql/tools/`, because both depend on per-server 
   the migrations under `sql/database_updates`. Only client data (maps, DBC, vmaps, mmaps)
   has to be extracted from a game client, with the tools under `tools/`
 
-Several fixes are maintained separately as standalone patches at
-**[Shyalya/turtle-1.18-server-features](https://github.com/Shyalya/turtle-1.18-server-features)**
-so they can be applied to any compatible tree.
+Several of the fixes below are also kept as standalone patches, each one
+self-contained, so they can be lifted onto any compatible tree without taking
+the rest of this fork with them. Ask if you want one.
 
 Work from other forks is pulled in where it fits and credited in the commit —
 the mage pass comes from [faemwow/tortoise-wow](https://github.com/faemwow/tortoise-wow),
@@ -189,8 +189,7 @@ This will be streamlined once the core is more up to date
 **For this fork:** improvements to the core itself are best directed at
 [upstream](https://github.com/Penqle/tortoise-wow) rather than here — this fork
 exists to run a private server and only tracks upstream plus the additions
-listed at the top. The standalone server features live in their own repo:
-[Shyalya/turtle-1.18-server-features](https://github.com/Shyalya/turtle-1.18-server-features).
+listed at the top.
 
 Upstream's note follows:
 
@@ -216,5 +215,4 @@ Upstream's note follows:
 [15]: http://windows.microsoft.com/ "Microsoft Windows"
 [19]: https://github.com/ElunaLuaEngine/Eluna
 [20]: https://github.com/ike3/mangosbot-bots
-[22]: https://github.com/Shyalya/turtle-1.18-server-features
 [21]: http://github.com/memononen/recastnavigation "Recast - Navigation-mesh Toolset for Games"
