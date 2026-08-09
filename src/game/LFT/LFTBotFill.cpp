@@ -402,11 +402,17 @@ void LFTManager::AcceptOffersForFillBots()
 
         for (auto const& role : offer.roles)
         {
-            if (!IsFillBot(role.first) || offer.accepted.find(role.first) != offer.accepted.end())
+            if (offer.accepted.find(role.first) != offer.accepted.end())
                 continue;
 
             Player* bot = GetPlayer(role.first);
-            if (!bot)
+
+            // Fill bots and the seed alike: anything the server drives answers
+            // for itself. Testing IsFillBot here left the seed waiting for a
+            // button nobody was going to press, so the offer expired and the
+            // whole cycle started over every couple of minutes. A real player
+            // still decides for themselves.
+            if (!bot || !bot->GetPlayerbotAI())
                 continue;
 
             // Hand the assigned role to the bot's AI before it accepts. Its
