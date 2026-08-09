@@ -709,7 +709,16 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
             CheckPlayers();
     }
 
-    if (sPlayerbotAIConfig.randomBotJoinLfg && players.size())
+    // Bots used to sit out the dungeon finder entirely unless a real player was
+    // online, which meant the feature only ever existed while somebody was
+    // watching. With BotOnlyDungeonGroups set they will start runs on their own,
+    // up to that many at a time - the same shape as the battleground limit, and
+    // for the same reason: left alone they will happily fill every instance the
+    // server can hand out.
+    if (sPlayerbotAIConfig.randomBotJoinLfg &&
+        (players.size() ||
+         (sPlayerbotAIConfig.botOnlyDungeonGroups &&
+          CountBotDungeonInstances() < sPlayerbotAIConfig.botOnlyDungeonGroups)))
     {
         if (time(nullptr) > (LfgCheckTimer + 30))
             CheckLfgQueue();
@@ -2135,6 +2144,29 @@ void RandomPlayerbotMgr::ResolvePinnedBots()
         m_pinnedBots.insert(guid);
         sLog.outString("PinnedBots: '%s' (guid %u) will stay online and will not be relocated", name.c_str(), guid);
     }
+}
+
+// Distinct dungeon instances that currently hold at least one bot. Counting
+// instances rather than groups on purpose: a group that wiped and released is
+// still occupying the run, and two groups sharing an instance is not a case
+// this needs to tell apart.
+uint32 RandomPlayerbotMgr::CountBotDungeonInstances()
+{
+    std::set<uint32> instances;
+
+    ForEachPlayerbot([&](Player* bot)
+    {
+        if (!bot || !bot->IsInWorld())
+            return;
+
+        Map* map = bot->GetMap();
+        if (!map || !map->IsDungeon())
+            return;
+
+        instances.insert(map->GetInstanceId());
+    });
+
+    return (uint32)instances.size();
 }
 
 bool RandomPlayerbotMgr::IsPinnedBot(uint32 guidLow)

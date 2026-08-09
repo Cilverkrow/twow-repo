@@ -236,6 +236,7 @@ bool PlayerbotAIConfig::Initialize()
     minRandomBotReviveTime = config.GetIntDefault("AiPlayerbot.MinRandomBotReviveTime", 60);
     maxRandomBotReviveTime = config.GetIntDefault("AiPlayerbot.MaxRandomReviveTime", 300);
     enableRandomTeleports = config.GetBoolDefault("AiPlayerbot.EnableRandomTeleports", true);
+    botOnlyDungeonGroups = (uint32)config.GetIntDefault("AiPlayerbot.BotOnlyDungeonGroups", 0);
 
     // "bgTypeId:botsPerTeam", comma separated. 1 Alterac, 2 Warsong, 3 Arathi,
     // 4 arena, 5 Sunnyglade on this realm - check battleground_template before
