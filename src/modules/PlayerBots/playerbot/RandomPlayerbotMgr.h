@@ -92,7 +92,6 @@ public:
         void UpdateGearSpells(Player* bot);
         // Pinned bots: kept logged in, never relocated. See PinnedBots in the config.
         bool IsPinnedBot(uint32 guidLow);
-        uint32 CountBotDungeonInstances();
         void EnsurePinnedBotsOnline();
 
         void ScheduleTeleport(uint32 bot, uint32 time = 0);

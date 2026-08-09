@@ -218,11 +218,6 @@ public:
     // that bracket, keyed by BattleGroundTypeId. Deliberately below the
     // template maximum so a player who queues later drops into the running
     // match rather than starting a second one. Empty means no cap.
-    // How many dungeon runs bots may have going without a real player queuing.
-    // Zero keeps the old behaviour, where nothing happens until somebody human
-    // is in the finder.
-    uint32 botOnlyDungeonGroups;
-
     std::map<uint32, uint32> bgBotTeamCap;
 
     // -1 when the type is not listed at all, otherwise the configured number.
