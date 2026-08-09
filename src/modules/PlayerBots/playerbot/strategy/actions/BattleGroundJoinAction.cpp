@@ -427,11 +427,32 @@ bool BGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleGroun
 
     uint32 TeamId = bot->GetTeam() == ALLIANCE ? 0 : 1;
 
-    //if (!hasPlayers && !isArena)
-    //{
-    //    if (BgCount >= bg->GetMaxPlayers())
-    //        return false;
-    //}
+    // Arenas are capped by instance count only - their team slots are indexed by
+    // rating rather than faction, so a per-team number would not mean the same
+    // thing there.
+    const int32 botTeamCap = isArena ? -1 : sPlayerbotAIConfig.GetBgBotTeamCap(bgTypeId);
+
+    // Zero switches a battleground off for bots outright, whether or not anyone
+    // real is queuing. Sunnyglade Valley is disabled from client patch 1.18.1
+    // onwards and its template is still in the database.
+    if (botTeamCap == 0)
+        return false;
+
+    // Nobody real is waiting for this bracket, so there is no reason to run more
+    // than one match of it. Without this the block below deliberately pulls in
+    // another wave once the first instance fills - three Warsong instances and
+    // two Blood Rings were running side by side on an empty realm.
+    if (!hasPlayers)
+    {
+        if (BgCount >= BracketSize)
+            return false;
+
+        // Hold the bot side below the template maximum, so a player who queues
+        // while this is running finds a free slot in it instead of starting a
+        // second one.
+        if (botTeamCap > 0 && (int32)(TeamId == 0 ? ACount : HCount) >= botTeamCap)
+            return false;
+    }
 
 #ifndef MANGOSBOT_ZERO
     if (isArena)
