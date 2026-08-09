@@ -210,6 +210,9 @@ public:
     int32 gearProgressionSystemItems[MAX_GEAR_PROGRESSION_LEVEL][MAX_CLASSES][4][SLOT_EMPTY];
     std::string commandPrefix, commandSeparator;
     std::string randomBotAccountPrefix;
+    // Character names that stay online and are never teleported away.
+    // Resolved to guids by RandomPlayerbotMgr, which has the database.
+    std::list<std::string> pinnedBotNames;
     uint32 randomBotAccountCount;
     bool deleteRandomBotAccounts;
     uint32 randomBotGuildCount;
