@@ -46,7 +46,37 @@ namespace
     // near-identical copies of this decision, and the first attempt at this limit
     // went into one of them only - the free bots, which are the entire population on
     // an idle realm, went through the other and multiplied as before.
-    bool BotBattlegroundLimitReached(uint32 bgTypeId, bool isArena, bool hasPlayers,
+    // Counting who is queuing is not the same as counting matches. The moment a
+    // match starts its players leave the queue, the count falls back to zero and
+    // the next wave queues up behind it - which is how three Warsong instances
+    // formed while a queue limit was supposedly in place. Count the matches.
+    uint32 CountRunningBattlegrounds(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId)
+    {
+        uint32 running = 0;
+        for (auto it = sBattleGroundMgr.GetBattleGroundsBegin(bgTypeId);
+             it != sBattleGroundMgr.GetBattleGroundsEnd(bgTypeId); ++it)
+        {
+            BattleGround* bg = it->second;
+
+            // Templates live in their own container, but guard anyway - a
+            // template has no map and therefore no instance id.
+            if (!bg || !bg->GetInstanceID())
+                continue;
+
+            if (bg->GetBracketId() != bracketId)
+                continue;
+
+            // One that is already handing out its rewards is not competition.
+            if (bg->GetStatus() == STATUS_WAIT_LEAVE)
+                continue;
+
+            ++running;
+        }
+
+        return running;
+    }
+
+    bool BotBattlegroundLimitReached(uint32 bgTypeId, uint32 bracketId, bool isArena, bool hasPlayers,
                                      uint32 bgCount, uint32 bracketSize, uint32 teamCount)
     {
         // Arenas are limited by instance count alone: their team slots are indexed by
@@ -62,10 +92,13 @@ namespace
         if (hasPlayers)
             return false;
 
-        // Nobody real is waiting for this bracket, so there is no reason to run more
-        // than one match of it. Without this the caller deliberately pulls in another
-        // wave once the first instance fills - three Warsong instances and two Blood
-        // Rings were running side by side on an empty realm.
+        // Nobody real is waiting for this bracket, so one match of it is enough.
+        if (CountRunningBattlegrounds((BattleGroundTypeId)bgTypeId, (BattleGroundBracketId)bracketId) >= 1)
+            return true;
+
+        // And do not let a second one fill up behind the first while it is still
+        // forming - at that point it has no instance yet and the counter above
+        // cannot see it.
         if (bgCount >= bracketSize)
             return true;
 
@@ -463,7 +496,7 @@ bool BGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleGroun
 
     uint32 TeamId = bot->GetTeam() == ALLIANCE ? 0 : 1;
 
-    if (BotBattlegroundLimitReached(bgTypeId, isArena, hasPlayers, BgCount, BracketSize,
+    if (BotBattlegroundLimitReached(bgTypeId, bracketId, isArena, hasPlayers, BgCount, BracketSize,
                                     TeamId == 0 ? ACount : HCount))
         return false;
 
@@ -955,7 +988,7 @@ bool FreeBGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleG
 
     uint32 TeamId = bot->GetTeam() == ALLIANCE ? 0 : 1;
 
-    if (BotBattlegroundLimitReached(bgTypeId, isArena, hasPlayers, BgCount, BracketSize,
+    if (BotBattlegroundLimitReached(bgTypeId, bracketId, isArena, hasPlayers, BgCount, BracketSize,
                                     TeamId == 0 ? ACount : HCount))
         return false;
 
