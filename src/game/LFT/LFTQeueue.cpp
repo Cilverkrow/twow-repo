@@ -301,6 +301,12 @@ void LFTManager::EnqueuePlayer(Player* player, ObjectGuid const& leaderGuid, std
     queued.roleMask = roleMask;
     queued.assignedRole = PickRole(roleMask, 0, 0, 0);
 
+    // Temporary: the instance names are client-side strings the server never
+    // interprets, and nothing records them. Logged so the seed list can be made
+    // to match exactly. Remove once confirmed.
+    for (std::string const& instance : instances)
+        sLog.outBasic("LFT: '%s' queued for instance string '%s'", player->GetName(), instance.c_str());
+
     m_queue[queued.guid] = queued;
     SendQueueJoined(player, m_queue[queued.guid]);
 }

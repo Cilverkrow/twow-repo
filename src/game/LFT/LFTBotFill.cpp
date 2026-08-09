@@ -22,6 +22,7 @@
  * "summon" in party chat and the playerbot module teleports them.
  */
 
+#include "Config/Config.h"
 #include "LFTMgr.h"
 
 #include "AccountMgr.h"
@@ -38,6 +39,50 @@ namespace
     // Bots are recognised the same way the leech restriction does it: random
     // bots live on RNDBOT accounts. Keeps this inside the core instead of
     // pulling in the playerbot module.
+    struct SeedDungeon
+    {
+        std::string name;
+        uint32 minLevel;
+        uint32 maxLevel;
+    };
+
+    // "Name:min-max,Name:min-max". The names have to match what the client addon
+    // sends, because the server never interprets them - it only compares them
+    // between queued players, so a seed listing an instance under a different
+    // spelling would run a dungeon nobody real can ever join.
+    std::vector<SeedDungeon> ParseSeedDungeons(std::string const& text)
+    {
+        std::vector<SeedDungeon> out;
+        std::stringstream entries(text);
+        std::string entry;
+
+        while (std::getline(entries, entry, ','))
+        {
+            size_t const colon = entry.rfind(':');
+            size_t const dash = entry.rfind('-');
+            if (colon == std::string::npos || dash == std::string::npos || dash < colon)
+                continue;
+
+            SeedDungeon dungeon;
+            dungeon.name = entry.substr(0, colon);
+
+            try
+            {
+                dungeon.minLevel = std::stoul(entry.substr(colon + 1, dash - colon - 1));
+                dungeon.maxLevel = std::stoul(entry.substr(dash + 1));
+            }
+            catch (std::exception const&)
+            {
+                sLog.outError("LFT.BotFill.SeedDungeons: cannot read '%s'", entry.c_str());
+                continue;
+            }
+
+            out.push_back(dungeon);
+        }
+
+        return out;
+    }
+
     bool IsRandomBotAccount(Player const* player)
     {
         WorldSession const* session = player ? player->GetSession() : nullptr;
@@ -150,6 +195,79 @@ void LFTManager::DropUnneededFillBots()
         }
 
         itr = m_fillBots.erase(itr);
+    }
+}
+
+// The fill mechanism only ever reacts to somebody already waiting, so on a realm
+// with nobody online it does nothing at all - bots fight in battlegrounds around
+// the clock and never set foot in an instance. This puts one bot into the queue
+// as a seed; FillInstanceWithBots then builds the group around it exactly as it
+// would around a person.
+void LFTManager::SeedBotOnlyQueue()
+{
+    uint32 const maxRuns = (uint32)sConfig.GetIntDefault("LFT.BotFill.SeedRuns", 0);
+    if (!maxRuns)
+        return;
+
+    // Anybody already waiting takes precedence, seed or human: the normal fill
+    // path handles them, and a second seed would only start a competing run.
+    if (!m_queue.empty())
+        return;
+
+    static std::vector<SeedDungeon> const dungeons =
+        ParseSeedDungeons(sConfig.GetStringDefault("LFT.BotFill.SeedDungeons", ""));
+
+    if (dungeons.empty())
+        return;
+
+    // Count instances rather than groups. A party that wiped and released still
+    // occupies its run, and two groups inside one instance is not a case worth
+    // telling apart here.
+    std::set<uint32> occupied;
+    for (auto const& entry : sObjectAccessor.GetPlayers())
+    {
+        Player* player = entry.second;
+        if (!player || !player->IsInWorld())
+            continue;
+
+        Map* map = player->GetMap();
+        if (map && map->IsDungeon())
+            occupied.insert(map->GetInstanceId());
+    }
+
+    if (occupied.size() >= maxRuns)
+        return;
+
+    for (auto const& entry : sObjectAccessor.GetPlayers())
+    {
+        Player* bot = entry.second;
+        if (!bot || !bot->IsInWorld() || !bot->IsAlive())
+            continue;
+
+        if (!bot->GetPlayerbotAI() || !IsRandomBotAccount(bot))
+            continue;
+
+        if (bot->GetGroup() || bot->InBattleGround() || bot->InBattleGroundQueue())
+            continue;
+
+        if (bot->GetMap() && bot->GetMap()->IsDungeon())
+            continue;
+
+        uint8 const roles = AllowedRoleMask(bot);
+        if (!roles)
+            continue;
+
+        uint32 const level = bot->GetLevel();
+
+        for (SeedDungeon const& dungeon : dungeons)
+        {
+            if (level < dungeon.minLevel || level > dungeon.maxLevel)
+                continue;
+
+            sLog.outBasic("LFT: seeding '%s' with %s (level %u)", dungeon.name.c_str(), bot->GetName(), level);
+            EnqueuePlayer(bot, bot->GetObjectGuid(), { dungeon.name }, roles);
+            return;
+        }
     }
 }
 
@@ -327,6 +445,8 @@ void LFTManager::UpdateBotFill(uint32 diff)
     m_botFillTimer = 5 * IN_MILLISECONDS;
 
     DropUnneededFillBots();
+
+    SeedBotOnlyQueue();
 
     time_t const now = time(nullptr);
     uint32 const delay = sWorld.getConfig(CONFIG_UINT32_LFT_BOTFILL_DELAY);
