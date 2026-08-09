@@ -589,8 +589,15 @@ void LFTManager::TeleportBotGroupToInstance(Offer const& offer)
     for (auto const& role : offer.roles)
     {
         Player* member = GetPlayer(role.first);
-        if (!member || member->IsInCombat() || member->IsBeingTeleported())
+        if (!member || member->IsBeingTeleported())
             continue;
+
+        // Skipping anyone in combat left a member of the first group standing in
+        // Feralas while the other four waited at the door. The manager already
+        // teleports bots out of fights on its own schedule, so there is nothing
+        // to protect here - break off the fight and bring them along.
+        if (member->IsInCombat())
+            member->CombatStop(true);
 
         member->TeleportTo(entrance->mapId, entrance->x, entrance->y, entrance->z, entrance->o);
     }
