@@ -1361,7 +1361,18 @@ bool RequestQuestTravelTargetAction::Execute(Event& event)
 
     ai->TellDebug(ai->GetMaster(), "Getting new destination ranges for travel quest", "debug travel");
 
-    std::vector<std::tuple<uint32, int32, float>> destinationFetches = { {(uint32)TravelDestinationPurpose::QuestGiver, 0, 400 + bot->GetLevel() * 10} };
+    // Both search radii below scale with level, which keeps a low level bot near
+    // home - a reasonable aim, undone by where the floor sits. At level 1 the
+    // pickup radius was 410 yards and the active-quest radius 1075; a starting
+    // zone is several thousand across. The bot took a quest, drifted away from
+    // the giver while grinding, and could no longer see it: no destination came
+    // back, `request quest travel target` returned false, and the engine fell
+    // through to `attack anything` for good. Measured on a live realm: ten bots
+    // between level 1 and 7 held 23 completed quests between them and logged not
+    // one travel event, while the level 10-60 population - radius 8500 upwards -
+    // travelled normally. A floor large enough to cover the zone you are standing
+    // in fixes that without giving a level 1 bot the run of the continent.
+    std::vector<std::tuple<uint32, int32, float>> destinationFetches = { {(uint32)TravelDestinationPurpose::QuestGiver, 0, std::max(2000.f, 400.f + bot->GetLevel() * 10.f)} };
 
     for (ObjectGuid guid : AI_VALUE(std::list<ObjectGuid>, "group members"))
     {
@@ -1410,7 +1421,10 @@ bool RequestQuestTravelTargetAction::Execute(Event& event)
             if (!flag)
                 continue;
 
-            destinationFetches.push_back({ flag, questId, 1000 + (bot->GetLevel() * bot->GetLevel()) * 75 });
+            // Quadratic in level, so a level 20 bot searches thirty times further
+            // than a level 1 one. The quest giver a bot has to walk back to is by
+            // definition inside its own zone, whatever its level.
+            destinationFetches.push_back({ flag, questId, std::max(5000.f, 1000.f + (bot->GetLevel() * bot->GetLevel()) * 75.f) });
 
             if (onlyClassQuest && destinationFetches.size() > 1) //Only do class quests if we have any.
             {

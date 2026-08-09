@@ -699,6 +699,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
         if (logInAllowed)
         {
             AddRandomBots();
+            EnsurePinnedBotsOnline();
         }
     }
 
@@ -2110,6 +2111,55 @@ void RandomPlayerbotMgr::ScheduleRandomize(uint32 bot, uint32 time)
     SetEventValue(bot, "randomize", 1, time);
 }
 
+// Resolve the configured names once. Deferred rather than done in
+// PlayerbotAIConfig::Initialize because that runs before the character database
+// is usable, and a name is what a person can reasonably be asked to write in a
+// config file.
+void RandomPlayerbotMgr::ResolvePinnedBots()
+{
+    m_pinnedBotsResolved = true;
+
+    for (const std::string& name : sPlayerbotAIConfig.pinnedBotNames)
+    {
+        std::string escaped = name;
+        CharacterDatabase.escape_string(escaped);
+
+        auto result = CharacterDatabase.PQuery("SELECT guid FROM characters WHERE name = '%s'", escaped.c_str());
+        if (!result)
+        {
+            sLog.outError("PinnedBots: no character named '%s'", name.c_str());
+            continue;
+        }
+
+        uint32 guid = result->Fetch()[0].GetUInt32();
+        m_pinnedBots.insert(guid);
+        sLog.outString("PinnedBots: '%s' (guid %u) will stay online and will not be relocated", name.c_str(), guid);
+    }
+}
+
+bool RandomPlayerbotMgr::IsPinnedBot(uint32 guidLow)
+{
+    if (!m_pinnedBotsResolved)
+        ResolvePinnedBots();
+
+    return m_pinnedBots.find(guidLow) != m_pinnedBots.end();
+}
+
+// AddRandomBots only tops the population up to MaxRandomBots and stops there, so
+// which characters get in is decided once and never revisited. A pinned bot that
+// missed the cut would simply never appear, which is why this runs alongside it.
+void RandomPlayerbotMgr::EnsurePinnedBotsOnline()
+{
+    if (!m_pinnedBotsResolved)
+        ResolvePinnedBots();
+
+    for (uint32 guid : m_pinnedBots)
+    {
+        if (!GetPlayerBot(guid))
+            AddRandomBot(guid);
+    }
+}
+
 void RandomPlayerbotMgr::ScheduleTeleport(uint32 bot, uint32 time)
 {
     if (!time)
@@ -2361,6 +2411,13 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
                 return true;
             }
         }
+
+        // Both branches below teleport the bot - to an inn or to a grind spot -
+        // which for a pinned bot means being pulled out of the quest chain it is
+        // being watched through. Nothing else about it differs from any other
+        // random bot.
+        if (IsPinnedBot(bot))
+            return false;
 
         uint32 changeStrategy = GetEventValue(bot, "change_strategy");
         if (!changeStrategy)

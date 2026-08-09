@@ -236,6 +236,46 @@ bool PlayerbotAIConfig::Initialize()
     minRandomBotReviveTime = config.GetIntDefault("AiPlayerbot.MinRandomBotReviveTime", 60);
     maxRandomBotReviveTime = config.GetIntDefault("AiPlayerbot.MaxRandomReviveTime", 300);
     enableRandomTeleports = config.GetBoolDefault("AiPlayerbot.EnableRandomTeleports", true);
+
+    // "bgTypeId:botsPerTeam", comma separated. 1 Alterac, 2 Warsong, 3 Arathi,
+    // 4 arena, 5 Sunnyglade on this realm - check battleground_template before
+    // copying these numbers anywhere else.
+    {
+        std::string caps = config.GetStringDefault("AiPlayerbot.BgBotTeamCap", "");
+        std::stringstream ss(caps);
+        std::string pair;
+        while (std::getline(ss, pair, ','))
+        {
+            const size_t colon = pair.find(':');
+            if (colon == std::string::npos)
+                continue;
+
+            try
+            {
+                bgBotTeamCap[std::stoul(pair.substr(0, colon))] = std::stoul(pair.substr(colon + 1));
+            }
+            catch (const std::exception&)
+            {
+                sLog.outError("AiPlayerbot.BgBotTeamCap: cannot read '%s'", pair.c_str());
+            }
+        }
+    }
+
+    // Comma separated character names. A pinned bot is kept logged in and is
+    // exempt from the random relocation the manager applies to everyone else,
+    // so its run can be followed from one level to the next.
+    {
+        std::string names = config.GetStringDefault("AiPlayerbot.PinnedBots", "");
+        std::stringstream ss(names);
+        std::string name;
+        while (std::getline(ss, name, ','))
+        {
+            size_t b = name.find_first_not_of(" 	");
+            size_t e = name.find_last_not_of(" 	");
+            if (b != std::string::npos)
+                pinnedBotNames.push_back(name.substr(b, e - b + 1));
+        }
+    }
     enableMinimalMove = config.GetBoolDefault("AiPlayerbot.EnableMinimalMove", true);
     
     randomBotTeleportDistance = config.GetIntDefault("AiPlayerbot.RandomBotTeleportDistance", 1000);
