@@ -271,6 +271,72 @@ void LFTManager::SeedBotOnlyQueue()
     }
 }
 
+// Pull a bot out of a group made up only of bots. Those groups come from
+// SeedBotOnlyQueue and exist so the queue is not empty; they have no value of
+// their own, and a waiting person does. A group with an offer already out is
+// left alone so nothing half-formed is torn apart.
+Player* LFTManager::TakeFromBotOnlyGroup(uint8 wanted, QueuedPlayer const& waiter,
+                                         uint32 below, uint32 above)
+{
+    for (auto const& entry : sObjectAccessor.GetPlayers())
+    {
+        Player* bot = entry.second;
+        if (!bot || !bot->IsInWorld() || !bot->IsAlive())
+            continue;
+
+        if (!bot->GetPlayerbotAI() || !IsRandomBotAccount(bot))
+            continue;
+
+        Group* group = bot->GetGroup();
+        if (!group || bot->InBattleGround() || bot->InBattleGroundQueue())
+            continue;
+
+        if (m_queue.find(bot->GetObjectGuid()) != m_queue.end())
+            continue;
+
+        if (bot->GetTeam() != waiter.team)
+            continue;
+
+        uint32 const botLevel = bot->GetLevel();
+        if (botLevel + below < waiter.level || waiter.level + above < botLevel)
+            continue;
+
+        if (!(AllowedRoleMask(bot) & wanted))
+            continue;
+
+        if (!(Playerbot_GetAllowedRoles(bot) & wanted))
+            continue;
+
+        bool botsOnly = true;
+        for (Group::MemberSlot const& slot : group->GetMemberSlots())
+        {
+            if (m_playerOffers.find(slot.guid) != m_playerOffers.end())
+            {
+                botsOnly = false;
+                break;
+            }
+
+            Player* member = GetPlayer(slot.guid);
+            if (!member || !member->GetPlayerbotAI() || !IsRandomBotAccount(member))
+            {
+                botsOnly = false;
+                break;
+            }
+        }
+
+        if (!botsOnly)
+            continue;
+
+        sLog.outBasic("LFT: pulled %s out of a bot-only run to cover %s for %s",
+            bot->GetName(), RoleSuffix(wanted), waiter.name.c_str());
+
+        bot->RemoveFromGroup();
+        return bot;
+    }
+
+    return nullptr;
+}
+
 void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer const& waiter)
 {
     // What is already covered? Mirrors PickRole's caps: one tank, one healer,
@@ -303,7 +369,12 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
     if (inQueue >= 5)
         return;
 
-    uint32 const levelRange = sWorld.getConfig(CONFIG_UINT32_LFT_BOTFILL_LEVEL_RANGE);
+    // Deliberately not symmetric. A bot a few levels above the waiting
+    // player still hits, holds threat and survives; one below misses, gets
+    // hit and dies, which is worse than no bot at all because the group
+    // sets off believing it has a tank.
+    uint32 const below = sWorld.getConfig(CONFIG_UINT32_LFT_BOTFILL_LEVEL_BELOW);
+    uint32 const above = sWorld.getConfig(CONFIG_UINT32_LFT_BOTFILL_LEVEL_ABOVE);
     uint32 const waiterLevel = waiter.level;
 
     // Fill tank first, then healer, then damage - the roles people actually
@@ -341,7 +412,7 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
                 continue;
 
             uint32 const botLevel = bot->GetLevel();
-            if (botLevel + levelRange < waiterLevel || waiterLevel + levelRange < botLevel)
+            if (botLevel + below < waiterLevel || waiterLevel + above < botLevel)
                 continue;
 
             if (!(AllowedRoleMask(bot) & wanted))
@@ -358,10 +429,22 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
             break;
         }
 
-        // No suitable bot for this role - try the next one down rather than
-        // giving up on the whole group.
+        // Nobody idle. Before giving up, take one out of a bot-only run:
+        // those exist to keep the queue warm and are worth nothing beside a
+        // person who is actually waiting.
+        if (!chosen)
+            chosen = TakeFromBotOnlyGroup(wanted, waiter, below, above);
+
+        // Still nothing. The slot is then counted as covered so the other
+        // roles still get filled - but that leaves the group one short, and
+        // the matcher wants exactly one tank, one healer and three damage,
+        // so it will never form. Say so instead of letting the player wait
+        // without a word.
         if (!chosen)
         {
+            sLog.outBasic("LFT: no %s for %s (level %u) - group stays short and cannot form",
+                RoleSuffix(wanted), waiter.name.c_str(), waiterLevel);
+
             if (wanted == LFT_ROLE_TANK)
                 tanks = 1;
             else if (wanted == LFT_ROLE_HEALER)

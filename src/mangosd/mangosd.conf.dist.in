@@ -2202,16 +2202,21 @@ GuildBank.NpcEntriesHorde = 80918
 #
 #   DelaySeconds  how long a real player waits before bots are added. Filling
 #                 instantly would mean nobody ever waits for a human again.
-#   LevelRange    bots may be this many levels above or below the waiting
-#                 player. The instance names the client sends carry no level
+#   LevelRangeBelow / LevelRangeAbove
+#                 how far under or over the waiting player a bot's level may
+#                 sit. Not the same number on both sides: a bot a few levels
+#                 above still hits, holds threat and survives, while one below
+#                 misses and dies - and the group sets off believing it has a
+#                 tank. The instance names the client sends carry no level
 #                 information, so the player is the reference.
 #
 # Real players always take priority: when one joins the queue, every bot that is
 # not already part of an offer is dropped again. An offer already sent out is
 # left alone rather than breaking a group mid-formation.
 LFT.BotFill.Enable = 0
-LFT.BotFill.DelaySeconds = 90
-LFT.BotFill.LevelRange = 5
+LFT.BotFill.DelaySeconds = 60
+LFT.BotFill.LevelRangeBelow = 2
+LFT.BotFill.LevelRangeAbove = 6
 
 
 # AutoScaler.Enable. Enable or disable instance auto-scaling. 0 = off, 1 = on.
