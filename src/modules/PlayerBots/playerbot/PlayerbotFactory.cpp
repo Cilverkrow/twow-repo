@@ -4655,6 +4655,32 @@ void PlayerbotFactory::InitMounts()
         slow = { 8395, 10796, 10799 };
         fast = { 23241, 23242, 23243 };
         break;
+    default:
+        // Turtle carries races this switch never knew - Goblin (9) and High
+        // Elf (10) - and on a vanilla build the Draenei and Blood Elf cases
+        // below are preprocessed away as well. Any race that falls through
+        // leaves every list empty, and the draw further down then reads past
+        // the end of an empty vector, because size() - 1 on an unsigned type
+        // is not -1 but the largest value there is. What comes back is either
+        // a spell id out of thin air - which learnSpell duly reports as not
+        // existing - or a segfault.
+        //
+        // Their own mounts cannot be named here: Turtle gives nearly every
+        // mount item the same generic spell and restricts it by faction mask
+        // instead, so there is no per-race spell to list. The faction's
+        // ordinary mounts are the honest fallback. Not lore, but a bot that
+        // rides rather than walks to sixty.
+        if (bot->GetTeam() == ALLIANCE)
+        {
+            slow = { 470, 6648, 458, 472 };
+            fast = { 23228, 23227, 23229 };
+        }
+        else
+        {
+            slow = { 6654, 6653, 580 };
+            fast = { 23250, 23252, 23251 };
+        }
+        break;
 #ifndef MANGOSBOT_ZERO
     case RACE_DRAENEI:
         slow = { 34406, 35711, 35710 };
@@ -4694,8 +4720,15 @@ void PlayerbotFactory::InitMounts()
         if (bot->GetLevel() < fourthmount && type == 3)
             continue;
 
-        uint32 index = urand(0, mounts[bot->getRace()][type].size() - 1);
-        uint32 spell = mounts[bot->getRace()][type][index];
+        // Second lock on the same door: the default case above should leave
+        // no list empty, but a future race, or flying mounts on a build whose
+        // level thresholds are reachable, must not turn an empty list into an
+        // out-of-bounds read.
+        std::vector<uint32> const& available = mounts[bot->getRace()][type];
+        if (available.empty())
+            continue;
+
+        uint32 spell = available[urand(0, available.size() - 1)];
         if (spell)
         {
             bot->learnSpell(spell, false);
