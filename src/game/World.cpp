@@ -2852,6 +2852,20 @@ void World::Update(uint32 diff)
     if (sConfig.GetBoolDefault("AutoDonationPoints.Enable", false))
     {
         uint32 dpIntervalMs = sConfig.GetIntDefault("AutoDonationPoints.IntervalMs", 3600000); // 1h
+
+        // A zero here makes the award condition below true on every tick, which
+        // means two writes to the login database and a chat line per online
+        // player per tick - roughly sixty writes a second each. That saturates
+        // the connection pool, the world thread waits on it, and MySQL logs a
+        // row of "Aborted connection ... Got an error reading communication
+        // packets" as the dying server drops its handles. The warnings look
+        // like the cause and are the consequence. Fall back to the default
+        // rather than letting a stray value take the server down.
+        if (!dpIntervalMs)
+        {
+            sLog.outError("AutoDonationPoints.IntervalMs is 0, which would award every tick. Using 3600000 instead.");
+            dpIntervalMs = 3600000;
+        }
         uint32 dpAmount = sConfig.GetIntDefault("AutoDonationPoints.Amount", 1);
         uint32 dpFlushMs = sConfig.GetIntDefault("AutoDonationPoints.FlushIntervalMs", 300000); // 5min
 
@@ -2906,8 +2920,8 @@ void World::Update(uint32 diff)
             if (dpAccumMs >= dpIntervalMs)
             {
                 dpAccumMs -= dpIntervalMs;
-                // insert-or-add, gleiches Muster wie ShopMgr::GetBalance's
-                // "Account noch nie im Shop gewesen"-Fall.
+                // Insert or add, the same shape ShopMgr::GetBalance uses for an
+                // account that has never been in the shop.
                 LoginDatabase.PExecute(
                     "INSERT INTO `shop_coins` (`id`, `coins`) VALUES (%u, %u) "
                     "ON DUPLICATE KEY UPDATE `coins` = `coins` + %u",
