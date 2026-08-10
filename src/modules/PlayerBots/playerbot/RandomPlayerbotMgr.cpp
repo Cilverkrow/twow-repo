@@ -2755,7 +2755,18 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation> 
             if (bot->IsTaxiFlying())
                 bot->GetMotionMaster()->MovementExpired();
 
-            if (hearth)
+            // A teleport into enemy territory is survivable - the bot leaves
+            // again. Binding its home there is not: it hearths back for the
+            // rest of its life and the city guards kill it every time. The
+            // filter above may hand out an enemy location when too little else
+            // is left, so refuse the bind separately from the teleport.
+            //
+            // Found 2026-08-10: 108 High Elves were bound to Undercity and
+            // Orgrimmar this way and averaged 1179 deaths each, against 494
+            // for correctly bound bots.
+            bool const hostileHome = WorldPosition(loc).isEnemyHomeZoneFor(bot->GetTeam());
+
+            if (hearth && !hostileHome)
                 bot->SetHomebindToLocation(loc, area->ID);
 
             bot->GetMotionMaster()->Clear();
@@ -2773,7 +2784,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation> 
                     {
                         if (member->IsTaxiFlying())
                             member->GetMotionMaster()->MovementExpired();
-                        if (hearth)
+                        if (hearth && !hostileHome)
                             member->SetHomebindToLocation(loc, area->ID);
 
                         member->GetMotionMaster()->Clear();
