@@ -2520,33 +2520,11 @@ bool PlayerbotFactory::SelectPremadeSpecNo()
         }
     }
 
+    sLog.outBasic("SPECROLL: factory picked %s for class %u (%u paths, weight %u)",
+        chosen->name.c_str(), uint32(cls), uint32(paths.size()), totalProbability);
+
     sRandomPlayerbotMgr.SetValue(bot, "specNo", chosen->id + 1);
     return true;
-}
-
-void PlayerbotFactory::InitTalentsTree(bool incremental)
-{
-    uint32 specNo = sRandomPlayerbotMgr.GetValue(bot->GetGUIDLow(), "specNo");
-    if (incremental && specNo)
-	{
-        specNo -= 1;
-	}
-    else
-    {
-        uint32 point = urand(0, 100);
-        uint8 cls = bot->getClass();
-        uint32 p1 = sPlayerbotAIConfig.specProbability[cls][0];
-        uint32 p2 = p1 + sPlayerbotAIConfig.specProbability[cls][1];
-
-        specNo = (point < p1 ? 0 : (point < p2 ? 1 : 2));
-        sRandomPlayerbotMgr.SetValue(bot, "specNo", specNo + 1);
-    }
-
-    InitTalents(specNo);
-
-    if (bot->GetFreeTalentPoints()) {
-        InitTalents(2 - specNo);
-    }
 }
 
 class DestroyItemsVisitor : public IterateItemsVisitor
@@ -4435,58 +4413,6 @@ void PlayerbotFactory::InitSpecialSpells()
 
         if(spellInfo)
             bot->learnSpell(spellId, false);
-    }
-}
-
-void PlayerbotFactory::InitTalents(uint32 specNo)
-{
-    uint32 classMask = bot->getClassMask();
-
-    std::map<uint32, std::vector<TalentEntry const*> > spells;
-    for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
-    {
-        TalentEntry const *talentInfo = sTalentStore.LookupEntry(i);
-        if(!talentInfo)
-            continue;
-
-        TalentTabEntry const *talentTabInfo = sTalentTabStore.LookupEntry( talentInfo->TalentTab );
-        if(!talentTabInfo || talentTabInfo->tabpage != specNo)
-            continue;
-
-        if( (classMask & talentTabInfo->ClassMask) == 0 )
-            continue;
-
-        spells[talentInfo->Row].push_back(talentInfo);
-    }
-
-    uint32 freePoints = bot->GetFreeTalentPoints();
-    for (std::map<uint32, std::vector<TalentEntry const*> >::iterator i = spells.begin(); i != spells.end(); ++i)
-    {
-        std::vector<TalentEntry const*> &spells = i->second;
-        if (spells.empty())
-        {
-            sLog.outError("%s: No spells for talent row %d", bot->GetName(), i->first);
-            continue;
-        }
-
-        int attemptCount = 0;
-        while (!spells.empty() && (int)freePoints - (int)bot->GetFreeTalentPoints() < 5 && attemptCount++ < 3 && bot->GetFreeTalentPoints())
-        {
-            int index = urand(0, spells.size() - 1);
-            TalentEntry const *talentInfo = spells[index];
-            for (int rank = 0; rank < MAX_TALENT_RANK && bot->GetFreeTalentPoints(); ++rank)
-            {
-                uint32 spellId = talentInfo->RankID[rank];
-                if (!spellId)
-                    continue;
-
-                bot->learnSpell(spellId, false);
-                bot->UpdateFreeTalentPoints(false);
-            }
-            spells.erase(spells.begin() + index);
-        }
-
-        freePoints = bot->GetFreeTalentPoints();
     }
 }
 
