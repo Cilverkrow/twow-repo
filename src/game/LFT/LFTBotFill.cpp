@@ -434,6 +434,13 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
     // sets off believing it has a tank.
     uint32 const below = sWorld.getConfig(CONFIG_UINT32_LFT_BOTFILL_LEVEL_BELOW);
     uint32 const above = sWorld.getConfig(CONFIG_UINT32_LFT_BOTFILL_LEVEL_ABOVE);
+
+    // A healer keeps its distance and is not the one being hit, so a few levels
+    // under the group costs far less than it does for a tank - and healers are
+    // the scarcer half of the shortage. With the population bunched between 30
+    // and 39, a level 46 group looking two levels down found exactly one healer
+    // capable bot on its faction.
+    uint32 const belowHealer = sWorld.getConfig(CONFIG_UINT32_LFT_BOTFILL_LEVEL_BELOW_HEALER);
     uint32 const waiterLevel = waiter.level;
 
     // Fill tank first, then healer, then damage - the roles people actually
@@ -471,7 +478,8 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
                 continue;
 
             uint32 const botLevel = bot->GetLevel();
-            if (botLevel + below < waiterLevel || waiterLevel + above < botLevel)
+            uint32 const lowerBound = (wanted == LFT_ROLE_HEALER) ? belowHealer : below;
+            if (botLevel + lowerBound < waiterLevel || waiterLevel + above < botLevel)
                 continue;
 
             if (!(AllowedRoleMask(bot) & wanted))
@@ -492,7 +500,8 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
         // those exist to keep the queue warm and are worth nothing beside a
         // person who is actually waiting.
         if (!chosen)
-            chosen = TakeFromBotOnlyGroup(wanted, waiter, below, above);
+            chosen = TakeFromBotOnlyGroup(wanted, waiter,
+                (wanted == LFT_ROLE_HEALER) ? belowHealer : below, above);
 
         // Still nobody, and the role is one people wait for. Take a bot whose
         // class could fill it and let it respec: Playerbot_SetForcedRole drops
@@ -504,7 +513,8 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
         // Damage is left out - there is never a shortage of it, and respeccing
         // for it would only churn.
         if (!chosen && (wanted == LFT_ROLE_TANK || wanted == LFT_ROLE_HEALER))
-            chosen = TakeBotAndRespecFor(wanted, waiter, below, above);
+            chosen = TakeBotAndRespecFor(wanted, waiter,
+                (wanted == LFT_ROLE_HEALER) ? belowHealer : below, above);
 
         // Still nothing. The slot is then counted as covered so the other
         // roles still get filled - but that leaves the group one short, and

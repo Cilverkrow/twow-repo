@@ -2235,9 +2235,16 @@ GuildBank.NpcEntriesHorde = 80918
 # Real players always take priority: when one joins the queue, every bot that is
 # not already part of an offer is dropped again. An offer already sent out is
 # left alone rather than breaking a group mid-formation.
+#   LevelRangeBelowHealer
+#                 the same limit for a healer, which can afford to be further
+#                 under the group: it keeps its distance and is not the one
+#                 being hit. Healers are also the scarcer half of the shortage,
+#                 so a tighter bound here costs groups that would otherwise
+#                 have formed.
 LFT.BotFill.Enable = 0
 LFT.BotFill.DelaySeconds = 60
 LFT.BotFill.LevelRangeBelow = 2
+LFT.BotFill.LevelRangeBelowHealer = 4
 LFT.BotFill.LevelRangeAbove = 6
 
 
