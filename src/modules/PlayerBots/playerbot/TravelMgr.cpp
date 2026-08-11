@@ -2688,8 +2688,23 @@ bool TravelMgr::IsLocationLevelValid(const WorldPosition& position, const Player
     if (!position.isOverworld() && !canFightElite)
         areaLevel += 10;
 
-    if (!areaLevel || (uint32)botLevel < areaLevel) //Skip points that are in a area that is too high level.
-        return false;
+    // Handing a quest in is not a difficulty decision. The bot has already done
+    // the work; whether the giver happens to stand in a neighbourhood rated above
+    // its level says nothing about whether it should walk back. And the gate was
+    // firing for a reason that has nothing to do with level at all: getAreaFlag
+    // returns 0 whenever the vmap for that spot is not loaded, which inside the
+    // asynchronous destination search is most of the time, and an area level of 0
+    // was read here as "too high for you". Measured on a live realm before the
+    // fix: of 350 rejected quest-taker points, 299 had no resolvable area
+    // whatsoever.
+    //
+    // Elite and dungeon turn-ins are still held back by
+    // QuestRelationTravelDestination::IsPossible, which is where that belongs.
+    if (!(purposeFlag & (uint32)TravelDestinationPurpose::QuestTaker))
+    {
+        if (!areaLevel || (uint32)botLevel < areaLevel) //Skip points that are in a area that is too high level.
+            return false;
+    }
 
     // Grind-specific: don't grind in a zone whose overall level is at/below the bot's
     // own floor for acceptable mobs - mirrors the per-mob minLevel window already used
