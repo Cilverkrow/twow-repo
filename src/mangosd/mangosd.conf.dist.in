@@ -98,6 +98,13 @@ UseProcessors = 0
 
 ProcessPriority = 1
 
+# AiPlayerbot.ConfigFile. Where to read the bot settings from.
+#     Empty means: look next to this file, and if that fails fall back to the
+#     path compiled in at build time. Set it when the two live apart, which is
+#     easy to end up with when the server runs out of its build directory.
+
+AiPlayerbot.ConfigFile = ""
+
 # Malloc.ArenaMax. Caps how many malloc arenas glibc may create. (Linux only)
 #     glibc gives each thread its own arena, up to eight per core - 64 on an
 #     eight core machine. Every arena holds on to what it frees, so a workload
