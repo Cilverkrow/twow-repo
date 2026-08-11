@@ -337,6 +337,65 @@ Player* LFTManager::TakeFromBotOnlyGroup(uint8 wanted, QueuedPlayer const& waite
     return nullptr;
 }
 
+// Find a bot whose class could fill the role, and make it. Only reached when no
+// bot that already fills it was free, so this is the last step before the group
+// stays short - a slot nobody can take is worth more than a spec left untouched.
+//
+// Playerbot_SetForcedRole does the work and refuses politely when the class
+// cannot reach the role at all, so a shaman is never wiped in the hope of a tank.
+Player* LFTManager::TakeBotAndRespecFor(uint8 wanted, QueuedPlayer const& waiter,
+                                        uint32 below, uint32 above)
+{
+    for (auto const& entry : sObjectAccessor.GetPlayers())
+    {
+        Player* bot = entry.second;
+        if (!bot || !bot->IsInWorld() || !bot->IsAlive())
+            continue;
+
+        if (!bot->GetPlayerbotAI() || !IsRandomBotAccount(bot))
+            continue;
+
+        if (bot->GetGroup() || bot->InBattleGround() || bot->InBattleGroundQueue())
+            continue;
+
+        if (m_queue.find(bot->GetObjectGuid()) != m_queue.end())
+            continue;
+
+        if (bot->GetTeam() != waiter.team)
+            continue;
+
+        uint32 const botLevel = bot->GetLevel();
+        if (botLevel + below < waiter.level || waiter.level + above < botLevel)
+            continue;
+
+        // Respeccing needs talent points to spend.
+        if (botLevel < 10)
+            continue;
+
+        // The class must allow the role, and the bot must not already fill it -
+        // one of those was handled by the search above.
+        if (!(AllowedRoleMask(bot) & wanted))
+            continue;
+
+        if (Playerbot_GetAllowedRoles(bot) & wanted)
+            continue;
+
+        Playerbot_SetForcedRole(bot, wanted);
+
+        // It refuses when the class cannot get there; only take the bot if it
+        // actually came back able to do the job.
+        if (!(Playerbot_GetAllowedRoles(bot) & wanted))
+            continue;
+
+        sLog.outBasic("LFT: respecced %s to cover %s for %s, nobody was free",
+            bot->GetName(), RoleSuffix(wanted), waiter.name.c_str());
+
+        return bot;
+    }
+
+    return nullptr;
+}
+
 void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer const& waiter)
 {
     // What is already covered? Mirrors PickRole's caps: one tank, one healer,
@@ -434,6 +493,18 @@ void LFTManager::FillInstanceWithBots(std::string const& instance, QueuedPlayer 
         // person who is actually waiting.
         if (!chosen)
             chosen = TakeFromBotOnlyGroup(wanted, waiter, below, above);
+
+        // Still nobody, and the role is one people wait for. Take a bot whose
+        // class could fill it and let it respec: Playerbot_SetForcedRole drops
+        // the stored spec, resets the talents and picks again with the role in
+        // hand, which is how a fury warrior becomes a protection one. The
+        // machinery already existed and was never reached, because the search
+        // above only ever looked at what a bot can do right now.
+        //
+        // Damage is left out - there is never a shortage of it, and respeccing
+        // for it would only churn.
+        if (!chosen && (wanted == LFT_ROLE_TANK || wanted == LFT_ROLE_HEALER))
+            chosen = TakeBotAndRespecFor(wanted, waiter, below, above);
 
         // Still nothing. The slot is then counted as covered so the other
         // roles still get filled - but that leaves the group one short, and
