@@ -1448,6 +1448,49 @@ bool RequestQuestTravelTargetAction::Execute(Event& event)
         }
     }
 
+    // A destination is picked by distance alone: SetBestTarget walks the
+    // partitions from near to far and takes the first active point in the
+    // nearest one. An objective is close by nature - the bot is standing where
+    // it grinds - while the giver it has to return to is back in town. So
+    // objectives win nearly every time. Measured over 220 minutes with ~1000
+    // bots: 392 objective journeys an hour against 119 turn-ins, while 740
+    // quests an hour were accepted. Five taken for every one handed in, so the
+    // log can only fill; 751 bots sat at the cap and 138 of them held twenty
+    // finished quests they could no longer act on. That also costs them their
+    // gear, quest rewards being the only source of it.
+    //
+    // So once a bot is carrying finished work, the turn-in stops competing on
+    // distance and simply wins. Counted here rather than taken from
+    // getQuestStatusMap().size(), which includes already rewarded entries and
+    // reads above the cap - the probe below saw an average of 22 against a
+    // limit of 20.
+    {
+        uint32 finished = 0, active = 0;
+        for (auto& [questId, questStatus] : bot->getQuestStatusMap())
+        {
+            if (questStatus.m_rewarded)
+                continue;
+
+            active++;
+            if (questStatus.m_status == QUEST_STATUS_COMPLETE)
+                finished++;
+        }
+
+        if (finished >= 5 || active + 2 >= MAX_QUEST_LOG_SIZE)
+        {
+            std::vector<std::tuple<uint32, int32, float>> handInOnly;
+            for (auto& fetch : destinationFetches)
+                if (std::get<0>(fetch) & (uint32)TravelDestinationPurpose::QuestTaker)
+                    handInOnly.push_back(fetch);
+
+            // Only if there is somewhere to hand in. An empty list would fall
+            // through to the QuestGiver fetch below and send a bot that cannot
+            // accept anything off to collect more.
+            if (!handInOnly.empty())
+                destinationFetches = handInOnly;
+        }
+    }
+
     // TEMPORARY probe. 20529 finished quests sit unhanded-in across the bot
     // population and 786 bots have a full quest log, yet the log records only a
     // handful of journeys to a quest taker. The destination is built here, so
