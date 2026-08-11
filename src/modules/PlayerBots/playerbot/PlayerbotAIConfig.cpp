@@ -386,7 +386,11 @@ bool PlayerbotAIConfig::Initialize()
     }
     
 
-    for (uint32 level = 1; level <= DEFAULT_MAX_LEVEL; ++level)
+    // There is no level 0, but the array has that slot and GetLevelBucketSize
+    // indexes it with whatever it is handed - so give it a defined value.
+    levelProbability[0] = 0;
+
+    for (uint32 level = 1; level <= PLAYER_STRONG_MAX_LEVEL; ++level)
     {
         levelProbability[level] = config.GetIntDefault("AiPlayerbot.LevelProbability." + std::to_string(level), 100);
     }
