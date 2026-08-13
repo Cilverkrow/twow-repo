@@ -1,6 +1,8 @@
 #pragma once
 
 #include <atomic>
+#include <mutex>
+#include <vector>
 #include "Category.h"
 #include "ItemBag.h"
 #include "playerbot/PlayerbotAIBase.h"
@@ -84,6 +86,38 @@ namespace ahbot
         void DeleteMail(std::list<uint32> buffer);
 
     public:
+        // Work the bot thread decides on but must not carry out itself.
+        // Completing a purchase sends mail, pushes a packet down the seller's
+        // session and, when the seller happens to be online, reaches into their
+        // live Player object - all of that belongs to the world thread.
+        // AhBot::Update() already runs there (World::UpdatePlayerbotsTick), so
+        // the bot thread only records the decision and RunQueuedWork() carries
+        // it out.
+        struct PendingPurchase
+        {
+            uint32 auctionId;
+            uint32 bidder;
+            uint32 bidAmount;
+            uint32 unitPrice;       // for the buyout heuristic
+            uint32 minBuyout;       // cheapest comparable listing, 0 if none
+            int    houseIndex;      // index into auctionIds[]
+        };
+
+        struct PendingProposition
+        {
+            uint32 auctionId;
+            uint32 owner;
+            uint32 itemGuidLow;
+            uint32 bidder;
+            uint32 price;
+            uint32 houseId;
+            time_t expireTime;
+        };
+
+        void RunQueuedWork();                                   // world thread only
+        void ExecutePurchase(const PendingPurchase& p);         // world thread only
+        void ExecuteProposition(const PendingProposition& p);   // world thread only
+
         static uint32 auctionIds[MAX_AUCTIONS];
         static uint32 auctioneers[MAX_AUCTIONS];
         static std::map<uint32, uint32> factions;
@@ -98,6 +132,9 @@ namespace ahbot
         std::map<uint32, std::vector<uint32>> bidders;
         std::set<uint32> allBidders;
         std::atomic<bool> updating;
+        std::mutex queuedWorkMutex;
+        std::vector<PendingPurchase> queuedPurchases;
+        std::vector<PendingProposition> queuedPropositions;
     };
 };
 
