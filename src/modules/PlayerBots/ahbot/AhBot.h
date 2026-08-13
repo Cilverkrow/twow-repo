@@ -66,15 +66,18 @@ namespace ahbot
         uint32 GetRandomBidder(uint32 auctionHouse);
         void LoadRandomBots();
         uint32 GetAnswerCount(uint32 itemId, uint32 auctionHouse, uint32 withinTime);
-        std::vector<AuctionEntry*> LoadAuctions(const AuctionHouseObject::AuctionEntryMap& auctionEntryMap, Category*& category,
+        // These work off AuctionSnapshot rather than live AuctionEntry pointers:
+        // the bot runs on its own thread and the world thread deletes entries
+        // underneath it. See the comment on AuctionSnapshot in AuctionHouseMgr.h.
+        std::vector<AuctionSnapshot> LoadAuctions(const std::vector<AuctionSnapshot>& auctionEntryMap, Category*& category,
                 int& auction);
-        void FindMinPrice(const AuctionHouseObject::AuctionEntryMap& auctionEntryMap, AuctionEntry*& entry, Item*& item, uint32* minBid,
+        void FindMinPrice(const std::vector<AuctionSnapshot>& auctionEntryMap, const AuctionSnapshot& entry, Item*& item, uint32* minBid,
                 uint32* minBuyout);
         uint32 GetBuyTime(uint32 entry, uint32 itemId, uint32 auctionHouse, Category*& category, double priceLevel);
         uint32 GetTime(std::string category, uint32 id, uint32 auctionHouse, uint32 type);
         void SetTime(std::string category, uint32 id, uint32 auctionHouse, uint32 type, uint32 value);
         uint32 GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& category);
-        void CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry);
+        void CheckSendMail(uint32 bidder, uint32 price, const AuctionSnapshot& entry);
         bool TryEquipItem(uint32 bidder, uint32 itemGuidLow, ItemPrototype const* proto);
         void Dump();
         void CleanupPropositions();
