@@ -81,7 +81,15 @@ namespace
     {
         // Arenas are limited by instance count alone: their team slots are indexed by
         // rating rather than faction, so a per-team number would not mean the same thing.
-        const int32 cap = isArena ? -1 : sPlayerbotAIConfig.GetBgBotTeamCap(bgTypeId);
+        // A configured zero has to reach through even for an arena - that is the
+        // switch which takes a queue away from bots entirely, and Blood Ring needs
+        // it. Being the one uncapped queue, bots drained into it: its matches went
+        // from a 60 minute average to eight hours (longest 24h) while Warsong fell
+        // from 217 matches a day to 12 and Arathi from 168 to 5. Bots that go in do
+        // not come out - sampled five minutes apart they sit on identical
+        // coordinates with identical health, while open world bots move normally.
+        const int32 configured = sPlayerbotAIConfig.GetBgBotTeamCap(bgTypeId);
+        const int32 cap = (isArena && configured != 0) ? -1 : configured;
 
         // Zero switches a battleground off for bots outright, whether or not anyone
         // real is queuing. Sunnyglade Valley is disabled from client patch 1.18.1
