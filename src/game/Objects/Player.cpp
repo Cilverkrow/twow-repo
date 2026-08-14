@@ -19,6 +19,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <atomic>
 #include <unordered_map>
 #include <cmath>
 #include <iostream>
@@ -408,6 +409,21 @@ bool PlayerTaxi::LoadTaxiDestinationsFromString(std::string const& values, Team 
 
     // can't load taxi path without mount set (quest taxi path?)
     return sObjectMgr.GetTaxiMountDisplayId(GetTaxiSource(), team, true) != 0;
+}
+
+void PlayerTaxi::ReportOutOfRangeTaxiNode(uint32 nodeidx, uint8 field) const
+{
+    // Which caller passes an out-of-range node is still unknown - all six call
+    // sites read as either in-range or already guarded, and TaxiNodes.dbc tops
+    // out far below the limit. So say what came in. Sparingly: if this turns
+    // out to sit in a retry loop, it must not drown the log.
+    static std::atomic<uint32> seen{0};
+    uint32 const n = ++seen;
+    if (n <= 20 || (n % 1000) == 0)
+        sLog.outError("PlayerTaxi::SetTaximaskNode: node %u out of range (field %u, mask holds %u) - "
+                      "ignored, occurrence %u. Before the bounds check this wrote past m_taximask "
+                      "into m_TaxiDestinations.",
+                      nodeidx, uint32(field), uint32(m_taximask.size()), n);
 }
 
 std::string PlayerTaxi::SaveTaxiDestinationsToString() const

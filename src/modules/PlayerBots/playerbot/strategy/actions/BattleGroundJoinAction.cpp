@@ -475,12 +475,7 @@ bool BGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleGroun
         return false;
 
     if (ai->HasRealPlayerMaster())
-    {
-        if (hasPlayers)
-            sLog.outString("[BGDIAG] %s declined q%u bracket %u: has a real player master",
-                    bot->GetName(), queueTypeId, bracketId);
         return false;
-    }
 
 #ifndef MANGOSBOT_ZERO
     if (!hasPlayers && isArena && !hasTeam)
@@ -512,12 +507,7 @@ bool BGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleGroun
 
     if (BotBattlegroundLimitReached(bgTypeId, bracketId, isArena, hasPlayers, BgCount, BracketSize,
                                     TeamId == 0 ? ACount : HCount))
-    {
-        if (hasPlayers)
-            sLog.outString("[BGDIAG] %s declined q%u bracket %u: limit reached (A=%u H=%u)",
-                    bot->GetName(), queueTypeId, bracketId, ACount, HCount);
         return false;
-    }
 
 #ifndef MANGOSBOT_ZERO
     if (isArena)
@@ -601,17 +591,11 @@ bool BGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleGroun
     // do not join if BG queue is full
     if (BgCount >= BracketSize && (ACount >= TeamSize) && (HCount >= TeamSize))
     {
-        if (hasPlayers)
-            sLog.outString("[BGDIAG] %s declined q%u bracket %u: queue full (A=%u H=%u)",
-                    bot->GetName(), queueTypeId, bracketId, ACount, HCount);
         return false;
     }
 
     if (!isArena && ((ACount >= TeamSize && TeamId == 0) || (HCount >= TeamSize && TeamId == 1)))
     {
-        if (hasPlayers)
-            sLog.outString("[BGDIAG] %s declined q%u bracket %u: own side full (A=%u H=%u size=%u)",
-                    bot->GetName(), queueTypeId, bracketId, ACount, HCount, TeamSize);
         return false;
     }
 
@@ -629,10 +613,6 @@ bool BGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleGroun
     {
         return false;
     }
-
-    if (hasPlayers)
-        sLog.outString("[BGDIAG] %s ACCEPTED q%u bracket %u (A=%u H=%u)",
-                bot->GetName(), queueTypeId, bracketId, ACount, HCount);
 
     return true;
 }
@@ -1027,12 +1007,7 @@ bool FreeBGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleG
 
     if (BotBattlegroundLimitReached(bgTypeId, bracketId, isArena, hasPlayers, BgCount, BracketSize,
                                     TeamId == 0 ? ACount : HCount))
-    {
-        if (hasPlayers)
-            sLog.outString("[BGDIAG] %s declined q%u bracket %u: limit reached (A=%u H=%u)",
-                    bot->GetName(), queueTypeId, bracketId, ACount, HCount);
         return false;
-    }
 
 #ifndef MANGOSBOT_ZERO
     if (isArena)
@@ -1093,17 +1068,11 @@ bool FreeBGJoinAction::shouldJoinBg(BattleGroundQueueTypeId queueTypeId, BattleG
     // do not join if BG queue is full
     if (BgCount >= BracketSize && (ACount >= TeamSize) && (HCount >= TeamSize))
     {
-        if (hasPlayers)
-            sLog.outString("[BGDIAG] %s declined q%u bracket %u: queue full (A=%u H=%u)",
-                    bot->GetName(), queueTypeId, bracketId, ACount, HCount);
         return false;
     }
 
     if (!isArena && ((ACount >= TeamSize && TeamId == 0) || (HCount >= TeamSize && TeamId == 1)))
     {
-        if (hasPlayers)
-            sLog.outString("[BGDIAG] %s declined q%u bracket %u: own side full (A=%u H=%u size=%u)",
-                    bot->GetName(), queueTypeId, bracketId, ACount, HCount, TeamSize);
         return false;
     }
 

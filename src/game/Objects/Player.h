@@ -886,7 +886,10 @@ class PlayerTaxi
             // such a crash points at SaveTaxiDestinationsToString and never at
             // the taxi code that caused it.
             if (field >= m_taximask.size())
+            {
+                ReportOutOfRangeTaxiNode(nodeidx, field);
                 return false;
+            }
 
             if ((m_taximask[field] & submask) != submask)
             {
@@ -947,6 +950,9 @@ class PlayerTaxi
         WorldLocation m_taxiStartLocation;
     private:
         float m_discount;
+        // Out of line: this header has no logger.
+        void ReportOutOfRangeTaxiNode(uint32 nodeidx, uint8 field) const;
+
         TaxiMask m_taximask;
         std::deque<uint32> m_TaxiDestinations;
         TaxiPathNodeList m_taxiPath;
