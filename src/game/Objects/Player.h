@@ -876,6 +876,18 @@ class PlayerTaxi
         {
             uint8  field   = uint8((nodeidx - 1) / 32);
             uint32 submask = 1 << ((nodeidx - 1) % 32);
+            // Both siblings above and below already bound this; only the one
+            // that writes did not. m_taximask holds 8 words, so anything past
+            // node 256 lands outside it - and what sits immediately after it in
+            // this class is m_TaxiDestinations, whose internal pointers then get
+            // overwritten. nodeidx 0 is worse still: (0 - 1) / 32 is unsigned,
+            // truncated to uint8, which gives field 255. The corrupted deque
+            // then faults on the character's next periodic save, which is why
+            // such a crash points at SaveTaxiDestinationsToString and never at
+            // the taxi code that caused it.
+            if (field >= m_taximask.size())
+                return false;
+
             if ((m_taximask[field] & submask) != submask)
             {
                 m_taximask[field] |= submask;
@@ -914,6 +926,12 @@ class PlayerTaxi
         uint32 GetCurrentTaxiCost() const;
         uint32 NextTaxiDestination()
         {
+            // pop_front on an empty deque is undefined; both callers
+            // (FlightPathMovementGenerator::Update and
+            // Player::ContinueTaxiFlight) call this without checking.
+            if (m_TaxiDestinations.empty())
+                return 0;
+
             m_TaxiDestinations.pop_front();
             return GetTaxiDestination();
         };

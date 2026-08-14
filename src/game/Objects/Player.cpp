@@ -415,6 +415,18 @@ std::string PlayerTaxi::SaveTaxiDestinationsToString() const
     if (m_TaxiDestinations.size() < 2)
         return "";
 
+    // Canary, not a fix. A real flight path is a handful of hops, so a count
+    // like this means the deque's own bookkeeping has been overwritten - and
+    // indexing it below would fault. Bail and say so instead. If this ever
+    // fires, something is writing past its neighbour again; the bounds check
+    // in SetTaximaskNode was the known way for that to happen.
+    if (m_TaxiDestinations.size() > 500)
+    {
+        sLog.outError("PlayerTaxi::SaveTaxiDestinationsToString: implausible destination count %zu - "
+                      "treating the deque as corrupt and saving nothing.", m_TaxiDestinations.size());
+        return "";
+    }
+
     std::ostringstream ss;
 
     // save only the current path
