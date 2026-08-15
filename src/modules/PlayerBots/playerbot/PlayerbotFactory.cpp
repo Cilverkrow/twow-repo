@@ -90,6 +90,15 @@ void PlayerbotFactory::Init()
         if (!taxiNode)
             continue;
 
+        // The taximask is eight words and AppendTaximaskTo puts exactly those
+        // eight on the wire, so 256 is a protocol limit, not a tunable. Turtle
+        // numbers its two Landing Pod nodes 508 and 509, which land on field 15
+        // of an eight-field mask - seven words past it, straight into
+        // m_TaxiDestinations. SetTaximaskNode bounds-checks that now, but there
+        // is no point offering it a node it can never record.
+        if (i > TaxiMaskSize * 32)
+            continue;
+
         WorldPosition taxiPosition(taxiNode);
 
         if (!taxiPosition.isOverworld())
