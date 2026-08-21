@@ -1916,6 +1916,15 @@ template<class TScript> typename ScriptRegistry<TScript>::AfterDatabaseLoadScrip
 template<class TScript> typename ScriptRegistry<TScript>::EnabledHooksList ScriptRegistry<TScript>::EnabledHooks;
 template<class TScript> uint32 ScriptRegistry<TScript>::_scriptIdCounter = 0;
 
+// Questions the core asks of whatever module drives simulated characters.
+// Deliberately not named after any one module: the playerbots tree answers
+// these today, a second population module would answer the same names.
+class Player;
+bool Script_IsAIControlled(Player const* player);
+bool Script_HasAIFollowers(Player const* player);
+uint8 Script_GetAllowedRoles(Player const* player);
+void Script_SetForcedRole(Player* player, uint8 role);
+
 uint32 GetAreaTriggerScriptId(uint32 triggerId);
 uint32 GetEventIdScriptId(uint32 eventId);
 uint32 GetScriptId(const char *name);

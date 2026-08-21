@@ -140,6 +140,11 @@ enum PlayerHook
     PLAYERHOOK_ON_MAP_CHANGED,
     PLAYERHOOK_ON_BEFORE_TELEPORT,
     PLAYERHOOK_ON_LOOT_ITEM,
+    PLAYERHOOK_IS_AI_CONTROLLED,
+    PLAYERHOOK_HAS_AI_FOLLOWERS,
+    PLAYERHOOK_GET_ALLOWED_ROLES,
+    PLAYERHOOK_SET_FORCED_ROLE,
+    PLAYERHOOK_ON_CHAT_COMMAND,
     PLAYERHOOK_END
 };
 
@@ -186,6 +191,30 @@ class PlayerScript : public ScriptObject
         virtual void OnMapChanged(Player* /*player*/) {}
         virtual void OnBeforeTeleport(Player* /*player*/, uint32 /*mapId*/, float /*x*/, float /*y*/, float /*z*/, float /*orientation*/) {}
         virtual void OnLootItem(Player* /*player*/, Item* /*item*/, uint32 /*count*/, ObjectGuid /*lootGuid*/) {}
+
+        // Whether some module drives this character instead of a human at a client.
+        // Asked wherever the core needs to treat a puppet differently from a player -
+        // group bookkeeping, the looking-for-team queue, chat throttles. Returning
+        // true from any module settles it, so keep the check cheap.
+        virtual bool IsAIControlled(Player const* /*player*/) { return false; }
+
+        // Whether this *human* player commands puppets of his own. Distinct from
+        // IsAIControlled: the master is a real player, his followers are not.
+        virtual bool HasAIFollowers(Player const* /*player*/) { return false; }
+
+        // Roles the module will let this character fill, as a LFT_ROLE_* mask
+        // (tank 1, healer 2, dps 4). Write into roles and return true to answer;
+        // return false to leave the question to the next module.
+        virtual bool GetAllowedRoles(Player const* /*player*/, uint8& /*roles*/) { return false; }
+
+        // Pin this character to one role for the coming run. Mask as above.
+        virtual void SetForcedRole(Player* /*player*/, uint8 /*role*/) {}
+
+        // A player typed something that a module may want to act on. Unlike
+        // OnBeforeSendChatMessage this carries the whisper target and cannot alter
+        // the message - it is a notification, not a filter.
+        virtual void OnChatCommand(Player* /*player*/, uint32 /*type*/, std::string const& /*msg*/,
+                                   uint32 /*lang*/, std::string const& /*to*/) {}
 };
 
 class CreatureScript : public ScriptObject, public UpdatableScript<Creature>
@@ -580,6 +609,7 @@ enum ServerHook
     SERVERHOOK_ON_SOCKET_CLOSE,
     SERVERHOOK_CAN_PACKET_SEND,
     SERVERHOOK_CAN_PACKET_RECEIVE,
+    SERVERHOOK_ON_PACKET_HANDLED,
     SERVERHOOK_END
 };
 
@@ -600,6 +630,11 @@ class ServerScript : public ScriptObject
         virtual void OnSocketClose(WorldSocket* /*socket*/) {}
         virtual bool CanPacketSend(WorldSession* /*session*/, WorldPacket const& /*packet*/) { return true; }
         virtual bool CanPacketReceive(WorldSession* /*session*/, WorldPacket const& /*packet*/) { return true; }
+
+        // Fires after the handler for this opcode ran, and cannot suppress
+        // anything. CanPacketReceive is the wrong place for work that has to
+        // observe the result of a player action rather than pre-empt it.
+        virtual void OnPacketHandled(WorldSession* /*session*/, WorldPacket const& /*packet*/) {}
 };
 
 class MiscScript : public ScriptObject

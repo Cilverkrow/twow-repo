@@ -2344,8 +2344,8 @@ void LoadPlayerEggLoot();
     sLog.outString("Caching player pets...");
 	sCharacterDatabaseCache.LoadAll();
     // Penqle's "Loading player bot manager... / sPlayerBotMgr.Load()" removed.
-    // cmangos's RandomPlayerbotMgr is instantiated by InitPlayerbotsAtStartup(), called near the
-    // end of this function (just before FinalizePlayerbotsPostPlayerInfo).
+    // cmangos's RandomPlayerbotMgr is instantiated by InitPlayerbotsAtStartup(), called near
+    // the end of this function.
     sLog.outString("Loading faction change reputations...");
 	sObjectMgr.LoadFactionChangeReputations();
     sLog.outString("Loading faction change spells...");
@@ -2444,9 +2444,20 @@ void LoadPlayerEggLoot();
     // BuildEquipCache, scans sItemStorage) and validates the premade talent specs (LoadTalentSpecs,
     // reads Talent.dbc). It MUST run after LoadDBCStores() and LoadItemPrototypes() above, otherwise
     // those caches build against empty data on first boot. No-op if AiPlayerbot.Enabled = 0.
-    // FinalizePlayerbotsPostPlayerInfo() then creates random bots using the populated caches.
+    // The module registers its hook objects here; the work it used to do in
+    // FinalizePlayerbotsPostPlayerInfo() now runs from WorldScript::OnStartup
+    // just below, which is the same point in the sequence.
     InitPlayerbotsAtStartup();
-    FinalizePlayerbotsPostPlayerInfo();
+
+    // Moved here from the tail of DetectDBCLang(). That helper runs right after
+    // LoadDBCStores() and well before LoadItemPrototypes(), so a module doing any
+    // item work in OnStartup saw empty caches. Here it sits at the end of world
+    // setup, still inside the loading-time measurement, which is where
+    // AzerothCore fires it.
+    ScriptRegistry<WorldScript>::ForEachEnabledHook(WORLDHOOK_ON_STARTUP, [](WorldScript* script)
+    {
+        script->OnStartup();
+    });
     sLog.outString("Current content phase is set to %u.", GetContentPhase() + 1);
     uint32 uStartInterval = WorldTimer::getMSTimeDiff(uStartTime, WorldTimer::getMSTime());
     sLog.outString("World server is up and running! Loading time: %i minutes %i seconds", uStartInterval / 60000, (uStartInterval % 60000) / 1000);
@@ -2493,10 +2504,6 @@ void World::DetectDBCLang()
     m_defaultDbcLocale = LocaleConstant(default_locale);
 
     sLog.outString("Using %s DBC locale as default.", localeNames[m_defaultDbcLocale]);
-    ScriptRegistry<WorldScript>::ForEachEnabledHook(WORLDHOOK_ON_STARTUP, [](WorldScript* script)
-    {
-        script->OnStartup();
-    });
     
 }
 
@@ -2621,10 +2628,6 @@ void World::UpdateWorldBuffTimer(uint32 diff, WorldBuffTimerState& state, uint32
 void World::Update(uint32 diff)
 {
     XScopeStatTimer ScopeStatTimer(sPerfMonitor.WorldTick);
-    ScriptRegistry<WorldScript>::ForEachEnabledHook(WORLDHOOK_ON_UPDATE, [&](WorldScript* script)
-    {
-        script->OnUpdate(diff);
-    });
 
     ///- Update the different timers
     for (auto& timer : m_timers)
@@ -2707,10 +2710,6 @@ void World::Update(uint32 diff)
     sZoneScriptMgr.Update(diff);
     sDynamicVisMgr.UpdateVisibility(diff);
 
-    // hook into bot module update.
-    // RandomPlayerbotMgr::UpdateAI ticks all logged-in random bots and the bot login queue.
-    // Implementation lives in the bot module; declared via host hook in playerbot/HostHooks.cpp.
-    UpdatePlayerbotsTick(diff);
 
     ///- Update groups with offline leaders
     if (m_timers[WUPDATE_GROUPS].Passed())
@@ -2836,7 +2835,7 @@ void World::Update(uint32 diff)
         m_MaintenanceTimeChecker -= diff;
 
     // PlayerBotMgr update removed — Penqle stub binned. cmangos's
-    // sRandomPlayerbotMgr.UpdateAIInternal(diff) is called from World::UpdatePlayerbotsTick().
+    // sRandomPlayerbotMgr.UpdateAI(diff) runs from the bot module WorldScript::OnUpdate.
 
     // Update AutoBroadcast
     sAutoBroadCastMgr.Update(diff);
@@ -3032,6 +3031,15 @@ void World::Update(uint32 diff)
             sWorld.ShutdownServ(900, SHUTDOWN_MASK_RESTART, SHUTDOWN_EXIT_CODE);
         }
     }
+
+    // Moved here from the head of this function. Firing first meant a module
+    // acted before UpdateSessions, sMapMgr, sBattleGroundMgr and sLFTMgr had
+    // run, so it saw the previous tick. This is where AzerothCore fires it, and
+    // where the bot tick used to sit.
+    ScriptRegistry<WorldScript>::ForEachEnabledHook(WORLDHOOK_ON_UPDATE, [&](WorldScript* script)
+    {
+        script->OnUpdate(diff);
+    });
 }
 
 /// Send a packet to all players (except self if mentioned)

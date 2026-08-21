@@ -403,10 +403,14 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket & recv_data)
     // Dispatch chat to the master's own bots so they can react to /party,
     // /raid, /guild, /say, /yell, and whispers. cmangos hooks here (in
     // HandleMessagechatOpcode, after validation and before broadcast).
-    // Implementation lives in src/modules/PlayerBots/playerbot/HostHooks.cpp.
-    // No-op when m_playerbotMgr is null.
-    if (_player && _player->GetPlayerbotMgr())
-        Player_DispatchBotChatCommand(_player, type, msg, lang, to);
+    // A module driving puppets for this player parses it as a command there.
+    if (_player)
+    {
+        ScriptRegistry<PlayerScript>::ForEachEnabledHook(PLAYERHOOK_ON_CHAT_COMMAND, [&](PlayerScript* script)
+        {
+            script->OnChatCommand(_player, type, msg, lang, to);
+        });
+    }
 
     // Message handling
     switch (type)

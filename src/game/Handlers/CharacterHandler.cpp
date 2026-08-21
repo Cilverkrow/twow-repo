@@ -641,7 +641,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         //   3. User immediately logs into Char A as a real player
         // The take-over path below transfers the Player object cleanly; we
         // just have to make sure the bot brain stops first.
-        if (pCurrChar->GetPlayerbotAI())
+        if (Script_IsAIControlled(pCurrChar))
         {
             sLog.outInfo("[BOT] HandlePlayerLogin: char %s (guid %u) currently running as a bot — "
                          "detaching PlayerbotAI before real-player session take-over",
@@ -700,7 +700,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     // with m_playerbotAI set during AddPlayerBot) skip this. Real players get
     // a mgr so .bot commands work (otherwise the user hits "you cannot control
     // bots yet").
-    if (!pCurrChar->GetPlayerbotAI())
+    if (!Script_IsAIControlled(pCurrChar))
         pCurrChar->CreatePlayerbotMgr();
 
 
@@ -790,7 +790,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     //     through GetPlayerbotAI, and only up to level 5. ---
     if (sConfig.GetBoolDefault("BeginnersGuilds", false)
         && pCurrChar->GetGuildId() == 0
-        && !pCurrChar->GetPlayerbotAI()
+        && !Script_IsAIControlled(pCurrChar)
         && pCurrChar->GetLevel() <= 5)
     {
         // Random bots sit on RNDBOT accounts. Their session carries no username

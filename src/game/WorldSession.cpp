@@ -238,10 +238,6 @@ void WorldSession::SendPacket(WorldPacket const* packet)
     // the AI can react to server-originated events: group invites (auto-accept), vendor errors,
     // BG queue status, resurrect requests, etc. Real-player sessions have m_playerbotAI=null
     // so this is a no-op for them; bot sessions have null m_Socket AND m_playerbotAI set, so
-    // we route the packet to the AI and skip the network send.
-    // Implementation in src/modules/PlayerBots/playerbot/HostHooks.cpp dispatches to the AI.
-    if (_player && Player_DispatchBotOutgoingPacket(_player, *packet))
-        return;
 
 	if (m_Socket == nullptr)
         return;
@@ -510,9 +506,13 @@ void WorldSession::ProcessPackets(PacketFilter& updater)
                     {
                         ExecuteOpcode(opHandle, packet);
 
-                        // Mirror the player's action packets to any bots they control
-                        // (quest accepts, gossip, quest shares, ...). No-op without bots.
-                        Player_DispatchMasterIncomingPacket(_player, *packet);
+                        // Let modules observe the action now that the handler ran -
+                        // a master commanding puppets mirrors quest accepts, gossip
+                        // and quest shares to them from here.
+                        ScriptRegistry<ServerScript>::ForEachEnabledHook(SERVERHOOK_ON_PACKET_HANDLED, [&](ServerScript* script)
+                        {
+                            script->OnPacketHandled(this, *packet);
+                        });
                     }
 
                     // lag can cause STATUS_LOGGEDIN opcodes to arrive after the player started a transfer
@@ -826,7 +826,7 @@ void WorldSession::LogoutPlayer(bool Save)
                 if (slot.guid == _player->GetObjectGuid())
                     continue;
                 Player* member = sObjectMgr.GetPlayer(slot.guid);
-                if (!member || !member->isRealPlayer())
+                if (!member || Script_IsAIControlled(member))
                     botGuids.push_back(slot.guid);
             }
             for (const ObjectGuid& guid : botGuids)

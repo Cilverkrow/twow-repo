@@ -1636,12 +1636,11 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         i_AI->UpdateAI(p_time);
     SetCanDelayTeleport(false);
 
-    // per-Player bot tick.
-    // If this Player is a bot (has m_playerbotAI), tick its AI; if it's a real player driving bots
-    // (has m_playerbotMgr), tick the manager so its bots respond. Both call sites are no-ops if
-    // the corresponding pointer is null.
-    UpdatePlayerbotHooks(update_diff);
-    SC_PHASE_PLAYER("Player::Update.afterPlayerbotHooks");
+    // The per-Player bot tick used to sit here. It is PlayerScript::OnUpdate now,
+    // fired at the end of this function instead of right after Unit::Update. Both
+    // positions are after Unit::Update, so a driven character still decides on
+    // settled movement and aura state; at the new one its own regen and timers
+    // have run too.
 
     time_t now = time(nullptr);
 
@@ -6530,7 +6529,7 @@ void Player::RepopAtGraveyard()
         for (GroupReference* itr = GetGroup()->GetFirstMember(); itr; itr = itr->next())
         {
             Player* member = itr->getSource();
-            if (member && member != this && !member->GetPlayerbotAI())
+            if (member && member != this && !Script_IsAIControlled(member))
             {
                 noHumanHelp = false;
                 break;
@@ -6540,7 +6539,7 @@ void Player::RepopAtGraveyard()
 
     bool const repopAtEntrance =
         (sWorld.getConfig(CONFIG_BOOL_SOLO_DUNGEON_REPOP_ALIVE) && noHumanHelp) ||
-        GetPlayerbotAI() != nullptr;
+        Script_IsAIControlled(this);
 
     if (!IsAlive() && repopAtEntrance && GetMap() && GetMap()->IsDungeon())
     {
@@ -7870,7 +7869,7 @@ void Player::CheckAreaExploreAndOutdoor()
                 // routinely teleported everywhere by the bot system and must be
                 // excluded, otherwise every bot login at a saved high-level position
                 // spams false-positive errors.
-                if (GetLevel() < 16 && !GetPlayerbotAI()) // Chinese config limitation for the world chat.
+                if (GetLevel() < 16 && !Script_IsAIControlled(this)) // Chinese config limitation for the world chat.
                 {
                     if (uint32(p->AreaLevel) > 20)
                     {

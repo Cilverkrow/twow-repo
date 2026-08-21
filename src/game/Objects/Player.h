@@ -2558,8 +2558,6 @@ class Player final: public Unit
         // SetPlayerbotMgr/AI: setters used by RandomPlayerbotMgr / OnSessionLogin to attach managers.
         void SetPlayerbotAI(PlayerbotAI* ai) { m_playerbotAI = ai; }
         void SetPlayerbotMgr(PlayerbotMgr* mgr) { m_playerbotMgr = mgr; }
-        // Per-Player tick driver — called from Player::Update. Implementation in HostHooks.cpp.
-        void UpdatePlayerbotHooks(uint32 diff);
         // MeleeAttackStart/Stop: cmangos forwarders to AttackerStateUpdate. Stub no-op.
         void MeleeAttackStart(Unit* /*pVictim*/) {}
         void MeleeAttackStop(Unit* /*pVictim*/ = nullptr) {}
@@ -3393,32 +3391,11 @@ public:
 void AddItemsSetItem(Player*player,Item* item);
 void RemoveItemsSetItem(Player*player,ItemPrototype const* proto);
 
-// outgoing-packet interceptor for bots.
-// WorldSession::SendPacket calls this; if the player has a PlayerbotAI attached, the AI
-// processes the packet (group invites, BG status, vendor errors, etc.) and returns true
-// to suppress network send. Real players (no AI) return false. Implementation in HostHooks.cpp.
-bool Player_DispatchBotOutgoingPacket(Player* player, class WorldPacket const& packet);
-
-// incoming-packet interceptor for bot-owning players.
-// WorldSession::ProcessPackets calls this after the player's own handler ran; the packet is
-// forwarded to PlayerbotMgr::HandleMasterIncomingPacket so the player's bots can mirror it
-// (quest accepts, gossip, quest shares, ...). Never suppresses the packet; no-op for bots.
-void Player_DispatchMasterIncomingPacket(Player* player, class WorldPacket const& packet);
-
-// chat-message dispatcher for bots.
-// WorldSession::HandleMessagechatOpcode calls this after validating the master's chat input,
-// so each bot under the master's PlayerbotMgr (and matching random bots) gets the message
-// fed to their PlayerbotAI::HandleCommand for parsing as a bot command (/party "co" etc).
-// Implementation in HostHooks.cpp.
-void Player_DispatchBotChatCommand(Player* master, uint32 type, std::string const& msg, uint32 lang, std::string const& to = "");
-// Tell a bot which role the dungeon finder gave it (LFT_ROLE_* bits, 0 clears).
-// No-op for anything that is not a bot.
-void Playerbot_SetForcedRole(Player* bot, uint8 role);
-// Which roles this bot's AI can actually play, as LFT_ROLE_* bits. The
-// queue's own AllowedRoleMask is about what a class may sign up as; this is
-// about what the bot can deliver, and the two are not the same - a shaman may
-// queue as tank but has no tank strategy at all.
-uint8 Playerbot_GetAllowedRoles(Player* bot);
+// The four bot dispatchers that used to be declared here are gone. They are
+// module hooks now: ServerScript::CanPacketSend and ::OnPacketHandled for the
+// two packet paths, PlayerScript::OnChatCommand, ::SetForcedRole and
+// ::GetAllowedRoles for the rest. Ask through the Script_* helpers in
+// ScriptMgr.h rather than reaching for a bot type from the core.
 
 // "the bodies of template functions must be made available in a header file"
 template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T &basevalue, Spell* spell)
