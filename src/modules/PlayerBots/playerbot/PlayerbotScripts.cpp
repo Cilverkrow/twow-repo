@@ -27,6 +27,7 @@
 #include "playerbot/strategy/actions/ChangeTalentsAction.h"
 #include "ahbot/AhBot.h"
 #include "BotDiagnostics.h"
+#include "playerbot/BotSlots.h"
 
 class PlayerbotWorldScript : public WorldScript
 {
@@ -77,7 +78,7 @@ class PlayerbotServerScript : public ServerScript
             if (!player)
                 return true;
 
-            PlayerbotAI* ai = player->GetPlayerbotAI();
+            PlayerbotAI* ai = GetBotAI(player);
             if (!ai)
                 return true;
 
@@ -96,7 +97,7 @@ class PlayerbotServerScript : public ServerScript
             if (!player)
                 return;
 
-            if (PlayerbotMgr* mgr = player->GetPlayerbotMgr())
+            if (PlayerbotMgr* mgr = GetBotMgr(player))
                 mgr->HandleMasterIncomingPacket(packet);
         }
 };
@@ -108,12 +109,12 @@ class PlayerbotPlayerScript : public PlayerScript
 
         bool IsAIControlled(Player const* player) override
         {
-            return player && player->GetPlayerbotAI() != nullptr;
+            return player && GetBotAI(player) != nullptr;
         }
 
         bool HasAIFollowers(Player const* player) override
         {
-            return player && player->GetPlayerbotMgr() != nullptr;
+            return player && GetBotMgr(player) != nullptr;
         }
 
         // BotRoles and LFT_ROLE_* share their bit values - tank 1, healer 2,
@@ -121,7 +122,7 @@ class PlayerbotPlayerScript : public PlayerScript
         bool GetAllowedRoles(Player const* player, uint8& roles) override
         {
             Player* bot = const_cast<Player*>(player);
-            if (!bot || !bot->GetPlayerbotAI())
+            if (!bot || !GetBotAI(bot))
                 return false;
 
             roles = uint8(AiFactory::GetPlayerRoles(bot));
@@ -133,7 +134,7 @@ class PlayerbotPlayerScript : public PlayerScript
             if (!bot)
                 return;
 
-            PlayerbotAI* ai = bot->GetPlayerbotAI();
+            PlayerbotAI* ai = GetBotAI(bot);
             if (!ai)
                 return;
 
@@ -192,8 +193,37 @@ class PlayerbotPlayerScript : public PlayerScript
             if (!master || !sPlayerbotAIConfig.enabled)
                 return;
 
-            if (PlayerbotMgr* mgr = master->GetPlayerbotMgr())
+            if (PlayerbotMgr* mgr = GetBotMgr(master))
                 mgr->HandleCommand(type, msg, lang, to);
+        }
+
+        // Was the CreatePlayerbotMgr() call in HandlePlayerLogin. A character the
+        // module drives brings its own AI; only a person at a client gets a
+        // controller for their alts.
+        void OnLogin(Player* player) override
+        {
+            if (player && !GetBotAI(player))
+                CreateBotMgr(player);
+        }
+
+        // Was the RemovePlayerbotAI/Mgr pair at the head of LogoutPlayer.
+        void OnBeforeLogout(Player* player) override
+        {
+            RemoveBotAI(player);
+            RemoveBotMgr(player);
+        }
+
+        // A real client is taking the character over. Stop driving it: an AI
+        // still ticking on the new owner fights the login handshake and the
+        // client hangs on the loading screen.
+        void OnReleaseToClient(Player* player) override
+        {
+            RemoveBotAI(player);
+        }
+
+        bool IsMachineDriven(Player const* player) override
+        {
+            return !IsRealPlayer(player);
         }
 
         // Was Player::UpdatePlayerbotHooks(diff).
@@ -202,12 +232,12 @@ class PlayerbotPlayerScript : public PlayerScript
             if (!player || !sPlayerbotAIConfig.enabled)
                 return;
 
-            if (PlayerbotAI* ai = player->GetPlayerbotAI())
+            if (PlayerbotAI* ai = GetBotAI(player))
             {
                 SC_PHASE("Player::UpdatePlayerbotHooks/ai.UpdateAI", player->GetName());
                 ai->UpdateAI(diff);
             }
-            if (PlayerbotMgr* mgr = player->GetPlayerbotMgr())
+            if (PlayerbotMgr* mgr = GetBotMgr(player))
             {
                 SC_PHASE("Player::UpdatePlayerbotHooks/mgr.UpdateAI", player->GetName());
                 mgr->UpdateAI(diff);

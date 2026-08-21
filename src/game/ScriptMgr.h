@@ -1921,6 +1921,7 @@ template<class TScript> uint32 ScriptRegistry<TScript>::_scriptIdCounter = 0;
 // these today, a second population module would answer the same names.
 class Player;
 bool Script_IsAIControlled(Player const* player);
+bool Script_IsMachineDriven(Player const* player);
 bool Script_HasAIFollowers(Player const* player);
 uint8 Script_GetAllowedRoles(Player const* player);
 void Script_SetForcedRole(Player* player, uint8 role);

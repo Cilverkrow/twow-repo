@@ -3195,3 +3195,14 @@ void Script_SetForcedRole(Player* player, uint8 role)
         script->SetForcedRole(player, role);
     });
 }
+
+bool Script_IsMachineDriven(Player const* player)
+{
+    if (!player)
+        return false;
+
+    return ScriptRegistry<PlayerScript>::ForEachEnabledHookWithReturn(PLAYERHOOK_IS_MACHINE_DRIVEN, [&](PlayerScript* script)
+    {
+        return script->IsMachineDriven(player);
+    });
+}

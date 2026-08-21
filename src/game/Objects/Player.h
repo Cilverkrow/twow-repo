@@ -22,6 +22,7 @@
 #pragma once
 
 #include "Common.h"
+#include "ModuleSlots.h"
 #include "ItemPrototype.h"
 #include "Unit.h"
 #include "Item.h"
@@ -65,9 +66,6 @@ class ZoneScript;
 class PlayerAI;
 class PlayerBroadcaster;
 class MapReference;
-// Forward decls for bot host hooks (defined in the playerbots module).
-class PlayerbotAI;
-class PlayerbotMgr;
 
 static constexpr uint8 PLAYER_MAX_SKILLS = 127;
 constexpr uint8 PLAYER_EXPLORED_ZONES_SIZE = 64;
@@ -2420,16 +2418,13 @@ class Player final: public Unit
         void RemoveAI();
 
         // =========================================================================
-        // Bot host interface + cmangos compat aliases.
+        // Module storage and cmangos compat aliases.
         //
-        // Compiled unconditionally (no #ifdef BUILD_PLAYERBOTS). When bots are
-        // disabled, src/game/PlayerbotStubs.cpp provides empty bodies for the
-        // non-inline members so the host still links. The vendored playerbots
-        // module in src/modules/PlayerBots/ provides the real implementations.
-        //
-        // Three groups follow:
-        //   1. Bot-lifecycle hooks: Create/Remove PlayerbotAI/Mgr, accessors,
-        //      isRealPlayer, UpdatePlayerbotHooks.
+        // The bot-lifecycle group that used to head this block is gone: creating,
+        // destroying and reaching a PlayerbotAI is the module's business now, done
+        // through the slots below. What is left:
+        //   1. Module storage — an opaque pointer per claimed slot, see
+        //      ModuleSlots.h. The core allocates it and never reads it.
         //   2. cmangos camelCase / signature aliases — one-line forwarders to
         //      the Penqle-named equivalent so the vendored bot source compiles
         //      unmodified. Each is tagged with the cmangos name it shadows.
@@ -2438,12 +2433,11 @@ class Player final: public Unit
         //      module tolerates no-op behavior at these sites.
         // =========================================================================
 
-        // m_playerbotAI is set by CreatePlayerbotAI() during PlayerbotHolder::OnBotLogin.
-        // m_playerbotMgr is set when a real Player logs in (mgr drives all their bots).
-        PlayerbotAI* GetPlayerbotAI() const { return m_playerbotAI; }
-        PlayerbotMgr* GetPlayerbotMgr() const { return m_playerbotMgr; }
+        // Module storage. See ModuleSlots.h for who owns which slot.
+        void* GetModuleSlot(uint8 slot) const { return slot < MODULE_SLOT_MAX ? m_moduleSlots[slot] : nullptr; }
+        void SetModuleSlot(uint8 slot, void* value) { if (slot < MODULE_SLOT_MAX) m_moduleSlots[slot] = value; }
+        template<class T> T* GetModuleSlotAs(uint8 slot) const { return static_cast<T*>(GetModuleSlot(slot)); }
         // isRealPlayer: a bot's AI is non-null and not flagged as real-player; otherwise this is a real player.
-        bool isRealPlayer() const;
 
         // cmangos-style aliases the bot module uses on Player:
         // IsInGroup(other) — checks if `other` is in the same group as this player.
@@ -2547,17 +2541,6 @@ class Player final: public Unit
         MountInfoStub const* GetMountInfo() const { return nullptr; }
         // GetMaster: cmangos returns Player's master (party leader / bot owner). Out-of-line in Player.cpp.
         Player* GetMaster() const;
-        // RemovePlayerbotAI / CreatePlayerbotAI: bot lifecycle.
-        // Implementations in Player.cpp; CreatePlayerbotAI allocates a PlayerbotAI for this Player.
-        void RemovePlayerbotAI();
-        void CreatePlayerbotAI();
-        // RemovePlayerbotMgr / CreatePlayerbotMgr: real-player bot-controller lifecycle.
-        // Real players (non-bots) get a PlayerbotMgr to manage their alt bots via .bot commands.
-        void RemovePlayerbotMgr();
-        void CreatePlayerbotMgr();
-        // SetPlayerbotMgr/AI: setters used by RandomPlayerbotMgr / OnSessionLogin to attach managers.
-        void SetPlayerbotAI(PlayerbotAI* ai) { m_playerbotAI = ai; }
-        void SetPlayerbotMgr(PlayerbotMgr* mgr) { m_playerbotMgr = mgr; }
         // MeleeAttackStart/Stop: cmangos forwarders to AttackerStateUpdate. Stub no-op.
         void MeleeAttackStart(Unit* /*pVictim*/) {}
         void MeleeAttackStop(Unit* /*pVictim*/ = nullptr) {}
@@ -3380,12 +3363,12 @@ public:
         void SendAddonMessage(std::string prefix, std::string message);
         void SendAddonMessage(std::string prefix, std::string message, Player* from);
 
-        // Bot state members.
-        // m_playerbotAI: non-null if this Player is a bot; null otherwise.
-        // m_playerbotMgr: non-null if this Player has bots under its control (real player driving bots).
     private:
-        PlayerbotAI* m_playerbotAI = nullptr;
-        PlayerbotMgr* m_playerbotMgr = nullptr;
+        // Per-player storage for modules. The core hands out the space and never
+        // looks inside it; slot ids are claimed in ModuleSlots.h. A flat array
+        // rather than a keyed map because the population module reads its slot on
+        // every tick of every driven character, where a hash lookup would show.
+        void* m_moduleSlots[MODULE_SLOT_MAX] = {};
 };
 
 void AddItemsSetItem(Player*player,Item* item);

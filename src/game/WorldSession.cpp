@@ -646,13 +646,7 @@ void WorldSession::LogoutPlayer(bool Save)
     bool doBanPlayer = false;
     bool disabledSocials = false;
 
-    // detach bot AI/mgr before logout
-    // tears down the Player. Safe to call on real players / bots (no-op when ptr is null).
-    if (_player)
-    {
-        _player->RemovePlayerbotAI();
-        _player->RemovePlayerbotMgr();
-    }
+    // Module teardown happens from PlayerScript::OnBeforeLogout just below.
 
     if (_player)
     {
@@ -826,7 +820,7 @@ void WorldSession::LogoutPlayer(bool Save)
                 if (slot.guid == _player->GetObjectGuid())
                     continue;
                 Player* member = sObjectMgr.GetPlayer(slot.guid);
-                if (!member || Script_IsAIControlled(member))
+                if (!member || Script_IsMachineDriven(member))
                     botGuids.push_back(slot.guid);
             }
             for (const ObjectGuid& guid : botGuids)

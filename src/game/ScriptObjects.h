@@ -140,7 +140,9 @@ enum PlayerHook
     PLAYERHOOK_ON_MAP_CHANGED,
     PLAYERHOOK_ON_BEFORE_TELEPORT,
     PLAYERHOOK_ON_LOOT_ITEM,
+    PLAYERHOOK_ON_RELEASE_TO_CLIENT,
     PLAYERHOOK_IS_AI_CONTROLLED,
+    PLAYERHOOK_IS_MACHINE_DRIVEN,
     PLAYERHOOK_HAS_AI_FOLLOWERS,
     PLAYERHOOK_GET_ALLOWED_ROLES,
     PLAYERHOOK_SET_FORCED_ROLE,
@@ -196,7 +198,19 @@ class PlayerScript : public ScriptObject
         // Asked wherever the core needs to treat a puppet differently from a player -
         // group bookkeeping, the looking-for-team queue, chat throttles. Returning
         // true from any module settles it, so keep the check cheap.
+        // A real client is taking over a character the module was driving. Stop
+        // driving it before the session changes hands: an AI that keeps ticking
+        // on the new owner fights the login handshake and the client never
+        // finishes loading.
+        virtual void OnReleaseToClient(Player* /*player*/) {}
+
         virtual bool IsAIControlled(Player const* /*player*/) { return false; }
+
+        // Narrower than IsAIControlled: true only when nobody is at a client.
+        // A person driving their own character through the module still counts
+        // as a human here, which is what the core wants when it decides whether
+        // a group member can be waited on.
+        virtual bool IsMachineDriven(Player const* /*player*/) { return false; }
 
         // Whether this *human* player commands puppets of his own. Distinct from
         // IsAIControlled: the master is a real player, his followers are not.

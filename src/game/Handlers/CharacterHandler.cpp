@@ -643,10 +643,13 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         // just have to make sure the bot brain stops first.
         if (Script_IsAIControlled(pCurrChar))
         {
-            sLog.outInfo("[BOT] HandlePlayerLogin: char %s (guid %u) currently running as a bot — "
-                         "detaching PlayerbotAI before real-player session take-over",
+            sLog.outInfo("[BOT] HandlePlayerLogin: char %s (guid %u) currently driven by a module - "
+                         "asking it to let go before real-player session take-over",
                          pCurrChar->GetName(), playerGuid.GetCounter());
-            pCurrChar->RemovePlayerbotAI();
+            ScriptRegistry<PlayerScript>::ForEachEnabledHook(PLAYERHOOK_ON_RELEASE_TO_CLIENT, [&](PlayerScript* script)
+            {
+                script->OnReleaseToClient(pCurrChar);
+            });
         }
 
         pCurrChar->GetSession()->SetPlayer(nullptr);
@@ -700,8 +703,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     // with m_playerbotAI set during AddPlayerBot) skip this. Real players get
     // a mgr so .bot commands work (otherwise the user hits "you cannot control
     // bots yet").
-    if (!Script_IsAIControlled(pCurrChar))
-        pCurrChar->CreatePlayerbotMgr();
+    // The module attaches its own controller from PlayerScript::OnLogin, further
+    // down this function - nothing between here and there asks for it.
 
 
     //WE DO NOT NEED TO SEND ALL POSSIBLE TRANSMOGS TO ANY PLAYER ON LOGIN

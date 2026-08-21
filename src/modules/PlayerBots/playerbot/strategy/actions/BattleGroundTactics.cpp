@@ -2998,7 +2998,7 @@ static bool BgTeamHasRealPlayer(BattleGround* bg, Team team)
     for (auto const& itr : bg->GetPlayers())
     {
         if (Player* p = sObjectMgr.GetPlayer(itr.first))
-            if (!p->GetPlayerbotAI() && p->GetTeam() == team)
+            if (!GetBotAI(p) && p->GetTeam() == team)
                 return true;
     }
     return false;

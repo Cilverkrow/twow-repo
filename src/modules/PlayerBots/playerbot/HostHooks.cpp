@@ -22,50 +22,62 @@
 #include "playerbot/AiFactory.h"
 #include "playerbot/strategy/actions/ChangeTalentsAction.h"
 
-void Player::CreatePlayerbotAI()
+// Lifecycle. These were Player:: members; the objects now live in the player
+// slots this module claims (ModuleSlots.h), so the core neither allocates them
+// nor knows their type. Bodies are unchanged.
+
+void CreateBotAI(Player* player)
 {
-    if (!m_playerbotAI)
-        m_playerbotAI = new PlayerbotAI(this);
+    if (!player || GetBotAI(player))
+        return;
+
+    SetBotAI(player, new PlayerbotAI(player));
 }
 
-void Player::RemovePlayerbotAI()
+void RemoveBotAI(Player* player)
 {
-    if (m_playerbotAI)
-    {
-        delete m_playerbotAI;
-        m_playerbotAI = nullptr;
-    }
+    PlayerbotAI* ai = GetBotAI(player);
+    if (!ai)
+        return;
+
+    delete ai;
+    SetBotAI(player, nullptr);
 }
 
-void Player::CreatePlayerbotMgr()
+void CreateBotMgr(Player* player)
 {
-    if (!m_playerbotMgr)
-    {
-        m_playerbotMgr = new PlayerbotMgr(this);
-        // RandomPlayerbotMgr tracks real players in its own `players` map
-        // (used by SyncLevelWithPlayers, RandomBotLoginWithPlayer, LFG
-        // auto-queue). Without this call the map never gets populated and
-        // those features silently never trigger.
-        sRandomPlayerbotMgr.OnPlayerLogin(this);
-    }
+    if (!player || GetBotMgr(player))
+        return;
+
+    SetBotMgr(player, new PlayerbotMgr(player));
+    // RandomPlayerbotMgr tracks real players in its own `players` map
+    // (used by SyncLevelWithPlayers, RandomBotLoginWithPlayer, LFG
+    // auto-queue). Without this call the map never gets populated and
+    // those features silently never trigger.
+    sRandomPlayerbotMgr.OnPlayerLogin(player);
 }
 
-void Player::RemovePlayerbotMgr()
+void RemoveBotMgr(Player* player)
 {
-    if (m_playerbotMgr)
-    {
-        // Log out the master's alt bots first; otherwise their PlayerbotAI
-        // outlives the mgr and they linger in-world with a dangling master.
-        m_playerbotMgr->LogoutAllBots();
-        sRandomPlayerbotMgr.OnPlayerLogout(this);
-        delete m_playerbotMgr;
-        m_playerbotMgr = nullptr;
-    }
+    PlayerbotMgr* mgr = GetBotMgr(player);
+    if (!mgr)
+        return;
+
+    // Log out the master's alt bots first; otherwise their PlayerbotAI
+    // outlives the mgr and they linger in-world with a dangling master.
+    mgr->LogoutAllBots();
+    sRandomPlayerbotMgr.OnPlayerLogout(player);
+    delete mgr;
+    SetBotMgr(player, nullptr);
 }
 
-bool Player::isRealPlayer() const
+// Was Player::isRealPlayer(). Note it is not simply "has no AI": a person
+// driving their own character through this module keeps a real session, and
+// the address check is what tells the two apart.
+bool IsRealPlayer(Player const* player)
 {
-    return !m_playerbotAI || m_playerbotAI->IsRealPlayer();
+    PlayerbotAI* ai = GetBotAI(player);
+    return !ai || ai->IsRealPlayer();
 }
 
 // One-shot startup init. Singleton bot managers (RandomPlayerbotMgr,
