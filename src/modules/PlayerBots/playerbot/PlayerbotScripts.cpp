@@ -197,13 +197,25 @@ class PlayerbotPlayerScript : public PlayerScript
                 mgr->HandleCommand(type, msg, lang, to);
         }
 
-        // Was the CreatePlayerbotMgr() call in HandlePlayerLogin. A character the
-        // module drives brings its own AI; only a person at a client gets a
-        // controller for their alts.
+        // Was the CreatePlayerbotMgr() call in HandlePlayerLogin. Only a person
+        // at a client gets a controller for their alts.
+        //
+        // The AI is not attached yet at this point - OnBotLogin runs after
+        // HandlePlayerLogin returns - so asking whether the character has one
+        // tells us nothing, and the old call site handed a controller to every
+        // bot as well. The session address does tell us: a bot session carries
+        // "disconnected/bot" or "<BOT>". Same marker the core already uses to
+        // keep bots out of challenge setup.
         void OnLogin(Player* player) override
         {
-            if (player && !GetBotAI(player))
-                CreateBotMgr(player);
+            if (!player || !player->GetSession())
+                return;
+
+            std::string const& addr = player->GetSession()->GetRemoteAddress();
+            if (addr == "disconnected/bot" || addr == "<BOT>")
+                return;
+
+            CreateBotMgr(player);
         }
 
         // Was the RemovePlayerbotAI/Mgr pair at the head of LogoutPlayer.
