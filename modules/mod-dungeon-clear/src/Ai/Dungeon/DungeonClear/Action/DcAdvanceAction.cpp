@@ -4,6 +4,7 @@
  */
 
 #include "DungeonClearActions.h"
+#include "Ai/Dungeon/DungeonClear/Util/NavmeshSnap.h"
 #include "Ai/Dungeon/DungeonClear/Util/DcRun.h"
 
 #include <algorithm>
@@ -237,6 +238,27 @@ namespace
         float const x = bot->GetPositionX();
         float const y = bot->GetPositionY();
         float const z = bot->GetPositionZ();
+
+        // Vertical rescue FIRST: the bot may be parked ON AIR far above the
+        // mesh - live, stock movement grounded the DC leader on the
+        // OVERWORLD height (Z=216) over the Deadmines entrance, 150y above
+        // the real floor, and 5yd cardinal hops can never reach that. Ask
+        // the mesh for the nearest poly in a tall column under our XY and
+        // near-teleport onto it.
+        {
+            NavmeshSnap::Result const column = NavmeshSnap::SnapColumn(bot->GetMap(), x, y, z);
+            if (column.ok && std::fabs(column.z - z) > 8.0f)
+            {
+                bot->GetMotionMaster()->Clear();
+                bot->NearTeleportTo(column.x, column.y, column.z, bot->GetOrientation(),
+                                    /*casting*/ false, /*vehicle*/ false, /*withPet*/ true);
+                LOG_INFO("playerbots.dungeonclear",
+                         "[DC:{}] far-from-poly recovery: column snap {:.0f}y vertically onto the mesh",
+                         bot->GetName(), std::fabs(column.z - z));
+                return true;
+            }
+        }
+
         struct Offset { float dx, dy; };
         Offset const offsets[] = {
             {DC_RECOVERY_OFFSET, 0.0f},

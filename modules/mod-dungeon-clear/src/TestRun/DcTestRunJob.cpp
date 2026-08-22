@@ -4,6 +4,7 @@
  */
 
 #include "TestRun/DcTestRunJob.h"
+#include "Ai/Dungeon/DungeonClear/Util/NavmeshSnap.h"
 #include "Ai/Dungeon/DungeonClear/Util/DcEncounterMask.h"
 
 #include <algorithm>
@@ -415,6 +416,21 @@ std::unique_ptr<DcTestRunJob> DcTestRunJob::Create(Player* gm, DcTestDungeonRegi
         }
         slot.guid = guid;
         usedClasses.insert(slot.classId);
+        // A character parked inside a dungeon map by an earlier broken
+        // run logs BACK IN there - and a login into an instance whose
+        // WMOs are not streamed yet grounds him on the OVERWORLD height
+        // (live: tanks spawning at Z=205 over the Deadmines, the bad
+        // position inherited run-to-run through the character save).
+        // Park the character at its homebind BEFORE the login; the same
+        // CharacterDatabase queue serializes this ahead of the login
+        // query holder, and the provisioning teleport places it properly
+        // afterwards.
+        CharacterDatabase.PExecute(
+            "UPDATE characters c JOIN character_homebind h ON h.guid = c.guid "
+            "SET c.map = h.map, c.position_x = h.position_x, "
+            "c.position_y = h.position_y, c.position_z = h.position_z "
+            "WHERE c.guid = %u AND c.online = 0",
+            slot.guid.GetCounter());
         mgr->AddPlayerBot(slot.guid, gm->GetSession()->GetAccountId());
     }
 
@@ -491,7 +507,24 @@ std::unique_ptr<DcTestRunJob> DcTestRunJob::CreateFromRoster(Player* gm,
     // AiPlayerbot.RandomBotAccounts. A real player's character satisfies neither,
     // so the holder only owns its login/logout here.
     for (Slot const& slot : job->_slots)
+    {
+        // A character parked inside a dungeon map by an earlier broken
+        // run logs BACK IN there - and a login into an instance whose
+        // WMOs are not streamed yet grounds him on the OVERWORLD height
+        // (live: tanks spawning at Z=205 over the Deadmines, the bad
+        // position inherited run-to-run through the character save).
+        // Park the character at its homebind BEFORE the login; the same
+        // CharacterDatabase queue serializes this ahead of the login
+        // query holder, and the provisioning teleport places it properly
+        // afterwards.
+        CharacterDatabase.PExecute(
+            "UPDATE characters c JOIN character_homebind h ON h.guid = c.guid "
+            "SET c.map = h.map, c.position_x = h.position_x, "
+            "c.position_y = h.position_y, c.position_z = h.position_z "
+            "WHERE c.guid = %u AND c.online = 0",
+            slot.guid.GetCounter());
         sRandomPlayerbotMgr.AddPlayerBot(slot.guid, 0);
+    }
 
     std::string names;
     for (Slot const& slot : job->_slots)
@@ -1364,6 +1397,33 @@ void DcTestRunJob::TickStarting()
     for (Slot const& slot : _slots)
         if (Player* bot = ObjectAccessor::FindPlayer(slot.guid))
             DcStrategyGate::Reconcile(bot);
+
+    // Altitude sanity, run by the MONITOR because nothing can gate it here:
+    // stock movement repeatedly grounds party members on the OVERWORLD
+    // height over the Deadmines entrance (Z 130..216, real floor ~60). The
+    // AI-side rescue (stranded trigger -> Recover) loses the relevance race
+    // against resting/looting every tick, so the run supervisor drags any
+    // member hovering >25y off the mesh straight back down.
+    for (Slot const& slot : _slots)
+        if (Player* bot = ObjectAccessor::FindPlayer(slot.guid))
+            if (Map* botMap = bot->FindMap())
+                if (botMap->IsDungeon())
+                {
+                    float const bz = bot->GetPositionZ();
+                    NavmeshSnap::Result const column = NavmeshSnap::SnapColumn(
+                        botMap, bot->GetPositionX(), bot->GetPositionY(), bz);
+                    if (column.ok && std::fabs(column.z - bz) > 25.0f)
+                    {
+                        bot->GetMotionMaster()->Clear();
+                        bot->NearTeleportTo(column.x, column.y, column.z,
+                                            bot->GetOrientation(),
+                                            /*casting*/ false, /*vehicle*/ false,
+                                            /*withPet*/ true);
+                        LOG_INFO("playerbots.dungeonclear",
+                                 "TESTRUN {} altitude sanity: {} column-snapped {:.0f}y onto the mesh",
+                                 _record.runId, bot->GetName(), std::fabs(column.z - bz));
+                    }
+                }
 
     AiObjectContext* ctx = tankAI->GetAiObjectContext();
 
