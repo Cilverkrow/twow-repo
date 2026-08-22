@@ -4,6 +4,7 @@
  */
 
 #include "TestRun/DcTestRunJob.h"
+#include "Ai/Dungeon/DungeonClear/Util/DcEncounterMask.h"
 
 #include <algorithm>
 #include <array>
@@ -319,6 +320,13 @@ std::unique_ptr<DcTestRunJob> DcTestRunJob::Create(Player* gm, DcTestDungeonRegi
     PlayerbotMgr* mgr = GET_PLAYERBOT_MGR(gm);
     bool const isAlliance = gm->GetTeamId() == TEAM_ALLIANCE;
 
+    // The active rotation set, resolved once: the rotation logs its
+    // currentBots in and out on its own schedule and yanked a live run's
+    // tank mid-dungeon - claimed characters must come from OUTSIDE it.
+    std::unordered_set<uint32> rotationGuids;
+    for (uint32 lowGuid : sRandomPlayerbotMgr.GetActiveRotationBots())
+        rotationGuids.insert(lowGuid);
+
     // Claim one offline bot-account character of `classId`, or Empty if none
     // is free. No addclass pool on this tree - the random-bot accounts are the
     // equivalent supply: every character on them is bot stock, whether or not
@@ -333,6 +341,15 @@ std::unique_ptr<DcTestRunJob> DcTestRunJob::Create(Player* gm, DcTestDungeonRegi
             if (!data || data->uiClass != classId)
                 continue;
             if (!sPlayerbotAIConfig.IsInRandomAccountList(data->uiAccount))
+                continue;
+            // NOT a character of the ACTIVE rotation set: the rotation logs
+            // its currentBots in and out on its own schedule and yanked a
+            // live run's tank mid-dungeon (result=aborted, leader tank
+            // vanished). GetBots() is exactly that set; the other ~1600
+            // bot-account characters are ones the rotation never touches
+            // (until a future re-roll picks them - a small window relative
+            // to a run's minutes, and _reservedGuids covers run-vs-run).
+            if (rotationGuids.count(cacheEntry.first))
                 continue;
             if ((Player::TeamForRace(uint8(data->uiRace)) == ALLIANCE) != isAlliance)
                 continue;
@@ -787,6 +804,21 @@ void DcTestRunJob::TickProvisioning(bool& provisionBudget)
     // Full roll at the target level first (Randomize includes GiveLevel and
     // re-picks talents), then force the role spec and re-gear for it — the
     // same sequence the `talents spec` chat command uses.
+    // Pin the slot's role BEFORE the factory rebuilds strategies:
+    // IsTank/FindLeaderTank read the INSTALLED strategy set, not the talent
+    // spec, and e.g. a feral druid respecs fine yet never gains the "tank"
+    // strategy on its own - dc on then resolves no leader tank and the run
+    // refuses to start (live: two straight setup failures, both with the
+    // feral tank; warrior/paladin tanks worked because their default
+    // strategy set already carries "tank"). ResetStrategies applies
+    // m_forcedRole last, dungeon-finder style, for every rebuild from here.
+    if (PlayerbotAI* slotAi = GetBotAI(bot))
+        slotAi->SetForcedRole(slot.role == "tank" ? 1 : (slot.role == "heal" ? 2 : 3));
+
+    // Shield this login from the random holder's add-event logout policy for
+    // the run's lifetime (see RandomPlayerbotMgr::SetExternallyManaged).
+    sRandomPlayerbotMgr.SetExternallyManaged(slot.guid.GetCounter(), true);
+
     PlayerbotFactory factory(bot, _level, _gear.quality);
 
     // Strip the equipped set first. Randomize() only wipes items when
@@ -1337,11 +1369,10 @@ void DcTestRunJob::TickStarting()
 
     // A reused instance with dead bosses would flash an instant (false)
     // all-clear — refuse it rather than record a fake success.
-    if (InstanceScript* inst = DcTargeting::GetInstanceScript(tank))
-        if (inst->GetCompletedEncounterMask() != 0)
+    if (uint32 const staleMask = DcEncounterMask::Get(tank->FindMap()))
         {
             FailSetup("stale instance: encounters already completed (mask " +
-                      std::to_string(inst->GetCompletedEncounterMask()) + ")");
+                      std::to_string(staleMask) + ")");
             return;
         }
 
@@ -1386,8 +1417,7 @@ void DcTestRunJob::TickStarting()
     tankAI->DoSpecificAction("dc on", Event("dc", "", FindGm()), true);
     if (DcRun::Of(ctx).enabled)
     {
-        if (InstanceScript* inst = DcTargeting::GetInstanceScript(tank))
-            _lastMask = inst->GetCompletedEncounterMask();
+        _lastMask = DcEncounterMask::Get(tank->FindMap());
         _lastAnchors =
             ctx->GetValue<std::unordered_set<uint32>&>(DcKey::ClearedAnchors)->Get().size();
         LOG_INFO("playerbots.dungeonclear",
@@ -1746,9 +1776,7 @@ void DcTestRunJob::TickMonitoring(uint32 dt)
         std::optional<DungeonBossInfo> const next =
             ctx->GetValue<std::optional<DungeonBossInfo>>(DcKey::NextDungeonBoss)->Get();
 
-        uint32 mask = _lastMask;
-        if (InstanceScript* inst = DcTargeting::GetInstanceScript(tank))
-            mask = inst->GetCompletedEncounterMask();
+        uint32 const mask = tank->FindMap() ? DcEncounterMask::Get(tank->FindMap()) : _lastMask;
         std::size_t const anchors =
             ctx->GetValue<std::unordered_set<uint32>&>(DcKey::ClearedAnchors)->Get().size();
 
@@ -2184,6 +2212,25 @@ void DcTestRunJob::LogoutBots(Player* gm)
     {
         if (!slot.guid)
             continue;
+
+        // Re-point each bot's master at ITSELF before the logout: the
+        // logout path tells the master goodbye, and the master here is the
+        // driver - whose Player can already be torn down on the abort paths
+        // that reach this teardown (live: SIGSEGV in Object::GetByteValue
+        // under PlayerbotSecurity::LevelFor(master) mid-teardown). A
+        // self-master makes that tell provably safe.
+        {
+            Player* botPlayer = mgr ? mgr->GetPlayerBot(slot.guid) : nullptr;
+            if (!botPlayer)
+                botPlayer = sRandomPlayerbotMgr.GetPlayerBot(slot.guid);
+            if (botPlayer)
+                if (PlayerbotAI* botAi = GetBotAI(botPlayer))
+                    botAi->SetMaster(botPlayer);
+        }
+
+        // Hand the login back to the random holder's normal policy before
+        // logging it out (mark set at provisioning).
+        sRandomPlayerbotMgr.SetExternallyManaged(slot.guid.GetCounter(), false);
 
         if (mgr && mgr->GetPlayerBot(slot.guid))
             mgr->LogoutPlayerBot(slot.guid);

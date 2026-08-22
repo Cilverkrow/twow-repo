@@ -101,6 +101,14 @@ namespace DcStrategyGate
             case Action::Strip:   botAI->ChangeStrategy("-dungeon clear", BOT_STATE_NON_COMBAT); break;
             case Action::None:    break;
         }
+
+        // The relay suppression rides the strategy: a DC party stands on top
+        // of instance entrance/exit triggers, and stock's area-trigger relay
+        // ported the run's tank out through the exit mid-run.
+        if (plan.nonCombat == Action::Install)
+            botAI->SetSuppressAreaTriggerRelay(true);
+        else if (plan.nonCombat == Action::Strip)
+            botAI->SetSuppressAreaTriggerRelay(false);
         switch (plan.combat)
         {
             case Action::Install: botAI->ChangeStrategy("+dungeon clear combat", BOT_STATE_COMBAT); break;

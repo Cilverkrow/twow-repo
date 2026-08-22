@@ -2321,6 +2321,11 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     //Log out bot
     if (!isValid)
     {
+        // An externally-managed login (dc test harness) is not ours to reap -
+        // its owner logs it out in its own teardown.
+        if (IsExternallyManaged(bot))
+            return false;
+
         if (botsAllowedInWorld && player && player->GetGroup())
         {
             SetEventValue(bot, "add", 1, 120);                                 // Delay logout for 2 minutes while in group.
