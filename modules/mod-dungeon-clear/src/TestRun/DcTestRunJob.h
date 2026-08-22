@@ -212,6 +212,11 @@ private:
     void TickTeleporting();
     void TickStarting();
     void TickMonitoring(uint32 dt);
+    // Geo fence + altitude sanity over all party slots. Shared by
+    // TickStarting AND TickMonitoring: b75 accidentally left it only in
+    // TickStarting, so a monitoring-phase wanderer (Westfall grind teleport)
+    // was never fenced back.
+    void SweepPartyGeometry();
     void TrackDeaths(Player* tank);
     void TrackEngagement(Player* tank);
     void TrackPulls(Player* tank);

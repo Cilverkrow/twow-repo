@@ -69,8 +69,22 @@ namespace DcStrategyGate
         // FindMap, not GetMap: the world-sweep hits bots mid-login/teleport
         // (no map yet), and this engine's GetMap ASSERTS on a missing map -
         // the null-tolerant read the next line expects is FindMap.
+        //
+        // And NO DECISION on a mapless or teleporting bot at all. A bot in a
+        // teleport window read as "not in a dungeon", so the sweep STRIPPED
+        // it - and TeardownOnStrip runs DisableDungeonClear, which erases the
+        // leader's `dungeon clear enabled` run flag. The strategy came back
+        // on the next sweep, the flag did not, and every DC trigger sat dark
+        // for the rest of the run (tr-20260822-223938-1: tank went silent at
+        // t~563 right after a far-from-poly NearTeleportTo recovery; watchdog
+        // ended the run 600s later with zero progress). Skip the tick; the
+        // next sweep sees the landed bot.
+        if (bot->IsBeingTeleported())
+            return;
         Map* map = bot->FindMap();
-        bool const inDungeon = map && map->IsDungeon();
+        if (!map)
+            return;
+        bool const inDungeon = map->IsDungeon();
 
         bool const hasNon = botAI->HasStrategy(kNonCombat, BOT_STATE_NON_COMBAT);
         bool const hasCmb = botAI->HasStrategy(kCombat, BOT_STATE_COMBAT);
@@ -89,6 +103,16 @@ namespace DcStrategyGate
         if (plan.nonCombat == Action::None && plan.combat == Action::None &&
             !plan.stripStrayInCombat && !plan.stripStrayInNonCombat)
             return;  // already compliant — the hot path
+
+        // State changes are rare (enter/leave dungeon, post-ResetStrategies
+        // repair) - log them so a silent strategy thief shows up as a stream
+        // of re-installs in the journal instead of nothing at all.
+        LOG_INFO("playerbots.dungeonclear",
+                 "[DC-GATE] {}: nonCombat={} combat={} (inDungeon={} hasNon={} hasCmb={})",
+                 bot->GetName(),
+                 plan.nonCombat == Action::Install ? "install" : (plan.nonCombat == Action::Strip ? "strip" : "-"),
+                 plan.combat == Action::Install ? "install" : (plan.combat == Action::Strip ? "strip" : "-"),
+                 inDungeon ? 1 : 0, hasNon ? 1 : 0, hasCmb ? 1 : 0);
 
         // Run the strip cleanup once, before removing any strategy, so the run
         // state is torn down while its values/actions still exist.

@@ -410,7 +410,7 @@ bool DcPartyState::HasDeadSameMapMember(Player* bot)
     return false;
 }
 
-bool DcPartyState::IsAnyPartyMemberLooting(Player* bot)
+bool DcPartyState::IsAnyPartyMemberLooting(Player* bot, std::string* whoOut)
 {
     if (!bot)
         return false;
@@ -437,7 +437,11 @@ bool DcPartyState::IsAnyPartyMemberLooting(Player* bot)
         AiObjectContext* memberCtx = memberAI->GetAiObjectContext();
         if (memberCtx->GetValue<bool>(DcKey::Stock::CanLoot)->Get() ||
             memberCtx->GetValue<bool>(DcKey::Stock::HasAvailableLoot)->Get())
+        {
+            if (whoOut)
+                *whoOut = member->GetName();
             return true;
+        }
     }
     return false;
 }

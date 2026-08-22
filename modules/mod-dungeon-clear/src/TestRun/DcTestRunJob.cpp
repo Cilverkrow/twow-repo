@@ -1381,23 +1381,8 @@ void DcTestRunJob::TickTeleporting()
     }
 }
 
-void DcTestRunJob::TickStarting()
+void DcTestRunJob::SweepPartyGeometry()
 {
-    Player* tank = FindTank();
-    PlayerbotAI* tankAI = tank ? GET_PLAYERBOT_AI(tank) : nullptr;
-    if (!tank || !tankAI)
-    {
-        if (_stageMs >= START_TIMEOUT_MS)
-            FailSetup("tank vanished before start");
-        return;
-    }
-
-    // Freshly-teleported bots may not have the DC strategies installed yet
-    // (contexts register on world ticks) — re-assert every tick; idempotent.
-    for (Slot const& slot : _slots)
-        if (Player* bot = ObjectAccessor::FindPlayer(slot.guid))
-            DcStrategyGate::Reconcile(bot);
-
     // Altitude sanity, run by the MONITOR because nothing can gate it here:
     // stock movement repeatedly grounds party members on the OVERWORLD
     // height over the Deadmines entrance (Z 130..216, real floor ~60). The
@@ -1447,6 +1432,26 @@ void DcTestRunJob::TickStarting()
                     }
                 }
             }
+}
+
+void DcTestRunJob::TickStarting()
+{
+    Player* tank = FindTank();
+    PlayerbotAI* tankAI = tank ? GET_PLAYERBOT_AI(tank) : nullptr;
+    if (!tank || !tankAI)
+    {
+        if (_stageMs >= START_TIMEOUT_MS)
+            FailSetup("tank vanished before start");
+        return;
+    }
+
+    // Freshly-teleported bots may not have the DC strategies installed yet
+    // (contexts register on world ticks) — re-assert every tick; idempotent.
+    for (Slot const& slot : _slots)
+        if (Player* bot = ObjectAccessor::FindPlayer(slot.guid))
+            DcStrategyGate::Reconcile(bot);
+
+    SweepPartyGeometry();
 
 
     AiObjectContext* ctx = tankAI->GetAiObjectContext();
@@ -1787,6 +1792,11 @@ bool DcTestRunJob::AnyMemberDead(Player* tank)
 
 void DcTestRunJob::TickMonitoring(uint32 dt)
 {
+    // Repair party geometry BEFORE reading it: fence overworld wanderers
+    // back to the tank and column-snap mid-air members, so the observation
+    // below scores the repaired state.
+    SweepPartyGeometry();
+
     DcTestRun::Observation obs;
     obs.elapsedMs = _monitorMs;
     obs.gmOnline = true;  // GM absence is handled in Tick()
