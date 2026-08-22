@@ -58,7 +58,6 @@
 #include "LFGMgr.h"
 #include "Geometry.h"
 #include "CreatureGroups.h"
-#include "Autoscaling/AutoScaler.hpp"
 #include "Logging/DatabaseLogger.hpp"
 #include "PerfStats.h"
 
@@ -2112,9 +2111,6 @@ bool DungeonMap::Add(Player *player)
     if (IsRaid())
         ChatHandler(player).SendSysMessage("There is a grace period of 10 minutes allowing you to trade raid loot to others in case its wrongly assigned.");
 
-    //everything checked and added. scale now.
-    sAutoScaler->Scale(this);
-
     return true;
 }
 
@@ -2224,9 +2220,6 @@ void DungeonMap::Remove(Player *player, bool remove)
         m_unloadTimer = m_unloadWhenEmpty ? MIN_UNLOAD_DELAY : std::max(sWorld.getConfig(CONFIG_UINT32_INSTANCE_UNLOAD_DELAY), (uint32)MIN_UNLOAD_DELAY);
 
     Map::Remove(player, remove);
-
-    if (m_mapRefManager.getSize() > 0)
-        sAutoScaler->Scale(this);
 
     // for normal instances schedule the reset after all players have left
     SetResetSchedule(true);

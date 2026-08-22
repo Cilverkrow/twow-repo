@@ -1067,16 +1067,6 @@ void World::LoadConfigSettingsFromFile(bool reload)
     setConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_ADD_FRIEND,          "AllowTwoSide.AddFriend", false);
 
     setConfig(CONFIG_FLOAT_MAX_FACTION_IMBALANCE, "MaxFactionImbalance", 0.1f);
-    setConfig(CONFIG_FLOAT_SCALAR_MIN_5MAN_HP,  "ScalarMin5ManHP",  0.6f);
-    setConfig(CONFIG_FLOAT_SCALAR_MIN_5MAN_DMG, "ScalarMin5ManDMG", 0.4f);
-    setConfig(CONFIG_FLOAT_SCALAR_MIN_10MAN_HP,  "ScalarMin10ManHP",  0.6f);
-    setConfig(CONFIG_FLOAT_SCALAR_MIN_10MAN_DMG, "ScalarMin10ManDMG", 0.4f);
-    setConfig(CONFIG_FLOAT_SCALAR_MIN_20MAN_HP,  "ScalarMin20ManHP",  0.6f);
-    setConfig(CONFIG_FLOAT_SCALAR_MIN_20MAN_DMG, "ScalarMin20ManDMG", 0.4f);
-    setConfig(CONFIG_FLOAT_SCALAR_MIN_40MAN_HP,  "ScalarMin40ManHP",  0.6f);
-    setConfig(CONFIG_FLOAT_SCALAR_MIN_40MAN_DMG, "ScalarMin40ManDMG", 0.4f);
-
-    setConfig(CONFIG_BOOL_AUTOSCALER_ENABLE, "AutoScalerEnable", false);
 
     setConfig(CONFIG_UINT32_STRICT_PLAYER_NAMES,  "StrictPlayerNames",  0);
     setConfig(CONFIG_UINT32_STRICT_CHARTER_NAMES, "StrictCharterNames", 0);
@@ -1439,7 +1429,6 @@ void World::LoadConfigSettingsFromFile(bool reload)
     setConfig(CONFIG_UINT32_TRANSMOG_REQ_ITEM, "Transmog.ReqItemID", 0);
     setConfig(CONFIG_UINT32_TRANSMOG_REQ_ITEM_COUNT, "Transmog.ReqItemCount", 1);
     setConfig(CONFIG_FLOAT_TRANSMOG_REQ_MONEY_RATE, "Transmog.ReqMoneyRate", 0.0);
-    setConfig(CONFIG_FLOAT_LEECH_AMOUNT, "Leech.Amount", 0.10f);
     setConfig(CONFIG_BOOL_STATIC_OBJECT_LOS, "StaticObjectLOS", true);
     setConfig(CONFIG_BOOL_DUAL_SPEC, "DualSpec", false);
     
@@ -1496,7 +1485,6 @@ void World::LoadConfigSettingsFromFile(bool reload)
     setConfig(CONFIG_UINT32_AUTO_PDUMP_DELETE_AFTER_DAYS, "AutoPDump.DeleteAfterDays", 60);
 
     setConfig(CONFIG_BOOL_PERFORMANCE_ENABLE, "Perf.Enable", true);
-    setConfig(CONFIG_BOOL_LEECH_ENABLE, "Leech.Enable", false);
 
     setConfig(CONFIG_UINT32_PERFORMANCE_REPORT_INTERVAL, "Perf.ReportInterval", 600);
     setConfig(CONFIG_UINT32_MAX_GOLD_TRANSFERRED, "Transfer.MaxGold", 300000);

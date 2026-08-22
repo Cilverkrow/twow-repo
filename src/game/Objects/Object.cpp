@@ -57,8 +57,6 @@
 #include "MovementBroadcaster.h"
 #include "PlayerBroadcaster.h"
 
-#include "Autoscaling/AutoScaler.hpp"
-
 ////////////////////////////////////////////////////////////
 // Methods of class MovementInfo
 
@@ -2184,15 +2182,6 @@ Creature *Map::SummonCreature(uint32 entry, float x, float y, float z, float ang
     if (pCreature->IsLinkingEventTrigger())
         GetCreatureLinkingHolder()->DoCreatureLinkingEvent(LINKING_EVENT_RESPAWN, pCreature);
 
-    // Scaling: apply to all dungeon/raid instances
-    if (pCreature->GetMap()->IsDungeon())
-    {
-        uint32 playerCount = pCreature->GetMap()->GetPlayersCountExceptGMs();
-        uint32 maxCount = ((DungeonMap*)pCreature->GetMap())->GetMaxPlayers();
-        if (playerCount > 0)
-            sAutoScaler->ScaleCreature(pCreature, playerCount, maxCount, pCreature->GetMap());
-    }
-
     // return the creature therewith the summoner has access to it
     return pCreature;
 }
@@ -2249,15 +2238,6 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
 
     pCreature->SetWorldMask(GetWorldMask());
     // return the creature therewith the summoner has access to it
-
-    // Scaling: apply to all dungeon/raid instances
-    if (pCreature->GetMap()->IsDungeon())
-    {
-        uint32 playerCount = pCreature->GetMap()->GetPlayersCountExceptGMs();
-        uint32 maxCount = ((DungeonMap*)pCreature->GetMap())->GetMaxPlayers();
-        if (playerCount > 0)
-            sAutoScaler->ScaleCreature(pCreature, playerCount, maxCount, pCreature->GetMap());
-    }
 
     if (attach)
         IncrementSummonCounter();

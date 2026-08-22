@@ -67,8 +67,6 @@
 #include "MovementPacketSender.h"
 #include "TWDebuff/TWDebuff.hpp"
 
-#include "Autoscaling/AutoScaler.hpp"
-
 #include <math.h>
 #include <optional>
 #include <stdarg.h>
@@ -881,19 +879,6 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
             damage *= 0.5f;
     }
 
-    if (damage > 0 && sWorld.getConfig(CONFIG_BOOL_LEECH_ENABLE))
-    {
-        Unit* owner = GetOwner();
-        bool isPetHit = owner && owner->GetTypeId() == TYPEID_PLAYER;
-        Player* player = isPetHit ? owner->ToPlayer() : ToPlayer();
-        if (player)
-        {
-            float leechAmount = sWorld.getConfig(CONFIG_FLOAT_LEECH_AMOUNT);
-            int32 bp1 = int32(leechAmount * float(damage));
-            player->CastCustomSpell(this /*attacker*/, 18984, &bp1, nullptr, nullptr, true);
-        }
-    }
-
     if (health <= damage && pVictim->GetInvincibilityHpThreshold() == 0)
     {
         if (auto player = pVictim->ToPlayer(); player && player->IsHardcore() && sWorld.HitsDiffThreshold())
@@ -1222,10 +1207,7 @@ void Unit::Kill(Unit* pVictim, SpellEntry const *spellProto, bool durabilityLoss
                     loot->FillLoot(lootid, LootTemplates_Creature, looter, false, false, pCreatureVictim);
                 }
             }
-            if (pCreatureVictim->GetMap()->IsDungeon())
-                sAutoScaler->GenerateScaledMoneyLoot(pCreatureVictim, loot);
-            else
-                loot->GenerateMoneyLoot(pCreatureVictim->GetGoldMin(), pCreatureVictim->GetGoldMax());
+            loot->GenerateMoneyLoot(pCreatureVictim->GetGoldMin(), pCreatureVictim->GetGoldMax());
         }
 
         if (pGroupTap)
