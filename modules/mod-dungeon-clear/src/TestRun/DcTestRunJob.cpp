@@ -1407,7 +1407,29 @@ void DcTestRunJob::TickStarting()
     for (Slot const& slot : _slots)
         if (Player* bot = ObjectAccessor::FindPlayer(slot.guid))
             if (Map* botMap = bot->FindMap())
-                if (botMap->IsDungeon())
+            {
+                // Geo fence FIRST, and OUTSIDE the dungeon gate - a wanderer
+                // is by definition NOT on the dungeon map, so a fence nested
+                // under IsDungeon() never sees him (live: a dps strolled to
+                // Elwynn while the fence idled). Bring him back to the tank;
+                // the group bind resolves the same instance copy.
+                if (!botMap->IsDungeon())
+                {
+                    if (Player* tank = ObjectAccessor::FindPlayer(_tankGuid))
+                        if (Map* tankMap = tank->FindMap())
+                            if (tankMap->IsDungeon() && bot != tank && bot->IsAlive() &&
+                                !bot->IsBeingTeleported())
+                            {
+                                LOG_INFO("playerbots.dungeonclear",
+                                         "TESTRUN {} geo fence: {} left the dungeon — teleporting back to the tank",
+                                         _record.runId, bot->GetName());
+                                bot->TeleportTo(tankMap->GetId(), tank->GetPositionX(),
+                                                tank->GetPositionY(), tank->GetPositionZ(),
+                                                bot->GetOrientation());
+                            }
+                    continue;
+                }
+
                 {
                     float const bz = bot->GetPositionZ();
                     NavmeshSnap::Result const column = NavmeshSnap::SnapColumn(
@@ -1424,24 +1446,8 @@ void DcTestRunJob::TickStarting()
                                  _record.runId, bot->GetName(), std::fabs(column.z - bz));
                     }
                 }
-                else if (Player* tank = ObjectAccessor::FindPlayer(_tankGuid))
-                {
-                    // Geo fence: a member that is NOT on a dungeon map mid-run
-                    // wandered out (live: one dps strolled to its Northshire
-                    // homebind while the rest fought). Bring it back to the
-                    // tank; the group bind resolves the same instance copy.
-                    if (Map* tankMap = tank->FindMap())
-                        if (tankMap->IsDungeon() && bot != tank && bot->IsAlive() &&
-                            !bot->IsBeingTeleported())
-                        {
-                            LOG_INFO("playerbots.dungeonclear",
-                                     "TESTRUN {} geo fence: {} left the dungeon — teleporting back to the tank",
-                                     _record.runId, bot->GetName());
-                            bot->TeleportTo(tankMap->GetId(), tank->GetPositionX(),
-                                            tank->GetPositionY(), tank->GetPositionZ(),
-                                            bot->GetOrientation());
-                        }
-                }
+            }
+
 
     AiObjectContext* ctx = tankAI->GetAiObjectContext();
 

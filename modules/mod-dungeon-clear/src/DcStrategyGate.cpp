@@ -95,16 +95,38 @@ namespace DcStrategyGate
         if (plan.teardown)
             TeardownOnStrip(botAI, bot);
 
+        // Install/strip and the stock-driver swap ride ONE ChangeStrategy
+        // call each: the engine batches the trigger rebuild across the
+        // comma list and rebuilds once over the final state. The first cut
+        // issued a second ChangeStrategy right after the first, and a bot
+        // crashed in ProcessTriggers on a half-rebuilt trigger list
+        // seconds later - keep this atomic.
         switch (plan.nonCombat)
         {
-            case Action::Install: botAI->ChangeStrategy("+dungeon clear", BOT_STATE_NON_COMBAT); break;
-            case Action::Strip:   botAI->ChangeStrategy("-dungeon clear", BOT_STATE_NON_COMBAT); break;
-            case Action::None:    break;
+            case Action::Install:
+                botAI->ChangeStrategy("+dungeon clear,-grind,-travel,-rpg,-rpg jump",
+                                      BOT_STATE_NON_COMBAT);
+                break;
+            case Action::Strip:
+                botAI->ChangeStrategy("-dungeon clear,+grind,+travel,+rpg,+rpg jump",
+                                      BOT_STATE_NON_COMBAT);
+                break;
+            case Action::None:
+                break;
         }
 
         // The relay suppression rides the strategy: a DC party stands on top
         // of instance entrance/exit triggers, and stock's area-trigger relay
         // ported the run's tank out through the exit mid-run.
+        // Why the stock drivers get stripped at all: the random-bot
+        // noncombat set carries grind/travel/rpg - movement drivers that
+        // FIGHT the DC advance for the mover. Live, the run's tank was
+        // dragged back up the entrance tunnel toward the exit over and
+        // over (parked at Z 86/101/216 above the floor) and runs crawled
+        // at the entrance for their whole 600s window in that tug-of-war.
+        // AiFactory only strips these for bots with a real human master; a
+        // dc-owned bot needs them gone the same way (swap is in the atomic
+        // ChangeStrategy above).
         if (plan.nonCombat == Action::Install)
             botAI->SetSuppressAreaTriggerRelay(true);
         else if (plan.nonCombat == Action::Strip)
