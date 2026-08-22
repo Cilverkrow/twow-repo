@@ -1424,6 +1424,24 @@ void DcTestRunJob::TickStarting()
                                  _record.runId, bot->GetName(), std::fabs(column.z - bz));
                     }
                 }
+                else if (Player* tank = ObjectAccessor::FindPlayer(_tankGuid))
+                {
+                    // Geo fence: a member that is NOT on a dungeon map mid-run
+                    // wandered out (live: one dps strolled to its Northshire
+                    // homebind while the rest fought). Bring it back to the
+                    // tank; the group bind resolves the same instance copy.
+                    if (Map* tankMap = tank->FindMap())
+                        if (tankMap->IsDungeon() && bot != tank && bot->IsAlive() &&
+                            !bot->IsBeingTeleported())
+                        {
+                            LOG_INFO("playerbots.dungeonclear",
+                                     "TESTRUN {} geo fence: {} left the dungeon — teleporting back to the tank",
+                                     _record.runId, bot->GetName());
+                            bot->TeleportTo(tankMap->GetId(), tank->GetPositionX(),
+                                            tank->GetPositionY(), tank->GetPositionZ(),
+                                            bot->GetOrientation());
+                        }
+                }
 
     AiObjectContext* ctx = tankAI->GetAiObjectContext();
 
@@ -1904,19 +1922,30 @@ void DcTestRunJob::TickMonitoring(uint32 dt)
         //
         // A real fight moves at least one of those every sample. A wedged one
         // moves none: stuck flag, no victim or a stale one, health frozen.
-        bool const inCombat = tank->IsInCombat();
-        Unit const* victim = tank->GetVictim();
-        ObjectGuid const victimGuid = victim ? victim->GetObjectGuid() : ObjectGuid::Empty;
-        uint32 const victimHpPct =
-            victim ? static_cast<uint32>(victim->GetHealthPct()) : 0u;
-
-        if (inCombat != _lastInCombat || victimGuid != _lastVictim ||
-            victimHpPct != _lastVictimHpPct)
+        // PARTY-wide, not tank-only: live, the tank idled at the entrance
+        // while the dps fought their way forward - a perfectly alive run
+        // that read as frozen because only the tank's combat picture was
+        // sampled. Fold every member's combat state, victim and victim
+        // health into one fingerprint; a wedged run still freezes it (a
+        // stuck flag with a stale victim moves nothing party-wide either).
+        uint32 partySig = 2166136261u;
+        auto fold = [&partySig](uint32 v)
+        {
+            partySig = (partySig ^ v) * 16777619u;
+        };
+        for (Slot const& sigSlot : _slots)
+        {
+            Player* member = ObjectAccessor::FindPlayer(sigSlot.guid);
+            if (!member)
+                continue;
+            fold(member->IsInCombat() ? 1u : 0u);
+            Unit const* mv = member->GetVictim();
+            fold(mv ? mv->GetObjectGuid().GetCounter() : 0u);
+            fold(mv ? static_cast<uint32>(mv->GetHealthPct()) : 0u);
+        }
+        if (partySig != _lastPartyCombatSig)
             progressed = true;
-
-        _lastInCombat = inCombat;
-        _lastVictim = victimGuid;
-        _lastVictimHpPct = victimHpPct;
+        _lastPartyCombatSig = partySig;
 
         // Sampled every monitor step while somebody is still standing, so the
         // wipe verdict below can name what took the party down. Deaths are read

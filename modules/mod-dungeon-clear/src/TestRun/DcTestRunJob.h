@@ -362,6 +362,10 @@ private:
     bool _lastInCombat = false;
     ObjectGuid _lastVictim;
     uint32 _lastVictimHpPct = 0;
+    // Party-wide combat fingerprint (see the progress-evidence block): the
+    // tank alone parked out of combat while the party fought made healthy
+    // runs read as frozen.
+    uint32 _lastPartyCombatSig = 0;
 
     uint32 _pausedForMs = 0;
     uint32 _stalledForMs = 0;
