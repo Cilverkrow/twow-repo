@@ -239,6 +239,44 @@ namespace
         float const y = bot->GetPositionY();
         float const z = bot->GetPositionZ();
 
+        // FLOOR-BANDED rescue first. The symmetric column search below asks
+        // for the poly NEAREST the bot's own Z - a bot standing ON the
+        // phantom terrain deck (map 36 carries the Westfall surface as
+        // valid-looking mesh ~200y above the mine) is answered with the deck
+        // itself and never comes down. The next boss's spawn Z is ground
+        // truth for the target floor: when we are far above it, search a
+        // band around IT and only accept a hit well below us.
+        {
+            PlayerbotAI* const recAI = GET_PLAYERBOT_AI(bot);
+            AiObjectContext* const recCtx = recAI ? recAI->GetAiObjectContext() : nullptr;
+            std::optional<DungeonBossInfo> const nb =
+                recCtx ? recCtx->GetValue<std::optional<DungeonBossInfo>>(DcKey::NextDungeonBoss)->Get()
+                       : std::optional<DungeonBossInfo>{};
+            // +25/band 40, not +70/60: at the ENTRANCE the phantom deck sits
+            // only ~35y over the real floor (Z 89-95 over 60) - the original
+            // +70 gate never saw exactly the spot every run kept regressing
+            // to (live tr-20260823-010638-1: tank parked at Z 95.5 on
+            // (-16,-391) with the gate silent). The >25y-below acceptance
+            // keeps stairs/ramps safe.
+            if (nb.has_value() && z > nb->z + 25.0f)
+            {
+                NavmeshSnap::Result const floorHit = NavmeshSnap::SnapColumn(
+                    bot->GetMap(), x, y, nb->z, /*halfHeight*/ 40.0f, /*radius*/ 8.0f);
+                if (floorHit.ok && z - floorHit.z > 25.0f)
+                {
+                    bot->GetMotionMaster()->Clear();
+                    bot->NearTeleportTo(floorHit.x, floorHit.y, floorHit.z,
+                                        bot->GetOrientation(),
+                                        /*casting*/ false, /*vehicle*/ false, /*withPet*/ true);
+                    LOG_INFO("playerbots.dungeonclear",
+                             "[DC:{}] far-from-poly recovery: floor-banded snap {:.0f}y "
+                             "down off the phantom deck",
+                             bot->GetName(), z - floorHit.z);
+                    return true;
+                }
+            }
+        }
+
         // Vertical rescue FIRST: the bot may be parked ON AIR far above the
         // mesh - live, stock movement grounded the DC leader on the
         // OVERWORLD height (Z=216) over the Deadmines entrance, 150y above
