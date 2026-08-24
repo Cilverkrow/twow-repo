@@ -1244,6 +1244,30 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::DoLongPathUnreachable
         return Step::ReturnTrue;
     }
 
+    // Short-range mesh-blind push. The tile-wise long-range router refuses
+    // corridors the stock PathGenerator can still thread - live
+    // (tr-20260824-091007-1, 5/8): the Deadmines ship deck holds Greenskin
+    // and VanCleef at Z 40 over the Z 12 quay, the gangplank is walkable
+    // in-game, and the chunked builder reports "no navigable route". Within
+    // a short leash, hand the move to stock MoveTo and let its own A*
+    // climb; the leash and dz gates keep a genuinely unreachable target
+    // falling through to the stall exactly as before.
+    {
+        float const airDist = bot->GetDistance(bossX, bossY, bossZ);
+        if (airDist < 60.0f && std::fabs(bossZ - bot->GetPositionZ()) < 40.0f)
+        {
+            if (DcMoveTo(next->mapId, bossX, bossY, bossZ))
+            {
+                LOG_INFO("playerbots.dungeonclear",
+                         "[DC:{}] no long-range route to {} at {:.0f}yd -> "
+                         "short-range stock push",
+                         bot->GetName(), next->name, airDist);
+                SetPhase(context, "moving");
+                return Step::ReturnTrue;
+            }
+        }
+    }
+
     // The chunked builder couldn't produce any segment. Failure
     // reason is carried through from PathGenerator's path type
     // (NOPATH, FARFROMPOLY_START, etc.). The stalled-fallback action
