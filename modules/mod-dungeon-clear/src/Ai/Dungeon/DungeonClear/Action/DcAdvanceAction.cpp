@@ -543,7 +543,7 @@ namespace
         // wait, so the next window chains seamlessly when the spline finalizes).
         MotionMaster* mm = bot->GetMotionMaster();
         bool const splineRunning =
-            mm && mm->GetCurrentMovementGeneratorType() == ESCORT_MOTION_TYPE && bot->isMoving();
+            bot->movespline && !bot->movespline->Finalized() && bot->isMoving();
         if (splineRunning)
         {
             SetPhase(context, "swimming");
@@ -798,7 +798,7 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::TryBetweenPullsRest(A
     {
         MotionMaster const* const mm = bot->GetMotionMaster();
         bool const glideInFlight =
-            mm && mm->GetCurrentMovementGeneratorType() == ESCORT_MOTION_TYPE;
+            bot->movespline && !bot->movespline->Finalized();
         if (glideInFlight)
             return Step::Continue;   // ride it out; a real wait halts it next tick
         return Step::ReturnFalse;    // standing still already — do not commit a new window
@@ -1411,7 +1411,7 @@ void DungeonClearAdvanceAction::FillHopObs(AdvanceState& st, DungeonClearApproac
     // window-sized delay was the mid-path "frozen for seconds" freeze.
     MotionMaster* const mm = bot->GetMotionMaster();
     obs.splineRunning =
-        mm && mm->GetCurrentMovementGeneratorType() == ESCORT_MOTION_TYPE && bot->isMoving();
+        bot->movespline && !bot->movespline->Finalized() && bot->isMoving();
     if (obs.splineRunning)
     {
         // Mid-glide hazard interrupt: the window cap (AdvanceWindowYards) still
@@ -1697,7 +1697,25 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::DoIssueSplineWindow(A
     // priority arbitration only). The window (>=2 points, window[0] the live
     // position) was produced in FillHopObs.
     Movement::PointsArray points(st.splineWindow.begin(), st.splineWindow.end());
-    if (DcMovement::SplinePath(botAI, points))
+    bool const splined = DcMovement::SplinePath(botAI, points);
+    // DIAG(step): does the glide actually get issued? The stall fingerprint
+    // (route complete, cursor 0/0, no refusal line, no movement) cannot tell
+    // "no window built" from "window issued and ignored" without this.
+    {
+        static uint32 s_lastStepLogMs = 0;
+        uint32 const nowStep = getMSTime();
+        if (nowStep - s_lastStepLogMs > 4000)
+        {
+            s_lastStepLogMs = nowStep;
+            LOG_INFO("playerbots.dungeonclear",
+                     "[DC-STEP] {} spline window: {} pts, issued={} , moving={} , "
+                     "at ({:.0f},{:.0f},{:.0f})",
+                     bot->GetName(), points.size(), splined ? 1 : 0,
+                     bot->isMoving() ? 1 : 0,
+                     bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+        }
+    }
+    if (splined)
     {
         st.appr->stuckCount = 0;
         ClearStall(context);
