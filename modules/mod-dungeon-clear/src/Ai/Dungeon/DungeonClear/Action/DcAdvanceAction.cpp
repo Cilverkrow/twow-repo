@@ -1568,6 +1568,58 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::DoHopDoneEscalation(
         return Step::ReturnFalse;
     }
 
+    // INCOMPLETE-ROUTE HANDOFF. The chunk builder can return a partial route
+    // that simply stops short of a boss it cannot reach - live: the Deadmines
+    // ship deck (Greenskin/VanCleef ~39y above the quay) produced
+    // "complete=0, 42 pts" forever, the party walked that stub to the water's
+    // edge and the route was rebuilt every TTL for the rest of the window.
+    // Stock's PathGenerator uses the same navmesh but its own search, and it
+    // honours Detour off-mesh connections the chunked walker never consults,
+    // so on a short hop it can close what the tile-wise builder refuses. This
+    // is a handoff, not a shortcut: if stock cannot path it either, nothing
+    // happens and the stall stands.
+    if (st.path && !st.path->complete)
+    {
+        float const flat = bot->GetExactDist2d(bossX, bossY);
+        // 120yd, not 60: the stub route parks the party wherever it ran out,
+        // and live that was 60.8yd from Greenskin - just past the old gate.
+        // ...and only once the route stops PAYING. isMoving() was the wrong
+        // question twice over: firing while the stub is still being walked
+        // cancels the glide every 5s and freezes the run (live: 114yd from
+        // Gilnid on a healthy route), but demanding a full stop never fires
+        // at all where it matters - on the Deadmines deck the party paces
+        // its dead-end stub forever, moving the whole time and arriving
+        // nowhere. Net ground covered is the honest measure.
+        DcApproachState& happr = *st.appr;
+        uint32 const nowHand = getMSTime();
+        float const toBoss = bot->GetExactDist(bossX, bossY, bossZ);
+        if (happr.handoffSinceMs == 0 || toBoss < happr.handoffBestDist - 3.0f)
+        {
+            happr.handoffBestDist = toBoss;
+            happr.handoffSinceMs = nowHand ? nowHand : 1;
+        }
+        bool const routeNotPaying =
+            happr.handoffSinceMs != 0 && getMSTimeDiff(happr.handoffSinceMs, nowHand) > 25000;
+        if (flat < 120.0f && routeNotPaying)
+        {
+            static uint32 s_lastHandoffMs = 0;
+            uint32 const nowHandoff = getMSTime();
+            if (nowHandoff - s_lastHandoffMs > 5000)
+            {
+                s_lastHandoffMs = nowHandoff;
+                if (DcMoveTo(next->mapId, bossX, bossY, bossZ))
+                {
+                    LOG_INFO("playerbots.dungeonclear",
+                             "[DC:{}] incomplete route to {} at {:.0f}yd (dz {:.0f}) "
+                             "-> handing the last leg to stock pathfinding",
+                             bot->GetName(), next->name, flat, bossZ - bot->GetPositionZ());
+                    SetPhase(context, "pursuing");
+                    return Step::ReturnTrue;
+                }
+            }
+        }
+    }
+
     if (v == DungeonClearApproach::Verdict::FinalApproach)
     {
         // The route dead-ends short of the boss. Rebuilding just produces the

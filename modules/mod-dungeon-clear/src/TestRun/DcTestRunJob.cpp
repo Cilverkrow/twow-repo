@@ -930,6 +930,16 @@ void DcTestRunJob::TickProvisioning(bool& provisionBudget)
     // safe and the whole fix.
     factory.InitAmmo();
 
+    // PROVISIONS, for the same reason ammo is re-run above: StripEquipment
+    // empties the bags and the Randomize(false, ...) path never reaches
+    // InitFood, so every caster entered its run with nothing to drink. A
+    // level-21 healer then regenerates mana at natural rate - minutes - and
+    // the party's rest gate holds the WHOLE run there (live: 248s of
+    // "Waiting on X (low mana)" in front of Mr. Smite, run aborted at 4/8).
+    // InitFood is a no-op when the bags already carry food/drink, and skips
+    // drinks for classes without mana.
+    factory.AddFood();   // public wrapper for InitFood
+
     botAI->ResetStrategies();
 
     DcTestRunRecord::CompEntry entry;
