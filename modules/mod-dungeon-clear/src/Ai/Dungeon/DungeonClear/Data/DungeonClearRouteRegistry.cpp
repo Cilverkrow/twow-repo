@@ -7,6 +7,11 @@
 
 #include "Ai/Dungeon/DungeonClear/Data/Events/DungeonEventTables.h"
 
+// Generated collector (routes/RecordedRoutes.cpp). Declared at file scope:
+// inside the anonymous namespace it would get internal linkage and never
+// find its definition.
+void RegisterAllRecordedRoutes();
+
 namespace
 {
     // One-time seed of the hand-authored routes.
@@ -25,6 +30,10 @@ namespace
         static bool const seeded = []
         {
             RegisterAzjolNerubRoute();
+            // Everything the route recorder captured from live clears (see
+            // modules/mod-dungeon-clear/routes/). Generated collector; a
+            // recorded route only becomes live once it is called from here.
+            RegisterAllRecordedRoutes();
             return true;
         }();
         (void)seeded;

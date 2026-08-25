@@ -164,12 +164,19 @@ namespace DcRouteRecorder
         std::ostringstream path;
         path << OutputDir() << "/Route_" << mapId << "_" << bossEntry << ".cpp";
 
-        std::ofstream out(path.str().c_str(), std::ios::trunc);
+        // Side file + rename: with several groups running at once two can
+        // close the same boss leg within milliseconds, and a direct truncate
+        // would let one read the other's half-written file. Rename is atomic
+        // on the same filesystem.
+        std::string const finalPath = path.str();
+        std::string const tmpPath =
+            finalPath + ".tmp" + std::to_string(map->GetInstanceId());
+        std::ofstream out(tmpPath.c_str(), std::ios::trunc);
         if (!out.is_open())
         {
             LOG_INFO("playerbots.dungeonclear",
                      "[DC-ROUTE] could not write {} — recorder disabled for this leg",
-                     path.str());
+                     finalPath);
             return;
         }
 
@@ -193,10 +200,11 @@ namespace DcRouteRecorder
         }
         out << "        });\n}\n";
         out.close();
+        std::rename(tmpPath.c_str(), finalPath.c_str());
 
         LOG_INFO("playerbots.dungeonclear",
                  "[DC-ROUTE] recorded {} anchors ({}yd) for {} (entry {}) -> {}",
-                 anchors.size(), static_cast<uint32>(length), bossName, bossEntry, path.str());
+                 anchors.size(), static_cast<uint32>(length), bossName, bossEntry, finalPath);
     }
 
     void Forget(uint32 instanceId)

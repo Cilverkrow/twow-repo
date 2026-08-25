@@ -1581,6 +1581,28 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::DoHopDoneEscalation(
     if (st.path && !st.path->complete)
     {
         float const flat = bot->GetExactDist2d(bossX, bossY);
+        // DIAG(mesh), distance-independent: an incomplete route is the whole
+        // question, and the party often follows its stub far away from the
+        // boss (live: 365yd), so a probe gated on proximity never runs.
+        {
+            static uint32 s_lastFarProbeMs = 0;
+            uint32 const nowFar2 = getMSTime();
+            if (nowFar2 - s_lastFarProbeMs > 30000 && bot->FindMap())
+            {
+                s_lastFarProbeMs = nowFar2;
+                NavmeshSnap::Result const at =
+                    NavmeshSnap::SnapColumn(bot->FindMap(), bossX, bossY, bossZ, 25.0f, 10.0f);
+                // Plain {} only - this core's StringFormat does not implement
+                // format specs, so {:.1f} survives verbatim into the journal
+                // (every garbled diagnostic in this module has that cause).
+                // Round to int here instead.
+                LOG_INFO("playerbots.dungeonclear",
+                         "[DC-MESH] {} unreachable: meshAtBoss={} snappedZ={} bossZ={} botDist={} botZ={}",
+                         next->name, at.ok ? 1 : 0,
+                         int(at.ok ? at.z : 0.0f), int(bossZ), int(flat),
+                         int(bot->GetPositionZ()));
+            }
+        }
         // 120yd, not 60: the stub route parks the party wherever it ran out,
         // and live that was 60.8yd from Greenskin - just past the old gate.
         // ...and only once the route stops PAYING. isMoving() was the wrong
@@ -1607,6 +1629,48 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::DoHopDoneEscalation(
             if (nowHandoff - s_lastHandoffMs > 5000)
             {
                 s_lastHandoffMs = nowHandoff;
+                // Ask for a REACHABLE point near the boss first. The boss's
+                // own spot may be exactly the unreachable one (live: 13yd
+                // from Greenskin but 12.8y below him - the missing stairs to
+                // the upper deck sit between). FindStandoffPoint rings the
+                // boss and returns the first candidate that snaps to the
+                // mesh, has line of sight and is PATHFIND_NORMAL-reachable
+                // from here; walking there is ordinary movement and the pull
+                // happens from that spot.
+                // DIAG(mesh): is there ANY navmesh at the boss at all? A hit
+                // at his own Z means the deck is meshed and only the link is
+                // missing (off-mesh connection / anchors can fix that); a
+                // miss, or a hit far below him, means the geometry was never
+                // meshed and only regenerating map 36 helps.
+                {
+                    static uint32 s_lastMeshProbeMs = 0;
+                    uint32 const nowProbe = getMSTime();
+                    if (nowProbe - s_lastMeshProbeMs > 30000 && bot->FindMap())
+                    {
+                        s_lastMeshProbeMs = nowProbe;
+                        NavmeshSnap::Result const at =
+                            NavmeshSnap::SnapColumn(bot->FindMap(), bossX, bossY, bossZ, 25.0f, 10.0f);
+                        LOG_INFO("playerbots.dungeonclear",
+                                 "[DC-MESH] probe at {}: ok={} snappedZ={:.1f} bossZ={:.1f}",
+                                 next->name, at.ok ? 1 : 0, at.ok ? at.z : 0.0f, bossZ);
+                    }
+                }
+
+                float sx = 0.0f, sy = 0.0f, sz = 0.0f;
+                Position const bossPos(bossX, bossY, bossZ, 0.0f);
+                bool const haveSpot = bot->FindMap() &&
+                    FindStandoffPoint(bot->FindMap(), bossPos, /*ringRadius*/ 14.0f,
+                                      /*maxRadius*/ 30.0f, sx, sy, sz);
+                if (haveSpot && DcMoveTo(next->mapId, sx, sy, sz))
+                {
+                    LOG_INFO("playerbots.dungeonclear",
+                             "[DC:{}] incomplete route to {} at {:.0f}yd (dz {:.0f}) "
+                             "-> walking to a reachable spot {:.0f}yd off it",
+                             bot->GetName(), next->name, flat, bossZ - bot->GetPositionZ(),
+                             bot->GetExactDist(sx, sy, sz));
+                    SetPhase(context, "pursuing");
+                    return Step::ReturnTrue;
+                }
                 if (DcMoveTo(next->mapId, bossX, bossY, bossZ))
                 {
                     LOG_INFO("playerbots.dungeonclear",
@@ -1970,6 +2034,63 @@ bool DungeonClearAdvanceAction::Execute(Event& /*event*/)
     // `has available loot` never got a tick: the tank parked at the boss jittering
     // (loot-walk vs hold) until the boss died by other means. Loot first lets the
     // cutoffs clear the corpse and reopen the pull.
+    // RAMP SCAN (diagnostic, 1x/60s), independent of what the router thinks
+    // of its route. The ship deck fails in two shapes - incomplete route, or
+    // a complete route that is never walked - and a scan bound to the first
+    // shape simply never ran in the second. The situation itself is the
+    // trigger: boss well above us and no approach for 30s. Reports every
+    // grid cell whose mesh height sits between the two levels; those cells
+    // are the stairway an anchor chain has to follow.
+    if (st.next && st.appr)
+    {
+        static uint32 s_rampProbeMs = 0;
+        static float  s_rampBest = 0.0f;
+        static uint32 s_rampBestMs = 0;
+        uint32 const nowRamp = getMSTime();
+        float const botZnow = bot->GetPositionZ();
+        float const toBossNow = bot->GetExactDist(st.bossX, st.bossY, st.bossZ);
+        if (s_rampBestMs == 0 || toBossNow < s_rampBest - 3.0f)
+        {
+            s_rampBest = toBossNow;
+            s_rampBestMs = nowRamp ? nowRamp : 1;
+        }
+        bool const noApproach = getMSTimeDiff(s_rampBestMs, nowRamp) > 30000;
+        // 6y, not 15: the party now climbs to within ~10y of the deck
+        // before stalling, and the old gate silenced the scan exactly there.
+        if (noApproach && st.bossZ - botZnow > 6.0f && bot->FindMap() &&
+            nowRamp - s_rampProbeMs > 60000)
+        {
+            s_rampProbeMs = nowRamp;
+            Map* const rmap = bot->FindMap();
+            float const cx = (bot->GetPositionX() + st.bossX) * 0.5f;
+            float const cy = (bot->GetPositionY() + st.bossY) * 0.5f;
+            std::string found;
+            uint32 hits = 0;
+            for (int ix = -6; ix <= 6 && hits < 24; ++ix)
+                for (int iy = -6; iy <= 6 && hits < 24; ++iy)
+                {
+                    float const px = cx + float(ix) * 8.0f;
+                    float const py = cy + float(iy) * 8.0f;
+                    NavmeshSnap::Result const r = NavmeshSnap::SnapColumn(
+                        rmap, px, py, (botZnow + st.bossZ) * 0.5f, 30.0f, 6.0f);
+                    if (!r.ok)
+                        continue;
+                    if (r.z > botZnow + 6.0f && r.z < st.bossZ - 4.0f)
+                    {
+                        found += " (" + std::to_string(int(px)) + "," +
+                                 std::to_string(int(py)) + "," +
+                                 std::to_string(int(r.z)) + ")";
+                        ++hits;
+                    }
+                }
+            LOG_INFO("playerbots.dungeonclear",
+                     "[DC-RAMP] botZ={} bossZ={} bot=({},{}) centre=({},{}) {} mid-level cells:{}",
+                     int(botZnow), int(st.bossZ), int(bot->GetPositionX()),
+                     int(bot->GetPositionY()), int(cx), int(cy), hits,
+                     found.empty() ? std::string(" none") : found);
+        }
+    }
+
     if (Step s = TryLootYield(st); s != Step::Continue)
         return s == Step::ReturnTrue;
     if (Step s = TryEngageHold(st); s != Step::Continue)
