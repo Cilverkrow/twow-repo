@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <mutex>
 #include <sstream>
@@ -44,6 +45,9 @@ namespace
     // A leg shorter than this is not worth an anchor route (the boss was
     // already next door and the router handles that trivially).
     constexpr float kMinLegLength = 40.0f;
+    // Vertical granularity: a stairway anchored every 3y keeps its shape
+    // without turning a flat corridor into a chain of stops.
+    constexpr float kAnchorRise = 3.0f;
 
     float Dist2D(Sample3 const& a, Sample3 const& b)
     {
@@ -75,7 +79,16 @@ namespace
                 float const cosang = (ax * bx + ay * by) / (la * lb);
                 corner = cosang < 0.82f;   // ~35 degrees or sharper
             }
-            if (run >= kAnchorStep || corner)
+            // Height matters as much as heading. The turn test above is 2D,
+            // so a straight staircase reads as "no corner" and would only get
+            // an anchor every kAnchorStep - losing the climb exactly where a
+            // route needs it most (the Deadmines ship deck rises ~39y over a
+            // short run). Keep a point whenever we have gained or lost more
+            // than kAnchorRise since the last kept anchor. Flat ground is
+            // unaffected: extra points on a straight line buy nothing but
+            // stop-and-go.
+            bool const climbed = std::fabs(pts[i].z - out.back().z) > kAnchorRise;
+            if (run >= kAnchorStep || corner || climbed)
             {
                 out.push_back(pts[i]);
                 run = 0.0f;
@@ -164,6 +177,36 @@ namespace DcRouteRecorder
         std::ostringstream path;
         path << OutputDir() << "/Route_" << mapId << "_" << bossEntry << ".cpp";
 
+        // Keep the SHORTEST route. The generated header carries the leg's
+        // length ("... N anchors over Xyd."), so a previous recording can be
+        // compared without any side index. Live: the same Gilnid leg was
+        // recorded at 460yd and, minutes later, at 1695yd - last-writer-wins
+        // threw the good one away. With several groups running the same
+        // dungeon at once this decides which attempt survives.
+        {
+            std::ifstream prev(path.str().c_str());
+            if (prev.is_open())
+            {
+                std::string head;
+                std::getline(prev, head);
+                std::getline(prev, head);          // second line carries the numbers
+                std::size_t const at = head.find(" over ");
+                if (at != std::string::npos)
+                {
+                    uint32 const prevLen =
+                        static_cast<uint32>(std::atoi(head.c_str() + at + 6));
+                    if (prevLen != 0 && prevLen <= static_cast<uint32>(length))
+                    {
+                        LOG_INFO("playerbots.dungeonclear",
+                                 "[DC-ROUTE] kept the shorter route for {} ({}yd) — this run "
+                                 "walked {}yd",
+                                 bossName, prevLen, static_cast<uint32>(length));
+                        return;
+                    }
+                }
+            }
+        }
+
         // Side file + rename: with several groups running at once two can
         // close the same boss leg within milliseconds, and a direct truncate
         // would let one read the other's half-written file. Rename is atomic
@@ -201,6 +244,26 @@ namespace DcRouteRecorder
         out << "        });\n}\n";
         out.close();
         std::rename(tmpPath.c_str(), finalPath.c_str());
+
+        // Runtime twin: same anchors, one "x y z" per line, plus the leg
+        // length in the header so the shortest-wins comparison works on it
+        // too. The .cpp above is what the repo ships; THIS is what a running
+        // server reads at startup, so a better route is live after a restart
+        // instead of after a rebuild.
+        {
+            std::string const datPath = finalPath.substr(0, finalPath.size() - 4) + ".route";
+            std::string const datTmp = datPath + ".tmp" + std::to_string(map->GetInstanceId());
+            std::ofstream dat(datTmp.c_str(), std::ios::trunc);
+            if (dat.is_open())
+            {
+                dat << "# map " << mapId << " boss " << bossEntry << " len "
+                    << static_cast<uint32>(length) << "\n";
+                for (Sample3 const& a : anchors)
+                    dat << a.x << ' ' << a.y << ' ' << a.z << "\n";
+                dat.close();
+                std::rename(datTmp.c_str(), datPath.c_str());
+            }
+        }
 
         LOG_INFO("playerbots.dungeonclear",
                  "[DC-ROUTE] recorded {} anchors ({}yd) for {} (entry {}) -> {}",
