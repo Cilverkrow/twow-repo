@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "task_id": "OT-001-R1-PROVENANCE-AWARE-SOURCE-INTEGRATION",
+  "repository_projection_path": "C:\\TW\\GitHub\\twow-repo\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\rndbot-persistent-active-roster-implementation-01-phase-b-r2-20260831-131938",
+  "historical_manifest_declarations": 107,
+  "present_count": 66,
+  "omitted_count": 41,
+  "hash_mismatch_count": 0,
+  "omitted_groups": {
+    "artifacts": 4,
+    "evidence": 36,
+    "racechange_log": 1
+  },
+  "classification": "INTENTIONALLY_BINARY_LOG_EVIDENCE_FREE_PROJECTION",
+  "source_copy_comparison_count": 28,
+  "source_copy_mismatch_count": 0,
+  "restored_omitted_files": false
+}
+

@@ -63,3 +63,14 @@ Primary sources:
 ## Reconstruction limitation
 
 The ADRs describe durable decisions, not every conversational suggestion. Proposals, failed gates, superseded values, and unexecuted plans remain marked as such in the decision register. Runtime, Git, hash, database, and manifest evidence outrank remembered or compacted chat content.
+
+## 2026-08-31 TODO and restructuring consolidation
+
+The online ChatGPT project `TWoW - Server` was reachable during this update. Its nine canonical chats and two legacy references were enumerated, and the currently relevant project-control, SSC, deployment, build, documentation, bot-count, and server-file discussions were consulted. Histories were not copied; actionable conclusions were reconciled against current repository and runbook evidence.
+
+New primary evidence imported as sanitized text:
+
+- `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-20260831T192201Z/`
+- `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-recovery-20260831T220000Z/`
+
+The recovery evidence supersedes the earlier generic “MSBuild stalled” explanation with the reproducible final blocker `RC2135 file not found: mangosd.ico`. It does not supersede the successful unit, real-adapter, scope, secret, or binary gates from the first OT-001 package.

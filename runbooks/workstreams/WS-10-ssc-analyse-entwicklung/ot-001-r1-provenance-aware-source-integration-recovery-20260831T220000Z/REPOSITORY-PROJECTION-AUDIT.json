@@ -1,0 +1,22 @@
+{
+  "recovery_kind": "build-only",
+  "prior_projection_audit": {
+    "path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\ot-001-r1-provenance-aware-source-integration-20260831T192201Z\\REPOSITORY-PROJECTION-AUDIT.json",
+    "status": "referenced_unchanged"
+  },
+  "repository": {
+    "root": "C:\\TW\\GitHub\\twow-repo",
+    "expected_parent": "f1f2e01026e54cd5c119c1e8e95fc107a01f4e2b",
+    "object_imported": false,
+    "push": false,
+    "main_merge": false
+  },
+  "resource_blocker": {
+    "path": "src/mangosd/mangosd.ico",
+    "target_head_entry": false,
+    "worktree_file": false,
+    "ignored": true,
+    "baseline_blob": "06327ff7c112754762c91a02ac1d26b5d76e20eb",
+    "import_or_copy_performed": false
+  }
+}

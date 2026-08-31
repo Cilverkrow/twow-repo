@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-This directory is the canonical repository index for reconstructed project decisions. The records were created on 2026-08-31 from the current local and online project tasks, the archived local governance test, the collaboration hub, checked-in runbooks, and Git history.
+This directory is the canonical repository index for reconstructed project decisions. The records were created and updated on 2026-08-31 from the current local and online project tasks, the archived local governance test, the collaboration hub, checked-in runbooks, and Git history.
 
 The records distinguish three things:
 
@@ -29,6 +29,8 @@ Chat text is provenance, not runtime truth. When evidence conflicts, use the pre
 | [0015](ADR-0015-personality-and-technical-bridge-boundary.md) | Separate personality policy from the technical bridge | Accepted | WS-10 / WS-70 |
 | [0016](ADR-0016-donation-progress-persistence.md) | Persist donation-point partial progress in `tw_logon` | Accepted and migrated | WS-20 / WS-30 |
 | [0017](ADR-0017-profession-and-riding-targets.md) | Player/bot profession split and early-riding target | Accepted, implementation pending | WS-10 / WS-20 / WS-30 |
+| [0018](ADR-0018-runbook-evidence-retention-before-restructuring.md) | Keep sanitized runbook evidence in the main repository for now | Accepted | WS-00 / WS-80 |
+| [0019](ADR-0019-external-windows-build-inputs.md) | Keep binary Windows build inputs external and pinned | Accepted | WS-10 / WS-50 |
 
 ## Creating later ADRs
 

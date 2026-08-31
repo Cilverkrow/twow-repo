@@ -1,0 +1,7 @@
+item	result	detail
+validated_roster_paths	PASS	28 integrated paths remain the complete source diff
+unexpected_tracked_paths	PASS	none
+worldsession_or_group_changes	PASS	none
+llm_or_ollama_changes	PASS	none
+resource_workaround	NOT_APPLIED	no icon copy, link, wrapper or source edit
+local_commit	NOT_CREATED	clean build gate remains failed

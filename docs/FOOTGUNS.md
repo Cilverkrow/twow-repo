@@ -106,3 +106,12 @@ These are verified or strongly evidenced hazards, not generic cautions. A footgu
 | FG-068 | Updating every level-40/60 item | Ordinary items and intentionally gated special mounts can be damaged. | Derive a complete mount manifest from spells, skills, and sources; classify each item. |
 | FG-069 | Changing mount training price and assuming item price changed | Trainer cost and item purchase price are independent fields. | Treat purchase-price policy as a separate explicit decision. |
 | FG-070 | Repairing the trainer path from one unproven event | The controlled normal-account purchase succeeded and persisted correctly. | Require a reproducible failure before code, data, refund, or spell-grant action. |
+
+## Repository restructuring and evidence
+
+| ID | Footgun | Failure mode | Guardrail |
+|---|---|---|---|
+| FG-071 | Ignoring required build resources as “just binaries” | `mangosd.rc` requires `mangosd.ico`; the linker requires external compiled libraries. A text-only checkout can configure and compile most targets but still fail late. | Follow `docs/BUILD-RESOURCES.md`: verify pinned external inputs, expose them only temporarily, and keep them out of Git. |
+| FG-072 | Refactoring while a feature worktree is the only integrated copy | A reset, rebase, broad move, or cleanup can orphan a reviewed source delta before it is secured in Git. | Inventory worktrees and branches, pin the exact parent and diff, produce a tested feature commit first, and preserve it until `main` integration is verified. |
+| FG-073 | Copying whole evidence directories into Git | Raw packages can contain executables, symbols, logs, credentials, account data, oversized files, or licensed assets. | Import only allowlisted sanitized text after secret, binary, size, and path review; record excluded payloads by hash. |
+| FG-074 | Treating `TODOS.md` as permission | A checklist can be mistaken for an approved deployment or database task. | Every checklist remains non-authorizing; require the workstream preflight and explicit mutation scope for execution. |

@@ -1,0 +1,11 @@
+gate	result	evidence
+prior_fake_unit_run_1	PASS	prior immutable package TEST-MATRIX.tsv SHA256 1B54F2781D4DB0F1D67A54C327A5D636B618C06A7DCAC758361CC4EEE7C94273
+prior_fake_unit_run_2	PASS	prior immutable package TEST-MATRIX.tsv SHA256 1B54F2781D4DB0F1D67A54C327A5D636B618C06A7DCAC758361CC4EEE7C94273
+prior_real_cpp_adapter_run_1	PASS	prior immutable package TEST-MATRIX.tsv
+prior_real_cpp_adapter_run_2	PASS	prior immutable package TEST-MATRIX.tsv
+recovery_git_diff_check	PASS	no whitespace errors
+recovery_scoped_secret_scan	PASS	tracked added lines and 13 untracked paths contain no credential material
+recovery_binary_large_scan	PASS	no binary or greater-than-1MiB file in the 28-path source diff
+recovery_clean_configure	PASS	MSVC ACE Boost Git detected
+recovery_release_mangosd	FAIL	RC2135 missing src/mangosd/mangosd.ico
+candidate_start	NOT_RUN	no EXE created and start forbidden

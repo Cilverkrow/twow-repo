@@ -4,9 +4,12 @@ This repository is a source-controlled project view, not a self-contained server
 
 ## Current project state
 
+- [Root TODOs](../TODOS.md) — concise checklist of every open work item; never execution authorization.
 - [Open threads](OPEN-THREADS.md) — unfinished work, ownership, dependencies, and next gates.
 - [Footguns](FOOTGUNS.md) — known ways to produce a wrong result, damage state, or misread the evidence.
 - [External requirements](EXTERNAL-REQUIREMENTS.md) — tools, runtime data, services, credentials, and artifacts intentionally absent from Git.
+- [Windows build resources](BUILD-RESOURCES.md) — pinned external icon/library prerequisites and their temporary materialization contract.
+- [Claude Code restructuring handover](HANDOVER-CLAUDE-CODE.md) — verified starting state, constraints, intended module seams, and proposal criteria.
 
 ## Decisions and boundaries
 

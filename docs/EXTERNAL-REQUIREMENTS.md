@@ -7,7 +7,7 @@ The repository intentionally cannot build, run, test, or deploy the complete pri
 | Goal | Required outside Git | Notes |
 |---|---|---|
 | Read/analyze source | Git client and a text/code toolchain | No runtime access is needed. Historical absolute paths are optional evidence only. |
-| Build the server | Windows x64 build toolchain, CMake, Windows SDK, and compiled dependencies | A known-good evidence run used Visual Studio 2022, MSVC 19.44, CMake 4.4.2, Windows SDK 10.0.26100.0, and ACE/Boost from vcpkg. These are observed pins, not a claim that every older/newer version works. |
+| Build the server | Windows x64 build toolchain, CMake, Windows SDK, compiled dependencies, and every required resource input | A known-good evidence run used Visual Studio 2022, MSVC 19.44, CMake 4.4.2, Windows SDK 10.0.26100.0, and ACE/Boost from vcpkg. `mangosd.ico` and `dep/windows/lib` are pinned external prerequisites under [the build-resource contract](BUILD-RESOURCES.md); they must not be committed. |
 | Run unit/integration tests | Build environment plus disposable test directories and, for DB adapter tests, an isolated MariaDB instance | Never point isolated adapter tests at the production datadir or port. |
 | Run Worldserver/Realmd | Built `mangosd`/`realmd`, required runtime DLLs, extracted game data, active configs, and populated databases | None of the production binaries or data is committed. |
 | Run the client | A legally obtained compatible TWoW client, client configuration, approved AddOns, and any separately managed patches | MPQs, cache, screenshots, and large client binaries remain outside Git. |
@@ -29,6 +29,14 @@ The operator must supply outside the repository:
 - network/firewall configuration for the chosen local or private endpoints.
 
 PDBs are optional for running but strongly recommended for private crash diagnosis. They are large binaries and are intentionally not stored in Git; keep their hash and CodeView identity with the matching executable.
+
+The Windows resource icon is different from generated build output: it is an input referenced by source. The current repository intentionally does not supply it. A future build contract must either include a provenance- and license-reviewed tracked asset or name an immutable external file identity and staging procedure. Do not create a dummy icon or remove the resource reference merely to make a build pass.
+
+## Evidence and runbooks
+
+“Separate evidence” means that every task or revision receives its own immutable directory. It does not currently mean a separate Git repository. Relevant sanitized text reports, handoffs, matrices, scripts, and manifests are retained under `runbooks/`; excluded binaries, symbols, archives, raw logs, dumps, credentials, and private account data remain outside Git and are referenced only by safe identity metadata.
+
+A later evidence-repository split is intentionally deferred until stable evidence IDs, link migration, access control, retention, synchronization, and secret-review rules exist. See [ADR-0018](adr/ADR-0018-runbook-evidence-retention-before-restructuring.md).
 
 ## Databases
 

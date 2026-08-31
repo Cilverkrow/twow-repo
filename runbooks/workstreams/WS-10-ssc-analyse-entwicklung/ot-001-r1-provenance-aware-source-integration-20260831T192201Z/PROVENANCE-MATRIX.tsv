@@ -1,0 +1,7 @@
+source	role	identity	verification_result
+full_external_b_r2_package	complete immutable evidence and source-copy authority	SHA256SUMS.txt=57856DED493FD744AC5BD51DA6307C0168872F8CBC04C949A23A75012F54068A;107/107 payloads	PASS
+full_external_b_r2_zip	archive identity and entry-count authority	D32453BE1F3283EFB3306E76F47E984CFB3228FB24AE814D04012C4B16C82088;66319254 bytes;109/108/1/107	PASS
+github_projection	clean repository projection; not a complete package	66 matching payloads;41 intentional omissions;0 mismatches	PASS
+baseline_git_repository	immutable historical base objects only	42b8a7f742548793910fe8880463aeeb71627fb9;b2cf4e38fd288a53f61b9f2350f74caa85d606ab;58d7bec64779d7c5a0e629e6e58633f04346bf1a	PASS
+target_repository	current integration base	main=origin/main=f1f2e01026e54cd5c119c1e8e95fc107a01f4e2b;clean before worktree	PASS
+

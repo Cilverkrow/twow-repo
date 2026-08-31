@@ -1,0 +1,11 @@
+test	result	evidence_or_identity
+static_scope_and_diff_check	PASS	exactly_28_paths;git_diff_check_exit=0;forbidden_paths=0
+fake_unit_run_1	PASS	unit-run1-final.log contains persistent_active_roster_tests PASS
+fake_unit_run_2	PASS	unit-run2-final.log contains persistent_active_roster_tests PASS
+real_cpp_adapter_build	PASS	persistent_active_roster_database_tests.exe SHA256=7241152FF7A3AA98F4468FB422CDE29958B4406523FBCA494F8BBDE9F7F894E7
+real_cpp_adapter_run_1	PASS	port=13341;fresh_datadir;migration_apply_count=2;rollback_remaining_tables=0
+real_cpp_adapter_run_2	PASS	port=13342;fresh_datadir;migration_apply_count=2;rollback_remaining_tables=0
+secret_scan	PASS	zero_hits in integrated diff
+binary_and_size_scan	PASS	zero binary and oversize integrated paths
+clean_release_mangosd	FAIL	configuration passed;no candidate;isolated MSBuild timeout after duplicated Path/PATH direct-build failure
+

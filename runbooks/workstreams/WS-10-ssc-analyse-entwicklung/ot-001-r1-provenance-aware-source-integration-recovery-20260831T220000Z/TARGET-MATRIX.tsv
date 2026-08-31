@@ -1,0 +1,5 @@
+item	status	sha256	path
+prior_full_28_path_target_matrix	REFERENCED	0BAA226A250D5764074CEC71B69FD1BD449F5F8BFC95EFCA6E8AF857DA1D6F11	C:\TW\ComTW\runbooks\workstreams\WS-10-ssc-analyse-entwicklung\ot-001-r1-provenance-aware-source-integration-20260831T192201Z\TARGET-MATRIX.tsv
+prior_full_28_path_integration_matrix	REFERENCED	5683CD7FD17995248B5096B2E6F1075C7A415D944692B7477B19EB34901F7917	C:\TW\ComTW\runbooks\workstreams\WS-10-ssc-analyse-entwicklung\ot-001-r1-provenance-aware-source-integration-20260831T192201Z\INTEGRATION-MATRIX.tsv
+recovery_scope_check	PASS		28_expected_paths_unchanged
+resource_outside_authorized_scope	BLOCKING		src/mangosd/mangosd.ico

@@ -1,0 +1,10 @@
+item	status	value	note
+prior_provenance_matrix	REFERENCED	06886A785255448A6CB6E3ADE1D4EE603E7B248E405D2E9FC49D4AE48BE77D0B	C:\TW\ComTW\runbooks\workstreams\WS-10-ssc-analyse-entwicklung\ot-001-r1-provenance-aware-source-integration-20260831T192201Z\PROVENANCE-MATRIX.tsv
+feature_parent	PASS	f1f2e01026e54cd5c119c1e8e95fc107a01f4e2b	unchanged
+feature_parent_tree	PASS	8e0ef387913e67dfd44577cf58e6bc7d830f49dd	unchanged
+integration_scope	PASS	28_paths	unchanged from prior evidence
+baseline_icon_blob	PASS	06327ff7c112754762c91a02ac1d26b5d76e20eb	verified immutable baseline Git object
+baseline_icon_bytes	PASS	16958	git cat-file size
+target_icon_blob	ABSENT		no HEAD tree entry
+target_icon_presence	ABSENT		no worktree file
+target_icon_ignore_rule	PRESENT	.gitignore:45:*.ico	prevents normal untracked status
