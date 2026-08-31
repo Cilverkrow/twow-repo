@@ -1,0 +1,165 @@
+# Everything that is not a compiler.
+#
+# Each job is independent so one failure does not hide the others, and every
+# job says what it is protecting rather than just what it runs.
+name: lint
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'refactor/**']
+  workflow_dispatch:
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    runs-on: ubuntu-24.04
+    name: secrets
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # .gitleaksignore holds exactly one audited false positive. Broadening it
+      # is how a real secret gets waved through, so the file's size is checked
+      # rather than trusted (FG-012).
+      - name: Reject broadened gitleaks suppressions
+        run: |
+          entries=$(grep -cv '^\s*\(#.*\)\?$' .gitleaksignore || true)
+          echo "gitleaksignore entries: $entries"
+          if [ "$entries" -gt 3 ]; then
+            echo "::error::.gitleaksignore has $entries entries. Each must be individually audited - see FG-012."
+            exit 1
+          fi
+
+  no-binaries:
+    runs-on: ubuntu-24.04
+    name: no binaries or large files
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Invariant 5 (ADR-0024) and ADR-0004: no binaries, no client data, no
+      # build output. The repository history was already rewritten once to
+      # remove binaries; FG-006 forbids doing that again, so nothing binary may
+      # get in in the first place.
+      - name: Check files added by this branch
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          [ -n "$base" ] || base="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
+          added=$(git diff --name-only --diff-filter=A "$base" HEAD || true)
+          [ -n "$added" ] || { echo "no added files"; exit 0; }
+          fail=0
+          for f in $added; do
+            [ -f "$f" ] || continue
+            case "$f" in
+              *.exe|*.dll|*.so|*.dylib|*.lib|*.a|*.o|*.obj|*.pdb|*.ico|\
+              *.mpq|*.dbc|*.map|*.vmap|*.mmap|*.zip|*.7z|*.rar)
+                echo "::error file=$f::binary artifact must not be committed (ADR-0004, ADR-0019)"
+                fail=1 ;;
+            esac
+            size=$(stat -c%s "$f")
+            if [ "$size" -gt 5242880 ]; then
+              echo "::error file=$f::$size bytes exceeds the 5 MB limit for new files"
+              fail=1
+            fi
+          done
+          exit $fail
+
+  docs-links:
+    runs-on: ubuntu-24.04
+    name: doc links resolve
+    steps:
+      - uses: actions/checkout@v4
+      # 46 runbook paths are cited from docs/ and AGENTS.md. Those citations are
+      # the only thing connecting a decision to its evidence, so a dead one is a
+      # real defect rather than a cosmetic issue.
+      - name: Check relative links in docs/ and AGENTS.md
+        run: |
+          # grep -P refuses to run outside a unibyte or UTF-8 locale.
+          export LC_ALL=C.UTF-8
+          fail=0
+          # grep -o with -n gives "file:line:match"; the match is the link
+          # target because \K drops everything before it.
+          grep -rnoP '\]\(\K[^)#:]+\.(md|json|txt|sql|tsv|ps1)(?=\))' \
+               docs/ AGENTS.md --include='*.md' > /tmp/links.txt || true
+          while IFS= read -r entry; do
+            file="${entry%%:*}"
+            target="${entry##*:}"
+            resolved="$(realpath -m "$(dirname "$file")/$target")"
+            if [ ! -e "$resolved" ]; then
+              echo "::error file=$file::dead link -> $target"
+              fail=1
+            fi
+          done < /tmp/links.txt
+          echo "checked $(wc -l < /tmp/links.txt) links"
+          exit $fail
+
+  shell:
+    runs-on: ubuntu-24.04
+    name: shellcheck
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          find ops deploy sql -name '*.sh' -print0 2>/dev/null \
+            | xargs -0 -r shellcheck --severity=warning
+
+  dockerfiles:
+    runs-on: ubuntu-24.04
+    name: hadolint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: deploy/docker/Dockerfile.core
+          # DL3008 (pin apt versions) is deliberately ignored: Debian point
+          # releases move and pinning every package would break the image on
+          # every security update.
+          ignore: DL3008
+
+  yaml:
+    runs-on: ubuntu-24.04
+    name: yamllint
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          pipx install yamllint
+          yamllint -d '{extends: relaxed, rules: {line-length: {max: 120}}}' \
+            .github/workflows deploy 2>&1 | tee /tmp/yamllint.txt
+          ! grep -q ' error ' /tmp/yamllint.txt
+
+  schema-ownership:
+    runs-on: ubuntu-24.04
+    name: migrations respect schema ownership
+    steps:
+      - uses: actions/checkout@v4
+      # Invariant 2 (ADR-0024): upstream schemas are read-only to us. A module
+      # migration that writes an upstream table is the failure this catches.
+      - name: Check module migrations
+        run: |
+          fail=0
+          for f in $(find modules -path '*/data/sql/*' -name '*.sql' 2>/dev/null); do
+            if grep -qiE '\b(tw_world|tw_char|tw_logon|tw_logs)\.' "$f"; then
+              echo "::error file=$f::module migration references an upstream schema (ADR-0024 invariant 2)"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      # Invariant 3: 'manual' is a literal string, not a digest. It made 146
+      # world migrations unverifiable (OPS-012); it must never appear again.
+      - name: Reject 'manual' migration hashes
+        run: |
+          if git diff --name-only --diff-filter=A \
+               "${{ github.event.pull_request.base.sha || 'HEAD~1' }}" HEAD 2>/dev/null \
+             | grep -E '\.sql$' | xargs -r grep -l "'manual'" 2>/dev/null; then
+            echo "::error::new migration uses the literal hash 'manual' - see FG-033, OPS-012"
+            exit 1
+          fi

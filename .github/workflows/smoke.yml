@@ -1,0 +1,119 @@
+# Is it alive, and did it keep the bots?
+#
+# Builds the stack, brings it up, and runs test/smoke/ - the same scripts a
+# developer runs locally against their own compose stack. They are not
+# duplicated here on purpose: a red CI smoke has to reproduce with one command,
+# so this workflow only supplies the stack and the environment.
+#
+# TWO THINGS ABOUT THIS JOB ARE NOT DEFECTS.
+#
+# 1. Client data is not here. dbc/maps/vmaps/mmaps come out of a game client and
+#    are never in an image or in Git (ADR-0023, ADR-0004), so the world server
+#    cannot start. Every check that needs a running world SKIPS with an explicit
+#    message; realmd and the migration ledger still run. run-all.sh fails if
+#    *everything* skipped, so this can never go green having proved nothing.
+#    That also means the ADR-0024 invariant-1 bot-persistence check does not run
+#    here. It runs wherever client data is mounted, and its absence is reported
+#    in the summary rather than hidden.
+#
+# 2. 10-migrations.sh depends on something that does not exist yet. The
+#    `migrations` ledger is written by the server's AutoUpdater, not by the SQL
+#    (sql/setup_databases.sh applies files and records nothing). Until
+#    deploy/compose's db-init records it, that check is expected to fail here,
+#    and that failure is the forcing signal - integration.yml proves the same
+#    path without a container and is the reference for the bookkeeping.
+name: smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'refactor/**']
+  # Nightly: the stack can break from a base-image change with nobody touching
+  # the repository.
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    name: compose up + smoke
+    # A cold core build is the bulk of this. Registry-side build caching is not
+    # used because compose owns the build definition (see below), so budget for
+    # the full compile rather than pretending it is quick.
+    timeout-minutes: 120
+
+    env:
+      TWOW_COMPOSE_FILE: deploy/compose/docker-compose.yml
+      MARIADB_ROOT_PASSWORD: ci-root
+      TWOW_DB_PASSWORD: ci-root
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      # deploy/compose is the contract for the Helm chart and the publish
+      # pipeline (ADR-0023). If it is missing, this job has nothing to smoke and
+      # says so plainly rather than passing an empty run.
+      - name: Require the compose stack
+        run: |
+          if [ ! -f "$TWOW_COMPOSE_FILE" ]; then
+            echo "::error::$TWOW_COMPOSE_FILE does not exist - the stack cannot be brought up (ADR-0023)"
+            exit 1
+          fi
+          docker compose -f "$TWOW_COMPOSE_FILE" config >/dev/null
+
+      - uses: docker/setup-buildx-action@v3
+
+      # `docker compose build`, not a standalone `docker build`, so the image
+      # names, build args and target stages come from the compose file instead
+      # of being guessed here. If compose and CI disagree about what to build,
+      # that is a bug worth failing on, not one worth working around.
+      - name: Build images
+        run: docker compose -f "$TWOW_COMPOSE_FILE" build
+
+      # --wait blocks on the health checks the compose file declares, which is
+      # the only honest "it is up" signal; a fixed sleep would test the sleep.
+      - name: Bring the stack up
+        run: |
+          docker compose -f "$TWOW_COMPOSE_FILE" up -d --wait --wait-timeout 600 \
+            || { echo "::error::the stack did not become healthy"; exit 1; }
+          docker compose -f "$TWOW_COMPOSE_FILE" ps
+
+      - name: Run the smoke suite
+        env:
+          # Explicit rather than inherited: CI has no client data, and the suite
+          # must skip the world-server checks for a stated reason rather than
+          # because a probe happened to fail.
+          TWOW_CLIENT_DATA: '0'
+        run: sh test/smoke/run-all.sh
+
+      # Logs are the only way to diagnose a failed stack after the fact, so they
+      # are collected whatever happened.
+      - name: Collect logs
+        if: always()
+        run: |
+          mkdir -p smoke-logs
+          docker compose -f "$TWOW_COMPOSE_FILE" ps -a > smoke-logs/ps.txt 2>&1 || true
+          docker compose -f "$TWOW_COMPOSE_FILE" logs --no-color --timestamps \
+            > smoke-logs/compose.log 2>&1 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-logs
+          path: smoke-logs/
+          if-no-files-found: warn
+
+      # -v as well as down: a leftover volume would let the next run inherit a
+      # bootstrapped database, and "migrations apply from empty" is exactly what
+      # must not be inherited.
+      - name: Tear down
+        if: always()
+        run: docker compose -f "$TWOW_COMPOSE_FILE" down -v --remove-orphans || true

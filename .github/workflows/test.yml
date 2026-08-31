@@ -1,0 +1,196 @@
+# Unit and adapter tests.
+#
+# Written against the tree as it is today, not as ADR-0022 wants it. Measured:
+# there is no `enable_testing()`, no `include(CTest)` and no `add_test()`
+# anywhere, so `ctest` currently discovers nothing. Two suites exist:
+#
+#   * src/modules/PlayerBots/tests/persistent_active_roster_database_tests
+#     IS in the main build, behind -DBUILD_PERSISTENT_ROSTER_ADAPTER_TESTS
+#     (default OFF), and needs a real MariaDB. 48 assertions plus a real
+#     two-thread concurrency scenario. This one runs here, today.
+#   * src/modules/PlayerBots/tests/persistent_active_roster_tests - a standalone
+#     project(), no add_subdirectory, hard-requires ROSTER_TEST_OPENSSL_LIBRARY,
+#     and unconditionally adds dep/windows/include which shadows system OpenSSL
+#     headers on Linux. Cannot be built here until it is rewired.
+#   * modules/mod-dungeon-clear/t/ - 54 gtest files, but googletest is never
+#     fetched and both src/test/mocks/TestMap.cpp and the `game-interface`
+#     target it links do not exist.
+#
+# So this workflow runs what can run, names what cannot, and - the point - fails
+# if the number of tests it actually executed is zero. A green run that tested
+# nothing is worse than a red one, because it gets believed. As ADR-0022's
+# wiring lands, ctest starts discovering tests and this file needs no edit.
+name: test
+
+on:
+  push:
+    branches: [main, 'refactor/**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    name: unit + adapter
+
+    services:
+      # MariaDB 11.8 per ADR-0027, matching what the stack deploys. The adapter
+      # suite drives a real database on purpose - its subject is transaction
+      # behaviour under concurrency, which a mock cannot show.
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: ci-root
+          MARIADB_DATABASE: roster_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          # Same trimmed Boost set as build-linux.yml: libboost-all-dev pulls
+          # ~230 packages including OpenMPI for nothing.
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build ccache \
+            libace-dev default-libmysqlclient-dev \
+            libssl-dev zlib1g-dev libbz2-dev \
+            libboost-dev libboost-thread-dev libboost-filesystem-dev \
+            libboost-system-dev libboost-stacktrace-dev \
+            mariadb-client
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: test-linux
+          max-size: 2G
+
+      - name: Configure
+        run: |
+          # BUILD_TESTING is passed for the day ADR-0022's registration lands;
+          # it is harmless now because nothing reads it yet.
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_INSTALL_PREFIX=/opt/turtle \
+            -DBUILD_PLAYERBOTS=ON \
+            -DBUILD_TESTING=ON \
+            -DBUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      # Only the test target and its dependencies, not the whole server. The
+      # full link is build-linux.yml's job and repeating it here buys nothing.
+      - name: Build the adapter suite
+        run: cmake --build build --target persistent_active_roster_database_tests --parallel "$(nproc)"
+
+      # The suite does not create its own schema; the roster migration is the
+      # schema. Applied twice on purpose - forward-only migrations must be
+      # replay-safe (ADR-0024 invariant 3), and this is the cheapest place that
+      # gets checked at all.
+      - name: Apply the roster schema (twice, to prove replay safety)
+        # MYSQL_PWD rather than -p on the command line: the password would
+        # otherwise appear in the process list and in any `set -x` output.
+        env:
+          MYSQL_PWD: ci-root
+        run: |
+          set -eu
+          mig=sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql
+          # utf8mb4_bin, matching what the roster tables declare - a differently
+          # collated schema is the "Illegal mix of collations" trap.
+          mariadb -h 127.0.0.1 -P 3306 -u root \
+            -e "CREATE DATABASE IF NOT EXISTS roster_ci CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;"
+          for pass in 1 2; do
+            echo "apply pass $pass"
+            mariadb -h 127.0.0.1 -P 3306 -u root roster_ci < "$mig"
+          done
+
+      - name: Run the adapter suite
+        id: adapter
+        shell: bash
+        run: |
+          mkdir -p test-results
+          log=test-results/persistent_active_roster_database_tests.log
+          # Connection string format is host;port;user;password;database - see
+          # the usage line in persistent_active_roster_database_tests.cpp.
+          set +e
+          ./build/adapter-bin/persistent_active_roster_database_tests \
+            "127.0.0.1;3306;root;ci-root;roster_ci" 2>&1 | tee "$log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          # STAGE=COMPLETE is printed only after the last scenario. Without this
+          # check a crash halfway through could report success with most of the
+          # assertions never reached.
+          if ! grep -q 'STAGE=COMPLETE' "$log"; then
+            echo "::error::the adapter suite did not reach STAGE=COMPLETE - it stopped early"
+            rc=1
+          fi
+          if [ "$rc" -eq 0 ]; then
+            echo "ran=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "ran=0" >> "$GITHUB_OUTPUT"
+          fi
+          exit "$rc"
+
+      # Runs whether or not the adapter suite passed, so the discovery count is
+      # always reported.
+      - name: ctest
+        if: always()
+        id: ctest
+        run: |
+          # -N lists without running. Zero is the expected answer today, and the
+          # step still has to record it for the gate below - hence `|| true`:
+          # with no tests registered ctest exits non-zero, and the default shell
+          # runs with -e and pipefail.
+          raw=$(ctest --test-dir build -N 2>/dev/null || true)
+          found=$(printf '%s\n' "$raw" | sed -n 's/^Total Tests: //p' | tail -n1)
+          found=${found:-0}
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+          echo "ctest discovered $found tests"
+          if [ "$found" -eq 0 ]; then
+            echo "::warning::ctest discovered 0 tests: enable_testing()/add_test() have not landed yet (ADR-0022)"
+            exit 0
+          fi
+          mkdir -p test-results
+          ctest --test-dir build --output-on-failure --output-junit ../test-results/ctest.xml
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: warn
+
+      # The gate. Every step above can be individually green while nothing was
+      # actually verified; this step is what makes that impossible.
+      - name: Fail if nothing was tested
+        if: always()
+        env:
+          CTEST_FOUND: ${{ steps.ctest.outputs.found }}
+          ADAPTER_RAN: ${{ steps.adapter.outputs.ran }}
+        run: |
+          echo "ctest tests discovered : ${CTEST_FOUND:-0}"
+          echo "adapter suite executed : ${ADAPTER_RAN:-0}"
+          echo
+          echo "Not yet runnable (ADR-0022 wiring):"
+          echo "  - modules/mod-dungeon-clear/t/ (54 gtest files): googletest is never"
+          echo "    fetched; src/test/mocks/TestMap.cpp and the game-interface target"
+          echo "    do not exist."
+          echo "  - persistent_active_roster_tests (142 assertions): standalone project(),"
+          echo "    no add_subdirectory, requires ROSTER_TEST_OPENSSL_LIBRARY, and adds"
+          echo "    dep/windows/include unconditionally (shadows system OpenSSL on Linux)."
+          if [ "${CTEST_FOUND:-0}" -eq 0 ] && [ "${ADAPTER_RAN:-0}" -eq 0 ]; then
+            echo "::error::zero tests executed. A green run that tested nothing is worse than a red one."
+            exit 1
+          fi

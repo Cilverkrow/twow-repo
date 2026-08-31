@@ -1,0 +1,235 @@
+# Build once, promote everywhere.
+#
+# Images are built here and never rebuilt per environment (ADR-0023): a tag and
+# a main commit produce the same artifact, and what moves between environments
+# is the digest. That is also why provenance and an SBOM are attached at build
+# time rather than generated later from a running container.
+#
+# Tagging: semver on a release tag, commit SHA on main. Nothing here publishes
+# `latest` for a main build - a floating tag is how an environment quietly
+# changes underneath you.
+name: publish
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  # Not cancel-in-progress: a half-pushed image and its attestations are worse
+  # than a duplicated build.
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  # id-token for the OIDC identity the attestation is signed against, and
+  # attestations because actions/attest-build-provenance writes one to the
+  # repository's attestation store. Without the second, the first is useless.
+  id-token: write
+  attestations: write
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: cilverkrow
+
+jobs:
+  # Two things in this repository are still being written (deploy/compose,
+  # deploy/helm/twow). Rather than fail on their absence, the pipeline discovers
+  # what exists and publishes that - and says in the log what it skipped.
+  discover:
+    runs-on: ubuntu-24.04
+    name: what is publishable
+    outputs:
+      db_init: ${{ steps.check.outputs.db_init }}
+      helm: ${{ steps.check.outputs.helm }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - id: check
+        run: |
+          set -eu
+          if [ -f deploy/docker/Dockerfile.db-init ]; then
+            echo "db_init=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "db_init=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::no deploy/docker/Dockerfile.db-init - skipping the db-init image"
+          fi
+          if [ -d deploy/helm/twow ]; then
+            echo "helm=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "helm=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::no deploy/helm/twow - skipping the chart"
+          fi
+
+  # mangosd and realmd come out of the same Dockerfile: Dockerfile.core installs
+  # both binaries into one runtime image, and the entrypoint decides which runs.
+  # They are published under two names anyway, because the Helm chart and the
+  # compose file address them separately and an image name is part of that
+  # contract. The second build is a cache hit, not a second compile.
+  core:
+    needs: discover
+    runs-on: ubuntu-24.04
+    name: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: mangosd
+            dockerfile: deploy/docker/Dockerfile.core
+          - image: realmd
+            dockerfile: deploy/docker/Dockerfile.core
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # Full history: the build stamps a revision header from git.
+          fetch-depth: 0
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=long,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: runtime
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # TW_ARCH stays at the Dockerfile default (x86-64-v2). `native` would
+          # bake this runner's CPU into a published image (ADR-0028).
+          build-args: |
+            BUILD_PLAYERBOTS=ON
+            BUILD_TYPE=Release
+          # Attached to the image in the registry: provenance mode=max records
+          # the full build definition, sbom records what is inside it. Both are
+          # part of the artifact, so a promoted digest carries them along.
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+      # The registry attestation above is buildkit's. This one is signed against
+      # the workflow's OIDC identity and lands in the repository's attestation
+      # store, which is what `gh attestation verify` checks. They answer
+      # different questions and both are wanted.
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  db-init:
+    needs: discover
+    if: needs.discover.outputs.db_init == 'true'
+    runs-on: ubuntu-24.04
+    name: db-init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/db-init
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=long,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.db-init
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=db-init
+          cache-to: type=gha,mode=max,scope=db-init
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/db-init
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  # The chart is published as an OCI artifact to the same registry as the
+  # images, so one credential and one promotion path covers both.
+  helm:
+    needs: discover
+    if: needs.discover.outputs.helm == 'true'
+    runs-on: ubuntu-24.04
+    name: helm chart
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: azure/setup-helm@v4
+
+      # Lint before packaging: a chart that does not template is not worth a
+      # version number.
+      - name: Lint and template
+        run: |
+          helm lint deploy/helm/twow
+          helm template twow deploy/helm/twow > /dev/null
+
+      # Helm's OCI registry requires a semver version, so a main build gets a
+      # prerelease suffix rather than reusing the chart's release version. That
+      # keeps `main` installable for testing without it ever outranking a real
+      # release in a version constraint.
+      - id: version
+        run: |
+          set -eu
+          base=$(helm show chart deploy/helm/twow | sed -n 's/^version: *//p' | head -n1)
+          case "$GITHUB_REF" in
+            refs/tags/v*) version="${GITHUB_REF#refs/tags/v}" ;;
+            *)            version="${base}-main.${GITHUB_SHA:0:12}" ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "chart version: $version"
+
+      - name: Package and push
+        run: |
+          set -eu
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | helm registry login "$REGISTRY" -u "${{ github.actor }}" --password-stdin
+          helm package deploy/helm/twow \
+            --version "${{ steps.version.outputs.version }}" \
+            --app-version "${{ steps.version.outputs.version }}" \
+            --destination dist
+          helm push "dist/twow-${{ steps.version.outputs.version }}.tgz" \
+            "oci://$REGISTRY/$OWNER/charts"
