@@ -361,6 +361,8 @@ bool PlayerbotAIConfig::Initialize()
 
     randomBotLoginWithPlayer = config.GetBoolDefault("AiPlayerbot.RandomBotLoginWithPlayer", false);
     asyncBotLogin = config.GetBoolDefault("AiPlayerbot.AsyncBotLogin", false);
+    persistentActiveRosterEnabled = config.GetBoolDefault("AiPlayerbot.PersistentActiveRoster.Enabled", false);
+    persistentActiveRosterMaintenanceMode = config.GetBoolDefault("AiPlayerbot.PersistentActiveRoster.MaintenanceMode", false);
     preloadHolders = config.GetBoolDefault("AiPlayerbot.PreloadHolders", false);
     
     freeRoomForNonSpareBots = config.GetIntDefault("AiPlayerbot.FreeRoomForNonSpareBots", 1);

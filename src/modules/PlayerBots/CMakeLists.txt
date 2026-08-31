@@ -158,6 +158,41 @@ endif()
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
 
+if(BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS)
+  add_executable(persistent_active_roster_database_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/persistent_active_roster_database_tests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/PersistentActiveRoster.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/PersistentActiveRosterDatabase.cpp
+  )
+  target_include_directories(persistent_active_roster_database_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
+    ${CMAKE_SOURCE_DIR}/src/shared
+    ${CMAKE_SOURCE_DIR}/src/framework
+    ${CMAKE_SOURCE_DIR}/dep/include-windows
+    ${CMAKE_SOURCE_DIR}/dep/windows/include
+    ${CMAKE_BINARY_DIR}/src/shared
+    ${CMAKE_BINARY_DIR}
+    ${ACE_INCLUDE_DIR}
+    ${MYSQL_INCLUDE_DIR}
+    ${OPENSSL_INCLUDE_DIR}
+  )
+  target_compile_definitions(persistent_active_roster_database_tests PRIVATE ROSTER_DATABASE_INJECTED_ONLY)
+  target_link_libraries(persistent_active_roster_database_tests PRIVATE
+    shared
+    framework
+    ${ACE_LIBRARIES}
+    optimized ${MYSQL_LIBRARY}
+    optimized ${OPENSSL_LIBRARIES}
+    debug ${MYSQL_DEBUG_LIBRARY}
+    debug ${OPENSSL_DEBUG_LIBRARIES}
+  )
+  if(WIN32)
+    target_link_libraries(persistent_active_roster_database_tests PRIVATE Normaliz ws2_32)
+  endif()
+  set_target_properties(persistent_active_roster_database_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/adapter-bin")
+endif()
+
 if(MSVC)
     # Constrain the MSVC inliner on the bot module only.
     #

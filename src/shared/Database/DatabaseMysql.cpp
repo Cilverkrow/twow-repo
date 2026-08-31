@@ -360,6 +360,11 @@ bool MySQLConnection::Execute(const char* sql)
     return true;
 }
 
+uint64 MySQLConnection::AffectedRows() const
+{
+    return mMysql ? static_cast<uint64>(mysql_affected_rows(mMysql)) : 0;
+}
+
 bool MySQLConnection::_TransactionCmd(const char *sql)
 {
     if (mysql_query(mMysql, sql))

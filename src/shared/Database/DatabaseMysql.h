@@ -84,6 +84,7 @@ class MySQLConnection : public SqlConnection
         QueryNamedResult* QueryNamed(const char *sql) override;
         bool Execute(const char *sql) override;
         bool ExecuteMultiline(const char* sql) override;
+        uint64 AffectedRows() const override;
 
         unsigned long escape_string(char *to, const char *from, unsigned long length) override;
 

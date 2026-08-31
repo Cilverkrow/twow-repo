@@ -41,7 +41,10 @@ class PlayerbotWorldScript : public WorldScript
         {
             if (!sPlayerbotAIConfig.enabled)
                 return;
-            RandomPlayerbotFactory::CreateRandomBots();
+            if (sPlayerbotAIConfig.persistentActiveRosterEnabled)
+                sRandomPlayerbotMgr.InitializePersistentRoster();
+            else
+                RandomPlayerbotFactory::CreateRandomBots();
             auctionbot.Init();
         }
 

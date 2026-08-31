@@ -547,6 +547,11 @@ void RandomPlayerbotFactory::EnsureNamesInitialized()
 
 void RandomPlayerbotFactory::CreateRandomBots()
 {
+    if (sPlayerbotAIConfig.persistentActiveRosterEnabled)
+    {
+        sLog.outString("[PersistentRoster] random-bot factory skipped; desired identity comes only from the current snapshot");
+        return;
+    }
     EnsureNamesInitialized();
     LoadCharSectionsDbc(sWorld.GetDataPath());
 

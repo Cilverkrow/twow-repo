@@ -569,6 +569,45 @@ bool Database::CommitTransactionDirect()
     return res;
 }
 
+bool Database::DirectTransaction(std::function<bool(SqlConnection&)> const& body, bool* rollbackSucceeded)
+{
+    if (rollbackSucceeded)
+        *rollbackSucceeded = true;
+    if (!m_pAsyncConn || !body)
+        return false;
+
+    SqlConnection::Lock guard(m_pAsyncConn);
+    if (!guard->BeginTransaction())
+        return false;
+
+    bool accepted = false;
+    try
+    {
+        accepted = body(*guard.operator->());
+    }
+    catch (...)
+    {
+        accepted = false;
+    }
+
+    if (!accepted)
+    {
+        bool rolledBack = guard->RollbackTransaction();
+        if (rollbackSucceeded)
+            *rollbackSucceeded = rolledBack;
+        return false;
+    }
+
+    if (!guard->CommitTransaction())
+    {
+        bool rolledBack = guard->RollbackTransaction();
+        if (rollbackSucceeded)
+            *rollbackSucceeded = rolledBack;
+        return false;
+    }
+    return true;
+}
+
 bool Database::RollbackTransaction()
 {
     if (!m_pAsyncConn)

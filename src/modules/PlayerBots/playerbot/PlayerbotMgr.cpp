@@ -51,10 +51,10 @@ namespace {
     std::map<SqlQueryHolder*, PendingBotLogin> m_pendingBotLogins;
 }
 
-void PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
+bool PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
 {
     if (!sPlayerbotAIConfig.enabled)
-        return;
+        return false;
 
     ObjectGuid botGuid(HIGHGUID_PLAYER, guidLow);
 
@@ -63,7 +63,25 @@ void PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
     if (!botAccountId)
     {
         sLog.outError("[PlayerBots] AddPlayerBot: no account for guid %u", guidLow);
-        return;
+        return false;
+    }
+
+    // The random-bot holder is the only owner of persistent-roster logins.
+    // Revalidate at this final boundary so no other caller can bypass the
+    // RNDBOT account, ban, session, membership, or maintenance gates.
+    if (sPlayerbotAIConfig.persistentActiveRosterEnabled && this == &sRandomPlayerbotMgr)
+    {
+        uint32 validatedAccountId = 0;
+        std::string diagnostic;
+        if (!sRandomPlayerbotMgr.PersistentRosterAdmissionOpen() ||
+            !sRandomPlayerbotMgr.IsPersistentRosterMember(guidLow) ||
+            !sRandomPlayerbotMgr.ValidatePersistentRosterLogin(guidLow, validatedAccountId, diagnostic) ||
+            validatedAccountId != botAccountId)
+        {
+            sLog.outError("[PersistentRoster] AddPlayerBot fail-closed guid=%u code=%s",
+                guidLow, diagnostic.empty() ? "ADMISSION_OR_MEMBERSHIP_REJECTED" : diagnostic.c_str());
+            return false;
+        }
     }
 
     // 2. If the bot character is already in world, just attach AI (idempotent).
@@ -72,7 +90,7 @@ void PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
     {
         SC_LOG("AddPlayerBot guid=%u — already in-world, attaching via OnBotLogin", guidLow);
         OnBotLogin(existing);
-        return;
+        return true;
     }
 
     // 2b. ghost-online guard.
@@ -119,14 +137,14 @@ void PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
         {
             SC_LOG("AddPlayerBot guid=%u — ghost recovered after ACK, attaching", guidLow);
             OnBotLogin(ghost);
-            return;
+            return true;
         }
         else
         {
             sLog.outError("[PlayerBots] AddPlayerBot: bot %u is in HashMapHolder but not in world and not "
                           "mid-teleport — refusing to retry login (would cause [CRASH] kick). Use `.bot remove` "
                           "or restart the server to recover.", guidLow);
-            return;
+            return false;
         }
     }
 
@@ -139,7 +157,7 @@ void PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
     {
         sLog.outError("[PlayerBots] AddPlayerBot: holder Initialize() failed for guid %u", guidLow);
         delete holder;
-        return;
+        return false;
     }
 
     m_pendingBotLogins[holder] = { botGuid, masterAccountId };
@@ -151,7 +169,13 @@ void PlayerbotHolder::AddPlayerBot(uint32 guidLow, uint32 masterAccountId)
     // — none of which is thread-safe. Concurrent map erase corrupts the RB-tree (SIGSEGV in
     // _Rb_tree_rebalance_for_erase) when many bots log in at once. The engine's own player login
     // uses DelayQueryHolderUnsafe for exactly this reason (see CharacterHandler.cpp:493).
-    CharacterDatabase.DelayQueryHolderUnsafe(this, &PlayerbotHolder::HandlePlayerBotLoginCallback, holder);
+    if (!CharacterDatabase.DelayQueryHolderUnsafe(this, &PlayerbotHolder::HandlePlayerBotLoginCallback, holder))
+    {
+        m_pendingBotLogins.erase(holder);
+        delete holder;
+        return false;
+    }
+    return true;
 }
 
 // Called when CharacterDatabase finishes the holder's queries. Allocates a fresh WorldSession
@@ -218,8 +242,8 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQu
     {
         sLog.outError("[PlayerBots] HandlePlayerBotLoginCallback: bot %u failed to enter world",
                       info.botGuid.GetCounter());
-        // botSession leaks here — but only on failure; LogoutPlayerBot would do the cleanup
-        // in the success path normally. Acceptable for smoke testing; fix if needed.
+        if (this == &sRandomPlayerbotMgr && sPlayerbotAIConfig.persistentActiveRosterEnabled)
+            sRandomPlayerbotMgr.OnPlayerLoginError(info.botGuid.GetCounter());
         return;
     }
 
@@ -426,7 +450,9 @@ void PlayerbotHolder::LogoutAllBots()
         SC_LOG("LogoutAllBots: logging out bot=%s guid=%u (remote=%s)",
                bot->GetName(), bot->GetGUIDLow(),
                bot->GetSession() ? bot->GetSession()->GetRemoteAddress().c_str() : "(no-session)");
-        LogoutPlayerBot(bot->GetGUIDLow());
+        // Preserve the pre-existing intentional master/server LogoutAllBots
+        // semantics. MASTER_LOGOUT_GROUP_PERSISTENCE is a separate gate.
+        LogoutPlayerBot(bot->GetGUIDLow(), true, false, true);
         ++loggedOut;
     });
     SC_LOG("LogoutAllBots summary: total=%d loggedOut=%d skippedRealPlayer=%d skippedNoAI=%d",
@@ -469,10 +495,15 @@ void PlayerbotMgr::CancelLogout()
     });
 }
 
-void PlayerbotHolder::LogoutPlayerBot(uint32 guid, bool allowInstant, bool forDelete)
+void PlayerbotHolder::LogoutPlayerBot(uint32 guid, bool allowInstant, bool forDelete, bool allowMasterLogoutOrShutdown)
 {
     SC_LOG("LogoutPlayerBot entry guid=%u allowInstant=%d forDelete=%d",
            guid, (int)allowInstant, (int)forDelete);
+    if (!allowMasterLogoutOrShutdown && !sRandomPlayerbotMgr.PersistentRosterDestructiveMutationAllowed(guid))
+    {
+        sLog.outError("[PersistentRoster] ordinary logout rejected for desired guid=%u", guid);
+        return;
+    }
     Player* bot = GetPlayerBot(guid);
     if (bot)
     {
@@ -565,8 +596,13 @@ void PlayerbotHolder::LogoutPlayerBot(uint32 guid, bool allowInstant, bool forDe
     }
 }
 
-void PlayerbotHolder::DisablePlayerBot(uint32 guid, bool logOutPlayer)
+void PlayerbotHolder::DisablePlayerBot(uint32 guid, bool logOutPlayer, bool allowRosterLogoutCleanup)
 {
+    if (!allowRosterLogoutCleanup && !sRandomPlayerbotMgr.PersistentRosterDestructiveMutationAllowed(guid))
+    {
+        sLog.outError("[PersistentRoster] ordinary disable rejected for desired guid=%u", guid);
+        return;
+    }
     Player* bot = GetPlayerBot(guid);
     if (bot)
     {
@@ -2850,6 +2886,11 @@ void PlayerbotHolder::OnBotDeleted(uint32 botGuid, uint32 accountId)
 
 bool PlayerbotHolder::DeleteBot(ObjectGuid guid, bool allowInstant)
 {
+    if (!sRandomPlayerbotMgr.PersistentRosterDestructiveMutationAllowed(guid.GetCounter()))
+    {
+        sLog.outError("[PersistentRoster] ordinary delete rejected for desired guid=%u; commit an explicit REMOVE/REPLACE first", guid.GetCounter());
+        return false;
+    }
     uint32 botAccount = sObjectMgr.GetPlayerAccountIdByGUID(guid);
 
     if (Player* player = sObjectMgr.GetPlayer(guid, true))

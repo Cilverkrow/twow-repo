@@ -389,6 +389,12 @@ public:
 
     bool randomBotLoginWithPlayer;
     bool asyncBotLogin, preloadHolders;
+    // Fail-closed, versioned GUID roster. Default is false so the legacy
+    // random-bot behavior remains the complete disabled-feature path.
+    bool persistentActiveRosterEnabled = false;
+    // V1 administrative Apply is accepted only during this explicit
+    // no-admission maintenance state and always returns RESTART_REQUIRED.
+    bool persistentActiveRosterMaintenanceMode = false;
     uint32 freeRoomForNonSpareBots;
     uint32 loginBotsNearPlayerRange;
     std::vector<std::string> defaultLoginCriteria;

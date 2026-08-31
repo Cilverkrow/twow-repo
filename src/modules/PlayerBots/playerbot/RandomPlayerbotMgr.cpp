@@ -27,6 +27,8 @@
 #include "Guild/GuildMgr.h"
 #include "World/WorldState.h"
 #include "PlayerbotLoginMgr.h"
+#include "PersistentActiveRoster.h"
+#include "PersistentActiveRosterDatabase.h"
 #include "Transports/Transport.h"
 
 #ifndef MANGOSBOT_ZERO
@@ -39,6 +41,9 @@
 #endif
 
 #include "playerbot/TravelMgr.h"
+#include <algorithm>
+#include <cctype>
+#include <chrono>
 #include <iomanip>
 #include <float.h>
 
@@ -340,6 +345,92 @@ RandomPlayerbotMgr::RandomPlayerbotMgr()
 
 RandomPlayerbotMgr::~RandomPlayerbotMgr()
 {
+    if (persistentRoster)
+        persistentRoster->Stop();
+}
+
+bool RandomPlayerbotMgr::InitializePersistentRoster()
+{
+    if (!sPlayerbotAIConfig.persistentActiveRosterEnabled)
+        return true;
+    if (persistentRosterInitialized)
+        return PersistentRosterAdmissionOpen();
+    persistentRosterInitialized = true;
+    persistentRoster.reset(new ai::roster::Service(std::unique_ptr<ai::roster::Store>(new ai::roster::CharacterDatabaseStore())));
+    std::string error;
+    bool ok = persistentRoster->Start(true, sPlayerbotAIConfig.asyncBotLogin, error);
+    if (!ok)
+        sLog.outError("[PersistentRoster] admission closed: state=%s code=%s",
+            ai::roster::RuntimeStateName(persistentRoster->State()).c_str(), error.c_str());
+    else
+        sLog.outString("[PersistentRoster] loaded version " UI64FMTD " with %u ordered GUIDs",
+            persistentRoster->CurrentVersionId(), static_cast<uint32>(persistentRoster->Desired().size()));
+    return ok;
+}
+
+bool RandomPlayerbotMgr::IsPersistentRosterMember(uint32 guidLow) const
+{
+    return sPlayerbotAIConfig.persistentActiveRosterEnabled && persistentRoster && persistentRoster->IsMember(guidLow);
+}
+
+bool RandomPlayerbotMgr::PersistentRosterAdmissionOpen() const
+{
+    if (!sPlayerbotAIConfig.persistentActiveRosterEnabled)
+        return true;
+    if (sPlayerbotAIConfig.persistentActiveRosterMaintenanceMode)
+        return false;
+    if (!persistentRoster)
+        return false;
+    ai::roster::RuntimeState state = persistentRoster->State();
+    return state == ai::roster::RuntimeState::STARTING || state == ai::roster::RuntimeState::HEALTHY ||
+        state == ai::roster::RuntimeState::DEGRADED;
+}
+
+bool RandomPlayerbotMgr::PersistentRosterDestructiveMutationAllowed(uint32 guidLow) const
+{
+    if (!sPlayerbotAIConfig.persistentActiveRosterEnabled)
+        return true;
+    if (!persistentRoster)
+        return false;
+    ai::roster::RuntimeState state = persistentRoster->State();
+    if (state == ai::roster::RuntimeState::INVALID_FAIL_CLOSED || state == ai::roster::RuntimeState::LOADING)
+        return false;
+    return !persistentRoster->IsMember(guidLow);
+}
+
+std::string RandomPlayerbotMgr::GetPersistentRosterState() const
+{
+    return persistentRoster ? ai::roster::RuntimeStateName(persistentRoster->State()) : "DISABLED";
+}
+
+bool RandomPlayerbotMgr::ApplyPersistentRosterRequest(std::string const& canonicalRequest, std::string& result)
+{
+    bool rosterBotActuallyOnline = false;
+    if (persistentRoster)
+        for (uint32 guid : persistentRoster->Desired())
+            if (GetPlayerBot(guid))
+            {
+                rosterBotActuallyOnline = true;
+                break;
+            }
+    result = ai::roster::EvaluateRosterApplyGate(sPlayerbotAIConfig.persistentActiveRosterEnabled,
+        persistentRoster != nullptr, sPlayerbotAIConfig.persistentActiveRosterMaintenanceMode,
+        persistentRoster ? persistentRoster->Status().rosterOnline : 0, rosterBotActuallyOnline);
+    if (!result.empty())
+    {
+        return false;
+    }
+    ai::roster::ApplyResult applied = persistentRoster->Apply(canonicalRequest);
+    result = applied.code;
+    if (applied.accepted)
+    {
+        currentBots.clear();
+        sLog.outString("[PersistentRoster] operation result=%s replay=%u restart_required=%u version=" UI64FMTD,
+            result.c_str(), applied.replayed ? 1u : 0u, applied.restartRequired ? 1u : 0u, applied.versionId);
+    }
+    else
+        sLog.outError("[PersistentRoster] operation rejected code=%s", result.c_str());
+    return applied.accepted;
 }
 
 int RandomPlayerbotMgr::GetMaxAllowedBotCount()
@@ -659,6 +750,36 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
 
     if (!playersLevel)
         playersLevel = sPlayerbotAIConfig.syncLevelNoPlayer;
+
+    if (sPlayerbotAIConfig.persistentActiveRosterEnabled)
+    {
+        if (!persistentRosterInitialized)
+            InitializePersistentRoster();
+        if (!PersistentRosterAdmissionOpen())
+        {
+            SetAIInternalUpdateDelay(sPlayerbotAIConfig.randomBotUpdateInterval);
+            PlayerbotHolder::UpdateAIInternal(elapsed, minimal);
+            return;
+        }
+
+        ScaleBotActivity();
+        std::list<uint32> desiredBots = GetBots();
+        uint32 maxLogins = sPlayerbotAIConfig.randomBotsMaxLoginsPerInterval;
+        for (uint32 bot : desiredBots)
+        {
+            if (GetPlayerBot(bot))
+                ProcessBot(bot);
+            else if (maxLogins && sRandomPlayerbotMgr.GetDatabaseDelay("CharacterDatabase") < 10 * IN_MILLISECONDS)
+            {
+                if (ProcessBot(bot))
+                    --maxLogins;
+            }
+        }
+        SetAIInternalUpdateDelay(sPlayerbotAIConfig.randomBotUpdateInterval);
+        LoginFreeBots();
+        PlayerbotHolder::UpdateAIInternal(elapsed, minimal);
+        return;
+    }
 
     ScaleBotActivity();
     if (sPlayerbotAIConfig.asyncBotLogin)
@@ -2229,13 +2350,98 @@ void RandomPlayerbotMgr::ScheduleChangeStrategy(uint32 bot, uint32 time)
     SetEventValue(bot, "change_strategy", 1, time);
 }
 
+bool RandomPlayerbotMgr::ValidatePersistentRosterLogin(uint32 bot, uint32& accountId, std::string& diagnostic) const
+{
+    accountId = sObjectMgr.GetPlayerAccountIdByGUID(ObjectGuid(HIGHGUID_PLAYER, bot));
+    std::string accountName;
+    bool accountExists = accountId && sAccountMgr.GetName(accountId, accountName);
+    std::transform(accountName.begin(), accountName.end(), accountName.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+    bool rndbotStock = accountExists && accountName.compare(0, 6, "RNDBOT") == 0 &&
+        sPlayerbotAIConfig.IsInRandomAccountList(accountId);
+    bool loginRecordExists = false;
+    bool accountActive = false;
+    uint32 accountLockFlags = 0;
+    if (accountExists)
+    {
+        std::unique_ptr<QueryResult> loginRecord(LoginDatabase.PQuery(
+            "SELECT `locked`, `active` FROM `account` WHERE `id`=%u", accountId));
+        if (loginRecord && loginRecord->GetRowCount() == 1)
+        {
+            loginRecordExists = true;
+            Field* fields = loginRecord->Fetch();
+            accountLockFlags = fields[0].GetUInt32();
+            accountActive = fields[1].GetBool();
+        }
+    }
+    diagnostic = ai::roster::EvaluateRosterAccountAdmission(accountId != 0, accountExists, rndbotStock,
+        accountExists && sAccountMgr.IsAccountBanned(accountId), loginRecordExists, accountActive,
+        accountLockFlags, accountExists && sWorld.FindSession(accountId));
+    if (!diagnostic.empty())
+        return false;
+    return true;
+}
+
+bool RandomPlayerbotMgr::PersistentRosterRetryReady(uint32 bot) const
+{
+    auto it = persistentRosterRetryAfter.find(bot);
+    return it == persistentRosterRetryAfter.end() || std::chrono::steady_clock::now() >= it->second;
+}
+
+void RandomPlayerbotMgr::SchedulePersistentRosterRetry(uint32 bot, std::string const& diagnostic)
+{
+    uint32& attempt = persistentRosterRetryAttempts[bot];
+    attempt = std::min<uint32>(attempt + 1, 6);
+    uint32 delaySeconds = std::min<uint32>(1u << attempt, 60u);
+    persistentRosterRetryAfter[bot] = std::chrono::steady_clock::now() + std::chrono::seconds(delaySeconds);
+    if (persistentRoster)
+        persistentRoster->RecordUnavailable(bot, diagnostic + ":RETRY_IN_" + std::to_string(delaySeconds) + "S");
+    sLog.outError("[PersistentRoster] DEGRADED guid=%u code=%s retry_in=%us; no replacement selected",
+        bot, diagnostic.c_str(), delaySeconds);
+}
+
+void RandomPlayerbotMgr::ClearPersistentRosterRetry(uint32 bot)
+{
+    persistentRosterRetryAttempts.erase(bot);
+    persistentRosterRetryAfter.erase(bot);
+}
+
 bool RandomPlayerbotMgr::AddRandomBot(uint32 bot)
 {
     SC_LOG("AddRandomBot entry guid=%u", bot);
+    if (sPlayerbotAIConfig.persistentActiveRosterEnabled && !IsPersistentRosterMember(bot))
+    {
+        sLog.outError("[PersistentRoster] rejected non-roster AddRandomBot guid=%u", bot);
+        return false;
+    }
     Player* player = GetPlayerBot(bot);
     if (player)
     {
         SC_LOG("AddRandomBot guid=%u already online — returning true", bot);
+        return true;
+    }
+
+    if (IsPersistentRosterMember(bot))
+    {
+        persistentRoster->RecordPending(bot);
+        if (!PersistentRosterRetryReady(bot))
+            return false;
+
+        uint32 validatedAccountId = 0;
+        std::string diagnostic;
+        if (!ValidatePersistentRosterLogin(bot, validatedAccountId, diagnostic))
+        {
+            SchedulePersistentRosterRetry(bot, diagnostic);
+            return false;
+        }
+        persistentRoster->RecordAvailable(bot);
+        if (GetEventValue(bot, "login"))
+            return true;
+        if (!AddPlayerBot(bot, 0))
+        {
+            SchedulePersistentRosterRetry(bot, "LOGIN_QUEUE_REJECTED");
+            return false;
+        }
+        SetEventValue(bot, "login", 1, -1);
         return true;
     }
 
@@ -2318,13 +2524,34 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
 
     PlayerbotAI* ai = player ? GetBotAI(player) : NULL;
 
+    bool persistentRosterBot = IsPersistentRosterMember(bot);
+    ai::roster::RuntimeBehaviorPolicy runtimePolicy =
+        ai::roster::EvaluateRuntimeBehaviorPolicy(persistentRosterBot, player && player->GetGroup());
+    if (persistentRosterBot)
+    {
+        if (!player)
+            return AddRandomBot(bot);
+        if (!player->GetSession())
+        {
+            persistentRoster->RecordPending(bot);
+            SchedulePersistentRosterRetry(bot, "PLAYER_SESSION_MISSING");
+            return false;
+        }
+        if (!player->IsInWorld() || player->IsBeingTeleported() || player->GetSession()->isLogingOut())
+            return false;
+        if (GetEventValue(bot, "login"))
+            SetEventValue(bot, "login", 0, 0);
+        ClearPersistentRosterRetry(bot);
+        persistentRoster->RecordOnline(bot);
+    }
+
     bool botsAllowedInWorld = !sPlayerbotAIConfig.randomBotLoginWithPlayer || (!players.empty() && sWorld.GetActiveSessionCount() > 0);
 
     bool isValid = true;
    
-    if (sPlayerbotAIConfig.randomBotTimedLogout && !GetEventValue(bot, "add") && !sPlayerbotAIConfig.asyncBotLogin) // RandomBotInWorldTime is expired.
+    if (runtimePolicy.leaseLogout && sPlayerbotAIConfig.randomBotTimedLogout && !GetEventValue(bot, "add") && !sPlayerbotAIConfig.asyncBotLogin) // RandomBotInWorldTime is expired.
         isValid = false;
-    else if(!botsAllowedInWorld)                                               // Logout if all players logged out
+    else if(runtimePolicy.populationRotation && !botsAllowedInWorld)           // Logout if all players logged out
         isValid = false;
 
     //Log out bot
@@ -2441,6 +2668,9 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
         return false;
 
     uint32 bot = player->GetGUIDLow();
+    bool persistentRosterBot = IsPersistentRosterMember(bot);
+    ai::roster::RuntimeBehaviorPolicy runtimePolicy =
+        ai::roster::EvaluateRuntimeBehaviorPolicy(persistentRosterBot, player->GetGroup() != nullptr);
 
     if (player->InBattleGround())
         return false;
@@ -2459,7 +2689,7 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
     else
         idleBot = true;
 
-    if (idleBot)
+    if (idleBot && runtimePolicy.randomizeProgression)
     {
         uint32 randomize = GetEventValue(bot, "randomize");
         // Randomize() reassigns level/spec - never call it when levels are pinned
@@ -3303,6 +3533,8 @@ void RandomPlayerbotMgr::UpdateGearSpells(Player* bot)
 
 void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 {
+    if (bot && IsPersistentRosterMember(bot->GetGUIDLow()))
+        return;
     uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
     if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
         maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
@@ -3455,6 +3687,16 @@ bool RandomPlayerbotMgr::IsRandomBot(uint32 bot)
 
 std::list<uint32> RandomPlayerbotMgr::GetBots()
 {
+    if (sPlayerbotAIConfig.persistentActiveRosterEnabled)
+    {
+        if (!persistentRosterInitialized)
+            InitializePersistentRoster();
+        std::list<uint32> desired;
+        if (PersistentRosterAdmissionOpen())
+            desired.assign(persistentRoster->Desired().begin(), persistentRoster->Desired().end());
+        currentBots = desired;
+        return desired;
+    }
     if (!currentBots.empty()) return currentBots;
 
     auto results = CharacterDatabase.Query(
@@ -3640,6 +3882,53 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, cha
 
     std::string cmd = args;
 
+    if (cmd == "roster status" || cmd.find("roster apply ") == 0 || cmd == "roster apply")
+    {
+        ai::roster::AdminTransport transport = handler->GetSession() ? ai::roster::AdminTransport::GAME_CHAT :
+            (static_cast<CliHandler*>(handler)->GetAccountId() == 0 ? ai::roster::AdminTransport::LOCAL_CONSOLE :
+                ai::roster::AdminTransport::REMOTE_ADMIN);
+        if (!ai::roster::IsRosterAdminTransportAllowed(transport))
+        {
+            sLog.outError("[PersistentRoster] admin command rejected: local mangosd console required");
+            if (isRA)
+                handler->SendSysMessage("Persistent roster administration is restricted to the local mangosd console.");
+            return true;
+        }
+
+        if (cmd == "roster status")
+        {
+            if (sPlayerbotAIConfig.persistentActiveRosterEnabled && !sRandomPlayerbotMgr.persistentRosterInitialized)
+                sRandomPlayerbotMgr.InitializePersistentRoster();
+            ai::roster::RuntimeStatus status;
+            if (sRandomPlayerbotMgr.persistentRoster)
+                status = sRandomPlayerbotMgr.persistentRoster->Status();
+            std::ostringstream line;
+            line << "PERSISTENT_ROSTER state=" << sRandomPlayerbotMgr.GetPersistentRosterState()
+                << " maintenance=" << (sPlayerbotAIConfig.persistentActiveRosterMaintenanceMode ? 1 : 0)
+                << " version=" << status.rosterVersionId << " target=" << status.rosterTarget
+                << " available=" << status.rosterAvailable << " online=" << status.rosterOnline
+                << " sha256=" << ai::roster::Hex(status.rosterSha256);
+            sLog.outString("%s", line.str().c_str());
+            for (auto const& diagnostic : status.diagnostics)
+                sLog.outString("PERSISTENT_ROSTER_DIAGNOSTIC guid=%u code=%s", diagnostic.first, diagnostic.second.c_str());
+            return true;
+        }
+
+        std::string fileName = cmd.size() > 13 ? cmd.substr(13) : "";
+        std::string canonicalRequest;
+        std::string result;
+        if (!ai::roster::ReadCanonicalAdminRequestFile(fileName, canonicalRequest, result))
+        {
+            sLog.outError("[PersistentRoster] apply rejected code=%s", result.c_str());
+            return true;
+        }
+        if (!sRandomPlayerbotMgr.persistentRosterInitialized)
+            sRandomPlayerbotMgr.InitializePersistentRoster();
+        sRandomPlayerbotMgr.ApplyPersistentRosterRequest(canonicalRequest, result);
+        sLog.outString("PERSISTENT_ROSTER_APPLY result=%s", result.c_str());
+        return true;
+    }
+
     std::map<std::string, ConsoleCommandHandler> handlers;
     handlers["help"] = &RandomPlayerbotMgr::HandleHelp;
     handlers["reset"] = &RandomPlayerbotMgr::HandleConsoleReset;
@@ -3814,7 +4103,15 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
 {
     bool hadPlayerBot = GetPlayerBot(player->GetGUIDLow());
 
-    DisablePlayerBot(player->GetGUIDLow());
+    if (IsPersistentRosterMember(player->GetGUIDLow()))
+    {
+        SetEventValue(player->GetGUIDLow(), "login", 0, 0);
+        SchedulePersistentRosterRetry(player->GetGUIDLow(), "SESSION_ENDED");
+    }
+    // This hook observes a session that is already ending; it is cleanup,
+    // not an ordinary rotation/logout request. The initiating ordinary paths
+    // remain protected by the default false argument.
+    DisablePlayerBot(player->GetGUIDLow(), true, true);
 
     if (!hadPlayerBot && GetBotAI(player) && GetBotAI(player)->IsRealPlayer() && player->GetGroup() && sPlayerbotAIConfig.IsFreeAltBot(player))
         player->GetSession()->SetOffline(); //Prevent groupkick
@@ -3837,6 +4134,11 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
 void RandomPlayerbotMgr::OnBotLoginInternal(Player * const bot)
 {
     sLog.outDetail("%u/%d Bot %s logged in", GetPlayerbotsAmount(), sRandomPlayerbotMgr.GetMaxAllowedBotCount(), bot->GetName());
+    if (IsPersistentRosterMember(bot->GetGUIDLow()))
+    {
+        ClearPersistentRosterRetry(bot->GetGUIDLow());
+        persistentRoster->RecordOnline(bot->GetGUIDLow());
+    }
 	//if (loginProgressBar && playerBots.size() < sRandomPlayerbotMgr.GetMaxAllowedBotCount()) { loginProgressBar->step(); }
 	//if (loginProgressBar && playerBots.size() >= sRandomPlayerbotMgr.GetMaxAllowedBotCount() - 1) {
     //if (loginProgressBar && playerBots.size() + 1 >= sRandomPlayerbotMgr.GetMaxAllowedBotCount()) {
@@ -3891,6 +4193,12 @@ void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
 
 void RandomPlayerbotMgr::OnPlayerLoginError(uint32 bot)
 {
+    if (IsPersistentRosterMember(bot))
+    {
+        SetEventValue(bot, "login", 0, 0);
+        SchedulePersistentRosterRetry(bot, "LOGIN_FAILED");
+        return;
+    }
     SetEventValue(bot, "add", 0, 0);
     SetEventValue(bot, "login", 0, 0);
     currentBots.remove(bot);
@@ -4291,7 +4599,14 @@ void RandomPlayerbotMgr::Remove(Player* bot)
 {
     SC_LOG("RandomPlayerbotMgr::Remove entry bot=%s",
            bot ? bot->GetName() : "(null)");
+    if (!bot)
+        return;
     uint32 owner = bot->GetGUIDLow();
+    if (!PersistentRosterDestructiveMutationAllowed(owner))
+    {
+        sLog.outError("[PersistentRoster] ordinary remove rejected for desired guid=%u", owner);
+        return;
+    }
     SC_LOG("RandomPlayerbotMgr::Remove guid=%u — deleting random_bots row", owner);
     CharacterDatabase.PExecute("DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '%d'", owner);
     eventCache[owner].clear();
@@ -4715,6 +5030,11 @@ std::list<std::string> RandomPlayerbotMgr::HandleRemove(Player* bot)
 std::list<std::string> RandomPlayerbotMgr::HandleConsoleReset(std::string param)
 {
     std::list<std::string> messages;
+    if (sPlayerbotAIConfig.persistentActiveRosterEnabled)
+    {
+        messages.push_back("Persistent roster enabled: reset rejected; use an explicit canonical roster admin operation.");
+        return messages;
+    }
     CharacterDatabase.PExecute("delete from ai_playerbot_random_bots where event not in ('temporary')");
     sRandomPlayerbotMgr.eventCache.clear();
     std::string msg = "Random bots were reset for all players. Please restart the Server.";

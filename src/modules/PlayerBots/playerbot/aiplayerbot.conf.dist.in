@@ -1281,6 +1281,21 @@ AiPlayerbot.LLMDefaultPromptsFile = llm_character_card.txt
 # Enable the alternative asynchronous login system.
 AiPlayerbot.AsyncBotLogin = 0
 
+# Enables the versioned, ordered GUID roster stored in the Character DB.
+# Default 0 preserves the existing random/lease/population behavior. When set
+# to 1, a valid current roster version is mandatory and AsyncBotLogin must be 0;
+# otherwise admission fails closed and no random top-up is performed.
+AiPlayerbot.PersistentActiveRoster.Enabled = 0
+
+# V1 administrative roster changes are fail-closed and offline-oriented.
+# With this option enabled the configured roster is validated but automatic
+# bot admission is closed. The local mangosd console may execute
+# `rndbot roster status` and `rndbot roster apply <absolute-request-file>`.
+# A successful Apply is atomic and returns APPLIED_RESTART_REQUIRED; it never
+# performs partial live reconciliation. Client chat and remote-admin sessions
+# are not authorized for these two commands.
+AiPlayerbot.PersistentActiveRoster.MaintenanceMode = 0
+
 # Dramatically speeds up initial and future bot logins but takes 2gb/1000 accounts and might prevent player login during the initial bot login period.
 # !!warning heavy db usage at start!!
 # AiPlayerbot.PreloadHolders = 0

@@ -54,6 +54,7 @@ option(ALLOW_TURTLE_ADDONS "Allow Turtle addons" ON)
 # When ON, mangosd links the bot subsystem; runtime activation is gated by
 # AiPlayerbot.Enabled in aiplayerbot.conf.
 option(BUILD_PLAYERBOTS "Build the cmangos/playerbots subsystem" OFF)
+option(BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS "Build the isolated persistent-roster real database adapter test" OFF)
 
 ConfigureModuleBuildOptions()
 

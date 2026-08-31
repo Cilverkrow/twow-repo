@@ -9,6 +9,8 @@
 #include "WorldPosition.h"
 #include <map>
 #include <list>
+#include <memory>
+#include <chrono>
 
 class WorldPacket;
 class Player;
@@ -32,6 +34,7 @@ public:
 };
 
 class PerformanceMonitorOperation;
+namespace ai { namespace roster { class Service; } }
 
 //https://gist.github.com/bradley219/5373998
 
@@ -94,6 +97,13 @@ public:
         // Pinned bots: kept logged in, never relocated. See PinnedBots in the config.
         bool IsPinnedBot(uint32 guidLow);
         void EnsurePinnedBotsOnline();
+        bool InitializePersistentRoster();
+        bool IsPersistentRosterMember(uint32 guidLow) const;
+        bool PersistentRosterAdmissionOpen() const;
+        bool PersistentRosterDestructiveMutationAllowed(uint32 guidLow) const;
+        bool ValidatePersistentRosterLogin(uint32 bot, uint32& accountId, std::string& diagnostic) const;
+        std::string GetPersistentRosterState() const;
+        bool ApplyPersistentRosterRequest(std::string const& canonicalRequest, std::string& result);
 
         void ScheduleTeleport(uint32 bot, uint32 time = 0);
         void ScheduleChangeStrategy(uint32 bot, uint32 time = 0);
@@ -198,6 +208,9 @@ public:
         uint32 AddRandomBots();
         bool ProcessBot(uint32 bot);
         void ScheduleRandomize(uint32 bot, uint32 time);
+        bool PersistentRosterRetryReady(uint32 bot) const;
+        void SchedulePersistentRosterRetry(uint32 bot, std::string const& diagnostic);
+        void ClearPersistentRosterRetry(uint32 bot);
         void RandomTeleport(Player* bot);
         void RandomTeleport(Player* bot, std::vector<WorldLocation> &locs, bool hearth = false, bool activeOnly = false);
         uint32 GetZoneLevel(uint16 mapId, float teleX, float teleY, float teleZ);
@@ -276,6 +289,10 @@ public:
         std::map<uint32, std::map<std::string, CachedEvent> > eventCache;
         BarGoLink* loginProgressBar;
         std::list<uint32> currentBots;
+        std::unique_ptr<ai::roster::Service> persistentRoster;
+        bool persistentRosterInitialized = false;
+        std::map<uint32, uint32> persistentRosterRetryAttempts;
+        std::map<uint32, std::chrono::steady_clock::time_point> persistentRosterRetryAfter;
         std::list<uint32> arenaTeamMembers;
         uint32 bgBotsCount;
         uint32 playersLevel = 0;
