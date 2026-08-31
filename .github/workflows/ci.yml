@@ -178,6 +178,37 @@ jobs:
             .github/workflows deploy 2>&1 | tee /tmp/yamllint.txt
           ! grep -q ' error ' /tmp/yamllint.txt
 
+      # Module isolation. In static linkage every module folds into one shared
+      # `modules` target, so a PUBLIC addition there lands on every other
+      # module's compile line. mod-dungeon-clear did exactly this: 25 playerbots
+      # include dirs, a link to playerbots, and `-include AcCompat.h` -- meaning
+      # module #2 would silently inherit an AzerothCore name shim it never asked
+      # for. A module configures its own target and nothing else.
+      - name: Modules do not mutate the shared target
+        if: always()
+        run: |
+          # mod-dungeon-clear is a known, tracked exception. It reaches the shared
+          # target only because playerbots is still a separate static library
+          # rather than a module, so in static linkage its include paths have
+          # nowhere else to go. Promoting playerbots deletes that block entirely
+          # (issue REF-004). Until then the rule is enforced for every OTHER
+          # module, which is what protects an agent adding module number two.
+          KNOWN_EXCEPTION="modules/mod-dungeon-clear/mod-dungeon-clear.cmake"
+
+          fail=0
+          for f in modules/*/*.cmake; do
+            [ -f "$f" ] || continue
+            grep -nE 'target_(link_libraries|include_directories|compile_options|compile_definitions|sources)\([[:space:]]*modules\b' "$f" > /tmp/hits || continue
+            if [ "$f" = "$KNOWN_EXCEPTION" ]; then
+              echo "::notice file=$f::known exception, tracked by REF-004 ($(wc -l < /tmp/hits) occurrence(s))"
+              continue
+            fi
+            cat /tmp/hits
+            echo "::error file=$f::module cmake mutates the shared 'modules' target; configure mod_<name> instead"
+            fail=1
+          done
+          exit $fail
+
       # Invariant 2 (ADR-0024): upstream schemas are read-only to us. A module
       # migration that writes an upstream table is the failure this catches.
       - name: Migrations respect schema ownership

@@ -35,8 +35,15 @@ function(GetModuleSourceList variable)
     return()
   endif()
 
+  # CONFIGURE_DEPENDS so that CREATING a module directory re-triggers configure.
+  # Without it, `modules/create_module.sh mod-foo` produces a module that is
+  # silently not in the build until someone happens to re-run cmake - and the
+  # symptom is a missing Add<name>Scripts() link error a long way from the cause.
+  # The per-module source globs below already use it; this one, the outermost,
+  # did not.
   file(GLOB LOCAL_MODULE_LIST RELATIVE
     "${MODULE_BASE_PATH}"
+    CONFIGURE_DEPENDS
     "${MODULE_BASE_PATH}/*")
 
   set(MODULE_SOURCE_LIST)
