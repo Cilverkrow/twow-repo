@@ -1,4 +1,0 @@
-ssc-rndbot-roster-v1
-schema_version=1
-ordinal_base=1
-member_count=0

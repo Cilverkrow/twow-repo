@@ -18,7 +18,6 @@ set -euo pipefail
 
 REPO="${TWOW_ISSUE_REPO:-Cilverkrow/twow-repo}"
 MANIFEST_DIR="${TWOW_MANIFEST_DIR:-docs/issues}"
-PARALLEL="${TWOW_ISSUE_PARALLEL:-4}"
 APPLY=0
 UPDATE=0
 ONLY=""

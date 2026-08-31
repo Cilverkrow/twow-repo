@@ -20,7 +20,11 @@ compile_commands.json
 *.log
 *.log.*
 *.dmp
-*.core
+# Core dumps. Anchored to a bare filename rather than a suffix: the old `*.core`
+# also matched deploy/docker/Dockerfile.core, so the Dockerfile was silently
+# never committed and CI could not build the image.
+core
+core.[0-9]*
 
 # Compiled or otherwise binary artifacts
 *.exe

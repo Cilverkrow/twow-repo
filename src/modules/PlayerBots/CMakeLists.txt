@@ -168,24 +168,44 @@ if(BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
     ${CMAKE_SOURCE_DIR}/src/shared
     ${CMAKE_SOURCE_DIR}/src/framework
-    ${CMAKE_SOURCE_DIR}/dep/include-windows
-    ${CMAKE_SOURCE_DIR}/dep/windows/include
     ${CMAKE_BINARY_DIR}/src/shared
     ${CMAKE_BINARY_DIR}
     ${ACE_INCLUDE_DIR}
     ${MYSQL_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
   )
+  # The bundled Windows headers must not be on the include path elsewhere: they
+  # shadow the system OpenSSL and MySQL headers that ${OPENSSL_INCLUDE_DIR} and
+  # ${MYSQL_INCLUDE_DIR} already point at.
+  if(WIN32)
+    target_include_directories(persistent_active_roster_database_tests PRIVATE
+      ${CMAKE_SOURCE_DIR}/dep/include-windows
+      ${CMAKE_SOURCE_DIR}/dep/windows/include
+    )
+  endif()
   target_compile_definitions(persistent_active_roster_database_tests PRIVATE ROSTER_DATABASE_INJECTED_ONLY)
   target_link_libraries(persistent_active_roster_database_tests PRIVATE
     shared
     framework
     ${ACE_LIBRARIES}
-    optimized ${MYSQL_LIBRARY}
-    optimized ${OPENSSL_LIBRARIES}
-    debug ${MYSQL_DEBUG_LIBRARY}
-    debug ${OPENSSL_DEBUG_LIBRARIES}
   )
+  # Separate debug/release import libraries are a Windows arrangement. On other
+  # platforms MYSQL_DEBUG_LIBRARY and OPENSSL_DEBUG_LIBRARIES are empty, and a
+  # `debug` keyword followed by nothing is a hard CMake error:
+  #   The "debug" argument must be followed by a library.
+  if(WIN32)
+    target_link_libraries(persistent_active_roster_database_tests PRIVATE
+      optimized ${MYSQL_LIBRARY}
+      optimized ${OPENSSL_LIBRARIES}
+      debug ${MYSQL_DEBUG_LIBRARY}
+      debug ${OPENSSL_DEBUG_LIBRARIES}
+    )
+  else()
+    target_link_libraries(persistent_active_roster_database_tests PRIVATE
+      ${MYSQL_LIBRARY}
+      ${OPENSSL_LIBRARIES}
+    )
+  endif()
   if(WIN32)
     target_link_libraries(persistent_active_roster_database_tests PRIVATE Normaliz ws2_32)
   endif()

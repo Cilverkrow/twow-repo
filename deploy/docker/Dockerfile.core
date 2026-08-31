@@ -1,0 +1,76 @@
+# syntax=docker/dockerfile:1.7
+#
+# Tortoise-WoW core (mangosd + realmd), Linux build.
+#
+# Two things about this file are load-bearing and easy to get wrong:
+#
+# 1. CMAKE_INSTALL_PREFIX is identical in both stages. The prefix is compiled
+#    into the binary (SYSCONFDIR, see CMakeLists.txt), so building under /build
+#    and copying to /opt/turtle produces a server that silently cannot find its
+#    own configs -- no error, just missing features. Build where you will run.
+#
+# 2. TW_ARCH defaults to x86-64-v2 rather than the historical `native`, so the
+#    image runs on machines other than the one that built it.
+#
+# Client data (dbc/maps/vmaps/mmaps) is deliberately NOT in this image. It is
+# extracted from a game client and mounted at runtime.
+
+ARG DEBIAN_VERSION=trixie
+ARG PREFIX=/opt/turtle
+
+# ---------------------------------------------------------------- builder
+FROM debian:${DEBIAN_VERSION}-slim AS builder
+ARG PREFIX
+ARG TW_ARCH=x86-64-v2
+ARG BUILD_PLAYERBOTS=ON
+ARG BUILD_TYPE=Release
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+      build-essential cmake ninja-build git ccache \
+      libace-dev default-libmysqlclient-dev \
+      libssl-dev zlib1g-dev libbz2-dev \
+      libboost-dev libboost-thread-dev libboost-filesystem-dev \
+      libboost-system-dev libboost-stacktrace-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . /src
+
+RUN --mount=type=cache,target=/ccache \
+    CCACHE_DIR=/ccache cmake -S /src -B /build -G Ninja \
+      -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+      -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+      -DTW_ARCH=${TW_ARCH} \
+      -DBUILD_PLAYERBOTS=${BUILD_PLAYERBOTS} \
+      -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+RUN --mount=type=cache,target=/ccache \
+    CCACHE_DIR=/ccache cmake --build /build --parallel "$(nproc)" \
+    && cmake --install /build
+
+# ---------------------------------------------------------------- runtime
+FROM debian:${DEBIAN_VERSION}-slim AS runtime
+ARG PREFIX
+ENV PREFIX=${PREFIX}
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+      libace-8.0.2 libmariadb3 libssl3 zlib1g libbz2-1.0 \
+      libboost-system1.83.0 libboost-thread1.83.0 libboost-filesystem1.83.0 \
+      mariadb-client tini \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder ${PREFIX} ${PREFIX}
+COPY deploy/docker/entrypoint-mangosd.sh /usr/local/bin/entrypoint-mangosd.sh
+RUN chmod +x /usr/local/bin/entrypoint-mangosd.sh \
+    && useradd --system --create-home --home-dir /home/turtle turtle \
+    && mkdir -p /data /var/log/turtle ${PREFIX}/run \
+    && chown -R turtle:turtle /data /var/log/turtle ${PREFIX}/run
+
+USER turtle
+WORKDIR ${PREFIX}/bin
+EXPOSE 8090 3724
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint-mangosd.sh"]
