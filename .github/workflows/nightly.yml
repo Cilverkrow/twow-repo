@@ -1,0 +1,225 @@
+# The slow-moving breakage.
+#
+# ci.yml answers "is this push broken?" and pays for exactly one full compile to
+# do it. Three checks do not belong in that budget, because none of them can be
+# broken by the push in front of you and all of them are expensive:
+#
+#   * the clang build - a second toolchain catching what gcc accepts. Real, but a
+#     diagnostic that only clang emits will still be there tomorrow morning.
+#   * the all-features-off build (ADR-0024 invariant 4). It is a whole second
+#     compile of the core to prove a module can still be compiled out; the thing
+#     it guards against is introduced by module work, not by every commit.
+#   * upstream drift. Nothing in this repository changes it at all; it changes
+#     when somebody else pushes to a repository we do not control.
+#
+# Running them here keeps the per-push pipeline at one compile while nothing is
+# actually lost - the worst case is that one of these is found a day late, and
+# workflow_dispatch exists for when a day is too long.
+name: nightly
+
+on:
+  # 03:30 UTC: after the runners are quiet and before the working day, so a
+  # failure is waiting in the morning rather than competing with pushes.
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  # Not cancel-in-progress: a nightly that gets cancelled by the next nightly
+  # would simply never finish.
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # A second toolchain. clang and gcc disagree about enough - unused-but-set
+  # variables, out-of-line template definitions, the shadowing warnings - that a
+  # tree building under only one of them is a tree that will surprise someone.
+  clang:
+    runs-on: ubuntu-24.04
+    name: clang full build
+    timeout-minutes: 120
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # Shallow is fine for building; the revision header only needs HEAD.
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          # Only the Boost components actually linked (thread, filesystem,
+          # system) plus headers. libboost-all-dev pulls ~230 packages
+          # including OpenMPI and adds several minutes for nothing.
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build ccache \
+            libace-dev default-libmysqlclient-dev \
+            libssl-dev zlib1g-dev libbz2-dev \
+            libboost-dev libboost-thread-dev libboost-filesystem-dev \
+            libboost-system-dev libboost-stacktrace-dev
+
+      # Its own cache key. Sharing gcc's would thrash both: ccache keys on the
+      # compiler binary, so every object would miss on alternating runs.
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: nightly-clang
+          max-size: 2G
+
+      - name: Configure
+        run: |
+          # TW_ARCH defaults to x86-64-v2 rather than the historical `native`,
+          # so a binary built here runs elsewhere (ADR-0028).
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/opt/turtle \
+            -DBUILD_PLAYERBOTS=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build --parallel "$(nproc)"
+
+      - name: Verify binaries exist
+        run: |
+          test -x build/src/mangosd/mangosd
+          test -x build/src/realmd/realmd
+          ls -la build/src/mangosd/mangosd build/src/realmd/realmd
+
+  # Invariant 4 (ADR-0024): the core must still build and run with every project
+  # feature switched off. Cheapest possible guard against a module that cannot be
+  # compiled out - and the cheapest is still a full compile, which is why it is
+  # here rather than on the push path.
+  no-modules:
+    runs-on: ubuntu-24.04
+    name: all features off
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          # No thread/filesystem/system/stacktrace Boost runtimes here: with
+          # every feature off, only the Boost headers are reached.
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build ccache \
+            libace-dev default-libmysqlclient-dev \
+            libssl-dev zlib1g-dev libbz2-dev libboost-dev
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: nightly-no-modules
+          max-size: 2G
+
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/opt/turtle \
+            -DBUILD_PLAYERBOTS=OFF \
+            -DMODULES=disabled \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel "$(nproc)"
+          test -x build/src/mangosd/mangosd
+
+  # How far has upstream moved, and into which of our files?
+  #
+  # The repository's history was rewritten with git-filter-repo to strip binaries
+  # (docs/PROVENANCE.md), so it shares no history with upstream and `git
+  # merge-base` cannot be asked. ADR-0020 records the effective merge-base for
+  # the Penqle line - db5fb2a - and ADR-0026 records the remote. Both are facts
+  # written in prose and nowhere else; this job is what turns them into a number
+  # somebody sees.
+  #
+  # It REPORTS, it does not fail. Upstream moving is not a defect in this branch,
+  # and a red X that means "somebody else committed something" is a red X people
+  # learn to ignore. The one thing it does fail on is being unable to reach
+  # upstream at all, because a silently skipped drift check is worse than none.
+  #
+  # When ADR-0020's split lands and UPSTREAM.lock exists, the recorded base below
+  # should be read from that file instead of being spelled here.
+  upstream-drift:
+    runs-on: ubuntu-24.04
+    name: upstream drift
+    timeout-minutes: 30
+    env:
+      UPSTREAM_URL: https://github.com/Shyalya/tortoise-wow.git
+      UPSTREAM_BRANCH: playerbots-integration-gh
+      # ADR-0026: the effective upstream merge-base for the Penqle line,
+      # reachable only as 14d4cdc^2 and named nowhere else in the tree.
+      UPSTREAM_BASE: db5fb2a197f05611ad9d243568122c6be466ab8a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Fetch upstream and measure the drift
+        run: |
+          set -eu
+          # UPSTREAM.lock is ADR-0020's home for these values. It does not exist
+          # yet; when it does, prefer it over the env defaults above so this job
+          # never disagrees with the pinned submodule.
+          if [ -f UPSTREAM.lock ]; then
+            . ./UPSTREAM.lock
+            UPSTREAM_URL="${UPSTREAM_URL:?}"
+            UPSTREAM_BRANCH="${UPSTREAM_BRANCH:?}"
+            UPSTREAM_BASE="${UPSTREAM_BASE:?}"
+            echo "read UPSTREAM.lock"
+          fi
+
+          # A bare mirror of the branch only. Cloning the working tree would pull
+          # the 130 MB of world SQL for a commit count.
+          git clone --bare --filter=blob:none --single-branch \
+            --branch "$UPSTREAM_BRANCH" "$UPSTREAM_URL" upstream.git \
+            || { echo "::error::cannot reach $UPSTREAM_URL - the drift check proved nothing"; exit 1; }
+
+          tip=$(git -C upstream.git rev-parse HEAD)
+          echo "upstream tip     : $tip"
+          echo "recorded base    : $UPSTREAM_BASE"
+
+          if ! git -C upstream.git cat-file -e "$UPSTREAM_BASE^{commit}" 2>/dev/null; then
+            echo "::warning::$UPSTREAM_BASE is not reachable from $UPSTREAM_BRANCH."
+            echo "::warning::Upstream was force-pushed or rebased, or the recorded base is wrong."
+            echo "::warning::ADR-0020/ADR-0026 need re-checking before the next merge."
+            exit 0
+          fi
+
+          if [ "$tip" = "$UPSTREAM_BASE" ]; then
+            echo "::notice::upstream has not moved since the recorded merge-base"
+            exit 0
+          fi
+
+          ahead=$(git -C upstream.git rev-list --count "$UPSTREAM_BASE..$tip")
+          echo "::notice::upstream is $ahead commit(s) ahead of the recorded merge-base"
+
+          # The files ADR-0020 measured as the expensive ones: the highest-traffic
+          # upstream files are also the ones carrying the project's core delta, so
+          # upstream touching them is what turns a merge into a conflict day.
+          echo
+          echo "Upstream changes in the files that carry our delta:"
+          git -C upstream.git diff --stat "$UPSTREAM_BASE..$tip" -- \
+            'src/game/Objects/Player.*' 'src/game/World/World.*' \
+            'src/game/Objects/Unit.*' 'src/game/Server/WorldSession.cpp' \
+            'src/game/Handlers/CharacterHandler.cpp' \
+            || echo "  (none of the tracked hot files changed)"
+
+          {
+            echo "### Upstream drift"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| remote | \`$UPSTREAM_URL\` (\`$UPSTREAM_BRANCH\`) |"
+            echo "| recorded base | \`$UPSTREAM_BASE\` |"
+            echo "| upstream tip | \`$tip\` |"
+            echo "| commits ahead | **$ahead** |"
+          } >> "$GITHUB_STEP_SUMMARY"

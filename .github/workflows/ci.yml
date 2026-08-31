@@ -1,0 +1,994 @@
+# The single per-push pipeline.
+#
+# WHY ONE FILE. Seven workflows used to fire on every push: 19 job entries, and
+# the server compiled roughly five times (gcc, clang, all-features-off, the test
+# build, and `docker compose build` inside smoke). A full compile is ~25 minutes,
+# so with several branches in flight the runner pool was permanently saturated
+# and everybody queued behind a compile that had already happened four times.
+#
+# This file is that pipeline collapsed into one DAG:
+#
+#   lint ---------------+
+#   integration --------|   (parallel, nothing compiles here)
+#   windows-compile ----|
+#   build-and-test ----> smoke
+#
+# Five job entries. ONE full server compile per push, in the build-and-test job,
+# and smoke consumes the image that build produced instead of building its own.
+#
+# What is deliberately NOT here:
+#   * the clang build and the all-features-off invariant build - nightly.yml.
+#     They catch slow-moving breakage, not "this push is broken", so paying for
+#     them on every push bought latency and nothing else.
+#   * publish.yml stays a separate file: different triggers (main and tags only)
+#     and far broader permissions (packages/id-token/attestations write). Folding
+#     it in here would hand those permissions to every pull request.
+#
+# Platform split (ADR-0028): Linux is the complete gate, Windows is compile-only.
+# A clean clone CANNOT link on Windows - dep/windows/lib and mangosd.ico are
+# pinned external inputs kept out of Git (ADR-0019). There is no Windows link job
+# and there must never be one.
+name: ci
+
+on:
+  push:
+    branches: [main, 'refactor/**']
+  pull_request:
+  # Nightly backstop on main, inherited from smoke.yml and integration.yml. Both
+  # of those had their own cron for the same reason: the stack can break from a
+  # base-image change - a new mariadb:11.8 point release, a new debian:trixie -
+  # with nobody having touched the repository. Running the whole DAG is simpler
+  # than singling those two out, and it is one run.
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  # One group for the whole pipeline, so a new push cancels the previous run's
+  # compile as well as its lint. Per-workflow groups used to leave an orphaned
+  # 25-minute build running after its commit had been superseded.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # The tag deploy/compose/docker-compose.yml resolves to by default
+  # (${IMAGE_REPO:-twow/core}:${IMAGE_TAG:-dev}). build-and-test tags the image
+  # it produces with exactly this, so `compose up` in the smoke job finds it
+  # locally and never tries to build or pull.
+  CORE_IMAGE: twow/core:dev
+
+jobs:
+  # ---------------------------------------------------------------- lint
+  #
+  # Everything that is not a compiler, in ONE job.
+  #
+  # It used to be seven jobs, one per check: seven runners and seven checkouts to
+  # run a few minutes of shell. The reason it was split - so a failing check does
+  # not hide the ones after it - is preserved by giving every step `if: always()`.
+  # Each runs regardless of what failed before it, and the job still reports
+  # failure, because a failed step fails its job even when later steps succeed.
+  lint:
+    runs-on: ubuntu-24.04
+    name: lint
+    timeout-minutes: 20
+    steps:
+      # fetch-depth: 0 because gitleaks scans history and the added-file checks
+      # diff against a base commit.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        if: always()
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # .gitleaksignore holds exactly one audited false positive. Broadening it
+      # is how a real secret gets waved through, so the file's size is checked
+      # rather than trusted (FG-012).
+      - name: Reject broadened gitleaks suppressions
+        if: always()
+        run: |
+          entries=$(grep -cv '^\s*\(#.*\)\?$' .gitleaksignore || true)
+          echo "gitleaksignore entries: $entries"
+          if [ "$entries" -gt 3 ]; then
+            echo "::error::.gitleaksignore has $entries entries. Each must be individually audited - see FG-012."
+            exit 1
+          fi
+
+      # Invariant 5 (ADR-0024) and ADR-0004: no binaries, no client data, no
+      # build output. The repository history was already rewritten once to
+      # remove binaries; FG-006 forbids doing that again, so nothing binary may
+      # get in in the first place.
+      - name: No binaries or large files
+        if: always()
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          [ -n "$base" ] || base="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
+          added=$(git diff --name-only --diff-filter=A "$base" HEAD || true)
+          [ -n "$added" ] || { echo "no added files"; exit 0; }
+          fail=0
+          for f in $added; do
+            [ -f "$f" ] || continue
+            case "$f" in
+              *.exe|*.dll|*.so|*.dylib|*.lib|*.a|*.o|*.obj|*.pdb|*.ico|\
+              *.mpq|*.dbc|*.map|*.vmap|*.mmap|*.zip|*.7z|*.rar)
+                echo "::error file=$f::binary artifact must not be committed (ADR-0004, ADR-0019)"
+                fail=1 ;;
+            esac
+            size=$(stat -c%s "$f")
+            if [ "$size" -gt 5242880 ]; then
+              echo "::error file=$f::$size bytes exceeds the 5 MB limit for new files"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      # 46 runbook paths are cited from docs/ and AGENTS.md. Those citations are
+      # the only thing connecting a decision to its evidence, so a dead one is a
+      # real defect rather than a cosmetic issue.
+      - name: Doc links resolve
+        if: always()
+        run: |
+          # grep -P refuses to run outside a unibyte or UTF-8 locale.
+          export LC_ALL=C.UTF-8
+          fail=0
+          # grep -o with -n gives "file:line:match"; the match is the link
+          # target because \K drops everything before it.
+          grep -rnoP '\]\(\K[^)#:]+\.(md|json|txt|sql|tsv|ps1)(?=\))' \
+               docs/ AGENTS.md --include='*.md' > /tmp/links.txt || true
+          while IFS= read -r entry; do
+            file="${entry%%:*}"
+            target="${entry##*:}"
+            resolved="$(realpath -m "$(dirname "$file")/$target")"
+            if [ ! -e "$resolved" ]; then
+              echo "::error file=$file::dead link -> $target"
+              fail=1
+            fi
+          done < /tmp/links.txt
+          echo "checked $(wc -l < /tmp/links.txt) links"
+          exit $fail
+
+      - name: shellcheck
+        if: always()
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          find ops deploy sql -name '*.sh' -print0 2>/dev/null \
+            | xargs -0 -r shellcheck --severity=warning
+
+      - name: hadolint
+        if: always()
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: deploy/docker/Dockerfile.core
+          # DL3008 (pin apt versions) is deliberately ignored: Debian point
+          # releases move and pinning every package would break the image on
+          # every security update.
+          ignore: DL3008
+
+      - name: yamllint
+        if: always()
+        run: |
+          pipx install yamllint
+          yamllint -d '{extends: relaxed, rules: {line-length: {max: 120}}}' \
+            .github/workflows deploy 2>&1 | tee /tmp/yamllint.txt
+          ! grep -q ' error ' /tmp/yamllint.txt
+
+      # Invariant 2 (ADR-0024): upstream schemas are read-only to us. A module
+      # migration that writes an upstream table is the failure this catches.
+      - name: Migrations respect schema ownership
+        if: always()
+        run: |
+          fail=0
+          for f in $(find modules -path '*/data/sql/*' -name '*.sql' 2>/dev/null); do
+            if grep -qiE '\b(tw_world|tw_char|tw_logon|tw_logs)\.' "$f"; then
+              echo "::error file=$f::module migration references an upstream schema (ADR-0024 invariant 2)"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      # Invariant 3: 'manual' is a literal string, not a digest. It made 146
+      # world migrations unverifiable (OPS-012); it must never appear again.
+      - name: Reject 'manual' migration hashes
+        if: always()
+        run: |
+          # `xargs -r` exits 0 when it gets no input, so piping straight into an
+          # `if` made this fire on every push with no added SQL at all. Collect
+          # the matches first, then test whether the list is empty.
+          base="${{ github.event.pull_request.base.sha }}"
+          [ -n "$base" ] || base="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
+          added="$(git diff --name-only --diff-filter=A "$base" HEAD -- '*.sql' || true)"
+          [ -n "$added" ] || { echo "no new .sql files"; exit 0; }
+
+          offenders=""
+          for f in $added; do
+            [ -f "$f" ] || continue
+            if grep -q "'manual'" "$f"; then
+              offenders="$offenders $f"
+            fi
+          done
+
+          if [ -n "$offenders" ]; then
+            for f in $offenders; do
+              echo "::error file=$f::migration uses the literal hash 'manual' - see FG-033, OPS-012"
+            done
+            exit 1
+          fi
+          echo "checked $(echo "$added" | wc -w) new .sql file(s), none use 'manual'"
+
+  # ---------------------------------------------------------------- integration
+  #
+  # The database bootstrap, from empty, against a real MariaDB.
+  #
+  # This is where the migration path is proven. It runs the actual shipped
+  # bootstrap - deploy/compose/db-init.sh, the same script the compose stack and
+  # the Helm pre-upgrade Job run - rather than a reimplementation of it, because
+  # a reimplementation proves that the reimplementation works.
+  #
+  # It runs on the runner instead of in the db-init container: same bash, same
+  # mariadb client, same SQL tree, and no image build in the way. Bringing the
+  # stack up is the smoke job's business; this one is about what the SQL does.
+  #
+  # What it cannot cover: the `migrations` ledger is written by the server's
+  # AutoUpdater (src/shared/Database/AutoUpdater.cpp), and the server needs client
+  # data, which is never in an image or in Git (ADR-0023). So the ledger seen here
+  # is whatever db-init.sh recorded, and that is exactly what the assertions below
+  # examine.
+  #
+  # No `needs:` on purpose - it touches no compiled artefact, so making it wait
+  # behind a 25-minute build would only delay the answer.
+  integration:
+    runs-on: ubuntu-24.04
+    name: bootstrap from empty
+    timeout-minutes: 90
+
+    services:
+      # 11.8 LTS, pinned by ADR-0027 and matching deploy/compose. The server
+      # collation is forced for the same reason the compose file forces it: the
+      # 11.8 default (utf8mb4_uca1400_ai_ci) disagrees with the utf8mb3 dumps
+      # under sql/, and that mismatch is where "Illegal mix of collations" comes
+      # from.
+      db:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: ci-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_ROOT_PASSWORD: ci-root
+      DB_USER: turtle
+      DB_PASSWORD: ci-app
+      REALM_NAME: CI
+      REALM_ADDRESS: 127.0.0.1
+      WORLD_PORT: '8090'
+      IMPORT_PLAYERBOTS: 'ON'
+      # db-init.sh reads these to find the SQL. In the container they are bind
+      # mounts; here they are the tree itself.
+      SQL_DIR: sql
+      SQL_BASE_DIR: sql/base
+      PB_SQL_DIR: src/modules/PlayerBots/sql
+      MYSQL_PWD: ci-root
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install the MariaDB client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mariadb-client
+
+      # The dump opens with a /*M!999999 ... */ sandbox directive that only the
+      # MariaDB client understands, so `mariadb` is used throughout rather than
+      # whichever `mysql` happens to be on the runner.
+      - name: Confirm the database is empty
+        run: |
+          set -eu
+          existing=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM information_schema.SCHEMATA
+             WHERE SCHEMA_NAME IN ('tw_world','tw_char','tw_logon','tw_logs');")
+          if [ "$existing" != "0" ]; then
+            echo "::error::not starting from empty - $existing project schemas already exist"
+            exit 1
+          fi
+          echo "starting from empty"
+
+      # STATE is hardcoded to /state in db-init.sh (it is a named volume in the
+      # container). Creating it here rather than patching the script keeps this
+      # job running the shipped file byte for byte.
+      - name: Run the shipped bootstrap
+        run: |
+          set -eu
+          sudo mkdir -p /state
+          sudo chown "$(id -u):$(id -g)" /state
+          time bash deploy/compose/db-init.sh
+
+      # Invariant 3 from the operator's side: running the bootstrap twice must
+      # be a no-op. db-init.sh guarantees that with stage markers, and
+      # create_databases.sql opens with DROP TABLE IF EXISTS on 415 tables - so
+      # a broken marker does not fail loudly, it silently empties a populated
+      # realm. That is worth a test.
+      #
+      # Placed before the assertions so it runs even when they find something.
+      - name: Replay the bootstrap and assert nothing changes
+        run: |
+          set -eu
+          snapshot() {
+            mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+              "SELECT (SELECT COUNT(*) FROM tw_world.migrations),
+                      (SELECT COUNT(*) FROM tw_world.creature),
+                      (SELECT COUNT(*) FROM tw_logon.realmlist);"
+          }
+          before=$(snapshot)
+          bash deploy/compose/db-init.sh
+          after=$(snapshot)
+          echo "before: $before"
+          echo "after : $after"
+          if [ "$before" != "$after" ]; then
+            echo "::error::a second bootstrap changed the database - it is not idempotent"
+            exit 1
+          fi
+
+      - name: Assert the schemas exist and are populated
+        run: |
+          set -eu
+          for schema in tw_world tw_char tw_logon tw_logs; do
+            found=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+              "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='$schema';")
+            [ "$found" = "1" ] || { echo "::error::schema $schema was not created"; exit 1; }
+            tables=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+              "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='$schema';")
+            [ "$tables" -gt 0 ] || { echo "::error::schema $schema has no tables"; exit 1; }
+            echo "$schema: $tables tables"
+          done
+          # World content, not just structure. An empty creature table means
+          # sql/base never landed and every later assertion is about an empty
+          # world.
+          creatures=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM tw_world.creature;")
+          [ "$creatures" -gt 0 ] || { echo "::error::tw_world.creature is empty - sql/base did not load"; exit 1; }
+          echo "tw_world.creature rows: $creatures"
+
+      # One step, one accumulator: every gap is reported in a single run rather
+      # than one per re-run.
+      - name: Assert every migration directory reached a database
+        run: |
+          set -eu
+          fail=0
+          count_files() { find "$1" -maxdepth 1 -name '*.sql' 2>/dev/null | wc -l; }
+          rows() {
+            mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+              "SELECT COUNT(*) FROM $1.migrations;"
+          }
+
+          world_files=$(count_files sql/database_updates)
+          char_files=$(count_files sql/character_updates)
+          logon_files=$(count_files sql/logon)
+          world_rows=$(rows tw_world)
+          char_rows=$(rows tw_char)
+          logon_rows=$(rows tw_logon)
+          echo "tw_world : $world_rows ledger rows for $world_files files in sql/database_updates"
+          echo "tw_char  : $char_rows ledger rows for $char_files files in sql/character_updates"
+          echo "tw_logon : $logon_rows ledger rows for $logon_files files in sql/logon"
+
+          # A ledger with fewer rows than files means something is unrecorded,
+          # which is how a migration silently reapplies later.
+          check() {
+            schema=$1; files=$2; rowcount=$3; dir=$4
+            if [ "$files" -gt 0 ] && [ "$rowcount" -eq 0 ]; then
+              echo "::error::$dir has $files migration files and $schema.migrations is empty"
+              echo "::error::they were never applied, or applied and never recorded"
+              fail=1
+            elif [ "$rowcount" -lt "$files" ]; then
+              echo "::error::$schema.migrations has $rowcount rows for $files files in $dir"
+              fail=1
+            fi
+          }
+          check tw_world "$world_files" "$world_rows" sql/database_updates
+          check tw_char  "$char_files"  "$char_rows"  sql/character_updates
+          check tw_logon "$logon_files" "$logon_rows" sql/logon
+          exit $fail
+
+      - name: Assert the project tables landed in the schema that owns them
+        run: |
+          set -eu
+          fail=0
+          # ADR-0024 invariant 1 rests on these four tables and ADR-0021 puts
+          # them in tw_char. They ship in
+          # sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql.
+          for t in ai_playerbot_roster_version ai_playerbot_roster_member \
+                   ai_playerbot_roster_current ai_playerbot_roster_change; do
+            found=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+              "SELECT COUNT(*) FROM information_schema.TABLES
+               WHERE TABLE_SCHEMA='tw_char' AND TABLE_NAME='$t';")
+            if [ "$found" != "1" ]; then
+              echo "::error::tw_char.$t is missing after bootstrap"
+              echo "::error::the persistent roster cannot load (ADR-0024 invariant 1)"
+              fail=1
+            fi
+          done
+          # Invariant 2: nothing project-owned may be created in an upstream
+          # schema. tw_world is upstream's; the roster is not world data.
+          stray=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA='tw_world' AND TABLE_NAME LIKE 'ai_playerbot_roster%';")
+          if [ "$stray" != "0" ]; then
+            echo "::error::$stray roster tables were created in tw_world (ADR-0024 invariant 2)"
+            fail=1
+          fi
+          exit $fail
+
+      - name: Assert the realm is actually reachable
+        run: |
+          set -eu
+          # Two columns decide whether a client gets past the login server:
+          # port must equal WorldServerPort, and realmflags must be 0 (2 means
+          # offline). A realmlist row with the wrong values looks fine in the
+          # database and hangs the client before character select.
+          bad=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM tw_logon.realmlist
+             WHERE port <> $WORLD_PORT OR realmflags <> 0;")
+          [ "$bad" = "0" ] || { echo "::error::$bad realmlist rows have the wrong port or realmflags"; exit 1; }
+          rows=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM tw_logon.realmlist;")
+          [ "$rows" -gt 0 ] || { echo "::error::tw_logon.realmlist is empty - no realm to log into"; exit 1; }
+          echo "realmlist rows: $rows"
+
+      - name: Dump the ledger for the record
+        if: always()
+        run: |
+          mkdir -p integration-results
+          for schema in tw_logon tw_char tw_world; do
+            mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -B "$schema" \
+              -e "SELECT \`Id\`,\`Name\`,\`Hash\`,\`AppliedAt\` FROM \`migrations\` ORDER BY \`Id\`;" \
+              > "integration-results/$schema-migrations.tsv" 2>&1 || true
+          done
+          ls -la integration-results/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-ledger
+          path: integration-results/
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------- windows
+  #
+  # COMPILE ONLY. Never links.
+  #
+  # Why it exists: MSVC rejects code gcc and clang accept. The forcing example is
+  # M_PI - glibc's <math.h> defines it unconditionally, MSVC's only defines it
+  # when _USE_MATH_DEFINES was set before <math.h> was first included. No Linux
+  # job can ever catch that class of error.
+  #
+  # Why it does not link: a clean clone cannot link on Windows by design.
+  # dep/windows/lib (import libraries) and src/mangosd/mangosd.ico are pinned
+  # external inputs kept out of Git (ADR-0019). Compiling needs neither, because
+  # dep/windows/include IS tracked and mangosd.rc is only added under if(WIN32)
+  # at the mangosd target.
+  #
+  # So this job needs no secrets and no provisioning, which means it runs on pull
+  # requests from forks. Per ADR-0028, Windows is a compile target only: Linux
+  # containers are the deployment platform and there is no Windows full-link job.
+  #
+  # Note on triggers: build-windows.yml used to skip itself on docs-only pull
+  # requests with a `paths:` filter. A path filter cannot be expressed per job in
+  # a consolidated workflow without adding a sixth job to compute it, so this now
+  # runs on every push. That is a deliberate trade: one MSVC compile is cheap
+  # next to the four full Linux compiles this consolidation removed.
+  windows-compile:
+    runs-on: windows-2022
+    name: msvc compile-only
+    timeout-minutes: 90
+    steps:
+      # Insurance. Checkout used to die with "Filename too long": that is Git's
+      # own 260-character MAX_PATH limit, not a filesystem limit. The offending
+      # paths have been removed (the longest tracked path is now 190 characters),
+      # but one new deep path would break every Windows run again and this costs
+      # nothing. It must precede checkout - core.longpaths is read when the
+      # working tree is written.
+      - name: Allow long paths
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # Ninja makes every object file an addressable target, which is what lets
+      # us compile without ever asking for a link. The Visual Studio generator
+      # cannot do this, and also ignores compiler launchers.
+      - name: Install Ninja
+        run: choco install ninja --no-progress -y
+
+      - name: Fetch ACE and Boost
+        shell: pwsh
+        run: |
+          vcpkg install ace:x64-windows boost-thread:x64-windows `
+            boost-filesystem:x64-windows boost-system:x64-windows `
+            boost-stacktrace:x64-windows
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DBUILD_PLAYERBOTS=ON
+
+      # Build the object files for the libraries, never the executables. If a
+      # target name changes, this fails loudly rather than silently covering
+      # nothing.
+      - name: Compile objects (no link)
+        shell: pwsh
+        run: cmake --build build --target shared framework game --parallel
+
+      - name: Confirm objects were produced
+        shell: pwsh
+        run: |
+          $objs = Get-ChildItem build -Recurse -Filter *.obj -ErrorAction SilentlyContinue
+          if ($objs.Count -lt 100) {
+            Write-Error "Expected many .obj files, found $($objs.Count) - the compile step covered nothing"
+            exit 1
+          }
+          Write-Host "Compiled $($objs.Count) object files"
+
+  # ---------------------------------------------------------------- build+test
+  #
+  # The compile, and the tests, in one job.
+  #
+  # Merging test.yml in here is the point of the exercise: it used to configure
+  # the project a second time and rebuild the same objects on a second runner.
+  # One configure, one build tree, tests run out of it.
+  #
+  # Two builds happen here and their scopes are deliberately different:
+  #
+  #  1. The TEST BUILD - native, ubuntu-24.04, ccache-warm. One configure with
+  #     -DBUILD_TESTING=ON, then only the test targets. The adapter suite links
+  #     `shared` and `framework`, not `game`, so this is a fraction of the tree
+  #     and finishes in minutes on a warm cache. Its output is a build tree ctest
+  #     can run out of.
+  #
+  #  2. The IMAGE BUILD - deploy/docker/Dockerfile.core. THIS is the full server
+  #     compile and link. Its builder stage runs the same cmake + ninja + install
+  #     the release image runs, so mangosd and realmd are proven to compile, link
+  #     and install on the Debian trixie that actually ships them rather than on
+  #     the runner's Ubuntu - strictly better coverage than build-linux.yml's
+  #     `test -x build/src/mangosd/mangosd`. It is also the exact image the smoke
+  #     job needs, so doing it once here is what removes four of the five full
+  #     compiles this repository used to pay for on every push.
+  #
+  # Ordering: tests first. A broken test must not cost 25 minutes of image build
+  # before it reports.
+  build-and-test:
+    runs-on: ubuntu-24.04
+    name: build + test
+    # The image build dominates. A cold BuildKit build is a full ~25-minute
+    # compile, because the Dockerfile's ccache lives in a BuildKit cache mount
+    # and GHA layer cache does not carry those between ephemeral runners.
+    timeout-minutes: 150
+
+    services:
+      # MariaDB 11.8 per ADR-0027, matching what the stack deploys. The adapter
+      # suite drives a real database on purpose - its subject is transaction
+      # behaviour under concurrency, which a mock cannot show.
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: ci-root
+          MARIADB_DATABASE: roster_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # Shallow is fine for building; the revision header only needs HEAD.
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          # Only the Boost components actually linked (thread, filesystem,
+          # system) plus headers. libboost-all-dev pulls ~230 packages
+          # including OpenMPI and adds several minutes for nothing.
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build ccache \
+            libace-dev default-libmysqlclient-dev \
+            libssl-dev zlib1g-dev libbz2-dev \
+            libboost-dev libboost-thread-dev libboost-filesystem-dev \
+            libboost-system-dev libboost-stacktrace-dev \
+            mariadb-client
+
+      # ccache is the difference between ~25 minutes and a few minutes warm.
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ci-linux-gcc
+          max-size: 2G
+
+      # ONE configure. Everything below builds out of this tree; the old
+      # build-linux + test split configured twice for no gain.
+      #
+      # TW_ARCH is left at its default (x86-64-v2) rather than `native`: a
+      # `native` build bakes this runner's CPU into the result (ADR-0028).
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_INSTALL_PREFIX=/opt/turtle \
+            -DBUILD_PLAYERBOTS=ON \
+            -DBUILD_TESTING=ON \
+            -DBUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      # Named test targets, built one at a time so a target that does not exist
+      # yet is reported as absent rather than failing the run. The CTest wiring
+      # (ADR-0022) is landing in parallel with this file: a target missing today
+      # must not turn the pipeline red, but a target that exists and does not
+      # compile absolutely must.
+      #
+      # These are CMake target names, not ctest test names. The Ninja generator
+      # emits a phony alias per target, so `ninja -t targets all` is an accurate
+      # existence check and costs nothing.
+      - name: Build the test targets
+        id: testbuild
+        run: |
+          set -eu
+          known=$(ninja -C build -t targets all 2>/dev/null | sed 's/:.*//' || true)
+          built=0
+          for t in persistent_active_roster_database_tests \
+                   dungeon_clear_tests_fast \
+                   dungeon_clear_tests_full \
+                   persistent_active_roster_tests; do
+            if printf '%s\n' "$known" | grep -qxF "$t"; then
+              echo "::group::building $t"
+              cmake --build build --target "$t" --parallel "$(nproc)"
+              echo "::endgroup::"
+              built=$((built + 1))
+            else
+              echo "::notice::target '$t' is not in this configuration - skipping (ADR-0022 wiring pending)"
+            fi
+          done
+          echo "built=$built" >> "$GITHUB_OUTPUT"
+          echo "built $built test target(s)"
+
+      # The adapter suite does not create its own schema; the roster migration
+      # IS the schema. Applied twice on purpose - forward-only migrations must be
+      # replay-safe (ADR-0024 invariant 3), and this is the cheapest place that
+      # gets checked at all.
+      - name: Apply the roster schema (twice, to prove replay safety)
+        # MYSQL_PWD rather than -p on the command line: the password would
+        # otherwise appear in the process list and in any `set -x` output.
+        env:
+          MYSQL_PWD: ci-root
+        run: |
+          set -eu
+          mig=sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql
+          # utf8mb4_bin, matching what the roster tables declare - a differently
+          # collated schema is the "Illegal mix of collations" trap.
+          mariadb -h 127.0.0.1 -P 3306 -u root \
+            -e "CREATE DATABASE IF NOT EXISTS roster_ci CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;"
+          for pass in 1 2; do
+            echo "apply pass $pass"
+            mariadb -h 127.0.0.1 -P 3306 -u root roster_ci < "$mig"
+          done
+
+      - name: Run the adapter suite
+        id: adapter
+        shell: bash
+        run: |
+          bin=./build/adapter-bin/persistent_active_roster_database_tests
+          if [ ! -x "$bin" ]; then
+            echo "::notice::$bin was not built - the adapter suite is not in this configuration"
+            echo "ran=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mkdir -p test-results
+          log=test-results/persistent_active_roster_database_tests.log
+          # Connection string format is host;port;user;password;database - see
+          # the usage line in persistent_active_roster_database_tests.cpp.
+          set +e
+          "$bin" "127.0.0.1;3306;root;ci-root;roster_ci" 2>&1 | tee "$log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          # STAGE=COMPLETE is printed only after the last scenario. Without this
+          # check a crash halfway through could report success with most of the
+          # assertions never reached.
+          if ! grep -q 'STAGE=COMPLETE' "$log"; then
+            echo "::error::the adapter suite did not reach STAGE=COMPLETE - it stopped early"
+            rc=1
+          fi
+          if [ "$rc" -eq 0 ]; then
+            echo "ran=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "ran=0" >> "$GITHUB_OUTPUT"
+          fi
+          exit "$rc"
+
+      # Runs whether or not the adapter suite passed, so the discovery count is
+      # always reported.
+      - name: ctest
+        if: always()
+        id: ctest
+        run: |
+          # -N lists without running. The count is recorded either way for the
+          # gate below - hence `|| true`: with no tests registered ctest exits
+          # non-zero, and the default shell runs with -e and pipefail.
+          raw=$(ctest --test-dir build -N 2>/dev/null || true)
+          found=$(printf '%s\n' "$raw" | sed -n 's/^Total Tests: //p' | tail -n1)
+          found=${found:-0}
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+          echo "ctest discovered $found tests"
+          if [ "$found" -eq 0 ]; then
+            echo "::warning::ctest discovered 0 tests: enable_testing()/add_test() have not landed yet (ADR-0022)"
+            exit 0
+          fi
+          mkdir -p test-results
+          ctest --test-dir build --output-on-failure --output-junit ../test-results/ctest.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: warn
+
+      # The gate. Every step above can be individually green while nothing was
+      # actually verified; this step is what makes that impossible. A green run
+      # that tested nothing is worse than a red one, because it gets believed.
+      - name: Fail if nothing was tested
+        if: always()
+        env:
+          CTEST_FOUND: ${{ steps.ctest.outputs.found }}
+          ADAPTER_RAN: ${{ steps.adapter.outputs.ran }}
+          TARGETS_BUILT: ${{ steps.testbuild.outputs.built }}
+        run: |
+          echo "test targets built     : ${TARGETS_BUILT:-0}"
+          echo "ctest tests discovered : ${CTEST_FOUND:-0}"
+          echo "adapter suite executed : ${ADAPTER_RAN:-0}"
+          if [ "${CTEST_FOUND:-0}" -eq 0 ] && [ "${ADAPTER_RAN:-0}" -eq 0 ]; then
+            echo "::error::zero tests executed. A green run that tested nothing is worse than a red one."
+            exit 1
+          fi
+
+      # ------------------------------------------------------------- the image
+      #
+      # The full server compile and link, once. Same Dockerfile publish.yml
+      # ships, same runtime stage, so the smoke job exercises the artefact that
+      # would actually be released rather than a CI-only approximation of it.
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the core image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.core
+          target: runtime
+          push: false
+          # Loaded into the local docker daemon so the next steps can inspect it
+          # and `docker save` it for the smoke job.
+          load: true
+          tags: ${{ env.CORE_IMAGE }}
+          # TW_ARCH stays at the Dockerfile default (x86-64-v2). `native` would
+          # bake this runner's CPU into the image (ADR-0028).
+          build-args: |
+            BUILD_PLAYERBOTS=ON
+            BUILD_TYPE=Release
+          # Scoped away from publish.yml's per-image scopes, so a CI build can
+          # never evict a release build's cache. It helps when the source did not
+          # move (re-runs, docs-only pushes); it cannot help a source change,
+          # because the Dockerfile's ccache is a BuildKit cache mount and those
+          # are not exported by type=gha.
+          cache-from: type=gha,scope=ci-core
+          cache-to: type=gha,mode=max,scope=ci-core
+
+      # What build-linux.yml's `test -x` used to assert, asserted against the
+      # image that would be shipped.
+      - name: Verify the binaries are in the image
+        run: |
+          docker run --rm --entrypoint /bin/sh "$CORE_IMAGE" -c \
+            'test -x /opt/turtle/bin/mangosd && test -x /opt/turtle/bin/realmd && ls -la /opt/turtle/bin'
+
+      # WHY AN ARTIFACT AND NOT A SHARED BUILD CACHE.
+      #
+      # The alternative was to let smoke run its own `docker build` with
+      # cache-from: type=gha. That is not reliable. The Actions cache is a 10 GB
+      # LRU shared with every other scope in the repository, and the Dockerfile's
+      # ccache mount is not in it at all - so a miss there does not cost seconds,
+      # it silently costs a second full 25-minute compile inside smoke, which is
+      # precisely the failure this consolidation exists to remove. Worse, it
+      # fails quietly: the job still goes green, just an hour later.
+      #
+      # A tar is deterministic. Smoke either loads the exact image this job
+      # built, or it has nothing to load and says so. gzip -1 because the layers
+      # are already compressed and upload bandwidth, not ratio, is the cost;
+      # compression-level: 0 stops the upload action re-zipping it for nothing.
+      - name: Export the image for the smoke job
+        run: |
+          set -eu
+          mkdir -p image
+          docker save "$CORE_IMAGE" | gzip -1 > image/core.tar.gz
+          ls -lh image/core.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-image
+          path: image/core.tar.gz
+          # One day is plenty: its only consumer is the smoke job in this run.
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------- smoke
+  #
+  # Is it alive, and did it keep the bots?
+  #
+  # Brings the stack up and runs test/smoke/ - the same scripts a developer runs
+  # locally against their own compose stack. They are not duplicated here on
+  # purpose: a red CI smoke has to reproduce with one command, so this job only
+  # supplies the stack and the environment.
+  #
+  # It no longer builds anything. It loads the image build-and-test produced,
+  # tagged exactly as docker-compose.yml resolves by default, so `compose up`
+  # finds it locally and neither builds nor pulls.
+  #
+  # WHAT THIS RUN CAN AND CANNOT PROVE.
+  #
+  # Client data is not here. dbc/maps/vmaps/mmaps come out of a retail client and
+  # are never in an image or in Git (ADR-0023, ADR-0004), so mangosd cannot load a
+  # single map and is not started at all. Every check that needs a running world
+  # SKIPS with an explicit message; realmd and the migration ledger still run.
+  # run-all.sh fails if *everything* skipped, so this can never go green having
+  # proved nothing.
+  #
+  # That does mean the ADR-0024 invariant-1 bot-persistence check does not run
+  # here. It runs wherever client data is mounted - a developer machine, or a
+  # staging host - and its absence is printed in the summary rather than hidden.
+  # Until this project has a runner with client data, invariant 1 is enforced by
+  # people running `sh test/smoke/30-bot-persistence.sh`, and that is a gap worth
+  # naming rather than papering over.
+  smoke:
+    needs: build-and-test
+    runs-on: ubuntu-24.04
+    name: compose up + smoke
+    # Minutes, not hours: the compile already happened upstream in the DAG. The
+    # old 150-minute budget existed only to cover `up --build`.
+    timeout-minutes: 45
+
+    env:
+      TWOW_COMPOSE_FILE: deploy/compose/docker-compose.yml
+      TWOW_ENV_FILE: deploy/compose/.env
+      TWOW_DB_PASSWORD: ci-root
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      # deploy/compose is the contract for the Helm chart and the publish
+      # pipeline (ADR-0023). If it is missing, this job has nothing to smoke and
+      # says so plainly rather than passing an empty run.
+      - name: Require the compose stack
+        run: |
+          set -eu
+          for f in "$TWOW_COMPOSE_FILE" deploy/compose/.env.example deploy/compose/render-config.sh; do
+            if [ ! -f "$f" ]; then
+              echo "::error::$f does not exist - the stack cannot be brought up (ADR-0023)"
+              exit 1
+            fi
+          done
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-image
+          path: image
+
+      - name: Load the image this run built
+        run: |
+          set -eu
+          gzip -dc image/core.tar.gz | docker load
+          # If this tag is absent, `compose up` would fall back to building the
+          # image itself - a silent 25-minute compile and exactly the regression
+          # this DAG exists to prevent. Fail loudly instead.
+          docker image inspect "$CORE_IMAGE" >/dev/null \
+            || { echo "::error::$CORE_IMAGE is not present after load"; exit 1; }
+          docker image ls "$CORE_IMAGE"
+
+      # .env is gitignored by design: it holds the credentials the whole stack
+      # runs on, and the compose file declares them with `:?` so it does not
+      # even parse without them. CI generates a throwaway one from the example
+      # so the same file the operator edits is the file being validated.
+      - name: Generate a throwaway .env
+        run: |
+          set -eu
+          sed -e 's/^DB_ROOT_PASSWORD=.*/DB_ROOT_PASSWORD=ci-root/' \
+              -e 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-app/' \
+              deploy/compose/.env.example > "$TWOW_ENV_FILE"
+          docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" config >/dev/null
+          echo "compose config parses"
+
+      # The server has no environment-variable substitution - it reads a flat
+      # file - so the configs must be rendered before anything starts.
+      - name: Render server configs
+        run: |
+          set -a
+          # shellcheck disable=SC1090
+          . "./$TWOW_ENV_FILE"
+          set +a
+          bash deploy/compose/render-config.sh
+
+      # Only realmd. It pulls in db and db-init through depends_on (the latter
+      # with service_completed_successfully), and mangosd is deliberately left
+      # down: without client data it would sit in start_period for 900s and then
+      # fail, turning a known limitation into a timeout.
+      #
+      # No --build: the image is already loaded and compose resolves the `image:`
+      # key to it. --wait blocks on the health checks the compose file declares,
+      # which is the only honest "it is up" signal; a fixed sleep would test the
+      # sleep.
+      - name: Start db, db-init and realmd
+        run: |
+          set -eu
+          docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" \
+            up -d --wait --wait-timeout 1800 realmd \
+            || { echo "::error::the stack did not become healthy"; exit 1; }
+          docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" ps -a
+
+      - name: Run the smoke suite
+        env:
+          # Explicit rather than probed: mangosd is not running, and the suite
+          # must skip the world-server checks for a stated reason rather than
+          # because a probe happened to fail.
+          TWOW_CLIENT_DATA: '0'
+        run: sh test/smoke/run-all.sh
+
+      # Logs are the only way to diagnose a failed stack after the fact, so they
+      # are collected whatever happened. db-init's log in particular is where a
+      # bootstrap failure explains itself.
+      - name: Collect logs
+        if: always()
+        run: |
+          mkdir -p smoke-logs
+          C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
+          $C ps -a > smoke-logs/ps.txt 2>&1 || true
+          $C logs --no-color --timestamps > smoke-logs/compose.log 2>&1 || true
+          $C logs --no-color --timestamps db-init > smoke-logs/db-init.log 2>&1 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-logs
+          path: smoke-logs/
+          if-no-files-found: warn
+
+      # -v as well as down: a leftover volume would let the next run inherit a
+      # bootstrapped database and its stage markers, and "the bootstrap works
+      # from empty" is exactly what must not be inherited.
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" \
+            down -v --remove-orphans || true

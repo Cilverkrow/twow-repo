@@ -8,6 +8,14 @@
 # Tagging: semver on a release tag, commit SHA on main. Nothing here publishes
 # `latest` for a main build - a floating tag is how an environment quietly
 # changes underneath you.
+#
+# WHY THIS IS NOT PART OF ci.yml. Everything else that runs per push lives in one
+# file now, and this deliberately does not join it. Two reasons, both hard:
+# the triggers are narrower (main and release tags only, never a pull request or
+# a refactor branch), and the permissions are much broader - packages:write,
+# id-token:write, attestations:write. Merging the two would grant those to every
+# pull request run, including one from a fork. The trigger list below was audited
+# during that consolidation and is already as narrow as it should be.
 name: publish
 
 on:
@@ -130,7 +138,14 @@ jobs:
           # part of the artifact, so a promoted digest carries them along.
           provenance: mode=max
           sbom: true
-          cache-from: type=gha,scope=${{ matrix.image }}
+          # ci-core is the scope ci.yml's build-and-test writes with identical
+          # build-args and target, so its layers are usable here. It is a bonus,
+          # not a dependency: on a push to main the two workflows run at the same
+          # time and this will usually miss, while a release tag built after main
+          # has already gone green can hit it outright.
+          cache-from: |
+            type=gha,scope=${{ matrix.image }}
+            type=gha,scope=ci-core
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
       # The registry attestation above is buildkit's. This one is signed against
