@@ -158,35 +158,68 @@ body: |
   output (§11.1); the shipped system instruction is English-only.
 ---
 id: ARCH-003
-title: Inference backend policy - OpenAI-compatible, vLLM default
+title: Pluggable inference backends - local and cloud providers
 workstream: WS-70
 priority: p2
 existing_ot: none
 source: docs/issues/00-refactor-plan.md
 superseded_by: none
 body: |
-  **Problem: Ollama serialises under concurrency, and measured latency here is ~8 s per
-  reply with active=1 (LLM-011).** For a realm of chatting bots that does not scale.
+  **Goal: run bot dialogue against either a local model or a cloud provider, chosen per
+  environment, without touching C++.**
 
-  Ollama and llama.cpp share an engine. Ollama's weakness is specifically concurrency:
-  contiguous per-request KV cache and serialised queueing. Published 2026 benchmarks put
-  vLLM at ~16–20x its concurrent throughput; at 50 concurrent users, p99 ~24.7 s vs under
-  3 s.
+  **Problem today:**
+  - The path is hardwired to a loopback Ollama endpoint.
+  - Ollama serialises under concurrency (contiguous per-request KV cache, serialised
+    queueing). Measured here: ~8 s per reply with active=1 (LLM-011). Published 2026
+    benchmarks put vLLM at ~16-20x its concurrent throughput; at 50 concurrent users,
+    p99 ~24.7 s vs under 3 s.
+  - The model is a **compile-time constant**: `kModel = "qwen2.5:7b"` in
+    `ExternalLLMBridgeService.cpp:48`, beside four hardcoded SHA-256 package hashes.
+    Changing model requires a rebuild.
 
-  **Decide (as an ADR):**
-  - `llm-gateway` speaks the **OpenAI-compatible API**; backend is a swappable adapter.
-  - **vLLM** = production default where a GPU exists (PagedAttention, continuous batching).
-  - **llama.cpp server** = CPU / small GPU / dev.
-  - **Ollama** = dev convenience only, not the architecture.
+  **Decide: one OpenAI-compatible client, backend selected by config.**
 
-  **Also: move the model pin out of C++.** `kModel = "qwen2.5:7b"` is a compile-time
-  constant in `ExternalLLMBridgeService.cpp:48`, next to four hardcoded SHA-256 package
-  hashes. Changing a model should not require a rebuild.
+  | Backend | Use |
+  |---|---|
+  | **vLLM** | self-hosted production default where a GPU exists |
+  | **llama.cpp server** | CPU, small GPU, dev box |
+  | **OpenAI / Azure OpenAI** | cloud, no GPU to own |
+  | **Anthropic, Groq, Together, OpenRouter** | other cloud options |
+  | **Ollama** | dev convenience only, not the architecture |
 
-  **Included in this issue:** amend ADR-0012 and ADR-0013. Their admission and
-  delivery-safety decisions survive unchanged and should be restated as
-  transport-independent.
----
+  Nearly all of these already speak the OpenAI chat-completions shape, so one client plus
+  a per-provider adapter for auth and quirks covers the set.
+
+  **What cloud support additionally requires — none of it optional:**
+  - **Secrets.** API keys via the existing secret mechanism (Helm `existingSecret`,
+    compose `.env`), never in a rendered `.conf` and never in Git. The Core must not hold
+    provider credentials — keep them in the gateway (ADR-0012 boundary).
+  - **Egress review.** Bot chat leaves the machine and reaches a third party. Decide what
+    may be sent: no GUIDs, no account data, no player-identifying text. The existing
+    prompt rules already forbid leaking schema and identifiers; make that a hard filter
+    at the gateway rather than a prompt instruction.
+  - **Cost control.** Per-hour and per-day token budgets, a hard cap, and a kill switch.
+    A thousand chatting bots against a metered API is a runaway-spend risk, and the
+    existing `ledger_full` latch is about correctness, not money.
+  - **Rate limits and retries.** Cloud providers return 429 and transient 5xx. Current
+    contract forbids retry entirely (fail-closed). Revisit deliberately: a bounded retry
+    with backoff for transient cloud errors is reasonable, but must not become the
+    unbounded retry the ADRs rejected.
+  - **Latency budget differs per backend.** Local ~8 s, cloud often faster but with
+    network variance. The 45,000 ms wire TTL and the 240-char output cap should stay
+    per-backend configuration.
+  - **Fallback chain.** Cloud primary with local fallback, or the reverse. Must degrade to
+    the procedural filler bank (ARCH-002), never to silence.
+
+  **Also required:** move the model pin out of C++ into config, with an allowlist per
+  environment so a misconfiguration cannot silently switch models.
+
+  **ADR work in scope:** amend **ADR-0012** — it currently mandates "a loopback-only
+  Ollama endpoint unless a new architecture decision says otherwise". This is that
+  decision. Amend **ADR-0013** for the model/package pinning. Their admission and
+  delivery-safety rules survive unchanged and should be restated as
+  transport- and provider-independent.
 id: ARCH-004
 title: Evaluate a WASM policy sandbox for per-tick bot behaviour
 workstream: WS-10

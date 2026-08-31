@@ -18,6 +18,11 @@ SMOKE_SKIP=77
 # Everything is overridable so the suite runs against a local compose stack, a
 # stack with different ports, or a remote host - not only against CI.
 : "${TWOW_COMPOSE_FILE:=deploy/compose/docker-compose.yml}"
+# The compose file declares required variables (DB_ROOT_PASSWORD, DB_PASSWORD)
+# with `:?`, so it will not even parse without the env file. Passed explicitly
+# rather than relying on the working directory, because these scripts are run
+# from the repository root.
+: "${TWOW_ENV_FILE:=deploy/compose/.env}"
 : "${TWOW_DB_SERVICE:=db}"
 : "${TWOW_WORLD_SERVICE:=mangosd}"
 : "${TWOW_REALM_SERVICE:=realmd}"
@@ -29,9 +34,12 @@ SMOKE_SKIP=77
 : "${TWOW_LOGON_SCHEMA:=tw_logon}"
 : "${TWOW_LOGS_SCHEMA:=tw_logs}"
 : "${TWOW_DB_USER:=root}"
-: "${TWOW_DB_PASSWORD:=${MARIADB_ROOT_PASSWORD:-}}"
+: "${TWOW_DB_PASSWORD:=${DB_ROOT_PASSWORD:-${MARIADB_ROOT_PASSWORD:-}}}"
 # The FIFO the entrypoint holds open read-write; it is the server's console.
 : "${TWOW_FIFO:=/opt/turtle/run/mangosd.in}"
+# Where the compose file mounts client data inside the world container.
+# SYSCONFDIR is compiled into the binary, so this path is not free to move.
+: "${TWOW_DATA_DIR:=/opt/turtle/data}"
 # auto | 0 | 1 - whether client data is mounted into the world container.
 : "${TWOW_CLIENT_DATA:=auto}"
 : "${TWOW_TIMEOUT:=120}"
@@ -47,7 +55,11 @@ info() { printf '     %-20s %s\n' "$smoke_name" "$*"; }
 # script needs it and because -f is the only thing that makes the suite work
 # from a directory other than deploy/compose.
 dc() {
-    docker compose -f "$TWOW_COMPOSE_FILE" "$@"
+    if [ -f "$TWOW_ENV_FILE" ]; then
+        docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" "$@"
+    else
+        docker compose -f "$TWOW_COMPOSE_FILE" "$@"
+    fi
 }
 
 require_stack() {
@@ -60,8 +72,10 @@ require_stack() {
 # client is needed on the host and no port has to be published.
 dbq() {
     _schema="$1"; shift
-    dc exec -T "$TWOW_DB_SERVICE" mariadb \
-        --user="$TWOW_DB_USER" --password="$TWOW_DB_PASSWORD" \
+    # MYSQL_PWD rather than --password: the password would otherwise be visible
+    # in the container's process list to anything else running in it.
+    dc exec -T -e MYSQL_PWD="$TWOW_DB_PASSWORD" "$TWOW_DB_SERVICE" mariadb \
+        --user="$TWOW_DB_USER" \
         --batch --raw --skip-column-names --database="$_schema" \
         --execute="$*" 2>/dev/null
 }
@@ -101,7 +115,7 @@ have_client_data() {
         0|false|no) return 1 ;;
     esac
     dc exec -T "$TWOW_WORLD_SERVICE" sh -c \
-        '[ -d /data/maps ] && [ -d /data/dbc ]' >/dev/null 2>&1
+        "[ -d '$TWOW_DATA_DIR/maps' ] && [ -d '$TWOW_DATA_DIR/dbc' ]" >/dev/null 2>&1
 }
 
 require_client_data() {

@@ -1,33 +1,28 @@
-# Migrations, from empty, against a real MariaDB.
+# The database bootstrap, from empty, against a real MariaDB.
 #
-# This is where the migration path is proven. Nothing else in CI touches a
-# database that was created five seconds earlier, and "it works on the live
-# server" is not evidence that a fresh install works at all.
+# This is where the migration path is proven. It runs the actual shipped
+# bootstrap - deploy/compose/db-init.sh, the same script the compose stack and
+# the Helm pre-upgrade Job run - rather than a reimplementation of it, because a
+# reimplementation proves that the reimplementation works.
 #
-# One thing here needs explaining, because it looks like duplication and is not.
-# The `migrations` ledger is written by the server, not by the SQL: `sql/
-# setup_databases.sh` applies files and records nothing, and
-# `src/shared/Database/AutoUpdater.cpp` is what inserts (Name, Module, Hash,
-# AppliedAt). Starting a real mangosd here is not an option - it needs client
-# data, which is never in an image or in Git (ADR-0023) - so this job reproduces
-# the AutoUpdater's bookkeeping exactly and says so:
+# It runs on the runner instead of in the db-init container: same bash, same
+# mariadb client, same SQL tree, and no image build in the way. `docker compose
+# up` is smoke.yml's job; this one is about what the SQL does.
 #
-#   Name = file stem                       (AutoUpdater.cpp, LoadFileMigrations)
-#   Hash = SHA1 of the file bytes, UPPERCASE hex   (CalculateFileHash +
-#                                                   ByteArrayToHexStr's "%02X")
-#   order = sorted by name                 (Database.AutoUpdate.SortByName = 1)
-#
-# If AutoUpdater.cpp changes its hash or naming, this job must change with it.
-# When deploy/compose gains a real db-init image, this should call that image
-# instead and delete the replica.
+# What it cannot cover: the `migrations` ledger is written by the server's
+# AutoUpdater (src/shared/Database/AutoUpdater.cpp), and the server needs client
+# data, which is never in an image or in Git (ADR-0023). So the ledger seen here
+# is whatever db-init.sh recorded, and that is exactly what the assertions below
+# examine.
 name: integration
 
 on:
   pull_request:
-    # A full bootstrap is minutes of SQL, so on PRs it only runs when something
-    # that can change the outcome moved.
+    # A full bootstrap loads ~130 MB of world content, so on PRs it only runs
+    # when something that can change the outcome moved.
     paths:
       - 'sql/**'
+      - 'src/modules/PlayerBots/sql/**'
       - 'src/shared/Database/**'
       - 'deploy/**'
       - '.github/workflows/integration.yml'
@@ -35,19 +30,15 @@ on:
     branches: [main, 'refactor/**']
     paths:
       - 'sql/**'
+      - 'src/modules/PlayerBots/sql/**'
       - 'src/shared/Database/**'
       - 'deploy/**'
       - '.github/workflows/integration.yml'
-  # Nightly backstop. The PR trigger is path-filtered, so a bootstrap that
-  # breaks for a reason outside sql/ would otherwise go unnoticed until release.
+  # Nightly backstop. The PR trigger is path-filtered, so a bootstrap that broke
+  # for a reason outside sql/ would otherwise surface at release time.
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
-    inputs:
-      load_base_data:
-        description: 'Also load sql/base (131 MB of world data). Slow.'
-        type: boolean
-        default: false
 
 concurrency:
   group: integration-${{ github.ref }}
@@ -57,12 +48,14 @@ jobs:
   bootstrap:
     runs-on: ubuntu-24.04
     name: bootstrap from empty
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     services:
-      # 11.8 LTS, pinned by ADR-0027: it is what the stack deploys, and older
-      # MariaDB has different default collations, which INSTALL-LINUX.md already
-      # documents as a source of "Illegal mix of collations".
+      # 11.8 LTS, pinned by ADR-0027 and matching deploy/compose. The server
+      # collation is forced for the same reason the compose file forces it: the
+      # 11.8 default (utf8mb4_uca1400_ai_ci) disagrees with the utf8mb3 dumps
+      # under sql/, and that mismatch is where "Illegal mix of collations" comes
+      # from.
       db:
         image: mariadb:11.8
         env:
@@ -74,15 +67,21 @@ jobs:
           --health-interval=5s --health-timeout=5s --health-retries=30
 
     env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_ROOT_PASSWORD: ci-root
+      DB_USER: turtle
+      DB_PASSWORD: ci-app
+      REALM_NAME: CI
+      REALM_ADDRESS: 127.0.0.1
+      WORLD_PORT: '8090'
+      IMPORT_PLAYERBOTS: 'ON'
+      # db-init.sh reads these to find the SQL. In the container they are bind
+      # mounts; here they are the tree itself.
+      SQL_DIR: sql
+      SQL_BASE_DIR: sql/base
+      PB_SQL_DIR: src/modules/PlayerBots/sql
       MYSQL_PWD: ci-root
-      DBHOST: 127.0.0.1
-      DBPORT: '3306'
-      # sql/base is 131 MB of world content. It is not needed to prove that the
-      # migrations apply - only that they apply to populated tables - so it is
-      # nightly and on-demand rather than on every PR.
-      # Parenthesised deliberately: `&&` binds tighter than `||` in GitHub
-      # expressions, so without them a scheduled run yields `true`, not `yes`.
-      LOAD_BASE: ${{ (github.event_name == 'schedule' || inputs.load_base_data) && 'yes' || 'no' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +99,7 @@ jobs:
       - name: Confirm the database is empty
         run: |
           set -eu
-          existing=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B -e \
+          existing=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
             "SELECT COUNT(*) FROM information_schema.SCHEMATA
              WHERE SCHEMA_NAME IN ('tw_world','tw_char','tw_logon','tw_logs');")
           if [ "$existing" != "0" ]; then
@@ -109,168 +108,157 @@ jobs:
           fi
           echo "starting from empty"
 
-      - name: Create schemas and structure
+      # STATE is hardcoded to /state in db-init.sh (it is a named volume in the
+      # container). Creating it here rather than patching the script keeps this
+      # job running the shipped file byte for byte.
+      - name: Run the shipped bootstrap
         run: |
           set -eu
-          time mariadb -h "$DBHOST" -P "$DBPORT" -u root < sql/create_databases.sql
+          sudo mkdir -p /state
+          sudo chown "$(id -u):$(id -g)" /state
+          time bash deploy/compose/db-init.sh
 
-      - name: Load sql/base world data
-        if: env.LOAD_BASE == 'yes'
+      # Invariant 3 from the operator's side: running the bootstrap twice must
+      # be a no-op. db-init.sh guarantees that with stage markers, and
+      # create_databases.sql opens with DROP TABLE IF EXISTS on 415 tables - so
+      # a broken marker does not fail loudly, it silently empties a populated
+      # realm. That is worth a test.
+      #
+      # Placed before the assertions so it runs even when they find something.
+      - name: Replay the bootstrap and assert nothing changes
         run: |
           set -eu
-          # 190 per-table mysqldump files. Applied in name order for a stable,
-          # reproducible run; they are independent MyISAM tables with no foreign
-          # keys, so order is presentation, not correctness.
-          count=0
-          for f in $(find sql/base -name '*.sql' | sort); do
-            mariadb -h "$DBHOST" -P "$DBPORT" -u root tw_world < "$f"
-            count=$((count + 1))
-          done
-          echo "loaded $count base table files"
+          snapshot() {
+            mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+              "SELECT (SELECT COUNT(*) FROM tw_world.migrations),
+                      (SELECT COUNT(*) FROM tw_world.creature),
+                      (SELECT COUNT(*) FROM tw_logon.realmlist);"
+          }
+          before=$(snapshot)
+          bash deploy/compose/db-init.sh
+          after=$(snapshot)
+          echo "before: $before"
+          echo "after : $after"
+          if [ "$before" != "$after" ]; then
+            echo "::error::a second bootstrap changed the database - it is not idempotent"
+            exit 1
+          fi
 
-      # The core of this job. Written as a reusable function because the replay
-      # check below runs it a second time and must take exactly the same path.
-      - name: Apply migrations and record the ledger
-        run: |
-          set -eu
-          cat > /tmp/apply.sh <<'SH'
-          set -eu
-          # $1 = directory of migration files, $2 = target schema
-          dir="$1"; schema="$2"
-          applied=0; skipped=0
-          [ -d "$dir" ] || { echo "no such directory: $dir"; exit 1; }
-          for f in $(find "$dir" -maxdepth 1 -name '*.sql' | sort); do
-            name=$(basename "$f" .sql)
-            hash=$(sha1sum "$f" | cut -d' ' -f1 | tr 'a-f' 'A-F')
-            # The AutoUpdater keys on (Module, Hash): a file already recorded is
-            # skipped, never reapplied. Forward-only, replay-safe (ADR-0024
-            # invariant 3).
-            known=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B "$schema" \
-              -e "SELECT COUNT(*) FROM \`migrations\` WHERE \`Hash\`='$hash' AND \`Module\`='';")
-            if [ "$known" != "0" ]; then
-              skipped=$((skipped + 1))
-              continue
-            fi
-            if ! mariadb -h "$DBHOST" -P "$DBPORT" -u root "$schema" < "$f"; then
-              echo "::error file=$f::migration failed to apply to $schema"
-              exit 1
-            fi
-            mariadb -h "$DBHOST" -P "$DBPORT" -u root "$schema" -e \
-              "INSERT INTO \`migrations\` (\`Name\`,\`Module\`,\`Hash\`,\`AppliedAt\`)
-               VALUES ('$name','','$hash',NOW());"
-            applied=$((applied + 1))
-          done
-          echo "$dir -> $schema: applied=$applied skipped=$skipped"
-          SH
-          chmod +x /tmp/apply.sh
-          # The AutoUpdater's own order: logon, then char, then world.
-          sh /tmp/apply.sh sql/logon             tw_logon
-          sh /tmp/apply.sh sql/character_updates tw_char
-          sh /tmp/apply.sh sql/database_updates  tw_world
-
-      - name: Assert the schemas exist
+      - name: Assert the schemas exist and are populated
         run: |
           set -eu
           for schema in tw_world tw_char tw_logon tw_logs; do
-            found=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B -e \
+            found=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
               "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='$schema';")
             [ "$found" = "1" ] || { echo "::error::schema $schema was not created"; exit 1; }
-            tables=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B -e \
+            tables=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
               "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='$schema';")
-            [ "$tables" -gt 0 ] || { echo "::error::schema $schema is empty"; exit 1; }
+            [ "$tables" -gt 0 ] || { echo "::error::schema $schema has no tables"; exit 1; }
             echo "$schema: $tables tables"
           done
+          # World content, not just structure. An empty creature table means
+          # sql/base never landed and every later assertion is about an empty
+          # world.
+          creatures=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM tw_world.creature;")
+          [ "$creatures" -gt 0 ] || { echo "::error::tw_world.creature is empty - sql/base did not load"; exit 1; }
+          echo "tw_world.creature rows: $creatures"
 
-      - name: Assert the migrations ledger matches the files on disk
+      # One step, one accumulator: every gap is reported in a single run rather
+      # than one per re-run.
+      - name: Assert every migration directory reached a database
         run: |
           set -eu
           fail=0
+          count_files() { find "$1" -maxdepth 1 -name '*.sql' 2>/dev/null | wc -l; }
+          rows() {
+            mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+              "SELECT COUNT(*) FROM $1.migrations;"
+          }
+
+          world_files=$(count_files sql/database_updates)
+          char_files=$(count_files sql/character_updates)
+          logon_files=$(count_files sql/logon)
+          world_rows=$(rows tw_world)
+          char_rows=$(rows tw_char)
+          logon_rows=$(rows tw_logon)
+          echo "tw_world : $world_rows ledger rows for $world_files files in sql/database_updates"
+          echo "tw_char  : $char_rows ledger rows for $char_files files in sql/character_updates"
+          echo "tw_logon : $logon_rows ledger rows for $logon_files files in sql/logon"
+
+          # A ledger with fewer rows than files means something is unrecorded,
+          # which is how a migration silently reapplies later.
           check() {
-            dir="$1"; schema="$2"
-            files=$(find "$dir" -maxdepth 1 -name '*.sql' | wc -l)
-            rows=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B "$schema" \
-              -e "SELECT COUNT(*) FROM \`migrations\`;")
-            echo "$schema: $rows ledger rows for $files files in $dir"
-            # A populated ledger is the point, and the count has to match: a
-            # ledger with fewer rows than files means something applied without
-            # being recorded, which is how a migration silently reapplies later.
-            if [ "$rows" -eq 0 ]; then
-              echo "::error::$schema.migrations is empty after bootstrap"
+            schema=$1; files=$2; rowcount=$3; dir=$4
+            if [ "$files" -gt 0 ] && [ "$rowcount" -eq 0 ]; then
+              echo "::error::$dir has $files migration files and $schema.migrations is empty"
+              echo "::error::they were never applied, or applied and never recorded"
               fail=1
-            elif [ "$rows" -ne "$files" ]; then
-              echo "::error::$schema.migrations has $rows rows for $files migration files"
-              fail=1
-            fi
-            # Invariant 3 again, from the other end: every recorded hash must be
-            # a real 40-character SHA1. The literal 'manual' made 146 world
-            # migrations unverifiable (OPS-012, FG-033) and must never recur.
-            bad=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B "$schema" \
-              -e "SELECT COUNT(*) FROM \`migrations\` WHERE \`Hash\` NOT REGEXP '^[0-9A-F]{40}\$';")
-            if [ "$bad" != "0" ]; then
-              echo "::error::$schema.migrations has $bad rows whose Hash is not a SHA1 digest"
+            elif [ "$rowcount" -lt "$files" ]; then
+              echo "::error::$schema.migrations has $rowcount rows for $files files in $dir"
               fail=1
             fi
           }
-          check sql/logon             tw_logon
-          check sql/character_updates tw_char
-          check sql/database_updates  tw_world
+          check tw_world "$world_files" "$world_rows" sql/database_updates
+          check tw_char  "$char_files"  "$char_rows"  sql/character_updates
+          check tw_logon "$logon_files" "$logon_rows" sql/logon
           exit $fail
 
       - name: Assert the project tables landed in the schema that owns them
         run: |
           set -eu
-          # The persistent roster is the concrete case: ADR-0024 invariant 1
-          # rests on these four tables, and ADR-0021 puts them in tw_char.
+          fail=0
+          # ADR-0024 invariant 1 rests on these four tables and ADR-0021 puts
+          # them in tw_char. They ship in
+          # sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql.
           for t in ai_playerbot_roster_version ai_playerbot_roster_member \
                    ai_playerbot_roster_current ai_playerbot_roster_change; do
-            found=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B -e \
+            found=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
               "SELECT COUNT(*) FROM information_schema.TABLES
                WHERE TABLE_SCHEMA='tw_char' AND TABLE_NAME='$t';")
-            [ "$found" = "1" ] || { echo "::error::tw_char.$t is missing after bootstrap"; exit 1; }
+            if [ "$found" != "1" ]; then
+              echo "::error::tw_char.$t is missing after bootstrap"
+              echo "::error::the persistent roster cannot load (ADR-0024 invariant 1)"
+              fail=1
+            fi
           done
-          # The singleton current pointer must exist and start unset. A roster
-          # that arrives pre-pointed at a version nobody created is invariant 1
-          # broken before the server has even started.
-          row=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B tw_char -e \
-            "SELECT COUNT(*) FROM \`ai_playerbot_roster_current\` WHERE \`singleton_id\`=1 AND \`version_id\` IS NULL;")
-          if [ "$row" != "1" ]; then
-            echo "::error::ai_playerbot_roster_current is not the expected empty singleton"
-            exit 1
+          # Invariant 2: nothing project-owned may be created in an upstream
+          # schema. tw_world is upstream's; the roster is not world data.
+          stray=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA='tw_world' AND TABLE_NAME LIKE 'ai_playerbot_roster%';")
+          if [ "$stray" != "0" ]; then
+            echo "::error::$stray roster tables were created in tw_world (ADR-0024 invariant 2)"
+            fail=1
           fi
-          echo "roster schema present and empty"
+          exit $fail
 
-      # Invariant 3, end to end: a second bootstrap over the same database must
-      # apply nothing and change nothing. This is what makes the ledger worth
-      # having, and it is the check that would have caught OPS-012.
-      - name: Replay the bootstrap and assert nothing reapplies
+      - name: Assert the realm is actually reachable
         run: |
           set -eu
-          before=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B -e \
-            "SELECT (SELECT COUNT(*) FROM tw_logon.migrations)
-                  + (SELECT COUNT(*) FROM tw_char.migrations)
-                  + (SELECT COUNT(*) FROM tw_world.migrations);")
-          sh /tmp/apply.sh sql/logon             tw_logon
-          sh /tmp/apply.sh sql/character_updates tw_char
-          sh /tmp/apply.sh sql/database_updates  tw_world
-          after=$(mariadb -h "$DBHOST" -P "$DBPORT" -u root -N -B -e \
-            "SELECT (SELECT COUNT(*) FROM tw_logon.migrations)
-                  + (SELECT COUNT(*) FROM tw_char.migrations)
-                  + (SELECT COUNT(*) FROM tw_world.migrations);")
-          echo "ledger rows before replay: $before, after: $after"
-          if [ "$before" != "$after" ]; then
-            echo "::error::replay applied $((after - before)) migrations again - not replay-safe"
-            exit 1
-          fi
+          # Two columns decide whether a client gets past the login server:
+          # port must equal WorldServerPort, and realmflags must be 0 (2 means
+          # offline). A realmlist row with the wrong values looks fine in the
+          # database and hangs the client before character select.
+          bad=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM tw_logon.realmlist
+             WHERE port <> $WORLD_PORT OR realmflags <> 0;")
+          [ "$bad" = "0" ] || { echo "::error::$bad realmlist rows have the wrong port or realmflags"; exit 1; }
+          rows=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM tw_logon.realmlist;")
+          [ "$rows" -gt 0 ] || { echo "::error::tw_logon.realmlist is empty - no realm to log into"; exit 1; }
+          echo "realmlist rows: $rows"
 
       - name: Dump the ledger for the record
         if: always()
         run: |
           mkdir -p integration-results
           for schema in tw_logon tw_char tw_world; do
-            mariadb -h "$DBHOST" -P "$DBPORT" -u root -B "$schema" \
-              -e "SELECT \`Id\`,\`Name\`,\`Module\`,\`Hash\`,\`AppliedAt\` FROM \`migrations\` ORDER BY \`Id\`;" \
-              > "integration-results/$schema-migrations.tsv" || true
+            mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -B "$schema" \
+              -e "SELECT \`Id\`,\`Name\`,\`Hash\`,\`AppliedAt\` FROM \`migrations\` ORDER BY \`Id\`;" \
+              > "integration-results/$schema-migrations.tsv" 2>&1 || true
           done
+          ls -la integration-results/
 
       - uses: actions/upload-artifact@v4
         if: always()

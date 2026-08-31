@@ -129,6 +129,16 @@ stage_updates() {
 
     apply_update_dir "$SQL_DIR/database_updates/world" tw_world
     apply_update_dir "$SQL_DIR/database_updates/character" tw_char
+
+    # There are three competing conventions for "a character migration" in this
+    # tree -- database_updates/character/, character_updates/ and wip_updates/ --
+    # and only the first was applied here originally. That silently omitted
+    # 20260830230336_ai_playerbot_persistent_active_roster.sql, so a freshly
+    # bootstrapped stack had no ai_playerbot_roster_* tables at all and ADR-0024
+    # invariant 1 had nowhere to store a roster. Collapsing the conventions is
+    # REF-004; until then, apply all of them.
+    apply_update_dir "$SQL_DIR/character_updates" tw_char
+    apply_update_dir "$SQL_DIR/logon" tw_logon
 }
 
 # ----------------------------------------------------------- 40 playerbots
@@ -171,6 +181,8 @@ stage_record() {
     record_migrations "$SQL_DIR/database_updates" tw_world world
     record_migrations "$SQL_DIR/database_updates/world" tw_world world
     record_migrations "$SQL_DIR/database_updates/character" tw_char character
+    record_migrations "$SQL_DIR/character_updates" tw_char character
+    record_migrations "$SQL_DIR/logon" tw_logon auth
 }
 
 # -------------------------------------------------------------- 60 realmlist

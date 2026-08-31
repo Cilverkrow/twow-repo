@@ -52,11 +52,15 @@ jobs:
       - id: check
         run: |
           set -eu
-          if [ -f deploy/docker/Dockerfile.db-init ]; then
+          # db-init has no Dockerfile of its own: in compose it is mariadb:11.8
+          # with db-init.sh and the SQL tree bind-mounted in. That is right for
+          # a local stack and wrong for Kubernetes, where a pre-upgrade Job has
+          # nothing to bind-mount from - hence a real image. Either input works.
+          if [ -f deploy/docker/Dockerfile.db-init ] || [ -f deploy/compose/db-init.sh ]; then
             echo "db_init=true" >> "$GITHUB_OUTPUT"
           else
             echo "db_init=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::no deploy/docker/Dockerfile.db-init - skipping the db-init image"
+            echo "::notice::no Dockerfile.db-init and no db-init.sh - skipping the db-init image"
           fi
           if [ -d deploy/helm/twow ]; then
             echo "helm=true" >> "$GITHUB_OUTPUT"
@@ -157,6 +161,51 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # When the repository grows a real deploy/docker/Dockerfile.db-init this
+      # step does nothing and that file is used. Until then the image is
+      # assembled here from the pieces compose already bind-mounts, so the same
+      # script runs in both places rather than diverging into two bootstraps.
+      #
+      # sql/base is ~130 MB and goes into the image on purpose: an init Job in
+      # Kubernetes has no host directory to read it from, and the alternative is
+      # a second volume to provision before the first install can run.
+      - id: dockerfile
+        run: |
+          set -eu
+          if [ -f deploy/docker/Dockerfile.db-init ]; then
+            echo "path=deploy/docker/Dockerfile.db-init" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mkdir -p .ci
+          cat > .ci/Dockerfile.db-init <<'EOF'
+          FROM mariadb:11.8
+          # Paths match the bind mounts in deploy/compose/docker-compose.yml, so
+          # db-init.sh needs no environment change to run from the image.
+          COPY deploy/compose/db-init.sh /db-init.sh
+          COPY sql /sql
+          COPY sql/base /sql-base
+          COPY src/modules/PlayerBots/sql /sql-playerbots
+          RUN chmod +x /db-init.sh
+          VOLUME ["/state"]
+          ENTRYPOINT ["/bin/bash", "/db-init.sh"]
+          EOF
+          # The repository's .dockerignore excludes sql/ - correct for
+          # Dockerfile.core, which does not want 130 MB it never reads, and
+          # fatal here. BuildKit prefers <dockerfile>.dockerignore when it
+          # exists, so this image gets its own without touching the shared one.
+          cat > .ci/Dockerfile.db-init.dockerignore <<'EOF'
+          .git
+          runbooks/
+          docs/
+          patches/
+          ops/
+          **/build/
+          **/CMakeCache.txt
+          **/CMakeFiles/
+          *.log
+          EOF
+          echo "path=.ci/Dockerfile.db-init" >> "$GITHUB_OUTPUT"
+
       - id: meta
         uses: docker/metadata-action@v5
         with:
@@ -171,7 +220,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: deploy/docker/Dockerfile.db-init
+          file: ${{ steps.dockerfile.outputs.path }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
