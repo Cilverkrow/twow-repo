@@ -1,0 +1,2 @@
+# Audited false positive: the literal HTTP header name Sec-WebSocket-Key in vendored Crow source.
+99e6a7fe239fa577b6f6a1a54ccb5c2a059bcf9a:dep/include/crow/crow_all.h:generic-api-key:7698
