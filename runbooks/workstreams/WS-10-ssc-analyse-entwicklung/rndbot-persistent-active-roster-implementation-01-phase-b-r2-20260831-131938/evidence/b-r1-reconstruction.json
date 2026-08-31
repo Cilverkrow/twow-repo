@@ -1,0 +1,198 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R2",
+  "captured_utc": "2026-08-31T11:23:09.3130227Z",
+  "result": "PASS",
+  "baseline_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "baseline_tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+  "clean_status_before": true,
+  "input_zip": {
+    "path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R1-20260831-005014.zip",
+    "size": 63243484,
+    "sha256": "89E36EFFEB1A53A138E1ABD065A263CCB6BDD7A10478AF91193639FC7242EE7F"
+  },
+  "source_matrix": {
+    "path": "C:\\TW\\rndbot-roster-phase-b-r2-20260831-131938\\input-b-r1\\SOURCE-MATRIX.tsv",
+    "size": 3591,
+    "sha256": "5C1BEA43CA74E530AF4B0DC0B678F8EA85E6182AD5B52E323E91AF80E0861821"
+  },
+  "file_count": 25,
+  "files": [
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+      "expected_sha256": "623591CC9793CF69B041889C3D81EB29BB062B3DB3BD3AFA0FD02FEF636CBDEF",
+      "reconstructed_sha256": "623591CC9793CF69B041889C3D81EB29BB062B3DB3BD3AFA0FD02FEF636CBDEF",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h",
+      "expected_sha256": "A6107FA3E688D610ECEA4B0F36E30569854C602EB6FF7D45DC089381510D47F7",
+      "reconstructed_sha256": "A6107FA3E688D610ECEA4B0F36E30569854C602EB6FF7D45DC089381510D47F7",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotMgr.cpp",
+      "expected_sha256": "BD3F118BDCE584183AC4BF303431E2EE372CBF4EA3E3D3A7A3E5DC1832633B5B",
+      "reconstructed_sha256": "BD3F118BDCE584183AC4BF303431E2EE372CBF4EA3E3D3A7A3E5DC1832633B5B",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotMgr.h",
+      "expected_sha256": "41E7EE3ADAB4E1765BD1C07216F9BBCFFDDD6F5DCCDF6162E0CCAC7EC5D29A74",
+      "reconstructed_sha256": "41E7EE3ADAB4E1765BD1C07216F9BBCFFDDD6F5DCCDF6162E0CCAC7EC5D29A74",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp",
+      "expected_sha256": "8523C397CB9D4C8CA27F9CE34E9791FB5D8046D59BE5934E920892471AC09384",
+      "reconstructed_sha256": "8523C397CB9D4C8CA27F9CE34E9791FB5D8046D59BE5934E920892471AC09384",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/RandomPlayerbotFactory.cpp",
+      "expected_sha256": "17EAB72875F0EF88495E9270D629505C25C85E25A7A3A7E22072BC50F5EDCD33",
+      "reconstructed_sha256": "17EAB72875F0EF88495E9270D629505C25C85E25A7A3A7E22072BC50F5EDCD33",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp",
+      "expected_sha256": "64D02CD6984A493B9DFF1A39EFF6693A838DE7AA85A0E04703E5ACCAD8277DCC",
+      "reconstructed_sha256": "64D02CD6984A493B9DFF1A39EFF6693A838DE7AA85A0E04703E5ACCAD8277DCC",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.h",
+      "expected_sha256": "A57CD48EAED2DB456AF367EFD081A17CBBCF28F0485FA62DCE6E3B233B159429",
+      "reconstructed_sha256": "A57CD48EAED2DB456AF367EFD081A17CBBCF28F0485FA62DCE6E3B233B159429",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in",
+      "expected_sha256": "A3DD9BF2FBE2C0FE097B8924FA3ABE018E0FB93BFD24DD48977B078FD9CDC515",
+      "reconstructed_sha256": "A3DD9BF2FBE2C0FE097B8924FA3ABE018E0FB93BFD24DD48977B078FD9CDC515",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/shared/Database/Database.cpp",
+      "expected_sha256": "A4C86ED79DBE547CC8BAE8F25AC886D9FFD64740F577422FF9AB5D6466319800",
+      "reconstructed_sha256": "A4C86ED79DBE547CC8BAE8F25AC886D9FFD64740F577422FF9AB5D6466319800",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/shared/Database/Database.h",
+      "expected_sha256": "6E4BB4E8138341A53163FC59025149C21108F20E288006956FA160C050382B22",
+      "reconstructed_sha256": "6E4BB4E8138341A53163FC59025149C21108F20E288006956FA160C050382B22",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/shared/Database/DatabaseMysql.cpp",
+      "expected_sha256": "E5663FE1E2F04E9202B0E1217EFA7905B2C94A48254D9D77E490F9EBC8E48EC3",
+      "reconstructed_sha256": "E5663FE1E2F04E9202B0E1217EFA7905B2C94A48254D9D77E490F9EBC8E48EC3",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/shared/Database/DatabaseMysql.h",
+      "expected_sha256": "690D6F77F9B09D7F6520DF8D7C0E8ED95B02BEE381D8B90EAB842A698CEF5B77",
+      "reconstructed_sha256": "690D6F77F9B09D7F6520DF8D7C0E8ED95B02BEE381D8B90EAB842A698CEF5B77",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql",
+      "expected_sha256": "376815006191076AB6A2BAA60108F50B6839401C38A7388E15347B77E2AABD88",
+      "reconstructed_sha256": "376815006191076AB6A2BAA60108F50B6839401C38A7388E15347B77E2AABD88",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PersistentActiveRoster.cpp",
+      "expected_sha256": "6FA9CADACFB3AD6FA7E48780207AF73933B3ABE3279D51AF82802F05A36D96DB",
+      "reconstructed_sha256": "6FA9CADACFB3AD6FA7E48780207AF73933B3ABE3279D51AF82802F05A36D96DB",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PersistentActiveRoster.h",
+      "expected_sha256": "B45168F2A3508BCB7421D1FFF601A7BA4E301B7634E958F20A0C55FC4B7DCD3A",
+      "reconstructed_sha256": "B45168F2A3508BCB7421D1FFF601A7BA4E301B7634E958F20A0C55FC4B7DCD3A",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PersistentActiveRosterDatabase.cpp",
+      "expected_sha256": "A938A6644836ECEDA140FB2C42EC1A7F5E1DD302B2B425C7EBB409040E5C4936",
+      "reconstructed_sha256": "A938A6644836ECEDA140FB2C42EC1A7F5E1DD302B2B425C7EBB409040E5C4936",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PersistentActiveRosterDatabase.h",
+      "expected_sha256": "8B4A388E55DA575A688132CDF01DF24CE186660E07F1EE2293F26DEEF043BD08",
+      "reconstructed_sha256": "8B4A388E55DA575A688132CDF01DF24CE186660E07F1EE2293F26DEEF043BD08",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/sql/other/20260830230336_ai_playerbot_persistent_active_roster_rollback.sql",
+      "expected_sha256": "ADEA15EFB8F03E8F1D0149A97219682324DBBFA99D718EF889091F8FAA977C50",
+      "reconstructed_sha256": "ADEA15EFB8F03E8F1D0149A97219682324DBBFA99D718EF889091F8FAA977C50",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/tests/CMakeLists.txt",
+      "expected_sha256": "38E97BDD112AE550A48774DDC1EC4781F7C82CCBCDCBF09B35AE363726624917",
+      "reconstructed_sha256": "38E97BDD112AE550A48774DDC1EC4781F7C82CCBCDCBF09B35AE363726624917",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/tests/fixtures/empty-snapshot-v1.txt",
+      "expected_sha256": "BA46C4A526EE8BBE3A640492A1167DE0A449D382FE129891BF38BA89E3DF293E",
+      "reconstructed_sha256": "BA46C4A526EE8BBE3A640492A1167DE0A449D382FE129891BF38BA89E3DF293E",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/tests/fixtures/initialize-request-v1.txt",
+      "expected_sha256": "F98DB9BB37BDA3B0D405B3749C08C77CAB687B33738AEEF7FD8A34FA6AB5DBEF",
+      "reconstructed_sha256": "F98DB9BB37BDA3B0D405B3749C08C77CAB687B33738AEEF7FD8A34FA6AB5DBEF",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/tests/persistent_active_roster_tests.cpp",
+      "expected_sha256": "17BD44E7312426925A9B2188375ACD9E27320F33AE005DF261207BA05FB0C7F5",
+      "reconstructed_sha256": "17BD44E7312426925A9B2188375ACD9E27320F33AE005DF261207BA05FB0C7F5",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/tests/run-tests.ps1",
+      "expected_sha256": "2F6DBC534697CF6C9B3EC59AAE97A88A6643CEF1D2A80CC2268D9800A34858E4",
+      "reconstructed_sha256": "2F6DBC534697CF6C9B3EC59AAE97A88A6643CEF1D2A80CC2268D9800A34858E4",
+      "result": "PASS"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/tests/schema_fingerprint.sql",
+      "expected_sha256": "78C0947F88D5AA8FCC5E013BA7E24FFE020E7C68B58C86D6CF41EC5429918AD5",
+      "reconstructed_sha256": "78C0947F88D5AA8FCC5E013BA7E24FFE020E7C68B58C86D6CF41EC5429918AD5",
+      "result": "PASS"
+    }
+  ],
+  "git_status_after": [
+    " M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+    " M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h",
+    " M src/modules/PlayerBots/playerbot/PlayerbotMgr.cpp",
+    " M src/modules/PlayerBots/playerbot/PlayerbotMgr.h",
+    " M src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp",
+    " M src/modules/PlayerBots/playerbot/RandomPlayerbotFactory.cpp",
+    " M src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp",
+    " M src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.h",
+    " M src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in",
+    " M src/shared/Database/Database.cpp",
+    " M src/shared/Database/Database.h",
+    " M src/shared/Database/DatabaseMysql.cpp",
+    " M src/shared/Database/DatabaseMysql.h",
+    "?? sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql",
+    "?? src/modules/PlayerBots/playerbot/PersistentActiveRoster.cpp",
+    "?? src/modules/PlayerBots/playerbot/PersistentActiveRoster.h",
+    "?? src/modules/PlayerBots/playerbot/PersistentActiveRosterDatabase.cpp",
+    "?? src/modules/PlayerBots/playerbot/PersistentActiveRosterDatabase.h",
+    "?? src/modules/PlayerBots/sql/other/20260830230336_ai_playerbot_persistent_active_roster_rollback.sql",
+    "?? src/modules/PlayerBots/tests/CMakeLists.txt",
+    "?? src/modules/PlayerBots/tests/fixtures/empty-snapshot-v1.txt",
+    "?? src/modules/PlayerBots/tests/fixtures/initialize-request-v1.txt",
+    "?? src/modules/PlayerBots/tests/persistent_active_roster_tests.cpp",
+    "?? src/modules/PlayerBots/tests/run-tests.ps1",
+    "?? src/modules/PlayerBots/tests/schema_fingerprint.sql"
+  ]
+}

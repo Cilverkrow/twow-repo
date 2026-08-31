@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-30T20:40:55.6471312Z",
+  "repository": "C:\\TW\\ComTW\\source",
+  "head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+  "git_status_short_untracked_all": [
+    " M src/modules/PlayerBots/CMakeLists.txt",
+    " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+    " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+    " M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+    "?? bin/Release/MoveMapGen.pdb",
+    "?? bin/Release/mangosd.pdb",
+    "?? bin/Release/mapextractor.pdb",
+    "?? bin/Release/realmd.pdb",
+    "?? bin/Release/vmap_assembler.pdb",
+    "?? bin/Release/vmapextractor.pdb"
+  ],
+  "dirty_and_untracked_file_hashes": {
+    "src/modules/PlayerBots/CMakeLists.txt": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE",
+    "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592",
+    "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71",
+    "src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A",
+    "bin/Release/MoveMapGen.pdb": "D21D297D0905F3D4DD8F2F995BB55099C1E923603014FC63B54EC30175D233D0",
+    "bin/Release/mangosd.pdb": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873",
+    "bin/Release/mapextractor.pdb": "560D6676BAE78AA1BE4DC0D5164C0176CCC6F211D845A3FF4E4DEB2C5FFDC690",
+    "bin/Release/realmd.pdb": "5E8584A65B973651D90B5BC2F38F755F16C2EE14ED46CA4592C9EA2BCFC3CAAF",
+    "bin/Release/vmap_assembler.pdb": "496EF245672C828F4CD6868CB7BE1BF3D1BCDE370044042FFDB25E98B3543B69",
+    "bin/Release/vmapextractor.pdb": "F4C3B57484204E1A2038621D167055D66FB56BC677CCA5F7AA0AB7CAC61A9838"
+  },
+  "active_config": {
+    "path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+    "length": 283717,
+    "sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF"
+  },
+  "source_status_matches_r1_before": true,
+  "dirty_and_untracked_file_hashes_match_r1_before": true,
+  "active_config_matches_r1_before": true,
+  "prior_package_sha256": "A03C9D7D42D5A8CE46D74598AAE27315F1FD8B6D8A03A7052241DD28745222B5",
+  "prior_package_metadata_sha256": "7A9B8773635B4102BD0F2C554E49C860720C105262DF17B4AE2684A5F0CB1276",
+  "prior_package_matches_r1_before": true,
+  "source_mutation_by_r1": false,
+  "config_mutation_by_r1": false,
+  "database_accessed": false,
+  "build_performed": false,
+  "deployment_performed": false,
+  "process_control_performed": false
+}

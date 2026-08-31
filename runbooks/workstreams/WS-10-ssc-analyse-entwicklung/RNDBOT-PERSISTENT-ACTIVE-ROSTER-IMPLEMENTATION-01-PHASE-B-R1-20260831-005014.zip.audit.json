@@ -1,0 +1,12 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R1",
+  "created_utc": "2026-08-31T00:05:06.4288329Z",
+  "zip_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R1-20260831-005014.zip",
+  "bytes": 63243484,
+  "entry_count": 136,
+  "sha256": "89E36EFFEB1A53A138E1ABD065A263CCB6BDD7A10478AF91193639FC7242EE7F",
+  "duplicate_entries": 0,
+  "unsafe_entries": 0,
+  "manifest_entries": 135,
+  "result": "PASS"
+}

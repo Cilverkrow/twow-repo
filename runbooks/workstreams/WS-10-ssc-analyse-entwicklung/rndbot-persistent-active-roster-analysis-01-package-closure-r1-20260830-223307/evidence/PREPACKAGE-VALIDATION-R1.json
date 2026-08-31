@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-30T20:41:48.8586670Z",
+  "result": "PASS",
+  "baseline_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "baseline_tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+  "primary_artifact_count": 4,
+  "all_primary_artifacts_byte_identical": true,
+  "json_evidence_files_validated_before_this_record": 10,
+  "all_json_evidence_valid": true,
+  "source_blob_manifest_rows": 27,
+  "git_cat_file_blob_sha256_pass_count": 27,
+  "canonical_archive_blob_match_count": 27,
+  "canonical_archive_file_count": 27,
+  "working_tree_eol_archive_file_count": 27,
+  "nested_archive_path_sets_equal": true,
+  "unsafe_nested_archive_entry_count": 0,
+  "world_cpp": {
+    "git_blob_id": "951bdcf7f1e8782d5991e0e9cb3920a23412b4a2",
+    "canonical_byte_count": 213593,
+    "git_cat_file_sha256": "8AF6E3AD004BE8F4AAC323C767DCA4BB7CE3E4E8A5B3EC6E208F4C6550CD6D85",
+    "canonical_archive_sha256": "8AF6E3AD004BE8F4AAC323C767DCA4BB7CE3E4E8A5B3EC6E208F4C6550CD6D85",
+    "pass": true
+  },
+  "empty_roster_snapshot": {
+    "canonical_byte_count": 68,
+    "sha256": "BA46C4A526EE8BBE3A640492A1167DE0A449D382FE129891BF38BA89E3DF293E",
+    "pass": true
+  },
+  "implementation_contract_required_clause_check": "PASS",
+  "r1_before_after_source_status_match": true,
+  "r1_before_after_dirty_and_untracked_hashes_match": true,
+  "r1_before_after_active_config_match": true,
+  "prior_package_unchanged": true,
+  "source_mutation_performed": false,
+  "config_mutation_performed": false,
+  "database_accessed": false,
+  "build_performed": false,
+  "deployment_performed": false,
+  "process_control_performed": false,
+  "next_implementation_gate": "AWAIT_R1_PACKAGE_AUDIT"
+}

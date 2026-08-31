@@ -1,0 +1,68 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R2",
+  "result": "PASS",
+  "baseline_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "baseline_tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+  "input_b_r1_zip_sha256": "89E36EFFEB1A53A138E1ABD065A263CCB6BDD7A10478AF91193639FC7242EE7F",
+  "implementation_contract_sha256": "203855E99A7ED2D9B560769E703804CBE4C3AC2594B7C2BFEEED34236452294B",
+  "isolation": {
+    "source": "C:\\TW\\rndbot-roster-phase-b-r2-20260831-131938\\source",
+    "production_source_used_as_workdir": false,
+    "production_database_accessed": false,
+    "production_endpoint_3307_accessed": false
+  },
+  "accepted_real_adapter_runs": [
+    {
+      "run": "run1-attempt4",
+      "port": 13329,
+      "result": "PASS",
+      "adapter_sha256": "2C4729F1713CF8FCEE088C3978DBF99A7A231F340904797DC65ADE99F31144BF",
+      "migration_apply_count": 2,
+      "rollback_remaining_tables": 0
+    },
+    {
+      "run": "run2-attempt1",
+      "port": 13328,
+      "result": "PASS",
+      "adapter_sha256": "2C4729F1713CF8FCEE088C3978DBF99A7A231F340904797DC65ADE99F31144BF",
+      "migration_apply_count": 2,
+      "rollback_remaining_tables": 0
+    }
+  ],
+  "contracts": {
+    "real_cpp_database_adapter_tests": "PASS",
+    "concurrent_complete_operations": "PASS",
+    "transaction_rollback": "PASS",
+    "loading_state": "PASS",
+    "account_lock": "FAIL_CLOSED_ON_ANY_NONZERO_LOCK",
+    "organic_runtime": "PASS",
+    "grouped_roster_protection": "PASS",
+    "admin_local_console_only": "PASS",
+    "fake_unit_runs": "2/2 PASS",
+    "static_scope_gate": "PASS",
+    "clean_build": "PASS"
+  },
+  "candidate": {
+    "started": false,
+    "deployed": false,
+    "exe_sha256": "965CBEA7EDA8CC28EAFD8E9DCEB58187B167563B2644699B23B0C9FD47967679",
+    "exe_bytes": 20460544,
+    "pdb_sha256": "4E5EE6FF1C99012B9282F923249040B1885F43DAA599863338B2A64CB9DC0A80",
+    "pdb_bytes": 212553728,
+    "cmake_cache_sha256": "52296309A3F70B4C935CB10D322FB02D2F498C391BEDCBD2E92A9F722EE490A3"
+  },
+  "production": {
+    "source_byte_identical": true,
+    "exe_changed": false,
+    "active_config_changed": false
+  },
+  "forbidden_actions": {
+    "candidate_started": false,
+    "bot_login_performed": false,
+    "game_chat_sent": false,
+    "deployment_performed": false,
+    "roster_phase_c_started": false,
+    "llm_work_resumed": false
+  },
+  "phase_c_gate": "AWAIT_B_R2_PACKAGE_AUDIT"
+}

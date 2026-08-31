@@ -1,0 +1,150 @@
+TABLE_SCHEMA	TABLE_NAME	COLUMN_NAME	ORDINAL_POSITION	COLUMN_TYPE	IS_NULLABLE	COLUMN_DEFAULT	COLLATION_NAME	COLUMN_KEY	EXTRA
+tw_char	ai_playerbot_random_bots	id	1	bigint(20)	NO	NULL	NULL	PRI	auto_increment
+tw_char	ai_playerbot_random_bots	owner	2	bigint(20)	NO	NULL	NULL	MUL	
+tw_char	ai_playerbot_random_bots	bot	3	bigint(20)	NO	NULL	NULL	MUL	
+tw_char	ai_playerbot_random_bots	time	4	bigint(20)	NO	NULL	NULL		
+tw_char	ai_playerbot_random_bots	validIn	5	bigint(20)	YES	NULL	NULL		
+tw_char	ai_playerbot_random_bots	event	6	varchar(45)	YES	NULL	utf8mb3_general_ci	MUL	
+tw_char	ai_playerbot_random_bots	value	7	bigint(20)	YES	NULL	NULL		
+tw_char	ai_playerbot_random_bots	data	8	varchar(255)	YES	NULL	utf8mb3_general_ci		
+tw_char	characters	guid	1	int(10) unsigned	NO	0	NULL	PRI	
+tw_char	characters	account	2	int(10) unsigned	NO	0	NULL	MUL	
+tw_char	characters	name	3	varchar(12)	NO	''	utf8mb3_general_ci	MUL	
+tw_char	characters	race	4	tinyint(3) unsigned	NO	0	NULL		
+tw_char	characters	class	5	tinyint(3) unsigned	NO	0	NULL		
+tw_char	characters	gender	6	tinyint(3) unsigned	NO	0	NULL		
+tw_char	characters	level	7	tinyint(3) unsigned	NO	0	NULL		
+tw_char	characters	xp	8	int(10) unsigned	NO	0	NULL		
+tw_char	characters	money	9	int(10) unsigned	NO	0	NULL		
+tw_char	characters	playerBytes	10	int(10) unsigned	NO	0	NULL		
+tw_char	characters	playerBytes2	11	int(10) unsigned	NO	0	NULL		
+tw_char	characters	playerFlags	12	int(10) unsigned	NO	0	NULL		
+tw_char	characters	position_x	13	float	NO	0	NULL		
+tw_char	characters	position_y	14	float	NO	0	NULL		
+tw_char	characters	position_z	15	float	NO	0	NULL		
+tw_char	characters	map	16	int(10) unsigned	NO	0	NULL		
+tw_char	characters	orientation	17	float	NO	0	NULL		
+tw_char	characters	taximask	18	longtext	YES	NULL	utf8mb3_general_ci		
+tw_char	characters	online	19	tinyint(3) unsigned	NO	0	NULL	MUL	
+tw_char	characters	cinematic	20	tinyint(3) unsigned	NO	0	NULL		
+tw_char	characters	totaltime	21	int(10) unsigned	NO	0	NULL		
+tw_char	characters	leveltime	22	int(10) unsigned	NO	0	NULL		
+tw_char	characters	logout_time	23	bigint(20) unsigned	NO	0	NULL		
+tw_char	characters	is_logout_resting	24	tinyint(3) unsigned	NO	0	NULL		
+tw_char	characters	rest_bonus	25	float	NO	0	NULL		
+tw_char	characters	resettalents_multiplier	26	int(10) unsigned	NO	0	NULL		
+tw_char	characters	resettalents_time	27	bigint(20) unsigned	NO	0	NULL		
+tw_char	characters	trans_x	28	float	NO	0	NULL		
+tw_char	characters	trans_y	29	float	NO	0	NULL		
+tw_char	characters	trans_z	30	float	NO	0	NULL		
+tw_char	characters	trans_o	31	float	NO	0	NULL		
+tw_char	characters	transguid	32	bigint(20) unsigned	NO	0	NULL		
+tw_char	characters	extra_flags	33	int(10) unsigned	NO	0	NULL		
+tw_char	characters	stable_slots	34	tinyint(1) unsigned	NO	0	NULL		
+tw_char	characters	at_login	35	int(10) unsigned	NO	0	NULL		
+tw_char	characters	zone	36	int(10) unsigned	NO	0	NULL		
+tw_char	characters	death_expire_time	37	bigint(20) unsigned	NO	0	NULL		
+tw_char	characters	taxi_path	38	text	YES	NULL	utf8mb3_general_ci		
+tw_char	characters	honorRankPoints	39	float	NO	0	NULL		
+tw_char	characters	honorHighestRank	40	int(10) unsigned	NO	0	NULL		
+tw_char	characters	honorStanding	41	int(10) unsigned	NO	0	NULL		
+tw_char	characters	honorLastWeekHK	42	int(10) unsigned	NO	0	NULL		
+tw_char	characters	honorLastWeekCP	43	decimal(11,1)	NO	0.0	NULL		
+tw_char	characters	honorStoredHK	44	int(11)	NO	0	NULL		
+tw_char	characters	honorStoredDK	45	int(11)	NO	0	NULL		
+tw_char	characters	watchedFaction	46	int(10) unsigned	NO	0	NULL		
+tw_char	characters	drunk	47	smallint(5) unsigned	NO	0	NULL		
+tw_char	characters	health	48	int(10) unsigned	NO	0	NULL		
+tw_char	characters	power1	49	int(10) unsigned	NO	0	NULL		
+tw_char	characters	power2	50	int(10) unsigned	NO	0	NULL		
+tw_char	characters	power3	51	int(10) unsigned	NO	0	NULL		
+tw_char	characters	power4	52	int(10) unsigned	NO	0	NULL		
+tw_char	characters	power5	53	int(10) unsigned	NO	0	NULL		
+tw_char	characters	exploredZones	54	longtext	YES	NULL	utf8mb3_general_ci		
+tw_char	characters	equipmentCache	55	longtext	YES	NULL	utf8mb3_general_ci		
+tw_char	characters	ammoId	56	int(10) unsigned	NO	0	NULL		
+tw_char	characters	actionBars	57	tinyint(3) unsigned	NO	0	NULL		
+tw_char	characters	deleteInfos_Account	58	int(10) unsigned	YES	NULL	NULL		
+tw_char	characters	deleteInfos_Name	59	varchar(12)	YES	NULL	utf8mb3_general_ci		
+tw_char	characters	deleteDate	60	bigint(20)	YES	NULL	NULL	MUL	
+tw_char	characters	area	61	int(10) unsigned	NO	0	NULL		
+tw_char	characters	world_phase_mask	62	int(11)	YES	0	NULL		
+tw_char	characters	customFlags	63	int(11)	NO	0	NULL		
+tw_char	characters	city_protector	64	tinyint(4)	NO	0	NULL		
+tw_char	characters	regexFilterCount	65	int(10) unsigned	NO	0	NULL		
+tw_char	characters	isGMCharacter	66	tinyint(1) unsigned	NO	0	NULL		
+tw_char	characters	ignore_titles	67	tinyint(4)	NO	0	NULL		
+tw_char	characters	mortality_status	68	tinyint(4)	NO	0	NULL		
+tw_char	characters	total_deaths	69	int(11)	NO	0	NULL		
+tw_char	characters	xp_gain	70	tinyint(3) unsigned	NO	1	NULL		
+tw_char	characters	active	71	tinyint(3) unsigned	NO	1	NULL		
+tw_char	characters	extraBonusTalentCount	72	int(11)	NO	0	NULL		
+tw_char	groups	groupId	1	int(10) unsigned	NO	NULL	NULL	PRI	
+tw_char	groups	leaderGuid	2	int(10) unsigned	NO	NULL	NULL	UNI	
+tw_char	groups	mainTank	3	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	mainAssistant	4	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	lootMethod	5	tinyint(3) unsigned	NO	NULL	NULL		
+tw_char	groups	looterGuid	6	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	lootThreshold	7	tinyint(3) unsigned	NO	NULL	NULL		
+tw_char	groups	icon1	8	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	icon2	9	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	icon3	10	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	icon4	11	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	icon5	12	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	icon6	13	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	icon7	14	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	icon8	15	int(10) unsigned	NO	NULL	NULL		
+tw_char	groups	isRaid	16	tinyint(1) unsigned	NO	NULL	NULL		
+tw_char	group_member	groupId	1	int(10) unsigned	NO	NULL	NULL	PRI	
+tw_char	group_member	memberGuid	2	int(10) unsigned	NO	NULL	NULL	PRI	
+tw_char	group_member	assistant	3	tinyint(1) unsigned	NO	NULL	NULL		
+tw_char	group_member	subgroup	4	smallint(5) unsigned	NO	NULL	NULL		
+tw_logon	account	id	1	int(10) unsigned	NO	NULL	NULL	PRI	auto_increment
+tw_logon	account	username	2	varchar(32)	NO	NULL	utf8mb3_general_ci	UNI	
+tw_logon	account	sha_pass_hash	3	varchar(40)	NO	NULL	utf8mb3_general_ci		
+tw_logon	account	rank	4	int(10) unsigned	NO	0	NULL	MUL	
+tw_logon	account	sessionkey	5	longtext	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	v	6	longtext	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	s	7	longtext	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	email	8	text	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	joindate	9	timestamp	NO	current_timestamp()	NULL		
+tw_logon	account	tfa_verif	10	varchar(255)	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	last_ip	11	varchar(30)	NO	'0.0.0.0'	utf8mb3_general_ci		
+tw_logon	account	last_local_ip	12	varchar(30)	NO	'0.0.0.0'	utf8mb3_general_ci		
+tw_logon	account	failed_logins	13	int(10) unsigned	NO	0	NULL		
+tw_logon	account	locked	14	tinyint(3) unsigned	NO	0	NULL		
+tw_logon	account	last_login	15	timestamp	NO	'0000-00-00 00:00:00'	NULL		
+tw_logon	account	online	16	tinyint(4)	NO	0	NULL		
+tw_logon	account	expansion	17	tinyint(3) unsigned	NO	0	NULL		
+tw_logon	account	mutetime	18	bigint(20)	NO	0	NULL		
+tw_logon	account	mutereason	19	varchar(255)	NO	''	utf8mb3_general_ci		
+tw_logon	account	muteby	20	varchar(50)	NO	''	utf8mb3_general_ci		
+tw_logon	account	locale	21	tinyint(3) unsigned	NO	0	NULL		
+tw_logon	account	os	22	varchar(4)	NO	''	utf8mb3_general_ci		
+tw_logon	account	platform	23	varchar(4)	NO	''	utf8mb3_general_ci		
+tw_logon	account	current_realm	24	tinyint(3) unsigned	NO	0	NULL		
+tw_logon	account	banned	25	tinyint(1) unsigned	NO	0	NULL		
+tw_logon	account	flags	26	int(10) unsigned	NO	0	NULL		
+tw_logon	account	security	27	varchar(255)	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	pass_verif	28	varchar(255)	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	email_verif	29	tinyint(1)	NO	0	NULL		
+tw_logon	account	forum_username	30	varchar(32)	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	token_key	31	varchar(100)	YES	''	utf8mb3_general_ci		
+tw_logon	account	email_keyword	32	varchar(16)	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	email_status	33	int(11)	YES	NULL	NULL		
+tw_logon	account	email_letterid	34	int(11)	YES	0	NULL		
+tw_logon	account	email_sub	35	tinyint(4)	NO	1	NULL		
+tw_logon	account	server	36	tinyint(4)	NO	0	NULL		
+tw_logon	account	comments	37	text	YES	NULL	utf8mb3_general_ci		
+tw_logon	account	geolock_pin	38	int(11)	YES	0	NULL		
+tw_logon	account	queue_skip	39	tinyint(4)	NO	0	NULL		
+tw_logon	account	active	40	tinyint(3) unsigned	NO	1	NULL		
+tw_logon	account_banned	banid	1	bigint(20)	NO	NULL	NULL	UNI	auto_increment
+tw_logon	account_banned	id	2	bigint(20)	NO	0	NULL	PRI	
+tw_logon	account_banned	bandate	3	bigint(20)	NO	0	NULL	PRI	
+tw_logon	account_banned	unbandate	4	bigint(20)	NO	0	NULL		
+tw_logon	account_banned	bannedby	5	varchar(50)	NO	NULL	utf8mb3_general_ci		
+tw_logon	account_banned	banreason	6	varchar(255)	NO	NULL	utf8mb3_general_ci		
+tw_logon	account_banned	active	7	tinyint(4)	NO	1	NULL		
+tw_logon	account_banned	realm	8	tinyint(4)	NO	1	NULL		
+tw_logon	account_banned	gmlevel	9	tinyint(3) unsigned	NO	0	NULL		

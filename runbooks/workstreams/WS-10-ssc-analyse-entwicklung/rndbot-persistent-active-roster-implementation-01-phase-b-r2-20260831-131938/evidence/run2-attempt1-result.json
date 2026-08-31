@@ -1,0 +1,16 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R2",
+  "run": "run2",
+  "attempt": 1,
+  "result": "PASS",
+  "captured_utc": "2026-08-31T12:03:58.0730009Z",
+  "adapter_exe_sha256": "2C4729F1713CF8FCEE088C3978DBF99A7A231F340904797DC65ADE99F31144BF",
+  "server_pid": 31204,
+  "port": 13328,
+  "datadir": "C:\\TW\\rndbot-roster-phase-b-r2-20260831-131938\\db-r2-run2-attempt1\\data",
+  "migration_apply_count": 2,
+  "real_cpp_adapter": "PASS",
+  "rollback_remaining_tables": 0,
+  "production_database_accessed": false,
+  "production_endpoint_3307_accessed": false
+}

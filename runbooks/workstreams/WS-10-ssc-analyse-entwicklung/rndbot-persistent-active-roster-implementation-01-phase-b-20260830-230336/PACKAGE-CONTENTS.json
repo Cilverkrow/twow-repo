@@ -1,0 +1,18 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B",
+  "package_root_name": "rndbot-persistent-active-roster-implementation-01-phase-b-20260830-230336",
+  "created_utc": "2026-08-30T22:29:22.0642763Z",
+  "expected_zip_entry_count": 81,
+  "authoritative_evidence": "evidence/final-evidence-package.json",
+  "authoritative_static_gate": "evidence/static-gate-post-build.json",
+  "authoritative_build_logs": "logs/clean-5",
+  "authoritative_test_logs": [
+    "logs/tests-authoritative-run-1.log",
+    "logs/tests-authoritative-run-2.log"
+  ],
+  "sha256_manifest_rule": "SHA256SUMS.txt contains every regular package file except SHA256SUMS.txt itself, sorted by ordinal relative path.",
+  "outer_zip_audit": "Adjacent .zip.audit.json sidecar; outer ZIP hash cannot be embedded without self-reference.",
+  "phase_b_result": "BLOCKED",
+  "blocker": "DISPOSABLE_DB_UNAVAILABLE_127.0.0.1_3307_ERROR_2002_WIN32_10061",
+  "phase_c_gate": "AWAIT_SEPARATE_PACKAGE_AUDIT"
+}

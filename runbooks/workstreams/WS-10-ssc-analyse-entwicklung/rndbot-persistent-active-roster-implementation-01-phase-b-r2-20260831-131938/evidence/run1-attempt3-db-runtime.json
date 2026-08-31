@@ -1,0 +1,10 @@
+{
+  "captured_utc": "2026-08-31T11:58:17.3469101Z",
+  "pid": 44976,
+  "executable": "C:\\TW\\ComTW\\DB\\bin\\mariadbd.exe",
+  "listener": [
+    "  TCP    127.0.0.1:13327        0.0.0.0:0              ABH�REN         44976"
+  ],
+  "datadir": "C:\\TW\\rndbot-roster-phase-b-r2-20260831-131938\\db-r2-run1-attempt3\\data",
+  "port": 13327
+}

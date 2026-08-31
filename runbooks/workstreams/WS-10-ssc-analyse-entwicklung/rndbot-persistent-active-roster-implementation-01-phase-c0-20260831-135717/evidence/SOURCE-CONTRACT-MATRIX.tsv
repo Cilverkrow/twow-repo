@@ -1,0 +1,17 @@
+topic	file	lines	read_only_finding
+feature_flags	PlayerbotAIConfig.cpp	364-365	Enabled and MaintenanceMode default false
+rndbot_prefix	PlayerbotAIConfig.cpp	547,886-914	Configured RandomBotAccountPrefix is the stock-membership predicate
+login_admission	RandomPlayerbotMgr.cpp	2353-2381	Requires character/account, RNDBOT stock, active, unlocked, unbanned, no registered session
+account_ban	AccountMgr.cpp@42b8a7f742548793910fe8880463aeeb71627fb9	410-425,646-651	Active current or permanent account_banned rows populate IsAccountBanned
+current_rotation_members	RandomPlayerbotMgr.cpp	3688-3715	Legacy currentBots is loaded from owner=0 and event=add rows
+lease_semantics	RandomPlayerbotMgr.cpp	3738-3773,3800-3822	GetEventValue expires when elapsed is at least validIn; SetEventValue stores start time and duration
+invalid_no_current	PersistentActiveRoster.cpp	479-490	Enabled service without a valid Current version becomes INVALID_FAIL_CLOSED
+factory_fail_closed	RandomPlayerbotFactory.cpp	548-554	Persistent feature skips random-bot factory and automatic top-up
+admission_fail_closed	RandomPlayerbotMgr.cpp	735-780,2408-2445	Closed roster admission prevents random selection; only desired GUIDs can reach AddPlayerBot
+admin_transport	RandomPlayerbotMgr.cpp	3850-3929	Roster status/apply is local-console only; RA and game chat rejected
+admin_restart	PersistentActiveRoster.cpp	569-614	Successful offline apply returns APPLIED_RESTART_REQUIRED and closes admission
+runtime_identity	RandomPlayerbotMgr.cpp	2527-2655	Persistent member avoids lease/population logout while ordinary AI/session maintenance remains
+group_protection	RandomPlayerbotMgr.cpp	2527-2655,2660-2755	Grouped roster bot is not rotation-logged-out, randomized, or automatically teleported
+snapshot_contract	IMPLEMENTATION-CONTRACT-ADDENDUM.md	section 4	Ordered GUID snapshot uses UTF-8 no BOM, LF, 10-digit ordinals/GUIDs, uppercase SHA-256 externally
+request_contract	IMPLEMENTATION-CONTRACT-ADDENDUM.md	section 3	Canonical INITIALIZE requires lower UUIDv4, exact field order, Base64url NFC actor/reason, LF after final line
+

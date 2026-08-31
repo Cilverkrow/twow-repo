@@ -1,0 +1,22 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R1",
+  "captured_utc": "2026-08-30T22:52:03.3173844Z",
+  "hub_preflight_result": "PASS",
+  "canonical_registry_read": true,
+  "global_hub_readme_read": true,
+  "workstream_id": "WS-10",
+  "workstream_readme_read": true,
+  "dependent_workstreams": [
+    "WS-20",
+    "WS-30"
+  ],
+  "hub_manifest_verified": "11/11",
+  "hub_manifest_sha256": "086BB6B9E673E78572B3346EA545844EB4C075E84F2C630EAD31EA2CFF97A3BE",
+  "input_zip_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-20260831-003005.zip",
+  "input_zip_sha256": "C25B254ED780EB02254E40E2D2C161528906D96717850B6A92DAD4E1B7D13C94",
+  "input_zip_entry_count": 81,
+  "input_zip_manifest_entries": 80,
+  "input_zip_verification": "PASS",
+  "source_of_truth_conflict_count": 0,
+  "unresolved_reference_count": 0
+}

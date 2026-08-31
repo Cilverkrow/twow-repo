@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "result": "PASS_WITH_EXPLICIT_EOL_DISTINCTION",
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "candidate_tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+  "canonical_archive": {
+    "path": "evidence/BASELINE-SOURCE-BLOBS.zip",
+    "generation_override": "core.autocrlf=false; core.eol=lf",
+    "sha256": "88AC420F086027000415D5B36A7D46DFABBCB8D6073E8C3C85A055177CC6963A",
+    "length": 311080,
+    "entry_count_including_directories": 40,
+    "file_entry_count": 27,
+    "all_file_entries_match_git_blob_content": true
+  },
+  "working_tree_eol_archive": {
+    "path": "evidence/WORKTREE-EOL-EXPORT.zip",
+    "generation_override": null,
+    "git_core_autocrlf": true,
+    "git_core_autocrlf_origin": "file:Y:/appentwicklung/Git/etc/gitconfig",
+    "sha256": "B0110CFA95F2AED86D7E59761FA5BDDE1130833E7A5ABB9A1D7849B893F062F9",
+    "length": 312628,
+    "entry_count_including_directories": 40,
+    "file_entry_count": 27,
+    "file_lengths_differing_from_git_blob_due_to_crlf_export": 27,
+    "canonical_blob_evidence": false
+  },
+  "added_world_cpp": {
+    "relative_path": "src/game/World.cpp",
+    "git_blob_id": "951bdcf7f1e8782d5991e0e9cb3920a23412b4a2",
+    "canonical_byte_count": 213593,
+    "canonical_sha256": "8AF6E3AD004BE8F4AAC323C767DCA4BB7CE3E4E8A5B3EC6E208F4C6550CD6D85",
+    "canonical_archive_match": true,
+    "eol_export_byte_count": 218813,
+    "eol_export_sha256": "1BCAE4A208726DA52076E54B422648C19BCA20A68C7017EB492122D065209E89"
+  },
+  "canonical_evidence_rule": "Only BASELINE-SOURCE-BLOBS.zip together with SOURCE-BLOB-MANIFEST.tsv proves the canonical bytes at the pinned commit. WORKTREE-EOL-EXPORT.zip is a consistent path-complete Windows EOL export, not canonical blob evidence."
+}

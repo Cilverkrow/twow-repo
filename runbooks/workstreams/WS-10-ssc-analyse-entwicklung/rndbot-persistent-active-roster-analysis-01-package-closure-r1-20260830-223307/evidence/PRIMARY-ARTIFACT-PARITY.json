@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "source_directory": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\rndbot-persistent-active-roster-analysis-01-package-closure-20260830-215016",
+  "r1_directory": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\rndbot-persistent-active-roster-analysis-01-package-closure-r1-20260830-223307",
+  "files": [
+    {
+      "path": "REPORT.md",
+      "bytes": 31954,
+      "sha256": "5D434F3B0E83A4B8ADBD758BA2B2F4ADA22D4FC2164E7F6AE1880FF171872444",
+      "byte_identical": true
+    },
+    {
+      "path": "RESULT.txt",
+      "bytes": 2907,
+      "sha256": "3AF7DFC3D5734D19A8B699AE1ADFF548636F6D2A0CF4E71436E8AC11D720E51C",
+      "byte_identical": true
+    },
+    {
+      "path": "SOURCE-MATRIX.tsv",
+      "bytes": 9100,
+      "sha256": "D7E062AA306A26B48848FAF0E47B48E4C426EE047858AC7F7764D0C2073409A1",
+      "byte_identical": true
+    },
+    {
+      "path": "ANALYSIS.json",
+      "bytes": 3458,
+      "sha256": "1EF7FAF0719CD6C7627CE00CAA072E14CBCD61CC47B92D45B17394EF87740C28",
+      "byte_identical": true
+    }
+  ],
+  "all_primary_artifacts_byte_identical": true
+}

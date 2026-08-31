@@ -1,0 +1,9 @@
+{
+  "production_head_unchanged": true,
+  "production_status_byte_identical": true,
+  "production_dirty_files_byte_identical": true,
+  "protected_artifacts_byte_identical": true,
+  "production_source_byte_identical": true,
+  "production_exe_changed": false,
+  "active_config_changed": false
+}

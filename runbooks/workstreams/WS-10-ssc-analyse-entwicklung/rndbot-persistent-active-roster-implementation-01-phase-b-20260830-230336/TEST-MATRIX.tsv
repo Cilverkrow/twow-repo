@@ -1,0 +1,20 @@
+check	result	evidence
+schema-create-and-rollback	BLOCKED	127.0.0.1:3307 connection refused; no schema created
+canonical-request-and-snapshot-vectors	PASS	logs/tests-authoritative-run-1.log; logs/tests-authoritative-run-2.log
+empty-snapshot-68-bytes-and-sha256	PASS	BA46C4A526EE8BBE3A640492A1167DE0A449D382FE129891BF38BA89E3DF293E
+operation-id-idempotency-and-mismatch	PASS	fake-store tests
+transaction-failure-preserves-current	PASS	failure-injection fake-store test
+bad-ordinal-duplicate-guid-bad-hash	PASS	parser/startup tests
+restart-identical-guid-vector	PASS	shared fake-store restart test
+lease-rotation-population-no-membership-change	PASS	policy tests plus isolated source gate
+login-failure-degraded-no-replacement	PASS	DEGRADED policy test and source guard
+factory-delete-reset-logout-protection	PASS	static gate and source guards
+grouped-bot-lease-protection	PASS	value/policy test only; no live server claim
+append-only-50-to-100-prefix	PASS	100-member vector test
+feature-disabled-legacy-path	PASS	default-off static gate and disabled service test
+async-combination-fail-closed	PASS	ASYNC_LOGIN_UNSUPPORTED test
+canonical-remove-replace-order-and-nonempty-actor	PASS	logs/tests-authoritative-run-1.log; logs/tests-authoritative-run-2.log
+desired-available-online-state-separation	PASS	logs/tests-authoritative-run-1.log; logs/tests-authoritative-run-2.log
+two-reproducible-full-test-runs	PASS	logs/tests-authoritative-run-1.log; logs/tests-authoritative-run-2.log
+static-scope-and-production-protection	PASS	evidence/static-gate-post-build.json
+clean-release-mangosd-build	PASS	logs/clean-5/*

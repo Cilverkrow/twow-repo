@@ -1,0 +1,14 @@
+{
+  "captured_utc": "2026-08-30T23:24:51.1047668Z",
+  "process": {
+    "ProcessId": 34176,
+    "ExecutablePath": "C:\\TW\\ComTW\\DB\\bin\\mariadbd.exe",
+    "CommandLine": "\"C:\\TW\\ComTW\\DB\\bin\\mariadbd.exe\" --no-defaults --datadir=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\data --port=13317 --bind-address=127.0.0.1 --skip-networking=0 --skip-name-resolve --pid-file=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\mariadbd.pid --log-error=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\mariadbd-error.log",
+    "VerificationSource": "parent ProcessStartInfo arguments plus child MainModule path"
+  },
+  "listener": [
+    "  TCP    127.0.0.1:13317        0.0.0.0:0              ABH�REN         34176"
+  ],
+  "datadir": "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\data",
+  "pid": 34176
+}

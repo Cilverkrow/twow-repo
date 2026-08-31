@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-ANALYSIS-01-PACKAGE-CLOSURE-R1",
+  "generated_utc": "2026-08-30T20:43:30.3709101Z",
+  "result": "PASS",
+  "zip": {
+    "path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\RNDBOT-PERSISTENT-ACTIVE-ROSTER-ANALYSIS-01-PACKAGE-CLOSURE-R1-20260830-223307.zip",
+    "sha256": "0C4D08163DF56FBBD59B8B9801764990DA9E8F3182319F7CF20A258B710E69BE",
+    "length": 658607,
+    "file_entry_count": 27,
+    "duplicate_entry_count": 0,
+    "unsafe_entry_count": 0,
+    "entry_set_complete": true
+  },
+  "internal_manifest": {
+    "path": "SHA256SUMS.txt",
+    "sha256": "793CD154D62DD63A4347FF1662C6E5C657C92BE9D075D1A5E3B16FEEDFABAF24",
+    "length": 2519,
+    "payload_rows": 26,
+    "hash_pass_count": 26,
+    "all_payload_entries_present": true,
+    "all_payload_hashes_match": true
+  },
+  "primary_artifacts": {
+    "count": 4,
+    "all_byte_identical_to_prior_closure": true
+  },
+  "source_archives": {
+    "canonical": {
+      "path": "evidence/BASELINE-SOURCE-BLOBS.zip",
+      "sha256": "88AC420F086027000415D5B36A7D46DFABBCB8D6073E8C3C85A055177CC6963A",
+      "length": 311080,
+      "file_entry_count": 27,
+      "git_blob_match_count": 27
+    },
+    "working_tree_eol_export": {
+      "path": "evidence/WORKTREE-EOL-EXPORT.zip",
+      "sha256": "B0110CFA95F2AED86D7E59761FA5BDDE1130833E7A5ABB9A1D7849B893F062F9",
+      "length": 312628,
+      "file_entry_count": 27,
+      "canonical_blob_evidence": false
+    },
+    "path_sets_equal": true,
+    "world_cpp_present_in_both": true
+  },
+  "prior_package": {
+    "sha256": "A03C9D7D42D5A8CE46D74598AAE27315F1FD8B6D8A03A7052241DD28745222B5",
+    "length": 547569,
+    "unchanged": true
+  },
+  "database_accessed": false,
+  "build_performed": false,
+  "deployment_performed": false,
+  "process_control_performed": false,
+  "next_implementation_gate": "AWAIT_R1_PACKAGE_AUDIT"
+}

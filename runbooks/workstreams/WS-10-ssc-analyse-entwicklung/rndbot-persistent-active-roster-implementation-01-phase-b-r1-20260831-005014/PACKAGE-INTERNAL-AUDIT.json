@@ -1,0 +1,8 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R1",
+  "package_root": "rndbot-persistent-active-roster-implementation-01-phase-b-r1-20260831-005014",
+  "expected_entry_count": 136,
+  "manifest": "SHA256SUMS.txt",
+  "manifest_policy": "SHA-256 over every regular package file except SHA256SUMS.txt itself; UTF-8 paths use forward slashes.",
+  "path_policy": "Relative paths only; no rooted path, parent traversal, duplicate or backslash ZIP entry."
+}

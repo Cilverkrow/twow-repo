@@ -1,0 +1,35 @@
+id	area	case	expected	result	evidence
+DB-01	real-adapter	VerifySchema through CharacterDatabaseStore	Exact full schema fingerprint accepted	PASS	run1-attempt4-real-adapter.stdout.log; run2-attempt1-real-adapter.stdout.log
+DB-02	real-adapter	LoadCurrent before roster exists	Valid singleton with NULL current returns found=false	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-03	real-adapter	INITIALIZE ordered 50 GUIDs	Version 1, 50 ordered members, APPLIED_RESTART_REQUIRED	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-04	real-adapter	New Database/Store/Service object reload	Same current version and ordered GUID vector	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-05	real-adapter	Same operation_id and request_sha256 replay	Stored result returned; no version/member/audit mutation	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-06	real-adapter	Same operation_id with different request	OPERATION_ID_REQUEST_MISMATCH; no mutation	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-07	real-adapter	EXPAND 50 to 100	Original 50 remain byte/order-identical prefix	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-08	real-adapter	REMOVE and REPLACE maintenance operations	Atomic persisted versions; restart required	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-09	real-adapter	Uppercase HEX returned by SQL HEX()	Request/snapshot digests parse and compare correctly	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-10	real-adapter	member_count, ordinal gap, duplicate GUID	All invalid forms rejected fail-closed	PASS	Duplicate-key evidence in both final stderr logs plus load assertions
+DB-11	real-adapter	Wrong expected current version	CURRENT_VERSION_MISMATCH; no mutation	PASS	persistent_active_roster_database_tests.cpp; both final adapter runs
+DB-12	real-adapter	Injected member INSERT failure	Explicit rollback; pointer/version/member/audit counts unchanged	PASS	Both final adapter stderr logs and count assertions
+DB-13	real-adapter	Injected audit INSERT failure	Explicit rollback; pointer/version/member/audit counts unchanged	PASS	Both final adapter stderr logs and count assertions
+DB-14	real-adapter	Two parallel complete commits, separate connections/stores	Exactly one winner and one CURRENT_VERSION_MISMATCH loser; loser no mutation	PASS	STAGE=CONCURRENCY and final PASS in both final runs; source assertions
+DB-15	migration	Rollback migration after real adapter suite	Zero roster tables remain	PASS	run1-attempt4-result.json; run2-attempt1-result.json
+DB-16	migration	Apply migration twice	Second application is safe/idempotent	PASS	migration_apply_count=2 in both final result JSON files
+DB-17	isolation	Disposable MariaDB	--no-defaults; fresh datadir; localhost; ports 13329/13328; temp credentials; no service	PASS	Both final db-prestart/runtime/final JSON evidence sets
+STATE-01	service	Start load sequence	LOADING during VerifySchema/LoadCurrent/snapshot/member build; STARTING only afterward	PASS	persistent_active_roster_tests.cpp; fake-unit runs 1 and 2
+STATE-02	service	Any load failure	INVALID_FAIL_CLOSED	PASS	persistent_active_roster_tests.cpp; fake-unit runs 1 and 2
+AUTH-01	account	Character/account/RNDBOT/banned/active/locked/session matrix	Deterministic fail-closed reason for every invalid condition	PASS	persistent_active_roster_tests.cpp; fake-unit runs 1 and 2
+AUTH-02	account	Nonzero account.locked	ACCOUNT_LOCKED; no internal authentication bypass	PASS	persistent_active_roster_tests.cpp; RandomPlayerbotMgr.cpp compiled in clean build
+RUNTIME-01	organic-runtime	Persistent ProcessBot GUID path	Lease/population logout suppressed; remaining maintenance path continues	PASS	RuntimeBehaviorPolicy tests; full mangosd clean build
+RUNTIME-02	organic-runtime	Persistent ProcessBot Player path	Randomize/progression/strategy reset/random teleport suppressed	PASS	RuntimeBehaviorPolicy tests; full mangosd clean build
+RUNTIME-03	organic-runtime	Grouped roster bot	No rotation logout, group removal, randomization, or automatic teleport	PASS	RuntimeBehaviorPolicy tests; full mangosd clean build
+RUNTIME-04	organic-runtime	Organic operations	ClearExpiredValues, AI processing, strategy/travel/idle/revive/session/update maintenance retained	PASS	Static source inspection and full mangosd clean build
+ADMIN-01	admin	Transport matrix	Local mangosd console accepted; RA and game-chat rejected	PASS	persistent_active_roster_tests.cpp; actual handler compiled in clean build
+ADMIN-02	admin	Apply gate	Maintenance required; actual online roster bot rejects apply	PASS	persistent_active_roster_tests.cpp; RandomPlayerbotMgr.cpp handler integration
+ADMIN-03	admin	Successful apply	APPLIED_RESTART_REQUIRED and admission remains INVALID_FAIL_CLOSED until restart	PASS	FakeStore and real adapter tests
+ADMIN-04	admin	Request file	Absolute regular non-reparse file, bounded exact EOF read, canonical parser; bad inputs fail closed	PASS	persistent_active_roster_tests.cpp; fake-unit runs 1 and 2
+UNIT-01	unit	Fresh configure/build/run 1	PASS	PASS	evidence/fake-unit-run1.log
+UNIT-02	unit	Fresh configure/build/run 2	PASS	PASS	evidence/fake-unit-run2.log
+BUILD-01	build	Fresh Release/mangosd target	Build completes; candidate not started	PASS	evidence/clean-build/*
+SCOPE-01	static	Allowed files, forbidden core/LLM scope, git diff --check	No unexpected paths; WorldSession.cpp/Group.cpp unchanged; diff check clean	PASS	evidence/static-scope-gate.json; evidence/git-diff-check.log
+PROD-01	production	Before/after hashes and full dirty tree	Byte-identical source; EXE/configs unchanged	PASS	evidence/production-before.json; evidence/production-after.json

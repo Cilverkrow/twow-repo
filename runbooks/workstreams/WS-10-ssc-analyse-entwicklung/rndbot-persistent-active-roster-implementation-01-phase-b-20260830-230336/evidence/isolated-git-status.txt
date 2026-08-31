@@ -1,0 +1,21 @@
+ M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp
+ M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h
+ M src/modules/PlayerBots/playerbot/PlayerbotMgr.cpp
+ M src/modules/PlayerBots/playerbot/PlayerbotMgr.h
+ M src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp
+ M src/modules/PlayerBots/playerbot/RandomPlayerbotFactory.cpp
+ M src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp
+ M src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.h
+ M src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in
+?? bin/Release/mangosd.pdb
+?? sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql
+?? src/modules/PlayerBots/playerbot/PersistentActiveRoster.cpp
+?? src/modules/PlayerBots/playerbot/PersistentActiveRoster.h
+?? src/modules/PlayerBots/playerbot/PersistentActiveRosterDatabase.cpp
+?? src/modules/PlayerBots/playerbot/PersistentActiveRosterDatabase.h
+?? src/modules/PlayerBots/sql/other/20260830230336_ai_playerbot_persistent_active_roster_rollback.sql
+?? src/modules/PlayerBots/tests/CMakeLists.txt
+?? src/modules/PlayerBots/tests/fixtures/empty-snapshot-v1.txt
+?? src/modules/PlayerBots/tests/fixtures/initialize-request-v1.txt
+?? src/modules/PlayerBots/tests/persistent_active_roster_tests.cpp
+?? src/modules/PlayerBots/tests/run-tests.ps1

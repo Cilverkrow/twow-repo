@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "task": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-ANALYSIS-01",
+  "mode": "READ_ONLY_ANALYSIS",
+  "result": "PASS",
+  "baseline": {
+    "repository": "C:\\TW\\ComTW\\source",
+    "commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+    "active_config_path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+    "active_config_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF"
+  },
+  "effective_configuration": {
+    "random_bot_autologin": true,
+    "random_bot_login_at_startup_loaded_but_unused": true,
+    "random_bot_auto_create": true,
+    "min_random_bots": 50,
+    "max_random_bots": 50,
+    "random_bot_timed_logout": true,
+    "random_bot_timed_offline": false,
+    "min_random_bot_in_world_seconds": 1800,
+    "max_random_bot_in_world_seconds": 21600,
+    "bot_count_change_min_seconds": 1800,
+    "bot_count_change_max_seconds": 7200,
+    "manager_update_interval_ms": 500,
+    "max_logins_per_interval": 30,
+    "random_bots_per_interval": 0,
+    "async_bot_login": false,
+    "disable_random_levels": true,
+    "pinned_bot_names": []
+  },
+  "current_model": {
+    "selection": "shuffled RNDBOT account order plus unordered character rows and quota filters",
+    "membership": "time-limited add events cached in currentBots",
+    "login": "target-count top-up from add rows",
+    "logout": "add expiry or async criteria; group grace is 120 seconds",
+    "activity_throttle": "activity percentage and AllowActivity priority brackets",
+    "character_persistence": "standard character tables keyed by character GUID",
+    "automatic_replacement": true,
+    "durable_guid_roster": false
+  },
+  "event_contract": {
+    "current_time": "server time checkpoint used to shift event timestamps across downtime",
+    "add": "temporary selection and login lease; expires",
+    "login": "login-in-progress or stale marker",
+    "logout": "optional offline cooldown",
+    "update": "maintenance/revive interval",
+    "teleport": "same-GUID relocation schedule",
+    "change_strategy": "same-GUID strategy schedule",
+    "randomize": "same-GUID character maintenance schedule",
+    "bot_count": "temporary population target, not identity",
+    "always": "free-alt/selfbot state; RNDBOT accounts excluded"
+  },
+  "proposed_model": {
+    "database": "Character DB",
+    "tables": [
+      "ai_playerbot_active_roster_version",
+      "ai_playerbot_active_roster_member",
+      "ai_playerbot_active_roster_current",
+      "ai_playerbot_active_roster_change"
+    ],
+    "immutable_versions": true,
+    "ordered_members": true,
+    "unique_guid_per_version": true,
+    "operation_uuid_idempotency": true,
+    "transactional_current_pointer": true,
+    "before_after_sha256": true,
+    "foreign_key_to_characters_guid": false,
+    "automatic_replacement_allowed": false,
+    "append_only_expansion": true,
+    "missing_member_state": "DEGRADED"
+  },
+  "required_changes": {
+    "source": true,
+    "config": true,
+    "database_migration": true,
+    "deployment_started": false
+  },
+  "required_missing_member_example": {
+    "roster_target": 50,
+    "roster_available": 49,
+    "roster_online": 49,
+    "roster_state": "DEGRADED",
+    "automatic_replacement": false
+  },
+  "mutations": {
+    "source_files_changed": false,
+    "config_files_changed": false,
+    "database_changed": false,
+    "process_control_performed": false,
+    "new_evidence_files_only": true
+  }
+}

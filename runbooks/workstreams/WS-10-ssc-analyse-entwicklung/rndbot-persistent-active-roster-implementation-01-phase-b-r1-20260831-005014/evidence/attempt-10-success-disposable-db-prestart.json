@@ -1,0 +1,23 @@
+{
+  "captured_utc": "2026-08-30T23:24:48.8610406Z",
+  "executable": "C:\\TW\\ComTW\\DB\\bin\\mariadbd.exe",
+  "arguments": [
+    "--no-defaults",
+    "--datadir=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\data",
+    "--port=13317",
+    "--bind-address=127.0.0.1",
+    "--skip-networking=0",
+    "--skip-name-resolve",
+    "--pid-file=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\mariadbd.pid",
+    "--log-error=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\mariadbd-error.log"
+  ],
+  "command_line": "\"C:\\TW\\ComTW\\DB\\bin\\mariadbd.exe\" --no-defaults --datadir=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\data --port=13317 --bind-address=127.0.0.1 --skip-networking=0 --skip-name-resolve --pid-file=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\mariadbd.pid --log-error=C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\mariadbd-error.log",
+  "datadir": "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\db-disposable-r1-attempt10\\data",
+  "port": 13317,
+  "bind_address": "127.0.0.1",
+  "no_defaults": true,
+  "initialization_utility_note": "mariadb-install-db.exe does not implement --no-defaults; it only initializes this new explicit datadir. The server process itself is mandatory --no-defaults.",
+  "production_port_3307_accessed": false,
+  "production_datadir_used": false,
+  "windows_service_install": false
+}

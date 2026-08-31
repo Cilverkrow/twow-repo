@@ -1,0 +1,60 @@
+{
+  "captured_utc": "2026-08-31T12:28:38.9585296Z",
+  "cmake": "cmake version 4.4.2\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).",
+  "git": "git version 2.48.1.windows.1",
+  "mariadbd": "C:\\TW\\ComTW\\DB\\bin\\mariadbd.exe  Ver 11.4.10-MariaDB for Win64 on AMD64 (MariaDB Server)",
+  "mysql_client": "C:\\TW\\ComTW\\DB\\bin\\mysql.exe from 11.4.10-MariaDB, client 15.2 for Win64 (AMD64), source revision 054a893f1645b77e52a329a7fc8cf614eebd1fad",
+  "msvc": "Microsoft (R) C/C++-Optimierungscompiler Version 19.44.35228 für x64\nCopyright (C) Microsoft Corporation. Alle Rechte vorbehalten.\n",
+  "windows_sdk_selected": "10.0.26100.0",
+  "windows_target_reported_by_cmake": "10.0.26200",
+  "generator": "Visual Studio 17 2022",
+  "architecture": "x64",
+  "cmake_cache": {
+    "path": "C:\\TW\\rndbot-roster-phase-b-r2-20260831-131938\\build-clean-final\\CMakeCache.txt",
+    "sha256": "52296309A3F70B4C935CB10D322FB02D2F498C391BEDCBD2E92A9F722EE490A3",
+    "options": [
+      {
+        "name": "BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS",
+        "type": "BOOL",
+        "value": "OFF"
+      },
+      {
+        "name": "BUILD_PLAYERBOTS",
+        "type": "BOOL",
+        "value": "ON"
+      },
+      {
+        "name": "CMAKE_BUILD_TYPE",
+        "type": "STRING",
+        "value": "Release"
+      },
+      {
+        "name": "CMAKE_CONFIGURATION_TYPES",
+        "type": "STRING",
+        "value": "Debug;Release;MinSizeRel;RelWithDebInfo"
+      },
+      {
+        "name": "CMAKE_GENERATOR",
+        "type": "INTERNAL",
+        "value": "Visual Studio 17 2022"
+      },
+      {
+        "name": "CMAKE_GENERATOR_PLATFORM",
+        "type": "INTERNAL",
+        "value": "x64"
+      }
+    ]
+  },
+  "dependencies": {
+    "vcpkg_prefix": "C:/TW/ComTW/vcpkg/installed/x64-windows",
+    "boost": "1.92.0",
+    "mysql_library": "C:/TW/ComTW/DB/lib/libmariadb.lib"
+  },
+  "build_contract": {
+    "configuration": "Release",
+    "target": "mangosd",
+    "build_playerbots": "ON",
+    "build_persistent_roster_adapter_tests": "OFF",
+    "candidate_started": false
+  }
+}

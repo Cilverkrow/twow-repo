@@ -1,0 +1,119 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R1",
+  "captured_utc": "2026-08-31T00:01:36.5304672Z",
+  "result": "PASS",
+  "baseline": {
+    "commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+    "detached": true,
+    "input_phase_b_zip": {
+      "path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-20260831-003005.zip",
+      "size": 63054578,
+      "sha256": "C25B254ED780EB02254E40E2D2C161528906D96717850B6A92DAD4E1B7D13C94",
+      "created_utc": "2026-08-30T22:30:05.3256818Z",
+      "last_write_utc": "2026-08-30T22:30:08.0942557Z",
+      "file_version": null,
+      "product_version": null
+    }
+  },
+  "candidate": {
+    "exe": {
+      "path": "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\bin\\Release\\mangosd.exe",
+      "size": 20457984,
+      "sha256": "91FC789A7AB949C95C3FD7433B2D27414C10E13EB0EEEF17534BDFA0EDCC974A",
+      "created_utc": "2026-08-30T23:57:13.8649823Z",
+      "last_write_utc": "2026-08-30T23:57:18.1211222Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "pdb": {
+      "path": "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\bin\\Release\\mangosd.pdb",
+      "size": 205934592,
+      "sha256": "4704E5EA78D75059DC91BD7580B58D86CA218827D7C4C98FAD449F40F5BD623F",
+      "created_utc": "2026-08-30T23:57:13.9049815Z",
+      "last_write_utc": "2026-08-30T23:57:18.1331356Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "pe": {
+      "machine": "0x8664",
+      "linker_timestamp_unix": 1788134237,
+      "linker_timestamp_utc": "2026-08-30T23:57:17.0000000Z",
+      "pe32_plus": true,
+      "image_base": "0x0000000140000000",
+      "size_of_image": 20660224,
+      "codeview": [
+        {
+          "signature": "RSDS",
+          "guid": "BCE90ECA-F227-4A77-B4D8-7BA8232AE1C5",
+          "age": 1,
+          "pdb_path": "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\bin\\Release\\mangosd.pdb",
+          "size": 102
+        }
+      ]
+    },
+    "embedded_revision": "42b8a7f742548793910f",
+    "started": false,
+    "installed": false
+  },
+  "build": {
+    "result": "PASS",
+    "directory": "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final",
+    "target": "Release/mangosd only",
+    "cmake_cache": {
+      "path": "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\CMakeCache.txt",
+      "size": 34008,
+      "sha256": "5E50DD1A1EF0931BBFB316FA5692442CDD2DE6E2F636CD21984C991651ECDBC1",
+      "created_utc": "2026-08-30T23:51:16.7346829Z",
+      "last_write_utc": "2026-08-30T23:51:16.7346829Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "compiler_warnings": [
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\dep\\src\\g3dlite\\System.cpp(1700,17): warning C4838: Konvertierung von \"G3D::uint32\" zu \"int\" erfordert eine einschränkende Konvertierung [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\dep\\src\\g3dlite\\g3dlite.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\dep\\src\\g3dlite\\System.cpp(1700,22): warning C4838: Konvertierung von \"G3D::uint32\" zu \"int\" erfordert eine einschränkende Konvertierung [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\dep\\src\\g3dlite\\g3dlite.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\dep\\src\\g3dlite\\System.cpp(1700,27): warning C4838: Konvertierung von \"G3D::uint32\" zu \"int\" erfordert eine einschränkende Konvertierung [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\dep\\src\\g3dlite\\g3dlite.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\dep\\src\\g3dlite\\System.cpp(1700,32): warning C4838: Konvertierung von \"G3D::uint32\" zu \"int\" erfordert eine einschränkende Konvertierung [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\dep\\src\\g3dlite\\g3dlite.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\src\\shared\\shared.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\src\\shared\\shared.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\src\\game\\game.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\src\\game\\game.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\src\\game\\game.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\src\\game\\game.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\src\\game\\game.vcxproj]",
+      "C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\rndbot-roster-phase-b-r1-20260831-005014\\build-clean-final\\src\\mangosd\\mangosd.vcxproj]"
+    ],
+    "cmake_warnings": [
+      "CMake Warning (policy) at src/modules/PlayerBots/CMakeLists.txt:195 (find_package):"
+    ],
+    "errors": []
+  },
+  "tests": {
+    "unit_runs": 2,
+    "unit_result": "PASS",
+    "disposable_db_runs": 2,
+    "authoritative_disposable_db_tests": 24,
+    "authoritative_disposable_db_result": "PASS",
+    "static_gate": "PASS"
+  },
+  "production_comparison": {
+    "status_identical": true,
+    "dirty_files_byte_identical": true,
+    "protected_artifacts_identical": true
+  },
+  "prohibitions": {
+    "production_source_changed": false,
+    "production_exe_changed": false,
+    "active_config_changed": false,
+    "production_database_accessed": false,
+    "production_endpoint_3307_accessed": false,
+    "deployment_performed": false,
+    "candidate_started": false,
+    "bot_login_or_game_chat": false,
+    "llm_bridge_started": false,
+    "ollama_accessed": false,
+    "inference_performed": false,
+    "phase_c_started": false
+  },
+  "phase_c_gate": "AWAIT_B_R1_PACKAGE_AUDIT"
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-30T20:33:07.9682033Z",
+  "result": "PASS",
+  "primary_workstream_id": "WS-10",
+  "dependent_workstream_ids": ["WS-20", "WS-30"],
+  "canonical_registry_read_fully": true,
+  "global_hub_readme_read_fully": true,
+  "workstream_readmes_read_fully": ["WS-10", "WS-20", "WS-30"],
+  "hub_manifest": {
+    "path": "C:\\TW\\ComTW\\runbooks\\workstreams\\sha256-manifest.txt",
+    "sha256": "EEFB0EF80F2078CC853F96434533CE09984C14D3B14C6072AA94B27567221B1D",
+    "length": 1879,
+    "payload_entries": 11,
+    "hash_and_size_pass_count": 11,
+    "all_hashes_and_sizes_match": true
+  },
+  "referenced_artifact_count_definition": "11 hub payload files + hub manifest + prior closure ZIP + prior closure ZIP metadata + four prior primary artifacts + verified 02C-R1 stable-baseline ZIP",
+  "referenced_artifacts_verified_count": 19,
+  "source_of_truth_conflict_count": 0,
+  "unresolved_reference_count": 0,
+  "note": "Two non-registry alias paths considered during preflight did not exist. The canonical Registry paths WS-20-datenbank-migrationen and WS-30-serverkonfiguration were read and verified; the absent aliases are not package references and create no unresolved dependency.",
+  "hub_control_file_mutations": 0
+}

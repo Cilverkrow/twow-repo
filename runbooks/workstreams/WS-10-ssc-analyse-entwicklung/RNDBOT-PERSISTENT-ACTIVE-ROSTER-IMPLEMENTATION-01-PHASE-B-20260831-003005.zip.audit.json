@@ -1,0 +1,18 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B",
+  "audited_utc": "2026-08-30T22:30:40.3074931Z",
+  "zip_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-20260831-003005.zip",
+  "zip_size_bytes": 63054578,
+  "zip_entry_count": 81,
+  "zip_sha256": "C25B254ED780EB02254E40E2D2C161528906D96717850B6A92DAD4E1B7D13C94",
+  "sha256sums_entry_count": 80,
+  "sha256sums_sha256": "6BA6776E979F7FF6CCDFB456BD6456416ABFEB27EC8216E3D078AC4388A0CE91",
+  "unsafe_entries": 0,
+  "missing_entries": 0,
+  "hash_mismatches": 0,
+  "unexpected_unmanifested_entries": 0,
+  "candidate_exe_sha256": "DC51D605EB088A3264666311E2C4C73D96A5FC8AB9D938B0A019A175B6FB09F2",
+  "phase_b_result": "BLOCKED",
+  "blocker": "DISPOSABLE_DB_UNAVAILABLE_127.0.0.1_3307_ERROR_2002_WIN32_10061",
+  "phase_c_gate": "AWAIT_SEPARATE_PACKAGE_AUDIT"
+}

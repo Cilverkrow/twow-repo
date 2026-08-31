@@ -1,0 +1,101 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R1",
+  "captured_utc": "2026-08-31T00:01:34.7839865Z",
+  "production_source": "C:\\TW\\ComTW\\source",
+  "git_head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "status_lines": [
+    " M src/modules/PlayerBots/CMakeLists.txt",
+    " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+    " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+    " M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+    "?? bin/Release/MoveMapGen.pdb",
+    "?? bin/Release/mangosd.pdb",
+    "?? bin/Release/mapextractor.pdb",
+    "?? bin/Release/realmd.pdb",
+    "?? bin/Release/vmap_assembler.pdb",
+    "?? bin/Release/vmapextractor.pdb"
+  ],
+  "dirty_files": [
+    {
+      "relative_path": "src/modules/PlayerBots/CMakeLists.txt",
+      "size": 11546,
+      "sha256": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+      "size": 27227,
+      "sha256": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+      "size": 2053,
+      "sha256": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71"
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+      "size": 222917,
+      "sha256": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A"
+    },
+    {
+      "relative_path": "bin/Release/MoveMapGen.pdb",
+      "size": 8253440,
+      "sha256": "D21D297D0905F3D4DD8F2F995BB55099C1E923603014FC63B54EC30175D233D0"
+    },
+    {
+      "relative_path": "bin/Release/mangosd.pdb",
+      "size": 212389888,
+      "sha256": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873"
+    },
+    {
+      "relative_path": "bin/Release/mapextractor.pdb",
+      "size": 1921024,
+      "sha256": "560D6676BAE78AA1BE4DC0D5164C0176CCC6F211D845A3FF4E4DEB2C5FFDC690"
+    },
+    {
+      "relative_path": "bin/Release/realmd.pdb",
+      "size": 6991872,
+      "sha256": "5E8584A65B973651D90B5BC2F38F755F16C2EE14ED46CA4592C9EA2BCFC3CAAF"
+    },
+    {
+      "relative_path": "bin/Release/vmap_assembler.pdb",
+      "size": 6565888,
+      "sha256": "496EF245672C828F4CD6868CB7BE1BF3D1BCDE370044042FFDB25E98B3543B69"
+    },
+    {
+      "relative_path": "bin/Release/vmapextractor.pdb",
+      "size": 2109440,
+      "sha256": "F4C3B57484204E1A2038621D167055D66FB56BC677CCA5F7AA0AB7CAC61A9838"
+    }
+  ],
+  "protected_artifacts": {
+    "production_exe": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+      "size": 20376576,
+      "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "created_utc": "2026-08-25T16:54:55.7705743Z",
+      "last_write_utc": "2026-08-25T16:54:59.8378295Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "mangosd_conf": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.conf",
+      "size": 69515,
+      "sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "created_utc": "2026-08-25T16:56:21.0361503Z",
+      "last_write_utc": "2026-08-29T15:38:43.2579727Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "aiplayerbot_conf": {
+      "path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+      "size": 283717,
+      "sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "created_utc": "2026-08-25T16:56:21.0383696Z",
+      "last_write_utc": "2026-08-29T16:04:14.8193927Z",
+      "file_version": null,
+      "product_version": null
+    }
+  },
+  "database_accessed": false,
+  "production_endpoint_3307_accessed": false
+}

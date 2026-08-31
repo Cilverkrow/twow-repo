@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-30T20:33:07.9682033Z",
+  "result": "PASS",
+  "prior_zip": {
+    "path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\RNDBOT-PERSISTENT-ACTIVE-ROSTER-ANALYSIS-01-PACKAGE-CLOSURE-20260830-215016.zip",
+    "sha256": "A03C9D7D42D5A8CE46D74598AAE27315F1FD8B6D8A03A7052241DD28745222B5",
+    "length": 547569,
+    "file_entry_count": 21,
+    "duplicate_entry_count": 0,
+    "internal_manifest_rows": 20,
+    "internal_manifest_pass_count": 20,
+    "unchanged": true
+  },
+  "prior_external_metadata": {
+    "path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung\\RNDBOT-PERSISTENT-ACTIVE-ROSTER-ANALYSIS-01-PACKAGE-CLOSURE-20260830-215016.zip.metadata.json",
+    "sha256": "7A9B8773635B4102BD0F2C554E49C860720C105262DF17B4AE2684A5F0CB1276",
+    "length": 2012,
+    "unchanged": true
+  },
+  "stable_baseline_reference": {
+    "path": "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-R1-PASS-20260830-010122.zip",
+    "sha256": "BCACFFB731B9D3C6B5446993B0DC80DA4FC50E15B2034795A990CEA60FDCB6AB",
+    "length": 7806779,
+    "file_entry_count": 9,
+    "internal_manifest_rows": 8,
+    "internal_manifest_pass_count": 8,
+    "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9"
+  }
+}

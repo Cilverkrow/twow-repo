@@ -1,0 +1,99 @@
+{
+  "task_id": "RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-C0",
+  "mode": "READ_ONLY_PRODUCTION_PREFLIGHT_AND_ROSTER_SELECTION",
+  "observed_utc": "2026-08-31T15:23:05.007923Z",
+  "result": "PASS",
+  "primary_workstream": "WS-10-ssc-analyse-entwicklung",
+  "dependent_workstreams": [
+    "WS-20-datenbank-migrationen",
+    "WS-30-konfiguration",
+    "WS-40-build-deployment",
+    "WS-50-tests-laufzeitvalidierung",
+    "WS-60-betrieb-backup-restore"
+  ],
+  "pins": {
+    "b_r2_zip_sha256": "D32453BE1F3283EFB3306E76F47E984CFB3228FB24AE814D04012C4B16C82088",
+    "candidate_exe_sha256": "965CBEA7EDA8CC28EAFD8E9DCEB58187B167563B2644699B23B0C9FD47967679",
+    "candidate_pdb_sha256": "4E5EE6FF1C99012B9282F923249040B1885F43DAA599863338B2A64CB9DC0A80",
+    "production_exe_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "mangosd_conf_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+    "aiplayerbot_conf_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF"
+  },
+  "package_verification": {
+    "outer_hash_match": true,
+    "zip_entries": 109,
+    "internal_manifest_records": 107,
+    "internal_manifest_failures": 0,
+    "candidate_hashes_match": true
+  },
+  "production_observation": {
+    "mangosd_running": false,
+    "realmd_running": false,
+    "mariadb_running": true,
+    "mariadb_process_name": "mysqld",
+    "mariadb_pid": 46980,
+    "listener_3307": true,
+    "listener_address": "127.0.0.1",
+    "process_control_performed": false
+  },
+  "database_evidence": {
+    "access": "SELECT_ONLY",
+    "snapshot_utc": "2026-08-31T15:23:05.007923Z",
+    "query_sha256": "B9CA0D9359EC4339D8DE9222DA64CEEAF6F4ADE8801B6CD217B409E3012A93CC",
+    "raw_output_sha256": "B7368DC8B39C1667B149EA3DCAC266A63149B8D7D134B54B1F701663F7B98530",
+    "raw_output_bytes": 702698,
+    "stderr_bytes": 0,
+    "session_transaction_mode": "READ_ONLY",
+    "database_changed": false
+  },
+  "selection_policy": {
+    "identity": "CHARACTER_GUID",
+    "target": 50,
+    "source": "non-expired owner=0/event=add rows",
+    "ordering": "ascending numeric Character GUID",
+    "automatic_trim": false,
+    "automatic_top_up": false,
+    "automatic_replacement": false,
+    "requires_user_approval": true
+  },
+  "counts": {
+    "current_active_rndbot": 0,
+    "eligible_active_rndbot": 0,
+    "historical_add_rows": 86,
+    "historical_add_distinct": 86,
+    "expired_add_rows": 86,
+    "rndbot_stock_characters": 4500,
+    "base_eligible_stock": 4500,
+    "missing_active_to_target": 50,
+    "proposed_roster": 0
+  },
+  "hashes": {
+    "shortlist_sha256": "A552DE67342DF7406213A040C68E801C20977BA8561173685CBD98B4B709004D",
+    "selected_tsv_sha256": "194BC0F3380D923EAADF2E8E897CBB08FAB90F997DDDF3542C3F2D53C035078D",
+    "roster_guid_set_sha256": "F43E15589953B06D89FA7A81B177736BA5120B52711AF1FD8821D38F5904D6E7",
+    "canonical_initialize_request_sha256": "904A0758CB864EF1C7D32B83643C821F1E8C761247010049A21466CBF1B49E0C"
+  },
+  "explicit_selection": {
+    "source": "evidence/ROSTER-CANDIDATES-SHORTLIST-50-from-expired.txt",
+    "guid_count": 50,
+    "strict_numeric_ascending": true,
+    "duplicates": 0,
+    "matched_dated_candidates": 50,
+    "matched_expired_source": 50,
+    "base_eligible": 50,
+    "operation_id": "566f48aa-07e2-49d1-9ddb-e43d63c4e635",
+    "request_applied": false
+  },
+  "blocker": null,
+  "phase_c_gate": "AWAIT_SEPARATE_USER_APPROVAL_AND_TASK",
+  "mutations": {
+    "database": false,
+    "config": false,
+    "production_exe": false,
+    "process_control": false,
+    "candidate_started": false,
+    "phase_c_started": false,
+    "llm_work_resumed": false
+  },
+  "next_task_authorized": false
+}

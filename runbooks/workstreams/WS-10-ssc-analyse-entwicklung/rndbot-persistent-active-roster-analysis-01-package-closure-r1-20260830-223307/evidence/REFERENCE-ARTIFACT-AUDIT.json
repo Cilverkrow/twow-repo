@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-30T19:50:11.1446942Z",
+  "artifact": "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-R1-PASS-20260830-010122.zip",
+  "expected_sha256": "BCACFFB731B9D3C6B5446993B0DC80DA4FC50E15B2034795A990CEA60FDCB6AB",
+  "actual_sha256": "BCACFFB731B9D3C6B5446993B0DC80DA4FC50E15B2034795A990CEA60FDCB6AB",
+  "sha256_match": true,
+  "expected_length": 7806779,
+  "actual_length": 7806779,
+  "length_match": true,
+  "declared_zip_entry_count": 9,
+  "internal_manifest_entries": 8,
+  "internal_manifest_all_match": true,
+  "candidate_exe_sha256": "2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE",
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9"
+}

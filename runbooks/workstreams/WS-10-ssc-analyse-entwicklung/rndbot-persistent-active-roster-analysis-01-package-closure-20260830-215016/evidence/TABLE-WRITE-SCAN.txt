@@ -1,0 +1,31 @@
+TARGET=ai_playerbot_random_bots
+SCAN_MODE=READ_ONLY_SOURCE_SEARCH
+
+RUNTIME_WRITES
+src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp:2127 UPDATE time for owner=0 bot events during SyncEventTimers
+src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp:3560 DELETE owner/bot/event in SetEventValue
+src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp:3567 INSERT owner/bot/time/validIn/event/value/data in SetEventValue
+src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp:3573 INSERT owner/bot/time/validIn/event/value in SetEventValue
+src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp:4296 DELETE every event row for one bot in Remove
+src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp:4718 DELETE every non-temporary event in HandleConsoleReset
+src/modules/PlayerBots/playerbot/RandomPlayerbotFactory.cpp:684 DELETE orphan rows after character/account deletion
+src/modules/PlayerBots/playerbot/RandomPlayerbotFactory.cpp:702 DELETE all rows for one temporary bot
+src/modules/PlayerBots/playerbot/RandomPlayerbotFactory.cpp:712 DELETE all temporary event rows
+
+MANUAL_SQL_WRITES
+src/modules/PlayerBots/sql/other/delete_randombots.sql:1-2 DELETE/INSERT bot_delete value 1
+src/modules/PlayerBots/sql/other/delete_all_randombots.sql:1-2 DELETE/INSERT bot_delete value 2
+src/modules/PlayerBots/sql/other/database_merge_classic.sql:42-43 CREATE LIKE and INSERT SELECT full table
+src/modules/PlayerBots/sql/other/database_merge_tbc.sql:42-43 CREATE LIKE and INSERT SELECT full table
+src/modules/PlayerBots/sql/other/database_merge_wotlk.sql:42-43 CREATE LIKE and INSERT SELECT full table
+src/modules/PlayerBots/sql/other/reset_randombots.sql:1-15 CREATE replacement event table
+
+SCHEMA_WRITES
+sql/character_updates/20260708055500_ai_playerbot_random_bots_index.sql:11 ADD nonunique index idx_owner_bot_event
+sql/tools/playerbot_fix_collation.sql:39 ALTER table collation
+src/modules/PlayerBots/sql/characters/ai_playerbot_random_bots.sql:1-15 DROP/CREATE base table
+
+CENTRAL_WRITER=RandomPlayerbotMgr::SetEventValue
+UNIQUE_OWNER_BOT_EVENT_CONSTRAINT=NO
+COMPOSITE_OWNER_BOT_EVENT_INDEX_UNIQUE=NO
+DESIRED_ROSTER_STORAGE_SUITABLE=NO
