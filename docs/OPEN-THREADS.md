@@ -8,7 +8,7 @@ An entry here is not authorization to start it. Before work, use `AGENTS.md`, re
 
 | ID | Owner | Open thread | Confirmed current state | Required next gate |
 |---|---|---|---|---|
-| OT-002 | WS-10, WS-20, WS-30, WS-40, WS-50, WS-60 | Persistent-roster live Phase C | C0 produced a verified ordered 50-GUID snapshot and an unapplied canonical `INITIALIZE` request. The source now has a tested local feature commit and this handover is integrating it into `main`; no migration, active config change, install, apply, or restart test occurred. | Verify the final pushed `main`, then explicitly approve backup, migration, config, install, local-console apply, exact roster checks, two restarts, and rollback as a separate live task. |
+| OT-002 | WS-10, WS-20, WS-30, WS-40, WS-50, WS-60 | Persistent-roster live Phase C | C0 produced a verified ordered 50-GUID snapshot and an unapplied canonical `INITIALIZE` request. Tested source commit `3c2b931…` is integrated on local `main`; no migration, active config change, install, apply, or restart test occurred. | Verify the pushed `main`, then explicitly approve backup, migration, config, install, local-console apply, exact roster checks, two restarts, and rollback as a separate live task. |
 | OT-003 | WS-10 | Integrate the production LLM adapter into the real source tree | LLM Phase B-R1 passed isolated tests and a clean build. `ExternalLLMBridgeService.*` remains under runbook source copies, not the main `src/` tree. The root source contains the earlier local debug bridge instead. | Rebase the approved Phase B-R1 delta onto current `main`, review exactly the intended files, rerun the 683-case suite and clean build, and do not deploy. |
 | OT-004 | WS-10, WS-30, WS-40, WS-50, WS-70 | LLM live Phase C | Paused behind stable roster identity. No production package installation, active config enablement, live child, Ollama inference, or game-chat delivery was authorized by the completed phases. | Finish OT-001/OT-002, define the deployment package and pins, then authorize a bounded live test separately. |
 | OT-005 | WS-00, WS-40, WS-50, WS-60 | Repository-to-live deployment contract | The Git repository and live workspace are intentionally independent. There is no canonical manifest-driven synchronization or deployment pipeline between them. | Design a dry-run-first deployment manifest with explicit source/config/migration/script payloads, destination checks, backups, rollback, and no implicit live-tree overwrite. |
@@ -21,7 +21,7 @@ Primary evidence: [OT-001 integration report](../runbooks/workstreams/WS-10-ssc-
 | ID | Owner | Completion |
 |---|---|---|
 | OT-023 | WS-10, WS-50 | ADR-0019 selects pinned external Windows resource/library inputs; `docs/BUILD-RESOURCES.md` records identity, materialization, and cleanup. |
-| OT-001 | WS-10, WS-50 | Exactly 28 source paths passed unit, disposable-database adapter, scope/security, and clean Release-build gates and were secured in a feature commit for this handover's `main` integration. No deployment occurred. |
+| OT-001 | WS-10, WS-50 | Exactly 28 source paths passed unit, disposable-database adapter, scope/security, and clean Release-build gates. Commit `3c2b931…` is integrated on local `main`; no deployment occurred. |
 
 ## P1 — gameplay and production correctness
 

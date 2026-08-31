@@ -5,12 +5,12 @@ Snapshot: 2026-08-31. This is the repository-root entry point for unfinished wor
 ## Current handover state
 
 - Repository `main` was clean at `f1f2e01026e54cd5c119c1e8e95fc107a01f4e2b` before this documentation handover began.
-- The persistent-roster change is secured as an exact 28-path local feature commit on `work/ot-001-r1-persistent-roster-integration`; this handover operation will rebase and fast-forward it into `main` after the documentation commit.
+- The persistent-roster change is integrated on local `main` as exact 28-path source commit `3c2b93102d2106cc7c4f9170598b56de060b41d3`; its stable patch ID is `acd6fb63b7ede8882c20422f9b903161f2cd33b6`.
 - Unit tests, two real disposable-MariaDB adapter runs, and a clean Windows Release build passed. The required icon and compiled libraries were verified external inputs, removed from the feature worktree after the build, and were not staged.
 - The 50-GUID initial roster and canonical request are verified but unapplied. Phase C, deployment, active configuration changes, production database changes, bot login, and LLM live work remain unauthorized.
 - The live workspace and this repository are separate. Never treat a commit as deployment.
 
-Primary current evidence: [OT-001 integration](runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-20260831T192201Z/REPORT.md), [build recovery](runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-recovery-20260831T220000Z/REPORT.md), [roster C0](runbooks/workstreams/WS-10-ssc-analyse-entwicklung/rndbot-persistent-active-roster-implementation-01-phase-c0-20260831-135717/REPORT.md), and [Claude Code handover](docs/HANDOVER-CLAUDE-CODE.md).
+Primary current evidence: [OT-001 integration](runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-20260831T192201Z/REPORT.md), [build recovery](runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-recovery-20260831T220000Z/REPORT.md), [repository integration closure](runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-repository-integration-closure-20260831T205652Z/REPORT.md), [roster C0](runbooks/workstreams/WS-10-ssc-analyse-entwicklung/rndbot-persistent-active-roster-implementation-01-phase-c0-20260831-135717/REPORT.md), and [Claude Code handover](docs/HANDOVER-CLAUDE-CODE.md).
 
 ## P0 — architecture and release blockers
 
@@ -23,7 +23,7 @@ Primary current evidence: [OT-001 integration](runbooks/workstreams/WS-10-ssc-an
 ## Completed in the current handover
 
 - [x] **OT-023 — Windows resource provenance gate (WS-10/WS-50).** ADR-0019 keeps the verified icon and compiled libraries as pinned external build prerequisites. Temporary materialization and cleanup are documented in `docs/BUILD-RESOURCES.md`.
-- [x] **OT-001 — Persistent-roster source integration (WS-10/WS-50).** Exactly 28 approved source paths passed scope/security gates, two fresh unit runs, two previously verified disposable-database adapter runs, and a clean Release build. A source commit exists and is being integrated into `main` by this handover; no build output is tracked or deployed.
+- [x] **OT-001 — Persistent-roster source integration (WS-10/WS-50).** Exactly 28 approved source paths passed scope/security gates, two fresh unit runs, two previously verified disposable-database adapter runs, and a clean Release build. Commit `3c2b931…` is integrated on local `main`; no build output is tracked or deployed.
 
 ## P1 — correctness and scale
 
@@ -54,6 +54,6 @@ Primary current evidence: [OT-001 integration](runbooks/workstreams/WS-10-ssc-an
 
 - No binaries, archives, live configurations, database dumps, credentials, runtime logs, client game data, or secret-bearing evidence in Git.
 - No Phase C, deployment, migration, process control, or live inference is authorized by this checklist.
-- Preserve upstream history and the tested OT-001 feature commit until its `main` integration and remote push are verified.
+- Preserve upstream history and treat `3c2b931…` as the tested OT-001 source baseline; do not rewrite it during restructuring.
 - Historical chat content remains in place. Record decisions and actionable conclusions, not transcript copies.
 - See [Footguns](docs/FOOTGUNS.md), [External requirements](docs/EXTERNAL-REQUIREMENTS.md), and the [ADR index](docs/adr/README.md) before restructuring.

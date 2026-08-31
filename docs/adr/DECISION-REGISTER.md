@@ -14,7 +14,7 @@ The accepted durable decisions are recorded by ADR-0001 through ADR-0019. They c
 - The donation progress table migration was applied and the feature-specific persistence path passed; an unrelated PlayerBot deadlock kept the broad runtime test's strict overall result at `FAIL`.
 - Persistent-roster Phase B-R2 and LLM-bridge Phase B-R1 passed isolated tests and clean builds. Neither result authorizes production deployment.
 - The 50-GUID roster shortlist, ordered snapshot, and unapplied `INITIALIZE` request were generated and verified in Phase C0. They were not applied.
-- The 28-path persistent-roster integration passed unit tests, two real disposable-database adapter runs, and a clean Windows Release build. A local feature commit exists; the current repository handover integrates it into `main` without deploying it.
+- The 28-path persistent-roster integration passed unit tests, two real disposable-database adapter runs, and a clean Windows Release build. Source commit `3c2b931…` is integrated on local `main` without deployment.
 - Relevant sanitized text-only runbooks remain in this repository for the upcoming restructuring; a separate evidence repository is deferred.
 - Binary Windows resource and library inputs remain external, pinned prerequisites under ADR-0019.
 

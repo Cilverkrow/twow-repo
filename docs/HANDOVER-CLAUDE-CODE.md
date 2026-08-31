@@ -16,12 +16,12 @@ This handover prepares a future, explicitly authorized refactoring of the indepe
 
 - The independent Git repository is `C:\TW\GitHub\twow-repo`; the live/agent workspace is `C:\TW\ComTW`. They are deliberately not synchronized automatically.
 - Pre-documentation `main` and `origin/main` were `f1f2e01026e54cd5c119c1e8e95fc107a01f4e2b`.
-- The exact 28-path persistent-roster delta is secured in a tested feature commit on `work/ot-001-r1-persistent-roster-integration`. The current handover operation integrates that commit into `main`; verify the final commit IDs from Git rather than relying on this pre-integration prose.
+- The exact 28-path persistent-roster delta is integrated on local `main` as commit `3c2b93102d2106cc7c4f9170598b56de060b41d3`, parent `f28d9abf415f91174114b20e11f21e9c659faaa0`, with stable patch ID `acd6fb63b7ede8882c20422f9b903161f2cd33b6`.
 - Two fresh unit runs, two real disposable-MariaDB adapter runs, and a clean Windows Release build passed. Candidate EXE/PDB files remain local and untracked.
 - ADR-0019 resolves the Windows resource boundary: the icon and compiled libraries are pinned external prerequisites. Their temporary copies/junctions were removed after the successful build.
 - The 50-GUID roster request is validated but unapplied. Production code, executable, configs, database, and processes were not changed by OT-001.
 
-Evidence: [integration report](../runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-20260831T192201Z/REPORT.md), [recovery report](../runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-recovery-20260831T220000Z/REPORT.md), and [C0 report](../runbooks/workstreams/WS-10-ssc-analyse-entwicklung/rndbot-persistent-active-roster-implementation-01-phase-c0-20260831-135717/REPORT.md).
+Evidence: [integration report](../runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-20260831T192201Z/REPORT.md), [recovery report](../runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-recovery-20260831T220000Z/REPORT.md), [repository integration closure](../runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-repository-integration-closure-20260831T205652Z/REPORT.md), and [C0 report](../runbooks/workstreams/WS-10-ssc-analyse-entwicklung/rndbot-persistent-active-roster-implementation-01-phase-c0-20260831-135717/REPORT.md).
 
 ## Refactoring objectives
 

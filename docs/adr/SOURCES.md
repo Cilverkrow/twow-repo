@@ -72,5 +72,6 @@ New primary evidence imported as sanitized text:
 
 - `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-20260831T192201Z/`
 - `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-recovery-20260831T220000Z/`
+- `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-repository-integration-closure-20260831T205652Z/`
 
-The recovery evidence supersedes the earlier generic “MSBuild stalled” explanation with the reproducible final blocker `RC2135 file not found: mangosd.ico`. It does not supersede the successful unit, real-adapter, scope, secret, or binary gates from the first OT-001 package.
+The recovery evidence supersedes the earlier generic “MSBuild stalled” explanation with the reproducible blocker `RC2135 file not found: mangosd.ico`. The later repository-integration closure records the successful external-input recovery, clean build, candidate hashes, unchanged 28-path patch, and local `main` integration. Neither later package rewrites the earlier point-in-time evidence.
