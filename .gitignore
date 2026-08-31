@@ -1,12 +1,119 @@
-/samples/
-/data/
+# Build trees and generated output
 /build/
-/.vscode/
-*.kate-swp
-*.exe
+/bin/
+/out/
+/cmake-build-*/
+/samples/
 /src/shared/revision.h
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
 
-# Local backup copies made before editing (never meant to be committed)
+# Live server, database, client data, and logs
+/server/
+/DB/
+/data/
+/logs/
+/vcpkg/
+*.pid
+*.log
+*.log.*
+*.dmp
+*.core
+
+# Compiled or otherwise binary artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
+*.obj
+*.o
+*.pch
+*.pdb
+*.ilk
+*.exp
+*.aps
+*.class
+*.jar
+*.bin
+*.dat
+*.key
+*.cr
+*.ico
+*.bmp
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Archives and packaged deliverables
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+*.bz2
+*.xz
+
+# WoW/client/server runtime assets
+*.mpq
+*.dbc
+*.map
+*.vmap
+*.mmap
+*.mmtile
+*.m2
+*.wmo
+*.blp
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.conf
+!*.conf.dist
+!*.conf.dist.in
+!*.conf.example
+!*.example.conf
+*.pem
+*.pfx
+*.p12
+*.keystore
+credentials.json
+secrets/
+**/secrets/
+
+# Database runtime state and dumps
+*.ibd
+*.MYD
+*.MYI
+*.frm
+ibdata*
+ib_logfile*
+aria_log*
+*.sql.gz
+*.dump
+
+# Runbook payloads that are evidence packages, not source
+runbooks/**/artifacts/candidate/
+runbooks/**/artifacts/production/
+runbooks/**/*.base64
+runbooks/**/*.base64.*
+
+# Local backup copies made before editing
 *.bak
 *.bak.*
 *.bak-*
+*~
+
+# Editors and operating systems
+/.vscode/
+/.vs/
+/.idea/
+*.kate-swp
+*.swp
+.DS_Store
+Thumbs.db
