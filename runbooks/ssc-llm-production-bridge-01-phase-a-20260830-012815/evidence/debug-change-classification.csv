@@ -1,5 +1,0 @@
-file,baseline_blob,dirty_sha256,delta,classification,production_adoption
-src/modules/PlayerBots/CMakeLists.txt,43b500056fe25e0b89e0bc68008fa91765570dc6,D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE,+1/-0,"Debug-only dep/include needed by the direct HTTP experiment",NO
-src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp,3b9cadb778434d48c0a5129cbe0b976fcbe9e6f7,24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592,+362/-0,"Direct httplib client; arbitrary endpoint/API key; OpenAI-like parser; bypasses external bridge",NO
-src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h,8b17e5e3b4eab0d59fc913508545087cbfa10de3,8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71,+38/-2,"Singleton mutex/future/account-ID debug state; lacks request_id+bot_guid identity",NO
-src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp,1e388d197a5a1b781711f4c3331c9924da531e18,9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A,+94/-14,"Moderator llm/llm result commands and game-chat debug output",NO

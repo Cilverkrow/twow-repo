@@ -1,9 +1,0 @@
-{
-  "model": "qwen2.5:7b",
-  "message": {
-    "role": "assistant",
-    "content": "",
-    "tool_calls": []
-  },
-  "done": true
-}

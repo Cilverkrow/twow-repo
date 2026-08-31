@@ -1,2 +1,0 @@
-WARNING: option --ssl-verify-server-cert is disabled, because of an insecure passwordless login.
-ERROR 2026 (HY000): TLS/SSL error: no credentials. Error 0x8009030E(SEC_E_NO_CREDENTIALS)

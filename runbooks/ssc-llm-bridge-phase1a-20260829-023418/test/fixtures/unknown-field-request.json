@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "request_id": "11111111-1111-4111-8111-111111111111",
-  "bot_guid": 18281,
-  "created_utc": "2030-01-01T00:00:00.000Z",
-  "expires_utc": "2030-01-01T00:00:30.000Z",
-  "message": "Hallo",
-  "model": "not-allowed"
-}
