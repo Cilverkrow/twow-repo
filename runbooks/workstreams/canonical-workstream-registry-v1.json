@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "task_id": "PROJECT-COLLAB-HUB-01",
+  "generated_utc": "2026-08-30T17:39:32Z",
+  "project_side": "LOCAL",
+  "result": "PASS",
+  "mode": "AUTHORIZED_LOCAL_COLLABORATION_HUB_MATERIALIZATION",
+  "preflight": {
+    "preflight_result": "PASS",
+    "local_chat_titles_verified": 9,
+    "canonical_workstream_count": 9,
+    "referenced_existing_directory_count": 41,
+    "referenced_existing_file_count": 43,
+    "unassigned_existing_object_count": 0,
+    "multi_owner_existing_object_count": 0
+  },
+  "source_inputs": [
+    {
+      "source": "local-project-structure-inventory-v1-r1.json",
+      "path": "C:\\TW\\ComTW\\runbooks\\project-structure-local-inventory-r1-closure-20260830T162349Z\\local-project-structure-inventory-v1-r1.json",
+      "bytes": 8817,
+      "sha256": "77E97BB469D98453830D4F925C89700EB04A28F1DB1F02BAA10681A18F09F433",
+      "approved": true
+    },
+    {
+      "source": "canonical-workstream-matrix-v1.json",
+      "path": "C:\\TW\\ComTW\\runbooks\\project-structure-alignment-20260830T163408Z\\canonical-workstream-matrix-v1.json",
+      "bytes": 14011,
+      "sha256": "F78359A6F6EE69E413113C3F73BCABE2617DB15FC2783AA8FD3D8A6DD8172042",
+      "approved": true
+    },
+    {
+      "source": "proposed-ui-action-plan-v1.md",
+      "path": "C:\\TW\\ComTW\\runbooks\\project-structure-alignment-20260830T163408Z\\proposed-ui-action-plan-v1.md",
+      "bytes": 5758,
+      "sha256": "EBD7C62CCCDD60DFB499714774B24B7B36A85B5E86F80FC404ABD36050536CBA",
+      "approved": true
+    }
+  ],
+  "historical_content_policy": {
+    "policy": "CROSS_REFERENCES_ONLY",
+    "copy_historical_chat_content": false,
+    "rewrite_historical_chat_content": false,
+    "delete_legacy_chats": false
+  },
+  "overlap_rules": [
+    "WS-40 entwickelt und versioniert Skripte; WS-50 besitzt Ausführungs-, Dienst- und Live-Smoke-Evidenz.",
+    "WS-20 besitzt migrationslokale Rücksicherung; WS-60 besitzt langfristige, historische und referenzserverbezogene Backups.",
+    "WS-10 besitzt technische LLM-/PlayerBot-Brücke und Kontexttransport; WS-70 besitzt Persona-Inhalt, Verhalten und Dialogregeln.",
+    "Fachdokumentation bleibt beim jeweiligen Fachbereich; WS-80 besitzt nur projektweite Entscheidungen, ADRs und Indizes.",
+    "WS-30 besitzt Konfigurationswerte, Ports und Pfade; WS-40 besitzt Verteilungs- und Steuerskripte; WS-50 besitzt die beobachtete Laufzeitwirkung.",
+    "Historische Fehlzuordnungen werden nicht umgeschrieben; neue Arbeit folgt der kanonischen Workstream-ID."
+  ],
+  "legacy_references": [
+    {
+      "historical_chat": "Bot Anzahl einschätzen",
+      "allowed_references": [
+        "WS-30"
+      ]
+    },
+    {
+      "historical_chat": "Serverdateien gemeinsam nutzen",
+      "allowed_references": [
+        "WS-40",
+        "WS-50",
+        "WS-60"
+      ]
+    }
+  ],
+  "workflow": [
+    "1. Arbeitsthema bestimmen.",
+    "2. Workstream im Root-Index auswählen.",
+    "3. Ziel-README lesen.",
+    "4. Nur referenzierte Bestände konsultieren.",
+    "5. Neue fachliche Evidenz nur im korrekten Workstream-Verzeichnis ablegen.",
+    "6. Bei Überschneidung nur Querverweise setzen, keine Kopie/Umbenennung/Verfremdung.",
+    "7. Historische Inhalte nicht umschreiben."
+  ],
+  "workstreams": [
+    {
+      "workstream_id": "WS-00",
+      "canonical_title": "Projektsteuerung und Workspace",
+      "local_chat": "Projektsteuerung und Workspace",
+      "online_chat": "Projektsteuerung und Workspace",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-00-projectsteuerung-workspace",
+      "owner_rule": "Projektkarte, Routing, Governance und Übergaben",
+      "counts": {
+        "directory_count": 0,
+        "top_level_file_count": 0
+      },
+      "references": {
+        "directories": [],
+        "files": []
+      },
+      "legacy_references": [],
+      "overlap_rules": [],
+      "new_evidence_location": "Neue projektsteuerungsbezogene Evidenz nur im WS-00-Hubverzeichnis ablegen; Querverweise auf andere WS nach Bedarf."
+    },
+    {
+      "workstream_id": "WS-10",
+      "canonical_title": "SSC – Analyse und Entwicklung",
+      "local_chat": "SSC – Analyse und Entwicklung",
+      "online_chat": "SSC – Analyse und Entwicklung",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung",
+      "owner_rule": "SSC, PlayerBot, Source-Baselines und technische LLM-Brücke.",
+      "counts": {
+        "directory_count": 19,
+        "top_level_file_count": 13
+      },
+      "references": {
+        "directories": [
+          "C:\\TW\\ComTW\\runbooks\\_superseded-phase1b-package-build-20260829-163519",
+          "C:\\TW\\ComTW\\runbooks\\_superseded-phase1b-package-build-20260829-163519-timestamp-audit",
+          "C:\\TW\\ComTW\\runbooks\\playerbot-discovery-matrix-preflight-02-20260830-173815",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase0-20260829-015349",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-20260829-023418",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-hardening-20260829-035317",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1b-live-20260829-163519",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-v1-english-correction-20260830-131349",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-20260830-012815",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-r1-20260830-163931",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-r2-20260830-170407",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121",
+          "C:\\TW\\ComTW\\runbooks\\ssc-ollama-manual-scaling-01-phase1-20260829-210352",
+          "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-01-20260829-193848",
+          "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02-20260829-204358",
+          "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02a2-20260829-213222",
+          "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02a3-20260829-215858",
+          "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02c-20260829-233607",
+          "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02c-r1-20260830-004551"
+        ],
+        "files": [
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-v1-english-correction-20260830-131349-deliverable-audit.json",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-v1-english-correction-20260830-131349-deliverables.zip",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-20260830-012815-deliverables.zip",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-r1-20260830-163931-deliverables.zip",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-r2-20260830-170407-deliverables.zip",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121-deliverables.zip",
+          "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121-deliverables.zip.metadata.json",
+          "C:\\TW\\ComTW\\runbooks\\SSC-OLLAMA-MANUAL-SCALING-01-PHASE1-20260829-210352.zip",
+          "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-01-20260829.zip",
+          "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02B-20260829-222913.zip",
+          "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-BLOCKED-20260830-001200.zip",
+          "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-R1-PASS-20260830-010122.zip",
+          "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-R1-PASS-20260830-010122.zip.metadata.json"
+        ]
+      },
+      "legacy_references": [],
+      "overlap_rules": [
+        "WS-10-Technik bleibt für technische LLM-/PlayerBot-Implementierung, Brückenlogik und Kontexttransport.",
+        "WS-70-Only Persona-Inhalt, Dialog- und Gedächtnisregeln."
+      ],
+      "new_evidence_location": "Neue fachliche Evidenz unter WS-10 ablegen (z. B. neue LLM-Bridge-Funde, technischer Brückenstand)."
+    },
+    {
+      "workstream_id": "WS-20",
+      "canonical_title": "Datenbank und Migrationen",
+      "local_chat": "Datenbank und Migrationen",
+      "online_chat": "Datenbank und Migrationen",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-20-datenbank-migrationen",
+      "owner_rule": "Datenbank, Migrationen und direkt zugehörige Rücksicherung.",
+      "counts": {
+        "directory_count": 14,
+        "top_level_file_count": 19
+      },
+      "references": {
+        "directories": [
+          "C:\\TW\\ComTW\\runbooks\\acl-context-lab",
+          "C:\\TW\\ComTW\\runbooks\\autodonationpoints-preflight-20260829-034455",
+          "C:\\TW\\ComTW\\runbooks\\db-profession-riding-discovery-01-20260830-010856",
+          "C:\\TW\\ComTW\\runbooks\\donation-point-backup-20260829-183323",
+          "C:\\TW\\ComTW\\runbooks\\donation-point-manual-20260829-182942",
+          "C:\\TW\\ComTW\\runbooks\\donation-point-migration-20260829-183829",
+          "C:\\TW\\ComTW\\runbooks\\donation-point-progress-migration-20260829-173126",
+          "C:\\TW\\ComTW\\runbooks\\donation-point-progress-migration-20260829-180600",
+          "C:\\TW\\ComTW\\runbooks\\donation-point-progress-migration-20260829-181230",
+          "C:\\TW\\ComTW\\runbooks\\donation-runtime-test-01-20260829-184426",
+          "C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab",
+          "C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3",
+          "C:\\TW\\ComTW\\runbooks\\trainer-control-20260829-014115-699",
+          "C:\\TW\\ComTW\\runbooks\\trainer-purchase-money-loss-20260829-004949-873"
+        ],
+        "files": [
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-114C52D2.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-1B9D3F82.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-20260827-205920-completion-candidate.md",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-20260827-205920-completion-candidate.zip",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-20260827-205920-completion-revised-candidate.md",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-20260827-205920-completion-revised-candidate.zip",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-20260827-205920-completion.md",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-3904689F.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-89C6C934.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-db-ready-candidate.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-F92F86D6.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-module-inspection-candidate.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-module-metadata-candidate.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-module-reset-candidate.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-normalize-candidate.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-post-run-audit-candidate.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-post-run-audit-candidate.zip",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-readiness-smoke-candidate.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-char-migration-semantic-acl-candidate.ps1"
+        ]
+      },
+      "legacy_references": [],
+      "overlap_rules": [
+        "WS-20 ist Eigentümer für migrationslokale Rücksicherung.",
+        "WS-60 erhält langfristige/historische Backups."
+      ],
+      "new_evidence_location": "Neue fachliche Evidenz zu Migration, ACL, Spenden, Trainern und Charaktermigration unter WS-20 sammeln."
+    },
+    {
+      "workstream_id": "WS-30",
+      "canonical_title": "Serverkonfiguration",
+      "local_chat": "Serverkonfiguration",
+      "online_chat": "Serverkonfiguration",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-30-serverkonfiguration",
+      "owner_rule": "Künftige sanitisierte Konfigurations-, Port- und Pfadevidenz.",
+      "counts": {
+        "directory_count": 0,
+        "top_level_file_count": 0
+      },
+      "references": {
+        "directories": [],
+        "files": []
+      },
+      "legacy_references": [
+        "Bot Anzahl einschätzen"
+      ],
+      "overlap_rules": [
+        "WS-30 ist Owner für Konfigurationswerte, Ports und Pfade.",
+        "WS-40: Verteilungs- und Steuerskripte.",
+        "WS-50: Laufzeitwirkung referenzieren."
+      ],
+      "new_evidence_location": "Neue fachliche Evidenz zu konfigurierbaren Server- und Netzwerkparametern ausschließlich in WS-30 ablegen."
+    },
+    {
+      "workstream_id": "WS-40",
+      "canonical_title": "Deployment und Skripte",
+      "local_chat": "Deployment und Skripte",
+      "online_chat": "Deployment und Skripte",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-40-deployment-skripte",
+      "owner_rule": "Skripte, Launcher, Archive und Hilfsprogramme.",
+      "counts": {
+        "directory_count": 4,
+        "top_level_file_count": 3
+      },
+      "references": {
+        "directories": [
+          "C:\\TW\\ComTW\\runbooks\\compile-launcher-regeneration-lab",
+          "C:\\TW\\ComTW\\runbooks\\compile-script-archive-20260828",
+          "C:\\TW\\ComTW\\runbooks\\runtime-file-archive-20260828",
+          "C:\\TW\\ComTW\\runbooks\\shutdown-helper-console-lab"
+        ],
+        "files": [
+          "C:\\TW\\ComTW\\runbooks\\compile-tortoise-wow-launcher-regeneration-candidate.ps1",
+          "C:\\TW\\ComTW\\runbooks\\compile-tortoise-wow-launcher-regeneration-review.zip",
+          "C:\\TW\\ComTW\\runbooks\\shutdown-helper-title-compatibility-review.zip"
+        ]
+      },
+      "legacy_references": [
+        "Serverdateien gemeinsam nutzen"
+      ],
+      "overlap_rules": [
+        "WS-40 entwickelt und versioniert Skripte; WS-50 übernimmt Ausführungsmessung.",
+        "WS-30 liefert zugehörige Konfigurationsparameter."
+      ],
+      "new_evidence_location": "Neue Deploy-/Skriptbelege, Launcher- oder Helper-Artefakte nur in WS-40 ablegen."
+    },
+    {
+      "workstream_id": "WS-50",
+      "canonical_title": "Build und Serverbetrieb",
+      "local_chat": "Build und Serverbetrieb",
+      "online_chat": "Build und Serverbetrieb",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-50-build-serverbetrieb",
+      "owner_rule": "Buildausführung, Dienste und Live-Smoke-Evidenz.",
+      "counts": {
+        "directory_count": 2,
+        "top_level_file_count": 3
+      },
+      "references": {
+        "directories": [
+          "C:\\TW\\ComTW\\runbooks\\post-completion-live-smoke-20260829-000920-697",
+          "C:\\TW\\ComTW\\runbooks\\world-shutdown-smoke-evidence-20260828-160724-135"
+        ],
+        "files": [
+          "C:\\TW\\ComTW\\runbooks\\tw-world-shutdown-smoke-35C08FAF.ps1",
+          "C:\\TW\\ComTW\\runbooks\\tw-world-shutdown-smoke-35C08FAF.ps1.attempted",
+          "C:\\TW\\ComTW\\runbooks\\tw-world-shutdown-smoke-count-fix-candidate.ps1"
+        ]
+      },
+      "legacy_references": [
+        "Serverdateien gemeinsam nutzen"
+      ],
+      "overlap_rules": [
+        "WS-50 besitzt Laufzeitbeobachtung und Live-Smoke.",
+        "WS-40 stellt Ausführungs- und Verteilungsmechanik; WS-30 liefert Konfiguration."
+      ],
+      "new_evidence_location": "Neue Betriebsnachweise/Smoke-Logs oder Ausführungsverifikation als neue Artefakte in WS-50 speichern."
+    },
+    {
+      "workstream_id": "WS-60",
+      "canonical_title": "Referenzserver und Backups",
+      "local_chat": "Referenzserver und Backups",
+      "online_chat": "Referenzserver und Backups",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-60-referenzserver-backups",
+      "owner_rule": "Künftige langfristige, historische und referenzserverbezogene Sicherungen.",
+      "counts": {
+        "directory_count": 0,
+        "top_level_file_count": 0
+      },
+      "references": {
+        "directories": [],
+        "files": []
+      },
+      "legacy_references": [
+        "Serverdateien gemeinsam nutzen"
+      ],
+      "overlap_rules": [
+        "WS-60 ist Eigentümer für langfristige/historische Referenzsicherungen.",
+        "WS-20 trägt migrationslokale Rücksicherungen."
+      ],
+      "new_evidence_location": "Neue Referenzserver- oder Backup-spezifische Evidenz in WS-60 dokumentieren."
+    },
+    {
+      "workstream_id": "WS-70",
+      "canonical_title": "Bot-Persönlichkeiten",
+      "local_chat": "Bot-Persönlichkeiten",
+      "online_chat": "Bot-Persönlichkeiten",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-70-bot-persoenlichkeiten",
+      "owner_rule": "Bot-Personality-Paketierung, Prompts, Verhalten, Gedächtnis und Dialogregeln.",
+      "counts": {
+        "directory_count": 2,
+        "top_level_file_count": 5
+      },
+      "references": {
+        "directories": [
+          "C:\\TW\\ComTW\\runbooks\\bot-personality-discovery-20260828-223311",
+          "C:\\TW\\ComTW\\runbooks\\bot-personality-discovery-20260828-224032"
+        ],
+        "files": [
+          "C:\\TW\\ComTW\\runbooks\\bot-personality-discovery-20260828-224032.zip",
+          "C:\\TW\\ComTW\\runbooks\\bot-personality-discovery-20260828-224032.zip.base64-chunks.tsv",
+          "C:\\TW\\ComTW\\runbooks\\bot-personality-discovery-20260828-224032.zip.base64.txt",
+          "C:\\TW\\ComTW\\runbooks\\bot-personality-discovery-20260828-224032.zip.base64.txt.chunks.txt",
+          "C:\\TW\\ComTW\\runbooks\\personality-context-contract-v1.md"
+        ]
+      },
+      "legacy_references": [],
+      "overlap_rules": [
+        "WS-70 ist Owner für Persona-Domäne; WS-10 hält technische Transport- und Brückenlogik."
+      ],
+      "new_evidence_location": "Neue Persona-/Dialog-/Gedächtnis-Artefakte in WS-70 ablegen; technische LLM-Transport-Artefakte bleiben bei WS-10."
+    },
+    {
+      "workstream_id": "WS-80",
+      "canonical_title": "Dokumentation und Entscheidungen",
+      "local_chat": "Dokumentation und Entscheidungen",
+      "online_chat": "Dokumentation und Entscheidungen",
+      "hub_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-80-dokumentation-entscheidungen",
+      "owner_rule": "Projektweite Entscheidungen, ADRs und Indizes.",
+      "counts": {
+        "directory_count": 0,
+        "top_level_file_count": 0
+      },
+      "references": {
+        "directories": [],
+        "files": []
+      },
+      "legacy_references": [],
+      "overlap_rules": [
+        "WS-80 sammelt projektweite Entscheidungen/Indizes.",
+        "Fachdaten bleiben am jeweiligen Fach-Workstream."
+      ],
+      "new_evidence_location": "Neue verbindliche Entscheidungen, ADRs und Indexe in WS-80 erfassen."
+    }
+  ]
+}
