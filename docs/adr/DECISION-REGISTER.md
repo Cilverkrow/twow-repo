@@ -1,5 +1,7 @@
 # Decision register
 
+Operational follow-up is maintained in [Open project threads](../OPEN-THREADS.md). Known implementation and operating hazards are maintained in [Footguns](../FOOTGUNS.md), and non-repository prerequisites are listed in [External requirements](../EXTERNAL-REQUIREMENTS.md).
+
 ## Accepted decisions
 
 The accepted durable decisions are recorded by ADR-0001 through ADR-0017. They cover project governance, evidence authority, chat-history policy, repository boundaries, provenance, modularization, operational ownership, database safety, PlayerBot population constraints, persistent roster semantics, the external LLM bridge, personalities, donation progress, professions, and riding.

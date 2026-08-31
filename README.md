@@ -1,7 +1,7 @@
 
 # Tortoise-WoW
 
-> **Cilverkrow private-server project repository.** This is a source-only, secret-free project view separated from the live workspace. Compiled binaries, game/client data, database state, live configuration, and credentials are intentionally excluded. Start with [repository boundaries](docs/REPOSITORY-BOUNDARIES.md), [provenance](docs/PROVENANCE.md), and the [modularization roadmap](docs/MODULARIZATION-ROADMAP.md).
+> **Cilverkrow private-server project repository.** This is a source-only, secret-free project view separated from the live workspace. Compiled binaries, game/client data, database state, live configuration, and credentials are intentionally excluded. Start with the [project documentation map](docs/README.md), including current open threads, known footguns, external requirements, repository boundaries, provenance, and architecture decisions.
 
 This is an unofficial, community driven, restoration of the 1.18.1 patch of Turtle-WoW, with some additions for solo play.  
 This project is not to be used for profit or to misrepresent itself, or anyone using it, as the original creators  
