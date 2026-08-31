@@ -41,6 +41,7 @@ set (game_SRCS
     ObjectMgr.cpp
     ObjectPosSelector.cpp
     PlayerDump.cpp
+    ModuleSlots.cpp
     QuestDef.cpp
     ReputationMgr.cpp
     ScriptObjects.h
@@ -249,6 +250,7 @@ set (game_SRCS
     ObjectPosSelector.h
     PlayerDump.h
     PerformanceMonitor.h
+    ModuleSlots.h
     QuestDef.h
     ReputationMgr.h
     ScriptedGossip.h

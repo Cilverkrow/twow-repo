@@ -12,8 +12,6 @@
 
 #if defined(_WIN32)
 #include <windows.h>
-#include <winnls.h>
-#pragma comment(lib, "Normaliz.lib")
 #endif
 
 namespace ai
@@ -130,29 +128,64 @@ std::string EncodeBase64Url(std::string const& input)
     return output;
 }
 
+// Canonical-form check for the actor and reason fields.
+//
+// One implementation for every platform, deliberately. This used to branch: on
+// Windows it validated UTF-8 and then full NFC via IsNormalizedString(), while
+// everywhere else it validated only that the bytes were well-formed UTF-8. The
+// same admin request was therefore rejected as BAD_ACTOR on Windows and
+// accepted on Linux. The whole roster contract rests on canonical bytes and
+// their SHA-256, so two platforms disagreeing about what "canonical" means
+// undermines the guarantee it exists to provide - and the unit suite that pins
+// this behaviour had only ever been run on Windows.
+//
+// The portable rule: well-formed UTF-8 that contains no combining mark. A
+// decomposed sequence always carries one ("e" + U+0301), a precomposed
+// character never does (U+00E9), which is exactly the distinction the contract
+// needs and the one the tests pin.
+//
+// Known limit, stated rather than hidden: this is an approximation of NFC, not
+// NFC. It does not catch a singleton or compatibility case such as U+212B
+// ANGSTROM SIGN, which NFC folds to U+00C5 and which the old Windows path would
+// have rejected. Closing that gap means a real normalisation table - ICU or
+// equivalent - on both platforms, which is a dependency decision rather than
+// something to leave as a silent platform difference.
+bool IsCombiningMark(uint32_t cp)
+{
+    return (cp >= 0x0300 && cp <= 0x036F)   // combining diacritical marks
+        || (cp >= 0x1AB0 && cp <= 0x1AFF)   // ... extended
+        || (cp >= 0x1DC0 && cp <= 0x1DFF)   // ... supplement
+        || (cp >= 0x20D0 && cp <= 0x20FF)   // ... for symbols
+        || (cp >= 0xFE20 && cp <= 0xFE2F);  // half marks
+}
+
 bool IsUtf8Nfc(std::string const& value)
 {
-#if defined(_WIN32)
-    if (value.empty())
-        return true;
-    int needed = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value.data(), static_cast<int>(value.size()), nullptr, 0);
-    if (needed <= 0)
-        return false;
-    std::wstring wide(static_cast<size_t>(needed), L'\0');
-    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value.data(), static_cast<int>(value.size()), &wide[0], needed) != needed)
-        return false;
-    return IsNormalizedString(NormalizationC, wide.data(), needed) == TRUE;
-#else
     for (size_t i = 0; i < value.size();)
     {
         unsigned char c = static_cast<unsigned char>(value[i]);
         size_t count = c < 0x80 ? 1 : (c >= 0xc2 && c <= 0xdf ? 2 : (c >= 0xe0 && c <= 0xef ? 3 : (c >= 0xf0 && c <= 0xf4 ? 4 : 0)));
         if (!count || i + count > value.size()) return false;
-        for (size_t j = 1; j < count; ++j) if ((static_cast<unsigned char>(value[i + j]) & 0xc0) != 0x80) return false;
+
+        uint32_t cp = count == 1 ? c : (c & (0x7Fu >> count));
+        for (size_t j = 1; j < count; ++j)
+        {
+            unsigned char cont = static_cast<unsigned char>(value[i + j]);
+            if ((cont & 0xc0) != 0x80) return false;
+            cp = (cp << 6) | (cont & 0x3Fu);
+        }
+
+        // Overlong encodings and surrogates are not well-formed UTF-8, and both
+        // would let two different byte strings mean the same text.
+        if (count == 2 && cp < 0x80) return false;
+        if (count == 3 && (cp < 0x800 || (cp >= 0xD800 && cp <= 0xDFFF))) return false;
+        if (count == 4 && (cp < 0x10000 || cp > 0x10FFFF)) return false;
+
+        if (IsCombiningMark(cp)) return false;
+
         i += count;
     }
     return true;
-#endif
 }
 
 bool Take(std::vector<std::string> const& lines, size_t& cursor, std::string const& key, std::string& value)

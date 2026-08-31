@@ -98,10 +98,82 @@ Binding on every module, service, migration and script. Full text in
 
 - **ADRs** (`docs/adr/`) are permanent decisions of record.
 - **`docs/FOOTGUNS.md`** is reference material — read it before operating anything.
-- **GitHub issues** are the operational tracker, generated from `docs/issues/*.md` by
-  `ops/issues/import-issues.sh`. Edit the manifest, not the issue.
+- **GitHub issues** are the operational tracker.
 - **`TODOS.md` and `docs/OPEN-THREADS.md` are indexes, never execution authorization**
   (FG-074).
+
+### Working with issues
+
+Issues are a **projection of `docs/issues/*.md`**, not the source of truth. Edit the
+manifest and re-run the importer; do not hand-edit an issue body, because the next
+import will overwrite it.
+
+```bash
+ops/issues/import-issues.sh                    # dry run (default)
+ops/issues/import-issues.sh --apply            # create anything missing
+ops/issues/import-issues.sh --apply --update   # push manifest edits into existing issues
+ops/issues/import-issues.sh --apply --only REF-002
+```
+
+**Filing new work.** Add a block to the right manifest, then import:
+
+| Manifest | For |
+|---|---|
+| `10-refactor-tasks.md` | restructuring work (`REF-*`) |
+| `20/21/22-runbook-sweep*.md` | items recovered from `runbooks/` |
+| `30-deferred-architecture.md` | designed but deliberately out of scope (`ARCH-*`) |
+
+The `id` is the stable key and prefixes the issue title. **The importer matches on that
+id prefix, never on the title** — matching on titles once created 27 duplicate issues the
+moment titles were reworded.
+
+**Reading comments.** Check periodically:
+
+```bash
+gh issue list --repo Cilverkrow/twow-repo --state open --limit 100 --json number --jq '.[].number' \
+  | while read n; do
+      c=$(gh issue view "$n" --repo Cilverkrow/twow-repo --json comments --jq '.comments|length')
+      [ "$c" -gt 0 ] && echo "#$n has $c comment(s)"
+    done
+```
+
+A comment saying something is fixed is a lead, not a verdict. **Verify against the source
+before closing** — a fix may live in the live workspace and never have been committed
+here, and the repo is what CI and the container build from. Say which it is.
+
+**Updating and closing.** Close with evidence: the commit, the file and line, or the CI
+run. If a claim turns out to be stale, comment with what you actually found rather than
+silently editing the body. If new work falls out of an issue, file it as its own manifest
+entry instead of growing the original.
+
+### Ownership when several agents work in parallel
+
+An agent owns **`modules/<name>/**` and nothing else.**
+
+**Never edit these** — they are shared, and a change here is a request to the core owner,
+not a change you make:
+
+| File | Why |
+|---|---|
+| `src/game/ScriptObjects.h`, `src/game/ScriptMgr.{h,cpp}` | every hook lands here; enum tails conflict textually |
+| `src/game/ModuleSlots.h` | slot capacity is core; **claim a slot by name at runtime instead** |
+| `modules/CMakeLists.txt`, `cmake/ConfigureModules.cmake` | the framework itself |
+| `src/game/World.h` config enums | values are indices into config arrays |
+| root `CMakeLists.txt` | every option lands twice, 400 lines apart |
+
+**In `modules/<name>/<name>.cmake`, only ever touch `mod_<sanitized_name>`.** Never
+`target_link_libraries(modules ...)` or `target_include_directories(modules ...)` — that
+target is shared, so a `PUBLIC` addition lands on every other module's compile line. CI
+rejects it.
+
+Other rules:
+- **Namespace config keys** as `<ModuleName>.<Key>`. The ACE config namespace is flat and
+  shared; two modules using `Enable` collide silently.
+- **Own your schema.** A module writes only its own tables. CI rejects a module migration
+  naming `tw_world`/`tw_char`/`tw_logon`/`tw_logs` (ADR-0024 invariant 2).
+- **Use `-DMODULES=dynamic` while developing.** Each module gets its own target, so
+  compile flags are isolated and an edit rebuilds one file with no `mangosd` relink.
+  Release builds are static.
 
 ## Before changing anything
 

@@ -16,27 +16,44 @@ class PlayerbotMgr;
 //
 // Free functions rather than members because a module cannot add members to a
 // core class, which is the whole point of the slots.
+//
+// The slot ids are claimed by name at first use. The function-local statics
+// make that a one-time cost; afterwards each accessor is the same array index
+// it was when the ids were an enum in the core. The core no longer knows these
+// names exist, so adding a module costs no core edit and no rebuild.
+
+inline uint8 BotAiSlot()
+{
+    static uint8 const slot = ClaimModuleSlot("playerbots.ai");
+    return slot;
+}
+
+inline uint8 BotMgrSlot()
+{
+    static uint8 const slot = ClaimModuleSlot("playerbots.mgr");
+    return slot;
+}
 
 inline PlayerbotAI* GetBotAI(Player const* player)
 {
-    return player ? player->GetModuleSlotAs<PlayerbotAI>(MODULE_SLOT_BOT_AI) : nullptr;
+    return player ? player->GetModuleSlotAs<PlayerbotAI>(BotAiSlot()) : nullptr;
 }
 
 inline PlayerbotMgr* GetBotMgr(Player const* player)
 {
-    return player ? player->GetModuleSlotAs<PlayerbotMgr>(MODULE_SLOT_BOT_MGR) : nullptr;
+    return player ? player->GetModuleSlotAs<PlayerbotMgr>(BotMgrSlot()) : nullptr;
 }
 
 inline void SetBotAI(Player* player, PlayerbotAI* ai)
 {
     if (player)
-        player->SetModuleSlot(MODULE_SLOT_BOT_AI, ai);
+        player->SetModuleSlot(BotAiSlot(), ai);
 }
 
 inline void SetBotMgr(Player* player, PlayerbotMgr* mgr)
 {
     if (player)
-        player->SetModuleSlot(MODULE_SLOT_BOT_MGR, mgr);
+        player->SetModuleSlot(BotMgrSlot(), mgr);
 }
 
 // Lifecycle. Were Player::Create/RemovePlayerbotAI and ...Mgr.
