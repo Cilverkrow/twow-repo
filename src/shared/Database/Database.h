@@ -27,10 +27,11 @@
 #include "Policies/ThreadingModel.h"
 #include <ace/TSS_T.h>
 #include "SqlPreparedStatement.h"
-#include <memory>
-#include <thread>
-#include <optional>
 #include <atomic>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <thread>
 
 class SqlTransaction;
 class SqlResultQueue;

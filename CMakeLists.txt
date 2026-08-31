@@ -56,6 +56,19 @@ option(ALLOW_TURTLE_ADDONS "Allow Turtle addons" ON)
 option(BUILD_PLAYERBOTS "Build the cmangos/playerbots subsystem" OFF)
 option(BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS "Build the isolated persistent-roster real database adapter test" OFF)
 
+# Target CPU baseline for GCC/Clang -march. The historical value was "native",
+# which bakes the build host's exact CPU into the binary: fine for a hand-built
+# server, fatal for a container image or a CI artifact that has to run somewhere
+# else (illegal instruction at startup, no warning). x86-64-v2 is the portable
+# floor the upstream Docker images already target. Set "native" back for a
+# host-only build, or an empty string to omit -march entirely.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64|i[3-6]86)$")
+  set(TW_ARCH_DEFAULT "x86-64-v2")
+else()
+  set(TW_ARCH_DEFAULT "")
+endif()
+set(TW_ARCH "${TW_ARCH_DEFAULT}" CACHE STRING "Value passed to -march= on GCC/Clang; empty omits the flag")
+
 ConfigureModuleBuildOptions()
 
 if(UNIX)
@@ -494,7 +507,12 @@ if(UNIX)
     #set(BUILD_ADDITIONAL_FLAGS "${BUILD_ADDITIONAL_FLAGS} -fsanitize=unsigned-integer-overflow")
   endif()
 
-  set(BUILD_ADDITIONAL_FLAGS "${BUILD_ADDITIONAL_FLAGS} --no-warnings -fexceptions -fnon-call-exceptions -march=native -O3 -pipe ")
+  # --no-warnings was here and hid every diagnostic the compiler produced, which
+  # is the opposite of what CI needs. Warnings are on; nothing is -Werror yet.
+  set(BUILD_ADDITIONAL_FLAGS "${BUILD_ADDITIONAL_FLAGS} -fexceptions -fnon-call-exceptions -O3 -pipe ")
+  if(TW_ARCH)
+    set(BUILD_ADDITIONAL_FLAGS "${BUILD_ADDITIONAL_FLAGS} -march=${TW_ARCH} ")
+  endif()
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(PROFILE_GENERATE)
       set(BUILD_ADDITIONAL_FLAGS "${BUILD_ADDITIONAL_FLAGS} -fprofile-generate")

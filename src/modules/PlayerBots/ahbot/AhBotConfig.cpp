@@ -25,11 +25,32 @@ void LoadSet(std::string value, T &res)
 
 bool AhBotConfig::Initialize()
 {
-    if (!config.SetSource(SYSCONFDIR"ahbot.conf", "AHBot_"))
+    // Same problem PlayerbotAIConfig::Initialize() already solved: SYSCONFDIR is
+    // baked in at configure time, so a server installed anywhere other than the
+    // CMAKE_INSTALL_PREFIX it was built with silently fails to find this file and
+    // switches the feature off. That is invisible in a container, where the build
+    // and run prefixes differ by construction. Look next to the mangosd.conf that
+    // is actually in use first, then fall back to the compiled-in path.
+    std::string ahbotConfigFile;
+
+    std::string const mainConfig = sConfig.GetFilename();
+    size_t const slash = mainConfig.find_last_of("/\\");
+    if (slash != std::string::npos)
+        ahbotConfigFile = mainConfig.substr(0, slash + 1) + "ahbot.conf";
+
+    if (ahbotConfigFile.empty() || !config.SetSource(ahbotConfigFile, "AHBot_"))
     {
-        sLog.outString("AhBot is Disabled. Unable to open configuration file ahbot.conf");
-        return false;
+        if (!config.SetSource(SYSCONFDIR"ahbot.conf", "AHBot_"))
+        {
+            sLog.outString("AhBot is Disabled. No configuration file at %s%s%s.",
+                ahbotConfigFile.empty() ? "" : ahbotConfigFile.c_str(),
+                ahbotConfigFile.empty() ? "" : " or ",
+                SYSCONFDIR"ahbot.conf");
+            return false;
+        }
     }
+
+    sLog.outString("AhBot configuration read from %s.", config.GetFilename().c_str());
 
     enabled = config.GetBoolDefault("AhBot.Enabled", true);
 

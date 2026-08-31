@@ -16,6 +16,19 @@
 #include <algorithm>
 #include <cctype>
 
+// Deciding whether stdin is a real console. A failed migration used to pause
+// unconditionally so an operator watching a console window could read the error
+// before it closed. Headless is the problem case: under the container entrypoint
+// stdin is an open FIFO that never delivers a line, so the pause never returns
+// and the server hangs with no output explaining why.
+#if defined(_WIN32)
+#include <io.h>
+#define TW_STDIN_IS_TTY() (_isatty(_fileno(stdin)) != 0)
+#else
+#include <unistd.h>
+#define TW_STDIN_IS_TTY() (isatty(fileno(stdin)) != 0)
+#endif
+
 using namespace std::filesystem;
 
 #ifndef TW_ENABLED_MODULES
@@ -234,8 +247,12 @@ namespace DBUpdater
             if (!ExecuteUpdate(update, targetDatabase))
             {
                 sLog.outError("[DB Auto-Updater] Migration %s with hash %s failed to apply.", update.Name.c_str(), update.Hash.c_str());
-                std::string line;
-                std::getline(std::cin, line);
+                if (TW_STDIN_IS_TTY())
+                {
+                    sLog.outError("[DB Auto-Updater] Press Enter to continue shutting down.");
+                    std::string line;
+                    std::getline(std::cin, line);
+                }
                 return false;
            }
         }
