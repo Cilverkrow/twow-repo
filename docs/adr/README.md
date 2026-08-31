@@ -31,6 +31,21 @@ Chat text is provenance, not runtime truth. When evidence conflicts, use the pre
 | [0017](ADR-0017-profession-and-riding-targets.md) | Player/bot profession split and early-riding target | Accepted, implementation pending | WS-10 / WS-20 / WS-30 |
 | [0018](ADR-0018-runbook-evidence-retention-before-restructuring.md) | Keep sanitized runbook evidence in the main repository for now | Accepted | WS-00 / WS-80 |
 | [0019](ADR-0019-external-windows-build-inputs.md) | Keep binary Windows build inputs external and pinned | Accepted | WS-10 / WS-50 |
+| [0020](ADR-0020-two-repo-upstream-split.md) | Split upstream and project code across two repositories | Proposed | WS-00 / WS-10 / WS-50 |
+| [0021](ADR-0021-module-boundaries-and-schema-ownership.md) | One module system with exclusive schema ownership | Proposed | WS-10 / WS-20 |
+| [0022](ADR-0022-test-strategy.md) | Unit-first testing with characterization before extraction | Proposed | WS-40 / WS-50 |
+| [0023](ADR-0023-containerization-and-one-command-contract.md) | Containers and a one-command build/run contract | Proposed | WS-40 / WS-50 |
+| [0024](ADR-0024-project-invariants.md) | Project invariants, bot persistence first among them | Proposed | WS-00 |
+| [0025](ADR-0025-repository-and-project-structure.md) | Repository layout as a binding, enforced rule | Proposed | WS-00 / WS-80 |
+| [0026](ADR-0026-project-lineage-and-provenance.md) | Record the project's upstream lineage | Proposed | WS-80 / WS-50 |
+| [0027](ADR-0027-database-platform.md) | MariaDB 11.8 as the single database platform | Proposed | WS-20 / WS-30 |
+| [0028](ADR-0028-platform-and-ci-strategy.md) | Linux and Docker deploy; Windows compile-only | Proposed | WS-40 / WS-50 |
+| [0029](ADR-0029-work-tracking.md) | Issues generated from manifests in Git | Proposed | WS-00 / WS-80 |
+
+ADRs 0020 to 0029 record the OT-025 restructuring. They are **Proposed** until the
+restructuring lands; ADR-0020 supersedes the "keep one tree" half of ADR-0005, and
+ADR-0028 removes the CI half of ADR-0019's provisioning problem without changing that
+decision for local Windows builds.
 
 ## Creating later ADRs
 
