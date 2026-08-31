@@ -216,6 +216,7 @@ target_include_directories(${LIBRARY_NAME}
   # (MapNodes/AbstractPlayer.h, Detour navmesh, framework Network).
   PRIVATE ${CMAKE_SOURCE_DIR}/src/game/MapNodes
   PRIVATE ${CMAKE_SOURCE_DIR}/dep/recastnavigation
+  PRIVATE ${CMAKE_SOURCE_DIR}/dep/include
   PRIVATE ${CMAKE_SOURCE_DIR}/src/framework/Network
 )
 

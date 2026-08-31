@@ -34,6 +34,27 @@
 using namespace ai;
 using namespace MaNGOS;
 
+namespace
+{
+    constexpr size_t MAX_DEBUG_CHAT_MESSAGE_SIZE = 255;
+
+    std::vector<std::string> SplitUtf8DebugMessage(const std::string& message)
+    {
+        std::vector<std::string> chunks;
+        size_t offset = 0;
+        while (offset < message.size())
+        {
+            size_t end = std::min(offset + MAX_DEBUG_CHAT_MESSAGE_SIZE, message.size());
+            while (end < message.size() && end > offset && (static_cast<unsigned char>(message[end]) & 0xC0) == 0x80)
+                --end;
+
+            chunks.emplace_back(message.substr(offset, end - offset));
+            offset = end;
+        }
+        return chunks;
+    }
+}
+
 bool DebugAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
@@ -58,7 +79,7 @@ bool DebugAction::Execute(Event& event)
         return HandleUnmount(event, requester, text);
     else if (text.find("area") == 0 && isMod)
         return HandleArea(event, requester, text);
-    else if (text.find("llm ") == 0 && isMod)
+    else if ((text == "llm" || text.find("llm ") == 0) && isMod)
         return HandleLLM(event, requester, text);
     else if (text.find("chatreplydo ") == 0 && isMod)
         return HandleChatReplyDo(event, requester, text);
@@ -1232,18 +1253,77 @@ bool DebugAction::HandleArea(Event& event, Player* requester, const std::string&
 
 bool DebugAction::HandleLLM(Event& event, Player* requester, const std::string& text)
 {
-    Player* player = bot;
-    std::map<std::string, std::string> jsonFill;
-    jsonFill["<prompt>"] = text.substr(4);
-    jsonFill["<context>"] = "";
-    jsonFill["<pre prompt>"] = "";
-    jsonFill["<post prompt>"] = "";
-    std::string json = BOT_TEXT2(sPlayerbotAIConfig.llmApiJson, jsonFill);
-    std::vector<std::string> debugLines = { json };
-    std::string response = PlayerbotLLMInterface::Generate(json, sPlayerbotAIConfig.llmGenerationTimeout, sPlayerbotAIConfig.llmMaxSimultaniousGenerations, debugLines);
-    for(auto line : debugLines)
-        ai->TellPlayerNoFacing(requester, line, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
-    ai->TellPlayerNoFacing(requester, response, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+    if (!requester)
+        return true;
+
+    WorldSession* session = requester->GetSession();
+    if (!session)
+        return true;
+
+    if (session->GetSecurity() < SEC_MODERATOR)
+    {
+        ai->TellPlayerNoFacing(requester, "LLM debug requests require moderator access.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        return true;
+    }
+
+    const uint32 accountId = session->GetAccountId();
+    if (text == "llm result")
+    {
+        PlayerbotLLMInterface::DebugResult result;
+        switch (PlayerbotLLMInterface::TakeDebugResult(accountId, result))
+        {
+        case PlayerbotLLMInterface::DebugResultStatus::None:
+            ai->TellPlayerNoFacing(requester, "No LLM debug result is available.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+            break;
+        case PlayerbotLLMInterface::DebugResultStatus::Pending:
+            ai->TellPlayerNoFacing(requester, "The LLM debug request is still running.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+            break;
+        case PlayerbotLLMInterface::DebugResultStatus::NotOwner:
+            ai->TellPlayerNoFacing(requester, "The active LLM debug request belongs to another moderator.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+            break;
+        case PlayerbotLLMInterface::DebugResultStatus::Ready:
+        {
+            const std::string message = (result.success ? "LLM debug response: " : "LLM debug error: ") + result.message;
+            for (const std::string& chunk : SplitUtf8DebugMessage(message))
+                ai->TellPlayerNoFacing(requester, chunk, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+            break;
+        }
+        }
+        return true;
+    }
+
+    if (text.size() <= 4 || text.compare(0, 4, "llm ") != 0)
+    {
+        ai->TellPlayerNoFacing(requester, "Usage: llm <prompt> or llm result", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        return true;
+    }
+
+    std::string request;
+    std::string error;
+    if (!PlayerbotLLMInterface::BuildDebugRequest(sPlayerbotAIConfig.llmApiJson, text.substr(4), sPlayerbotAIConfig.llmContextLength, request, error))
+    {
+        ai->TellPlayerNoFacing(requester, "LLM debug error: " + error, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        return true;
+    }
+
+    switch (PlayerbotLLMInterface::StartDebugRequest(request, accountId, error))
+    {
+    case PlayerbotLLMInterface::DebugRequestStartStatus::Started:
+        ai->TellPlayerNoFacing(requester, "LLM debug request started. Use 'llm result' to retrieve it.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        break;
+    case PlayerbotLLMInterface::DebugRequestStartStatus::Busy:
+        ai->TellPlayerNoFacing(requester, "An LLM debug request is already running.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        break;
+    case PlayerbotLLMInterface::DebugRequestStartStatus::ResultReady:
+        ai->TellPlayerNoFacing(requester, "An LLM debug result is ready. Use 'llm result' to retrieve it.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        break;
+    case PlayerbotLLMInterface::DebugRequestStartStatus::Disabled:
+        ai->TellPlayerNoFacing(requester, "LLM debug generation is disabled by the concurrency setting.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        break;
+    case PlayerbotLLMInterface::DebugRequestStartStatus::Failed:
+        ai->TellPlayerNoFacing(requester, "LLM debug error: " + error, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        break;
+    }
     return true;
 }
 
