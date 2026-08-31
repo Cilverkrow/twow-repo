@@ -2,6 +2,12 @@
 
 Snapshot: 2026-08-31. This is the repository-root entry point for unfinished work. Detailed evidence, ownership, and gates are maintained in [Open project threads](docs/OPEN-THREADS.md). An unchecked item is not authorization to execute it.
 
+> **Day-to-day work is now tracked in GitHub issues.** They are generated from reviewable
+> manifests in [`docs/issues/`](docs/issues/) by `ops/issues/import-issues.sh` — edit the
+> manifest, not the issue. The OT ids below are cross-referenced from the issues, so this
+> file stays the durable index and the tracker stays the working queue. See
+> [ADR-0029](docs/adr/ADR-0029-work-tracking.md).
+
 ## Current handover state
 
 - Repository `main` was clean at `f1f2e01026e54cd5c119c1e8e95fc107a01f4e2b` before this documentation handover began.

@@ -4,6 +4,12 @@ Snapshot date: 2026-08-31. Primary owner: WS-80 for this index; each row names i
 
 An entry here is not authorization to start it. Before work, use `AGENTS.md`, resolve the owning workstream, verify its current evidence, and obtain any required mutation approval. Update this file when a thread is closed, split, superseded, or materially changed.
 
+> **Working queue: GitHub issues.** Generated from [`docs/issues/`](issues/) by
+> `ops/issues/import-issues.sh`; each issue cross-references its OT id and its runbook
+> evidence path. A 2026-08-31 sweep of `runbooks/` recovered 41 further open items that had
+> no OT id — they are in the tracker with the `from-runbook` label. This file remains the
+> durable index of record. See [ADR-0029](adr/ADR-0029-work-tracking.md).
+
 ## P0 — blocks the intended bot/LLM architecture
 
 | ID | Owner | Open thread | Confirmed current state | Required next gate |
