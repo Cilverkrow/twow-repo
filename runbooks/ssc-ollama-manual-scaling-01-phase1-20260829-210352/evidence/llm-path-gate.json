@@ -1,0 +1,35 @@
+{
+  "head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "source_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+  "head_blob": "3b9cadb778434d48c0a5129cbe0b976fcbe9e6f7",
+  "head_excerpt": [
+    "   375: ",
+    "   376: std::string PlayerbotLLMInterface::Generate(const std::string& prompt, int timeOutSeconds, int maxGenerations, std::vector<std::string> & debugLines) {",
+    "   377:     // LLM gateway network client removed. Always report \"no response\" so callers fall back",
+    "   378:     // to their existing silent/no-op reply path.",
+    "   379:     (void)prompt; (void)timeOutSeconds; (void)maxGenerations;",
+    "   380:     if (!debugLines.empty())",
+    "   381:         debugLines.push_back(\"LLM generation disabled in this build\");",
+    "   382:     return {};",
+    "   383: }",
+    "   384: ",
+    "   385: inline std::string extractAfterPattern(const std::string& content, const std::string& startPattern) {",
+    "   386:     if (startPattern.empty())"
+  ],
+  "working_file_differs_from_head": true,
+  "working_tree_not_used_for_production_assessment": true,
+  "production_exe": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+    "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "embedded_revision_strings": [
+      "Core revision: 42b8a7f742548793910f / 2026-08-25 15:22:11 +0100 / Win64 (little-endian)"
+    ],
+    "contains_disabled_llm_literal": true
+  },
+  "active_llm_config": {
+    "enabled": "0",
+    "endpoint": "http://127.0.0.1:11434/v1/chat/completions",
+    "points_to_verified_external_bridge": false
+  },
+  "assessment": "Production path returns an empty response without network I/O. The later dirty debug implementation is neither deployed nor an approved bridge integration."
+}

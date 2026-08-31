@@ -1,0 +1,739 @@
+{
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "scope": "Candidate-only source landmarks for later revalidation; no source integration performed.",
+  "files": [
+    {
+      "path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+      "exists_at_head": true,
+      "head_blob": "3b9cadb778434d48c0a5129cbe0b976fcbe9e6f7",
+      "matches": [
+        {
+          "line": 376,
+          "pattern": "Generate\\(",
+          "text": "std::string PlayerbotLLMInterface::Generate(const std::string& prompt, int timeOutSeconds, int maxGenerations, std::vector<std::string> & debugLines) {"
+        },
+        {
+          "line": 381,
+          "pattern": "LLM generation",
+          "text": "        debugLines.push_back(\"LLM generation disabled in this build\");"
+        }
+      ]
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp",
+      "exists_at_head": true,
+      "head_blob": "47ee5fde481bda6433aef93df0be759ff2fc39fb",
+      "matches": [
+        {
+          "line": 421,
+          "pattern": "GenerateResponsePackets",
+          "text": "delayedPackets ChatReplyAction::GenerateResponsePackets(const std::string json"
+        },
+        {
+          "line": 653,
+          "pattern": "GenerateResponsePackets",
+          "text": "                futurePackets futPackets = std::async(std::launch::async, ChatReplyAction::GenerateResponsePackets, json, chatTemplate, emoteTemplate, systemTemplate, startPattern, endPattern, deletePattern, splitPattern, debug);"
+        },
+        {
+          "line": 655,
+          "pattern": "SendDelayedPacket",
+          "text": "                ai->SendDelayedPacket(session, std::move(futPackets));"
+        }
+      ]
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/PlayerbotAI.cpp",
+      "exists_at_head": true,
+      "head_blob": "1064b6bc42e67b30859dd174100a4033ac1e04c8",
+      "matches": [
+        {
+          "line": 260,
+          "pattern": "UpdateAI\\(",
+          "text": "void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)"
+        },
+        {
+          "line": 303,
+          "pattern": "TellPlayer\\(",
+          "text": "            TellPlayer(GetMaster(), BOT_TEXT(\"logout_cancel\"));"
+        },
+        {
+          "line": 635,
+          "pattern": "TellPlayer\\(",
+          "text": "            TellPlayer(GetMaster(), \"Jumping off \" + std::string(bot->GetTransport()->GetName()));"
+        },
+        {
+          "line": 654,
+          "pattern": "UpdateAI\\(",
+          "text": "        e->OnUpdateAI(this, bot->GetName());"
+        },
+        {
+          "line": 659,
+          "pattern": "UpdateAIInternal",
+          "text": "    if(!UpdateAIReaction(elapsed, doMinimalReaction, bot->IsTaxiFlying()) && CanUpdateAIInternal())"
+        },
+        {
+          "line": 668,
+          "pattern": "UpdateAIInternal",
+          "text": "            if (!CanUpdateAIInternal())"
+        },
+        {
+          "line": 674,
+          "pattern": "UpdateAIInternal",
+          "text": "        SC_PHASE(\"UpdateAI.UpdateAIInternal\", bot ? bot->GetName() : \"(null)\");"
+        },
+        {
+          "line": 675,
+          "pattern": "UpdateAIInternal",
+          "text": "        UpdateAIInternal(elapsed, minimal);"
+        },
+        {
+          "line": 1209,
+          "pattern": "TellPlayer\\(",
+          "text": "            //TellPlayer(out);"
+        },
+        {
+          "line": 1222,
+          "pattern": "UpdateAIInternal",
+          "text": "void PlayerbotAI::UpdateAIInternal(uint32 elapsed, bool minimal)"
+        },
+        {
+          "line": 1224,
+          "pattern": "UpdateAIInternal",
+          "text": "    SC_PHASE(\"UpdateAIInternal.entry\", bot ? bot->GetName() : \"(null)\");"
+        },
+        {
+          "line": 1229,
+          "pattern": "UpdateAIInternal",
+          "text": "    auto pmo = sPerformanceMonitor.start(PERF_MON_TOTAL, \"PlayerbotAI::UpdateAIInternal \" + mapString, nullptr, bot->GetMapId(), bot->GetInstanceId());"
+        },
+        {
+          "line": 1293,
+          "pattern": "UpdateAIInternal",
+          "text": "    SC_PHASE(\"UpdateAIInternal.botOutgoingPackets\", bot ? bot->GetName() : \"(null)\");"
+        },
+        {
+          "line": 1295,
+          "pattern": "UpdateAIInternal",
+          "text": "    SC_PHASE(\"UpdateAIInternal.masterIncomingPackets\", bot ? bot->GetName() : \"(null)\");"
+        },
+        {
+          "line": 1297,
+          "pattern": "UpdateAIInternal",
+          "text": "    SC_PHASE(\"UpdateAIInternal.masterOutgoingPackets\", bot ? bot->GetName() : \"(null)\");"
+        },
+        {
+          "line": 1300,
+          "pattern": "UpdateAIInternal",
+          "text": "    SC_PHASE(\"UpdateAIInternal.DoNextAction\", bot ? bot->GetName() : \"(null)\");"
+        },
+        {
+          "line": 1302,
+          "pattern": "UpdateAIInternal",
+          "text": "    SC_PHASE(\"UpdateAIInternal.exit\", bot ? bot->GetName() : \"(null)\");"
+        },
+        {
+          "line": 1417,
+          "pattern": "TellPlayer\\(",
+          "text": "            TellPlayer(GetMaster(), BOT_TEXT(\"logout_cancel\"));"
+        },
+        {
+          "line": 1592,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(&fromPlayer, BOT_TEXT(\"logout_start\"));"
+        },
+        {
+          "line": 1603,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(&fromPlayer, BOT_TEXT(\"logout_cancel\"));"
+        },
+        {
+          "line": 1616,
+          "pattern": "TellPlayer\\(",
+          "text": "            TellPlayer(&fromPlayer, \"Max wait time is 20 seconds!\");"
+        },
+        {
+          "line": 1622,
+          "pattern": "TellPlayer\\(",
+          "text": "        TellPlayer(&fromPlayer, \"Waiting for \" + remaining + \" seconds!\");"
+        },
+        {
+          "line": 2311,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(master, BOT_TEXT(\"hello_follow\"));"
+        },
+        {
+          "line": 2315,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(master, BOT_TEXT(\"hello\"));"
+        },
+        {
+          "line": 3619,
+          "pattern": "TellPlayerNoFacing",
+          "text": "bool PlayerbotAI::TellPlayerNoFacing(Player* player, std::string text, PlayerbotSecurityLevel securityLevel, bool isPrivate, bool noRepeat, bool ignoreSilent)"
+        },
+        {
+          "line": 3777,
+          "pattern": "TellPlayer\\(",
+          "text": "bool PlayerbotAI::TellPlayer(Player* player, std::string text, PlayerbotSecurityLevel securityLevel, bool isPrivate, bool ignoreSilent)"
+        },
+        {
+          "line": 3779,
+          "pattern": "TellPlayerNoFacing",
+          "text": "    if (!TellPlayerNoFacing(player, text, securityLevel, isPrivate, ignoreSilent))"
+        },
+        {
+          "line": 4927,
+          "pattern": "TellPlayerNoFacing",
+          "text": "        TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);"
+        },
+        {
+          "line": 5074,
+          "pattern": "TellPlayerNoFacing",
+          "text": "        TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);"
+        },
+        {
+          "line": 5226,
+          "pattern": "TellPlayerNoFacing",
+          "text": "        TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);"
+        },
+        {
+          "line": 5516,
+          "pattern": "TellPlayerNoFacing",
+          "text": "        TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);"
+        },
+        {
+          "line": 6646,
+          "pattern": "TellPlayerNoFacing",
+          "text": "        TellPlayerNoFacing("
+        },
+        {
+          "line": 7512,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- consumable ---\");"
+        },
+        {
+          "line": 7515,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- container ---\");"
+        },
+        {
+          "line": 7518,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- weapon ---\");"
+        },
+        {
+          "line": 7521,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- armor ---\");"
+        },
+        {
+          "line": 7524,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- reagent ---\");"
+        },
+        {
+          "line": 7527,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- projectile ---\");"
+        },
+        {
+          "line": 7530,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- trade goods ---\");"
+        },
+        {
+          "line": 7533,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- recipe ---\");"
+        },
+        {
+          "line": 7536,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- quiver ---\");"
+        },
+        {
+          "line": 7539,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- quest items ---\");"
+        },
+        {
+          "line": 7542,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- keys ---\");"
+        },
+        {
+          "line": 7545,
+          "pattern": "TellPlayer\\(",
+          "text": "                TellPlayer(player, \"--- other ---\");"
+        },
+        {
+          "line": 7560,
+          "pattern": "TellPlayer\\(",
+          "text": "    TellPlayer(player, out.str());"
+        },
+        {
+          "line": 7978,
+          "pattern": "SendDelayedPacket",
+          "text": "void PlayerbotAI::SendDelayedPacket(WorldSession* session, futurePackets futPackets)"
+        },
+        {
+          "line": 7991,
+          "pattern": "detach\\(",
+          "text": "    t.detach();"
+        },
+        {
+          "line": 7994,
+          "pattern": "ReceiveDelayedPacket",
+          "text": "void PlayerbotAI::ReceiveDelayedPacket(futurePackets futPackets)"
+        },
+        {
+          "line": 8006,
+          "pattern": "detach\\(",
+          "text": "    t.detach();"
+        }
+      ]
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/strategy/values/RpgTriggers.cpp",
+      "exists_at_head": false,
+      "head_blob": null,
+      "matches": []
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/strategy/actions/RpgSubActions.cpp",
+      "exists_at_head": true,
+      "head_blob": "709fca6cb951dacb74642c4ad5f6ee4e5deae3a1",
+      "matches": [
+        {
+          "line": 427,
+          "pattern": "future",
+          "text": "    if (futPackets.wait_for(std::chrono::seconds(0)) == std::future_status::timeout)"
+        },
+        {
+          "line": 430,
+          "pattern": "get\\(",
+          "text": "    for (auto delayedReply : futPackets.get())"
+        }
+      ]
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/PlayerbotMgr.cpp",
+      "exists_at_head": true,
+      "head_blob": "51f09926eff81e87fd3968ebc864e0328b6297be",
+      "matches": [
+        {
+          "line": 82,
+          "pattern": "UpdateSessions",
+          "text": "    // the worldport ACK never fires (e.g. UpdateSessions wasn't ticking, or"
+        },
+        {
+          "line": 205,
+          "pattern": "UpdateSessions",
+          "text": "    // showing UpdateSessions calling HandleTeleportAck thousands of times with no worldport-ack"
+        },
+        {
+          "line": 326,
+          "pattern": "UpdateAIInternal",
+          "text": "void PlayerbotHolder::UpdateAIInternal(uint32 elapsed, bool minimal)"
+        },
+        {
+          "line": 333,
+          "pattern": "UpdateSessions",
+          "text": "void PlayerbotHolder::UpdateSessions(uint32 elapsed)"
+        },
+        {
+          "line": 352,
+          "pattern": "UpdateSessions",
+          "text": "            SC_LOG(\"UpdateSessions iter bot=%s guid=%u midTeleport=%d inWorld=%d \""
+        },
+        {
+          "line": 384,
+          "pattern": "UpdateSessions",
+          "text": "                SC_LOG(\"UpdateSessions GHOST RECOVERY bot=%s guid=%u — driving \""
+        },
+        {
+          "line": 1229,
+          "pattern": "UpdateAIInternal",
+          "text": "void PlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)"
+        },
+        {
+          "line": 1244,
+          "pattern": "UpdateSessions",
+          "text": "    UpdateSessions(elapsed);"
+        }
+      ]
+    },
+    {
+      "path": "src/game/World/World.cpp",
+      "exists_at_head": false,
+      "head_blob": null,
+      "matches": []
+    },
+    {
+      "path": "src/game/Server/WorldSession.h",
+      "exists_at_head": false,
+      "head_blob": null,
+      "matches": []
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+      "exists_at_head": true,
+      "head_blob": "d4f2dbf35a9a5f4bdfd8f08fa26102a4af5de3de",
+      "matches": [
+        {
+          "line": 706,
+          "pattern": "LLMEnabled",
+          "text": "    llmEnabled = config.GetIntDefault(\"AiPlayerbot.LLMEnabled\", 1);"
+        },
+        {
+          "line": 717,
+          "pattern": "LLMGenerationTimeout",
+          "text": "    llmGenerationTimeout = config.GetIntDefault(\"AiPlayerbot.LLMGenerationTimeout\", 600);"
+        },
+        {
+          "line": 718,
+          "pattern": "LLMMaxSimultaniousGenerations",
+          "text": "    llmMaxSimultaniousGenerations = config.GetIntDefault(\"AiPlayerbot.LLMMaxSimultaniousGenerations\", 100);"
+        }
+      ]
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+      "exists_at_head": true,
+      "head_blob": "1e388d197a5a1b781711f4c3331c9924da531e18",
+      "matches": [
+        {
+          "line": 15,
+          "pattern": "LLM",
+          "text": "#include \"playerbot/PlayerbotLLMInterface.h\""
+        },
+        {
+          "line": 61,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"llm \") == 0 && isMod)"
+        },
+        {
+          "line": 62,
+          "pattern": "LLM",
+          "text": "        return HandleLLM(event, requester, text);"
+        },
+        {
+          "line": 179,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"tspellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 180,
+          "pattern": "LLM",
+          "text": "        return HandleTSpellMap(event, requester, text);"
+        },
+        {
+          "line": 181,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"uspellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 182,
+          "pattern": "LLM",
+          "text": "        return HandleUSpellMap(event, requester, text);"
+        },
+        {
+          "line": 183,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"dspellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 184,
+          "pattern": "LLM",
+          "text": "        return HandleDSpellMap(event, requester, text);"
+        },
+        {
+          "line": 185,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"vspellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 186,
+          "pattern": "LLM",
+          "text": "        return HandleVSpellMap(event, requester, text);"
+        },
+        {
+          "line": 187,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"ispellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 188,
+          "pattern": "LLM",
+          "text": "        return HandleISpellMap(event, requester, text);"
+        },
+        {
+          "line": 189,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"cspellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 190,
+          "pattern": "LLM",
+          "text": "        return HandleCSpellMap(event, requester, text);"
+        },
+        {
+          "line": 191,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"aspellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 192,
+          "pattern": "LLM",
+          "text": "        return HandleASpellMap(event, requester, text);"
+        },
+        {
+          "line": 193,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"gspellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 194,
+          "pattern": "LLM",
+          "text": "        return HandleGSpellMap(event, requester, text);"
+        },
+        {
+          "line": 195,
+          "pattern": "LLM",
+          "text": "    else if (text.find(\"mspellmap\") == 0 && isMod)"
+        },
+        {
+          "line": 196,
+          "pattern": "LLM",
+          "text": "        return HandleMSpellMap(event, requester, text);"
+        },
+        {
+          "line": 253,
+          "pattern": "LLM",
+          "text": "            ai->TellPlayer(requester, \"Mod Only: llm, area, avoid, motion, transport, nc, gps\");"
+        },
+        {
+          "line": 501,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"llm\" && isMod)"
+        },
+        {
+          "line": 503,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug llm ===\");"
+        },
+        {
+          "line": 504,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"LLM interaction (mod only).\");"
+        },
+        {
+          "line": 506,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug llm <prompt>\");"
+        },
+        {
+          "line": 865,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"tspellmap\" && isMod)"
+        },
+        {
+          "line": 867,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug tspellmap ===\");"
+        },
+        {
+          "line": 870,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug tspellmap\");"
+        },
+        {
+          "line": 872,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"uspellmap\" && isMod)"
+        },
+        {
+          "line": 874,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug uspellmap ===\");"
+        },
+        {
+          "line": 877,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug uspellmap\");"
+        },
+        {
+          "line": 879,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"dspellmap\" && isMod)"
+        },
+        {
+          "line": 881,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug dspellmap ===\");"
+        },
+        {
+          "line": 884,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug dspellmap\");"
+        },
+        {
+          "line": 886,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"vspellmap\" && isMod)"
+        },
+        {
+          "line": 888,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug vspellmap ===\");"
+        },
+        {
+          "line": 891,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug vspellmap\");"
+        },
+        {
+          "line": 893,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"ispellmap\" && isMod)"
+        },
+        {
+          "line": 895,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug ispellmap ===\");"
+        },
+        {
+          "line": 898,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug ispellmap\");"
+        },
+        {
+          "line": 900,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"cspellmap\" && isMod)"
+        },
+        {
+          "line": 902,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug cspellmap ===\");"
+        },
+        {
+          "line": 905,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug cspellmap\");"
+        },
+        {
+          "line": 907,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"aspellmap\" && isMod)"
+        },
+        {
+          "line": 909,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug aspellmap ===\");"
+        },
+        {
+          "line": 912,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug aspellmap\");"
+        },
+        {
+          "line": 914,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"gspellmap\" && isMod)"
+        },
+        {
+          "line": 916,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug gspellmap ===\");"
+        },
+        {
+          "line": 919,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug gspellmap\");"
+        },
+        {
+          "line": 921,
+          "pattern": "LLM",
+          "text": "    else if (cmd == \"mspellmap\" && isMod)"
+        },
+        {
+          "line": 923,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"=== debug mspellmap ===\");"
+        },
+        {
+          "line": 926,
+          "pattern": "LLM",
+          "text": "        ai->TellPlayer(requester, \"Usage: debug mspellmap\");"
+        },
+        {
+          "line": 1233,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleLLM(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 1241,
+          "pattern": "LLM",
+          "text": "    std::string json = BOT_TEXT2(sPlayerbotAIConfig.llmApiJson, jsonFill);"
+        },
+        {
+          "line": 1243,
+          "pattern": "Generate\\(",
+          "text": "    std::string response = PlayerbotLLMInterface::Generate(json, sPlayerbotAIConfig.llmGenerationTimeout, sPlayerbotAIConfig.llmMaxSimultaniousGenerations, debugLines);"
+        },
+        {
+          "line": 4094,
+          "pattern": "LLM",
+          "text": "        out << \" Sell to AH: \" << ChatHelper::formatMoney(ItemUsageValue::GetBotAHSellMinPrice(proto)) << \" to \" << ChatHelper::formatMoney(ItemUsageValue::GetBotAHSellMaxPrice(proto));"
+        },
+        {
+          "line": 4484,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleTSpellMap(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 4515,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleUSpellMap(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 4535,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleDSpellMap(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 4555,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleVSpellMap(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 4601,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleISpellMap(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 4645,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleCSpellMap(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 4674,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleASpellMap(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 4701,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleGSpellMap(Event& event, Player* requester, const std::string& text)"
+        },
+        {
+          "line": 4788,
+          "pattern": "LLM",
+          "text": "bool DebugAction::HandleMSpellMap(Event& event, Player* requester, const std::string& text)"
+        }
+      ]
+    }
+  ],
+  "warning": "Current SendDelayedPacket/ReceiveDelayedPacket uses detached threads and raw WorldSession pointer capture; it must not be reused for the bounded bridge integration."
+}

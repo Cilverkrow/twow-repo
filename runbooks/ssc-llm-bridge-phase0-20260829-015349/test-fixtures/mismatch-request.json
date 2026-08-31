@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "request_id": "mismatch-test",
+  "channel": "phase0_console",
+  "speaker": "synthetic_phase0_user",
+  "bot_guid": 99999,
+  "message": "Hallo?"
+}

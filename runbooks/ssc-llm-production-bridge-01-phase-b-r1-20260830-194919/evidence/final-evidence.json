@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "task": "SSC-LLM-PRODUCTION-BRIDGE-01-PHASE-B-R1",
+  "generated_utc": "2026-08-30T18:19:45.8902344Z",
+  "baseline": {
+    "commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+    "detached": true,
+    "gitmodules_present": false,
+    "submodules": []
+  },
+  "scope": {
+    "isolated_source": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source",
+    "planned_production_files": [
+      "src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.cpp",
+      "src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.h",
+      "src/modules/PlayerBots/playerbot/PlayerbotAI.cpp",
+      "src/modules/PlayerBots/playerbot/PlayerbotAI.h",
+      "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+      "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h",
+      "src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp",
+      "src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in",
+      "src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp"
+    ],
+    "unplanned_production_files": [],
+    "isolated_status": [
+      " M src/modules/PlayerBots/playerbot/PlayerbotAI.cpp",
+      " M src/modules/PlayerBots/playerbot/PlayerbotAI.h",
+      " M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+      " M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h",
+      " M src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp",
+      " M src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in",
+      " M src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp",
+      "?? bin/Release/mangosd.pdb",
+      "?? src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.cpp",
+      "?? src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.h"
+    ]
+  },
+  "tests": {
+    "final": {
+      "passed": true,
+      "count": 683,
+      "log": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\fake-child-tests.tap",
+        "size": 36493,
+        "sha256": "3EB0338446D7615E1FBEB79D2A4067FEDC496DE9F02EBF89DD04B187A635C5B3",
+        "created_utc": "2026-08-30T18:02:46.7283778Z",
+        "last_write_utc": "2026-08-30T18:15:58.3736376Z",
+        "file_version": null,
+        "product_version": null
+      }
+    },
+    "reproducibility": {
+      "passed": true,
+      "count": 683,
+      "log": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\fake-child-tests-reproducibility.tap",
+        "size": 36460,
+        "sha256": "7D12EB5004E2E5D3C771BD2E2FC5568EBAA1FCC79C0C99E4E09661E3A4E48D44",
+        "created_utc": "2026-08-30T18:16:01.5048232Z",
+        "last_write_utc": "2026-08-30T18:16:01.5048232Z",
+        "file_version": null,
+        "product_version": null
+      }
+    },
+    "static_gate": {
+      "passed": true,
+      "log": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\static-gate.log",
+        "size": 2487,
+        "sha256": "0BD9467DC37B839192DA2833C31415802544CB436F48D8B3443F8E030EB2370B",
+        "created_utc": "2026-08-30T18:02:55.7144598Z",
+        "last_write_utc": "2026-08-30T18:16:18.0980988Z",
+        "file_version": null,
+        "product_version": null
+      },
+      "checks": {
+        "exact_production_file_set": true,
+        "production_before_snapshot_is_live_inventory": true,
+        "no_added_detached_thread": true,
+        "no_added_std_async": true,
+        "no_ollama_or_http_in_service": true,
+        "no_process_enumeration_or_shell": true,
+        "only_owned_process_termination": true,
+        "overlapped_named_pipe_io": true,
+        "no_anonymous_or_peek_pipe_io": true,
+        "all_writefile_calls_are_overlapped": true,
+        "shutdown_flag_and_deadline_share_mutex": true,
+        "failed_start_joins_and_closes": true,
+        "admission_bot_and_trim_parity": true,
+        "real_utc_and_completion_matrix": true,
+        "world_delivery_carries_completion_evidence": true,
+        "package_original_components_and_manifest_checked": true,
+        "cli_path_is_derived": true,
+        "no_cliscript_option": true,
+        "only_three_external_config_keys": true,
+        "no_model_language_action_config": true,
+        "say_external_whisper_only": true,
+        "ai_world_queue_external_eligibility": true,
+        "non_llm_fallback_remains": true,
+        "no_external_action_dispatch": true,
+        "no_legacy_async_callsite": true,
+        "exact_constants": true,
+        "diff_whitespace_clean": true
+      }
+    }
+  },
+  "build": {
+    "result": "PASS",
+    "final_directory": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-r1-clean-final2",
+    "first_configure_attempt": {
+      "result": "FAIL",
+      "build_started": false,
+      "reason": "Legacy PREFIX definition collided with CMake 4.4 compiler-ID macro template; no candidate was produced",
+      "stdout": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\configure-attempt1.stdout.log",
+        "size": 210,
+        "sha256": "9581590B236D651F7D04249DD3B99471FE80EF3615C62CC0C50D551020908824",
+        "created_utc": "2026-08-30T18:04:14.8562836Z",
+        "last_write_utc": "2026-08-30T18:04:14.8562836Z",
+        "file_version": null,
+        "product_version": null
+      },
+      "stderr": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\configure-attempt1.stderr.log",
+        "size": 172,
+        "sha256": "F18E71574C9703B1E5EB9CDE71274378DC618CEE535ED584D02C8CC8BB91494C",
+        "created_utc": "2026-08-30T18:04:14.8562836Z",
+        "last_write_utc": "2026-08-30T18:04:14.8562836Z",
+        "file_version": null,
+        "product_version": null
+      }
+    },
+    "successful_configure": {
+      "stdout": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\configure.stdout.log",
+        "size": 2482,
+        "sha256": "A097A90F99D1EE66E78F8A56A2F7CDFD57F2346EF695F95127A6F5EE9CD8AAE4",
+        "created_utc": "2026-08-30T18:05:15.7587864Z",
+        "last_write_utc": "2026-08-30T18:05:15.7597969Z",
+        "file_version": null,
+        "product_version": null
+      },
+      "stderr": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\configure.stderr.log",
+        "size": 369,
+        "sha256": "CE5BDD86EA11AC15BC01698CD03EC3FDCBBDC23A62AC070E873144702B7FE8B1",
+        "created_utc": "2026-08-30T18:05:15.7597969Z",
+        "last_write_utc": "2026-08-30T18:05:15.7597969Z",
+        "file_version": null,
+        "product_version": null
+      }
+    },
+    "successful_build": {
+      "stdout": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\build.stdout.log",
+        "size": 32316,
+        "sha256": "83BBD4D96772A951E72AF6DFBC4B8EC4CC94FDFAAC98B8408BD698CA05E0CB32",
+        "created_utc": "2026-08-30T18:11:30.7863479Z",
+        "last_write_utc": "2026-08-30T18:11:30.7873523Z",
+        "file_version": null,
+        "product_version": null
+      },
+      "stderr": {
+        "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\logs\\build.stderr.log",
+        "size": 0,
+        "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "created_utc": "2026-08-30T18:11:30.7873523Z",
+        "last_write_utc": "2026-08-30T18:11:30.7873523Z",
+        "file_version": null,
+        "product_version": null
+      },
+      "warning_diagnostic_count": 12,
+      "error_diagnostic_count": 0
+    },
+    "options": {
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "configuration": "Release",
+      "target": "mangosd only",
+      "cmake": "4.4.2",
+      "msvc": "19.44.35228; tools 14.44.35207",
+      "windows_sdk": "10.0.26100.0",
+      "parallel_projects": 2,
+      "cl_mp_count": 2,
+      "cache_sha256": "31901FD828F112E76DFBD1A8D1F6194B9D691E94F74E9C4261325F21385B016C",
+      "configure_definitions": [
+        "CMAKE_INSTALL_PREFIX=C:/TW/ssc-llm-phase-b-20260830-173121/install-r1-clean-final2",
+        "CMAKE_BUILD_TYPE=Release",
+        "ACE_ROOT=C:/TW/ComTW/vcpkg/installed/x64-windows",
+        "BOOST_ROOT=C:/TW/ComTW/vcpkg/installed/x64-windows",
+        "ALLOW_TURTLE_ADDONS=ON",
+        "BUILD_PLAYERBOTS=ON",
+        "MODULES=disabled",
+        "USE_ADDRESS_SANITIZER=OFF",
+        "USE_ANTICHEAT=ON",
+        "USE_DISCORD_BOT=OFF",
+        "USE_EXTRACTORS=ON",
+        "USE_LIBCURL=OFF",
+        "USE_PCH=ON",
+        "USE_PCH_OLD=ON",
+        "USE_REALMMERGE=OFF",
+        "USE_SCRIPTS=ON",
+        "USE_STD_MALLOC=ON",
+        "USE_TRACY=OFF"
+      ]
+    }
+  },
+  "artifacts": {
+    "executable": {
+      "path": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\bin\\Release\\mangosd.exe",
+      "size": 20523520,
+      "sha256": "1231B38B3EA8C241742B3735C13515DA0A0A98158F3ADE96FDBB7EA0AFB3718C",
+      "created_utc": "2026-08-30T16:22:41.9782203Z",
+      "last_write_utc": "2026-08-30T18:11:30.3777395Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "packaged_executable": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\artifacts\\mangosd.exe",
+      "size": 20523520,
+      "sha256": "1231B38B3EA8C241742B3735C13515DA0A0A98158F3ADE96FDBB7EA0AFB3718C",
+      "created_utc": "2026-08-30T18:19:26.5079188Z",
+      "last_write_utc": "2026-08-30T18:11:30.3777395Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "pdb": {
+      "path": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\bin\\Release\\mangosd.pdb",
+      "size": 213422080,
+      "sha256": "E07BD3E178D649CBB4A3194CA02F7664934BDF3146F2451FC2A09DCDFC80E325",
+      "created_utc": "2026-08-30T16:22:42.0092777Z",
+      "last_write_utc": "2026-08-30T18:11:30.4073459Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "pe": {
+      "machine": "0x8664",
+      "linker_timestamp_unix": 1788113489,
+      "linker_timestamp_utc": "2026-08-30T18:11:29.0000000Z",
+      "pe32_plus": true,
+      "image_base": "0x0000000140000000",
+      "size_of_image": 20721664,
+      "codeview": [
+        {
+          "signature": "RSDS",
+          "guid": "810BDA8A-EE8A-420B-ABB2-D558569C5833",
+          "age": 2,
+          "pdb_path": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\bin\\Release\\mangosd.pdb",
+          "size": 93
+        }
+      ]
+    },
+    "embedded_revision_present": true,
+    "embedded_release_noop_present": true
+  },
+  "production": {
+    "before": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\evidence\\production-before.json",
+      "size": 8313,
+      "sha256": "3D689B40D3C64EE7EEF068A097EF49BB87A03BD1BD66F51EDFFA6F57FC345C87",
+      "created_utc": "2026-08-30T17:56:23.7358089Z",
+      "last_write_utc": "2026-08-30T17:56:23.7358089Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "after": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919\\evidence\\production-after.json",
+      "size": 8313,
+      "sha256": "0D7BB2C990E2BC5F90B5C4A0473433AFDE9E22C691AC0649063E170A9281A05B",
+      "created_utc": "2026-08-30T18:11:54.9905616Z",
+      "last_write_utc": "2026-08-30T18:16:40.2812984Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "comparison": {
+      "schema_version": 1,
+      "before_captured_utc": "2026-08-30T17:56:23.5951165Z",
+      "after_captured_utc": "2026-08-30T18:16:40.1511856Z",
+      "live_inventories_used": true,
+      "status_identical": true,
+      "dirty_file_set_and_bytes_identical": true,
+      "dirty_files": [
+        {
+          "relative_path": "src/modules/PlayerBots/CMakeLists.txt",
+          "before_status": " M",
+          "after_status": " M",
+          "before_size": 11546,
+          "after_size": 11546,
+          "before_sha256": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE",
+          "after_sha256": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+          "before_status": " M",
+          "after_status": " M",
+          "before_size": 27227,
+          "after_size": 27227,
+          "before_sha256": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592",
+          "after_sha256": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+          "before_status": " M",
+          "after_status": " M",
+          "before_size": 2053,
+          "after_size": 2053,
+          "before_sha256": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71",
+          "after_sha256": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+          "before_status": " M",
+          "after_status": " M",
+          "before_size": 222917,
+          "after_size": 222917,
+          "before_sha256": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A",
+          "after_sha256": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "bin/Release/MoveMapGen.pdb",
+          "before_status": "??",
+          "after_status": "??",
+          "before_size": 8253440,
+          "after_size": 8253440,
+          "before_sha256": "D21D297D0905F3D4DD8F2F995BB55099C1E923603014FC63B54EC30175D233D0",
+          "after_sha256": "D21D297D0905F3D4DD8F2F995BB55099C1E923603014FC63B54EC30175D233D0",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "bin/Release/mangosd.pdb",
+          "before_status": "??",
+          "after_status": "??",
+          "before_size": 212389888,
+          "after_size": 212389888,
+          "before_sha256": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873",
+          "after_sha256": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "bin/Release/mapextractor.pdb",
+          "before_status": "??",
+          "after_status": "??",
+          "before_size": 1921024,
+          "after_size": 1921024,
+          "before_sha256": "560D6676BAE78AA1BE4DC0D5164C0176CCC6F211D845A3FF4E4DEB2C5FFDC690",
+          "after_sha256": "560D6676BAE78AA1BE4DC0D5164C0176CCC6F211D845A3FF4E4DEB2C5FFDC690",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "bin/Release/realmd.pdb",
+          "before_status": "??",
+          "after_status": "??",
+          "before_size": 6991872,
+          "after_size": 6991872,
+          "before_sha256": "5E8584A65B973651D90B5BC2F38F755F16C2EE14ED46CA4592C9EA2BCFC3CAAF",
+          "after_sha256": "5E8584A65B973651D90B5BC2F38F755F16C2EE14ED46CA4592C9EA2BCFC3CAAF",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "bin/Release/vmap_assembler.pdb",
+          "before_status": "??",
+          "after_status": "??",
+          "before_size": 6565888,
+          "after_size": 6565888,
+          "before_sha256": "496EF245672C828F4CD6868CB7BE1BF3D1BCDE370044042FFDB25E98B3543B69",
+          "after_sha256": "496EF245672C828F4CD6868CB7BE1BF3D1BCDE370044042FFDB25E98B3543B69",
+          "byte_identical": true
+        },
+        {
+          "relative_path": "bin/Release/vmapextractor.pdb",
+          "before_status": "??",
+          "after_status": "??",
+          "before_size": 2109440,
+          "after_size": 2109440,
+          "before_sha256": "F4C3B57484204E1A2038621D167055D66FB56BC677CCA5F7AA0AB7CAC61A9838",
+          "after_sha256": "F4C3B57484204E1A2038621D167055D66FB56BC677CCA5F7AA0AB7CAC61A9838",
+          "byte_identical": true
+        }
+      ],
+      "protected_artifacts": {
+        "production_exe": {
+          "before_size": 20376576,
+          "after_size": 20376576,
+          "before_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+          "after_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+          "byte_identical": true
+        },
+        "mangosd_config": {
+          "before_size": 69515,
+          "after_size": 69515,
+          "before_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+          "after_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+          "byte_identical": true
+        },
+        "playerbot_config": {
+          "before_size": 283717,
+          "after_size": 283717,
+          "before_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+          "after_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+          "byte_identical": true
+        },
+        "previous_phase_b_zip": {
+          "before_size": 8049818,
+          "after_size": 8049818,
+          "before_sha256": "510C3E365C959DAD8ACCE30A5DA29D5C6F0B6D268D9AD5DCC8E7A82FF99BE365",
+          "after_sha256": "510C3E365C959DAD8ACCE30A5DA29D5C6F0B6D268D9AD5DCC8E7A82FF99BE365",
+          "byte_identical": true
+        }
+      },
+      "production_source_byte_identical": true
+    }
+  },
+  "review_inputs": [
+    {
+      "path": "C:\\Users\\djfav\\Downloads\\ExternalLLMBridgeService.cpp",
+      "exists": true,
+      "size": 61331,
+      "sha256": "87B5AD498B0543B58476D804B1AE233EB561222471D6910A9D095425C12409A7",
+      "created_utc": "2026-08-30T17:15:09.7653671Z",
+      "last_write_utc": "2026-08-30T17:15:10.0984816Z"
+    },
+    {
+      "path": "C:\\Users\\djfav\\Downloads\\collect-final-evidence.ps1",
+      "exists": true,
+      "size": 12340,
+      "sha256": "786BDC300BDBEDF4AF912C72C5BDDA8DC89FEB29F0B0FE82652B74B87A6EC62B",
+      "created_utc": "2026-08-30T17:15:21.7242731Z",
+      "last_write_utc": "2026-08-30T17:15:21.8981289Z"
+    },
+    {
+      "path": "C:\\Users\\djfav\\Downloads\\external_llm_bridge_tests.cpp",
+      "exists": true,
+      "size": 22455,
+      "sha256": "37646D0A857A99694C06AE767096A1CBD8D256EBB09041000970BBF603D5C2FD",
+      "created_utc": "2026-08-30T17:15:16.6634607Z",
+      "last_write_utc": "2026-08-30T17:15:16.8242085Z"
+    }
+  ],
+  "previous_phase_b_zip": {
+    "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121-deliverables.zip",
+    "exists": true,
+    "size": 8049818,
+    "sha256": "510C3E365C959DAD8ACCE30A5DA29D5C6F0B6D268D9AD5DCC8E7A82FF99BE365",
+    "created_utc": "2026-08-30T16:27:56.2005301Z",
+    "last_write_utc": "2026-08-30T16:27:56.5406213Z"
+  },
+  "prohibitions": {
+    "real_bridge_started": false,
+    "ollama_accessed": false,
+    "inference_performed": false,
+    "game_chat_sent": false,
+    "database_accessed": false,
+    "deployment_performed": false,
+    "phase_c_started": false,
+    "active_config_changed": false,
+    "production_exe_changed": false,
+    "candidate_exe_started": false
+  }
+}

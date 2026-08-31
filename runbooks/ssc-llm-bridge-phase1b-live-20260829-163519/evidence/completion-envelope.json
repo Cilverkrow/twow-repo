@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "request_id": "2b7dce77-a3e7-4a1c-b268-0c85e088fa51",
+  "bot_guid": 18281,
+  "outcome": "ready",
+  "model": "qwen2.5:7b",
+  "attempt_count": 1,
+  "started_utc": "2026-08-29T14:50:19.297Z",
+  "completed_utc": "2026-08-29T14:50:27.316Z",
+  "text": "Heute werde ich die Gassen der Stadt beobachten und eventuelle Gelegenheiten ausnutzen.",
+  "error_code": null,
+  "raw_response_bytes": 384
+}

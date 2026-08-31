@@ -1,0 +1,39 @@
+{
+  "verification_time_local": "2026-08-30",
+  "baseline_object_reads": {
+    "commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+    "working_tree_bytes_used_as_baseline": false
+  },
+  "original_dirty_tree_status_short_all": [
+    " M src/modules/PlayerBots/CMakeLists.txt",
+    " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+    " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+    " M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+    "?? bin/Release/MoveMapGen.pdb",
+    "?? bin/Release/mangosd.pdb",
+    "?? bin/Release/mapextractor.pdb",
+    "?? bin/Release/realmd.pdb",
+    "?? bin/Release/vmap_assembler.pdb",
+    "?? bin/Release/vmapextractor.pdb"
+  ],
+  "isolated_candidate_worktree_status_short_all": [
+    "?? bin/Release/mangosd.pdb"
+  ],
+  "isolated_candidate_note": "The untracked PDB is a prior 02B build artifact. Phase A used Git commit-object reads, not this working-tree file.",
+  "production_artifacts_after_analysis": {
+    "mangosd.exe_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "mangosd.conf_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+    "aiplayerbot.conf_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF"
+  },
+  "actions": {
+    "source_files_changed": false,
+    "config_files_changed": false,
+    "build_started": false,
+    "database_accessed": false,
+    "process_control_performed": false,
+    "bridge_started": false,
+    "ollama_inference_performed": false,
+    "game_chat_sent": false
+  }
+}

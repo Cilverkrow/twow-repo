@@ -1,0 +1,7 @@
+PID=43108
+EXE=C:\TW\ComTW\runbooks\shutdown-helper-console-lab\title-compatibility-world-final\01-positive-launcher-and-shutdown\mangosd.exe
+TITLE_BEFORE=Administrator:  mangosd
+TITLE=Administrator:  mangosd
+SHUTDOWN_EXIT_CODE=0
+IGNORE_SHUTDOWN=false
+READY_UTC=2026-08-28T16:37:32.484Z

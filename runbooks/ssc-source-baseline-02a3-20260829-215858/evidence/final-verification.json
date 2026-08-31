@@ -1,0 +1,33 @@
+{
+  "captured_utc": "2026-08-29T20:06:36.9605534Z",
+  "decision": {
+    "manual_hash_provenance": "PASS_WITH_LIMITATION",
+    "clean_build_02b_recommendation": "GO"
+  },
+  "binding_select_sha256": "B866C9F412526AF05D13823D4F3D508F04CDC74005A720DE0FD08195F223888B",
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "source_status_equals_prior_captured_status": true,
+  "migration_paths_clean": true,
+  "json_row_count": 150,
+  "csv_row_count": 150,
+  "world_row_count": 146,
+  "character_row_count": 4,
+  "required_world_fields_complete": true,
+  "world_exact_name_matches": 146,
+  "world_exact_order_matches": 146,
+  "world_contiguous_id_matches": 146,
+  "world_manual_markers": 146,
+  "historical_world_byte_equality_claimed": false,
+  "server_process_inspected": false,
+  "live_logs_inspected": false,
+  "new_sql_queries": [],
+  "database_writes": [],
+  "tracker_changes": [],
+  "migrations_executed": [],
+  "process_control_actions": [],
+  "source_or_config_changes": [],
+  "build_actions": [],
+  "clean_build_started": false,
+  "task_writes_scope": "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02a3-20260829-215858"
+}

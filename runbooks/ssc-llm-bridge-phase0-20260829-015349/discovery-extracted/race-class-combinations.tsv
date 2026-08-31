@@ -1,0 +1,144 @@
+population_key	race_id	race_key	class_id	class_key	bot_count	live_playercreateinfo_defined	local_custom_evidence
+random_account_stock	1	human	1	warrior	75	True	
+random_account_stock	1	human	2	paladin	181	True	
+random_account_stock	1	human	3	hunter	193	True	Source comment identifies Human Hunter as custom non-vanilla
+random_account_stock	1	human	4	rogue	57	True	
+random_account_stock	1	human	5	priest	50	True	
+random_account_stock	1	human	8	mage	93	True	
+random_account_stock	1	human	9	warlock	79	True	
+random_account_stock	2	orc	1	warrior	58	True	
+random_account_stock	2	orc	3	hunter	59	True	
+random_account_stock	2	orc	4	rogue	16	True	
+random_account_stock	2	orc	7	shaman	51	True	
+random_account_stock	2	orc	9	warlock	25	True	
+random_account_stock	3	dwarf	1	warrior	32	True	
+random_account_stock	3	dwarf	2	paladin	77	True	
+random_account_stock	3	dwarf	3	hunter	91	True	
+random_account_stock	3	dwarf	4	rogue	19	True	
+random_account_stock	3	dwarf	5	priest	11	True	
+random_account_stock	4	night_elf	1	warrior	50	True	
+random_account_stock	4	night_elf	3	hunter	177	True	
+random_account_stock	4	night_elf	4	rogue	101	True	
+random_account_stock	4	night_elf	5	priest	48	True	
+random_account_stock	4	night_elf	11	druid	122	True	
+random_account_stock	5	undead	1	warrior	35	True	
+random_account_stock	5	undead	4	rogue	81	True	
+random_account_stock	5	undead	5	priest	42	True	
+random_account_stock	5	undead	8	mage	69	True	
+random_account_stock	5	undead	9	warlock	68	True	
+random_account_stock	6	tauren	1	warrior	42	True	
+random_account_stock	6	tauren	3	hunter	36	True	
+random_account_stock	6	tauren	7	shaman	70	True	
+random_account_stock	6	tauren	11	druid	54	True	
+random_account_stock	7	gnome	1	warrior	9	True	
+random_account_stock	7	gnome	4	rogue	33	True	
+random_account_stock	7	gnome	8	mage	50	True	
+random_account_stock	7	gnome	9	warlock	47	True	
+random_account_stock	8	troll	1	warrior	14	True	
+random_account_stock	8	troll	3	hunter	34	True	
+random_account_stock	8	troll	4	rogue	55	True	
+random_account_stock	8	troll	5	priest	18	True	
+random_account_stock	8	troll	7	shaman	48	True	
+random_account_stock	8	troll	8	mage	14	True	
+random_account_stock	9	goblin	1	warrior	195	True	Turtle-WoW custom race
+random_account_stock	9	goblin	3	hunter	170	True	Turtle-WoW custom race
+random_account_stock	9	goblin	4	rogue	169	True	Turtle-WoW custom race
+random_account_stock	9	goblin	8	mage	206	True	Turtle-WoW custom race
+random_account_stock	9	goblin	9	warlock	188	True	Turtle-WoW custom race
+random_account_stock	10	high_elf	1	warrior	182	True	Turtle-WoW custom race
+random_account_stock	10	high_elf	2	paladin	185	True	Turtle-WoW custom race
+random_account_stock	10	high_elf	3	hunter	158	True	Turtle-WoW custom race
+random_account_stock	10	high_elf	4	rogue	209	True	Turtle-WoW custom race
+random_account_stock	10	high_elf	5	priest	169	True	Turtle-WoW custom race
+random_account_stock	10	high_elf	8	mage	185	True	Turtle-WoW custom race
+active_random_rotation	1	human	1	warrior	1	True	
+active_random_rotation	1	human	2	paladin	1	True	
+active_random_rotation	1	human	3	hunter	7	True	Source comment identifies Human Hunter as custom non-vanilla
+active_random_rotation	1	human	4	rogue	1	True	
+active_random_rotation	1	human	8	mage	2	True	
+active_random_rotation	1	human	9	warlock	1	True	
+active_random_rotation	2	orc	1	warrior	2	True	
+active_random_rotation	2	orc	3	hunter	3	True	
+active_random_rotation	3	dwarf	1	warrior	1	True	
+active_random_rotation	3	dwarf	3	hunter	2	True	
+active_random_rotation	4	night_elf	1	warrior	1	True	
+active_random_rotation	4	night_elf	3	hunter	3	True	
+active_random_rotation	4	night_elf	4	rogue	3	True	
+active_random_rotation	4	night_elf	5	priest	1	True	
+active_random_rotation	4	night_elf	11	druid	1	True	
+active_random_rotation	5	undead	4	rogue	6	True	
+active_random_rotation	5	undead	8	mage	1	True	
+active_random_rotation	5	undead	9	warlock	2	True	
+active_random_rotation	6	tauren	3	hunter	2	True	
+active_random_rotation	6	tauren	7	shaman	2	True	
+active_random_rotation	6	tauren	11	druid	3	True	
+active_random_rotation	7	gnome	1	warrior	1	True	
+active_random_rotation	7	gnome	4	rogue	4	True	
+active_random_rotation	7	gnome	8	mage	1	True	
+active_random_rotation	7	gnome	9	warlock	1	True	
+active_random_rotation	8	troll	1	warrior	1	True	
+active_random_rotation	8	troll	5	priest	1	True	
+active_random_rotation	8	troll	7	shaman	1	True	
+active_random_rotation	9	goblin	1	warrior	4	True	Turtle-WoW custom race
+active_random_rotation	9	goblin	3	hunter	4	True	Turtle-WoW custom race
+active_random_rotation	9	goblin	4	rogue	2	True	Turtle-WoW custom race
+active_random_rotation	9	goblin	8	mage	4	True	Turtle-WoW custom race
+active_random_rotation	9	goblin	9	warlock	3	True	Turtle-WoW custom race
+active_random_rotation	10	high_elf	1	warrior	7	True	Turtle-WoW custom race
+active_random_rotation	10	high_elf	2	paladin	5	True	Turtle-WoW custom race
+active_random_rotation	10	high_elf	3	hunter	6	True	Turtle-WoW custom race
+active_random_rotation	10	high_elf	4	rogue	6	True	Turtle-WoW custom race
+active_random_rotation	10	high_elf	5	priest	1	True	Turtle-WoW custom race
+active_random_rotation	10	high_elf	8	mage	2	True	Turtle-WoW custom race
+inactive_random_reserve	1	human	1	warrior	74	True	
+inactive_random_reserve	1	human	2	paladin	180	True	
+inactive_random_reserve	1	human	3	hunter	186	True	Source comment identifies Human Hunter as custom non-vanilla
+inactive_random_reserve	1	human	4	rogue	56	True	
+inactive_random_reserve	1	human	5	priest	50	True	
+inactive_random_reserve	1	human	8	mage	91	True	
+inactive_random_reserve	1	human	9	warlock	78	True	
+inactive_random_reserve	2	orc	1	warrior	56	True	
+inactive_random_reserve	2	orc	3	hunter	56	True	
+inactive_random_reserve	2	orc	4	rogue	16	True	
+inactive_random_reserve	2	orc	7	shaman	51	True	
+inactive_random_reserve	2	orc	9	warlock	25	True	
+inactive_random_reserve	3	dwarf	1	warrior	31	True	
+inactive_random_reserve	3	dwarf	2	paladin	77	True	
+inactive_random_reserve	3	dwarf	3	hunter	89	True	
+inactive_random_reserve	3	dwarf	4	rogue	19	True	
+inactive_random_reserve	3	dwarf	5	priest	11	True	
+inactive_random_reserve	4	night_elf	1	warrior	49	True	
+inactive_random_reserve	4	night_elf	3	hunter	174	True	
+inactive_random_reserve	4	night_elf	4	rogue	98	True	
+inactive_random_reserve	4	night_elf	5	priest	47	True	
+inactive_random_reserve	4	night_elf	11	druid	121	True	
+inactive_random_reserve	5	undead	1	warrior	35	True	
+inactive_random_reserve	5	undead	4	rogue	75	True	
+inactive_random_reserve	5	undead	5	priest	42	True	
+inactive_random_reserve	5	undead	8	mage	68	True	
+inactive_random_reserve	5	undead	9	warlock	66	True	
+inactive_random_reserve	6	tauren	1	warrior	42	True	
+inactive_random_reserve	6	tauren	3	hunter	34	True	
+inactive_random_reserve	6	tauren	7	shaman	68	True	
+inactive_random_reserve	6	tauren	11	druid	51	True	
+inactive_random_reserve	7	gnome	1	warrior	8	True	
+inactive_random_reserve	7	gnome	4	rogue	29	True	
+inactive_random_reserve	7	gnome	8	mage	49	True	
+inactive_random_reserve	7	gnome	9	warlock	46	True	
+inactive_random_reserve	8	troll	1	warrior	13	True	
+inactive_random_reserve	8	troll	3	hunter	34	True	
+inactive_random_reserve	8	troll	4	rogue	55	True	
+inactive_random_reserve	8	troll	5	priest	17	True	
+inactive_random_reserve	8	troll	7	shaman	47	True	
+inactive_random_reserve	8	troll	8	mage	14	True	
+inactive_random_reserve	9	goblin	1	warrior	191	True	Turtle-WoW custom race
+inactive_random_reserve	9	goblin	3	hunter	166	True	Turtle-WoW custom race
+inactive_random_reserve	9	goblin	4	rogue	167	True	Turtle-WoW custom race
+inactive_random_reserve	9	goblin	8	mage	202	True	Turtle-WoW custom race
+inactive_random_reserve	9	goblin	9	warlock	185	True	Turtle-WoW custom race
+inactive_random_reserve	10	high_elf	1	warrior	175	True	Turtle-WoW custom race
+inactive_random_reserve	10	high_elf	2	paladin	180	True	Turtle-WoW custom race
+inactive_random_reserve	10	high_elf	3	hunter	152	True	Turtle-WoW custom race
+inactive_random_reserve	10	high_elf	4	rogue	203	True	Turtle-WoW custom race
+inactive_random_reserve	10	high_elf	5	priest	168	True	Turtle-WoW custom race
+inactive_random_reserve	10	high_elf	8	mage	183	True	Turtle-WoW custom race

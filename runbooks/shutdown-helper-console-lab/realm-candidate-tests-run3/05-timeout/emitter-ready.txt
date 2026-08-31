@@ -1,0 +1,7 @@
+PID=45452
+EXE=C:\TW\ComTW\runbooks\shutdown-helper-console-lab\realm-candidate-tests-run3\05-timeout\realmd.exe
+TITLE=realmd
+CTRL_BREAK_EXIT_CODE=0
+HOLD_AFTER_BREAK=true
+IDLE_EXIT_MS=INFINITE
+READY_UTC=2026-08-28T15:01:46.846Z

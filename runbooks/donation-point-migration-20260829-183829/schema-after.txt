@@ -1,0 +1,6 @@
+﻿Table	Create Table
+donation_point_progress	CREATE TABLE `donation_point_progress` (
+  `account_id` int(10) unsigned NOT NULL,
+  `accumulated_ms` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci

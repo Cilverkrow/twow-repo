@@ -1,0 +1,6 @@
+{
+    "Status":  "fail",
+    "StartedUtc":  "2026-08-27T18:01:11.4363024Z",
+    "CompletedUtc":  "2026-08-27T18:01:11.8406995Z",
+    "Error":  "Fehler beim Aufrufen der Methode, da [System.Object[]] keine Methode mit dem Namen \"op_BitwiseOr\" enthält."
+}

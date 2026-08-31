@@ -1,0 +1,31 @@
+{
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "update_sql_counts": {
+    "character_updates": 3,
+    "database_updates": 146,
+    "logon": 1
+  },
+  "required_sources": [
+    {
+      "path": "sql/character_updates/20260812142512_character_inventory_copy.sql",
+      "head_blob": "1a6ad33c523ed99baf20bf1799706a198134ed1c",
+      "introduced_commit": "171a4fdfde52f784f4b6ef376d1749f83dfda365",
+      "introduced_is_ancestor_of_head": true,
+      "content": "-- ==============================================\n-- FILE: character_inventory_copy.sql\n-- GENERATED: 20260812142512\n-- ==============================================\n-- ObjectMgr::BackupCharacterInventory() runs TRUNCATE on\n-- `character_inventory_copy` and refills it from `character_inventory`, but\n-- nothing ever creates that table - there is no CREATE for it anywhere under\n-- sql/.\n--\n-- The call does not sit in the startup path. It comes from\n-- HonorMaintenancer::DoMaintenance(), so it only fires once honor maintenance\n-- falls due. A server therefore runs fine for days and then dies one morning\n-- with\n--\n--     SQL: TRUNCATE `character_inventory_copy`\n--     [1146] Table '<db>.character_inventory_copy' doesn't exist\n--     Your database structure is not up to date.\n--\n-- and does not come back: the maintenance is still due after the automatic\n-- restart, so every attempt fails at the same point. What looks like a random\n-- crash is a restart loop.\n--\n-- Two things make this easy to walk into. The failure message names the\n-- sql/updates folders rather than the missing table, and\n-- mangosd.conf.dist.in ships `BackupCharacterInventory = 1` while the code\n-- itself defaults the setting to false - so taking the shipped config as-is\n-- turns on a feature whose table nobody creates.\n--\n-- LIKE is deliberate: it keeps the copy in step with the original, which is\n-- what the INSERT ... SELECT * in BackupCharacterInventory() needs. Servers\n-- that already have the table are untouched.\n\nCREATE TABLE IF NOT EXISTS `character_inventory_copy` LIKE `character_inventory`;"
+    },
+    {
+      "path": "sql/logon/donation_point_progress.sql",
+      "head_blob": "38386f8358585ee8c7a53ff5bd66f69605576976",
+      "introduced_commit": "65056948ccb52e7a96a623bff164d1abf87673b9",
+      "introduced_is_ancestor_of_head": true,
+      "content": "-- Required by the AutoDonationPoints feature (see mangosd.conf).\n--\n-- Run against the LOGIN database - the one holding `account` and `shop_coins`\n-- - NOT the world or character database.\n--\n-- Stores how much online time each account has accumulated towards its next\n-- donation point. Without this table the feature still runs, but progress is\n-- held in memory only and resets to zero on every server restart.\n\nCREATE TABLE IF NOT EXISTS `donation_point_progress` (\n  `account_id`     INT UNSIGNED NOT NULL PRIMARY KEY,\n  `accumulated_ms` INT UNSIGNED NOT NULL DEFAULT 0\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
+    },
+    {
+      "path": "sql/base/tw_world_migrations.sql",
+      "head_blob": "6a1e44e22ef678a7140204c421192fcfdb411b98",
+      "introduced_commit": "818b3861f87178a09a3d35aea1321cd39f3a0f12",
+      "introduced_is_ancestor_of_head": true,
+      "content": "/*M!999999\\- enable the sandbox mode */ \n-- MariaDB dump 10.19  Distrib 10.6.22-MariaDB, for debian-linux-gnu (x86_64)\n--\n-- Host: localhost    Database: tw_world\n-- ------------------------------------------------------\n-- Server version\t10.6.22-MariaDB-0ubuntu0.22.04.1\n\n/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;\n/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;\n/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;\n/*!40101 SET NAMES utf8mb4 */;\n/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;\n/*!40103 SET TIME_ZONE='+00:00' */;\n/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;\n/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;\n/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;\n/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;\n\n--\n-- Table structure for table `migrations`\n--\n\nDROP TABLE IF EXISTS `migrations`;\n/*!40101 SET @saved_cs_client     = @@character_set_client */;\n/*!40101 SET character_set_client = utf8mb4 */;\nCREATE TABLE `migrations` (\n  `Id` int(10) unsigned NOT NULL AUTO_INCREMENT,\n  `Name` varchar(255) NOT NULL DEFAULT '0',\n  `Hash` varchar(128) NOT NULL DEFAULT '0',\n  `AppliedAt` datetime NOT NULL,\n  PRIMARY KEY (`Id`) USING BTREE\n) ENGINE=InnoDB AUTO_INCREMENT=632 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;\n/*!40101 SET character_set_client = @saved_cs_client */;\n\n--\n-- Dumping data for table `migrations`\n--\n\n\n/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;\n\n/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;\n/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;\n/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;\n/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;\n/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;\n/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;\n/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;\n\n-- Dump completed on 2026-05-03 13:35:18"
+    }
+  ]
+}

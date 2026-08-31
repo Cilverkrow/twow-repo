@@ -1,0 +1,16 @@
+FINAL_RESULT=ABORTED
+WINDOWS_POWERSHELL_VERSION=5.1.26100.9168
+FINAL_FAILED_GATE=Administrator
+FINAL_ERROR=This runbook requires an elevated Windows PowerShell 5.1 session.
+
+Pre-entry diagnostics:
+- Transient in-memory wrapper parsing/host-launch attempts failed before their entry points.
+- The materialized harness was parsed by Windows PowerShell 5.1 with zero errors.
+- An explicit Windows PowerShell 5.1 system Utility module import was required because a PowerShell 7 module path shadowed the native module.
+- The reviewed AST function import was corrected to script scope before the final gate evaluation.
+
+Native database client invocations: 0
+Native dump client invocations: 0
+Migration file executions: 0
+SQL statements executed: 0
+Credentials emitted: 0

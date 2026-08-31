@@ -1,0 +1,12 @@
+{
+  "model": "qwen2.5:7b",
+  "message": {
+    "role": "assistant",
+    "content": "Ich sehe mich heute etwas in der Gegend um."
+  },
+  "done": true,
+  "total_duration": 1000000,
+  "load_duration": 0,
+  "prompt_eval_count": 20,
+  "eval_count": 8
+}

@@ -1,0 +1,14 @@
+Migration.Path=C:\TW\ComTW\source\sql\logon\donation_point_progress.sql
+Migration.Size=630
+Migration.SHA256=EDD4D4BCD78AA8DA96179797C54B375477DBEA4DCA6CF06ECB3925F122248103
+Migration.TargetDatabase=tw_logon
+Config.Path=C:\TW\ComTW\server\mangosd.conf
+Config.Size=69515
+Config.SHA256=C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D
+Config.LastWriteTimeUtc=2026-08-29T15:38:43.2579727Z
+AutoDonationPoints.Enable=1
+AutoDonationPoints.IntervalMs=3600000
+AutoDonationPoints.Amount=100
+AutoDonationPoints.FlushIntervalMs=300000
+ConfigIntentConfirmation=Not explicitly supplied
+

@@ -1,0 +1,3 @@
+   346:     COMMAND ${GIT_EXECUTABLE} rev-parse --short=20 HEAD
+   362:     # No valid ways available to find/set the revision/hash, so let's force some defaults
+   370:   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/revision.h.cmake ${CMAKE_CURRENT_SOURCE_DIR}/src/shared/revision.h)

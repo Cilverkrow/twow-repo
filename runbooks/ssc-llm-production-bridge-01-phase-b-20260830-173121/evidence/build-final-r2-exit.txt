@@ -1,0 +1,2 @@
+EXIT_CODE=0
+COMMAND=cmake --build C:\TW\ssc-llm-phase-b-20260830-173121\build-final-r2 --config Release --target mangosd --parallel 2 -- /nodeReuse:false /p:CL_MPCount=2

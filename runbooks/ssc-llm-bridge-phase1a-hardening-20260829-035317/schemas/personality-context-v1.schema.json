@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ssc://phase1a/personality-context-file-v1",
+  "title": "SSC Phase 1A versioned file-only personality context contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_version",
+    "profile_status",
+    "bot_guid",
+    "population_key",
+    "race",
+    "class",
+    "race_variant_key",
+    "professions",
+    "traits",
+    "dialogue_rule"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "profile_version": { "type": "integer", "minimum": 0 },
+    "profile_status": { "type": "string", "minLength": 1 },
+    "bot_guid": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+    "population_key": { "type": "string", "minLength": 1 },
+    "race": { "$ref": "#/$defs/identity" },
+    "class": { "$ref": "#/$defs/identity" },
+    "race_variant_key": { "type": ["string", "null"] },
+    "professions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "traits": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "dialogue_rule": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "key", "name_de"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "key": { "type": "string", "minLength": 1 },
+        "name_de": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

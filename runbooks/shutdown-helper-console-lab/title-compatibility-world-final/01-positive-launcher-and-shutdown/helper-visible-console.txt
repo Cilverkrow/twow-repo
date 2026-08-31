@@ -1,0 +1,1 @@
+[OK] Worldserver PID 43108, Pfad 'C:\TW\ComTW\runbooks\shutdown-helper-console-lab\title-compatibility-world-final\01-positive-launcher-and-shutdown\mangosd.exe', Konsole 'Administrator:  mangosd': kontrolliert beendet.                     

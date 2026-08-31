@@ -1,0 +1,26 @@
+{
+  "captured_utc": "2026-08-29T19:23:33.8703795Z",
+  "config": {
+    "path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+    "size_bytes": 283717,
+    "last_write_utc": "2026-08-29T16:04:14.8193927Z",
+    "sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+    "equals_initial": true
+  },
+  "production_exe": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+    "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "equals_baseline_hash": true
+  },
+  "source": {
+    "head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "status_short": " M src/modules/PlayerBots/CMakeLists.txt\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h\n M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp\n?? bin/Release/MoveMapGen.pdb\n?? bin/Release/mangosd.pdb\n?? bin/Release/mapextractor.pdb\n?? bin/Release/realmd.pdb\n?? bin/Release/vmap_assembler.pdb\n?? bin/Release/vmapextractor.pdb"
+  },
+  "database_statement_class": "SELECT only",
+  "database_writes": [],
+  "bot_login_actions": [],
+  "process_control_actions": [],
+  "ollama_inference_actions": [],
+  "production_config_or_source_writes": [],
+  "phase2_started": false
+}

@@ -1,0 +1,128 @@
+{
+  "captured_utc": "2026-08-29T00:05:11.7937362Z",
+  "phase": "immediately_after_single_real_inference",
+  "processes": [
+    {
+      "name": "mangosd",
+      "pid": 9628,
+      "start_time_utc": "2026-08-28T22:12:48.2884890Z",
+      "cpu_total_seconds": 4884.938,
+      "cpu_sample_percent_one_core": 84.38,
+      "working_set_bytes": 1697341440,
+      "private_memory_bytes": 4305076224
+    },
+    {
+      "name": "mysqld",
+      "pid": 14776,
+      "start_time_utc": "2026-08-28T22:12:37.9655841Z",
+      "cpu_total_seconds": 108.641,
+      "cpu_sample_percent_one_core": 0.0,
+      "working_set_bytes": 81969152,
+      "private_memory_bytes": 509030400
+    },
+    {
+      "name": "ollama",
+      "pid": 5528,
+      "start_time_utc": "2026-08-28T21:21:58.8358817Z",
+      "cpu_total_seconds": 0.922,
+      "cpu_sample_percent_one_core": 0.0,
+      "working_set_bytes": 61493248,
+      "private_memory_bytes": 115642368
+    },
+    {
+      "name": "realmd",
+      "pid": 24080,
+      "start_time_utc": "2026-08-28T22:12:45.2939531Z",
+      "cpu_total_seconds": 4.047,
+      "cpu_sample_percent_one_core": 0.0,
+      "working_set_bytes": 11964416,
+      "private_memory_bytes": 6451200
+    }
+  ],
+  "listeners": [
+    {
+      "protocol": "TCP",
+      "local_address": "0.0.0.0:3724",
+      "foreign_address": "0.0.0.0:0",
+      "state": "ABH�REN",
+      "pid": 24080
+    },
+    {
+      "protocol": "TCP",
+      "local_address": "0.0.0.0:8090",
+      "foreign_address": "0.0.0.0:0",
+      "state": "ABH�REN",
+      "pid": 9628
+    },
+    {
+      "protocol": "TCP",
+      "local_address": "127.0.0.1:3307",
+      "foreign_address": "0.0.0.0:0",
+      "state": "ABH�REN",
+      "pid": 14776
+    },
+    {
+      "protocol": "TCP",
+      "local_address": "127.0.0.1:11434",
+      "foreign_address": "0.0.0.0:0",
+      "state": "ABH�REN",
+      "pid": 5528
+    }
+  ],
+  "matching_windows_services": [],
+  "ollama": {
+    "version": {
+      "version": "0.33.2"
+    },
+    "tags": {
+      "models": [
+        {
+          "name": "qwen2.5:7b",
+          "model": "qwen2.5:7b",
+          "modified_at": "2026-08-26T18:56:23.829009+02:00",
+          "size": 4683087332,
+          "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen2",
+            "families": [
+              "qwen2"
+            ],
+            "parameter_size": "7.6B",
+            "quantization_level": "Q4_K_M",
+            "context_length": 32768,
+            "embedding_length": 3584
+          },
+          "capabilities": [
+            "completion",
+            "tools"
+          ]
+        }
+      ]
+    },
+    "ps": {
+      "models": [
+        {
+          "name": "qwen2.5:7b",
+          "model": "qwen2.5:7b",
+          "size": 4748056984,
+          "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen2",
+            "families": [
+              "qwen2"
+            ],
+            "parameter_size": "7.6B",
+            "quantization_level": "Q4_K_M"
+          },
+          "expires_at": "2026-08-29T02:09:48.7430888+02:00",
+          "size_vram": 4748056984,
+          "context_length": 4096
+        }
+      ]
+    }
+  }
+}

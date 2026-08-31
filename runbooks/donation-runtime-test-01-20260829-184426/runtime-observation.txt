@@ -1,0 +1,24 @@
+MonitorStartedUtc=2026-08-29T16:50:28.1947294Z
+EligibleOnlineAccountCount=1
+AccountId=505
+InitialLiveRowCount=0
+InitialAccountLoadSqlObservedAt=2026-08-29 18:51:23
+InitialAccountLoadSql=SELECT accumulated_ms FROM donation_point_progress WHERE account_id = 505
+FirstFlushSqlObservedAt=2026-08-29 18:56:22
+FirstPersistedAccumulatedMs=298887
+SecondFlushSqlObservedAt=2026-08-29 19:01:22
+SecondPersistedAccumulatedMs=598900
+PersistedIncreaseMs=300013
+FlushIntervalMs=300000
+ValueExceededFlushInterval=true
+ReadOnlyProbeExitCodes=all_zero
+ErrorsLogRelevantMatchCount=0
+InfoLogRelevantMatchCount=0
+DonationSqlErrorCount=0
+SchemaErrorCount=0
+AutoDonationPointsErrorCount=0
+NormalStartupAnticrashRearmLineObserved=true
+ConfigStillMatchesApprovedIdentity=true
+ConfigModified=false
+SourceModified=false
+SchemaModifiedByTest=false

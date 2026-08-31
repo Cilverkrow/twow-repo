@@ -1,0 +1,109 @@
+{
+    "Status":  "pass",
+    "CompletedUtc":  "2026-08-27T18:04:51.7619364Z",
+    "PowerShell":  "5.1.26100.9168",
+    "Source":  {
+                   "Files":  3,
+                   "Objects":  7,
+                   "SaclPresentObjects":  7,
+                   "InheritedAndExplicit":  "pass"
+               },
+    "ColdBackup":  {
+                       "SourceContent":  "pass",
+                       "BackupContent":  "pass",
+                       "RawBackupAcl":  "exact pass",
+                       "SemanticAcl":  "pass",
+                       "RawDifferences":  3,
+                       "Reparse":  "pass"
+                   },
+    "Staging":  {
+                    "Coverage":  7,
+                    "SourceContent":  "pass",
+                    "BackupContent":  "pass",
+                    "Owner":  7,
+                    "Group":  7,
+                    "Protection":  7,
+                    "SaclPresence":  7,
+                    "SemanticDacl":  "pass",
+                    "SemanticSacl":  "pass",
+                    "Inheritance":  "pass",
+                    "Reparse":  "pass"
+                },
+    "CoverageFailures":  [
+                             {
+                                 "Name":  "missing path",
+                                 "Rejected":  true,
+                                 "AclUnchanged":  true,
+                                 "Error":  "ACL manifest coverage count differs before ACL application. Manifest=6, target=7."
+                             },
+                             {
+                                 "Name":  "type changed",
+                                 "Rejected":  true,
+                                 "AclUnchanged":  true,
+                                 "Error":  "ACL manifest object type differs before ACL application at \u0027.\u0027."
+                             },
+                             {
+                                 "Name":  "case-insensitive duplicate",
+                                 "Rejected":  true,
+                                 "AclUnchanged":  true,
+                                 "Error":  "Duplicate case-insensitive ACL manifest path in C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\duplicate.acl.txt: INHERITED-DIR"
+                             },
+                             {
+                                 "Name":  "additional path",
+                                 "Rejected":  true,
+                                 "AclUnchanged":  true,
+                                 "Error":  "ACL manifest coverage count differs before ACL application. Manifest=8, target=7."
+                             }
+                         ],
+    "PathFailures":  [
+                         {
+                             "Path":  "../escape",
+                             "Rejected":  true,
+                             "Error":  "Unsafe or non-normalized ACL path in ACL path resolution below \u0027C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-coverage-target\u0027: ../escape"
+                         },
+                         {
+                             "Path":  "..\\escape",
+                             "Rejected":  true,
+                             "Error":  "Unsafe or non-normalized ACL path in ACL path resolution below \u0027C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-coverage-target\u0027: ..\\escape"
+                         },
+                         {
+                             "Path":  "nested/../../escape",
+                             "Rejected":  true,
+                             "Error":  "Unsafe or non-normalized ACL path in ACL path resolution below \u0027C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-coverage-target\u0027: nested/../../escape"
+                         },
+                         {
+                             "Path":  "nested\\..\\escape",
+                             "Rejected":  true,
+                             "Error":  "Unsafe or non-normalized ACL path in ACL path resolution below \u0027C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-coverage-target\u0027: nested\\..\\escape"
+                         },
+                         {
+                             "Path":  "\\absolute",
+                             "Rejected":  true,
+                             "Error":  "Unsafe rooted or drive-qualified ACL path in ACL path resolution below \u0027C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-coverage-target\u0027: \\absolute"
+                         },
+                         {
+                             "Path":  "C:\\absolute",
+                             "Rejected":  true,
+                             "Error":  "Unsafe rooted or drive-qualified ACL path in ACL path resolution below \u0027C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-coverage-target\u0027: C:\\absolute"
+                         },
+                         {
+                             "Path":  "C:qualified",
+                             "Rejected":  true,
+                             "Error":  "Unsafe rooted or drive-qualified ACL path in ACL path resolution below \u0027C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-coverage-target\u0027: C:qualified"
+                         }
+                     ],
+    "ReparseFailure":  {
+                           "RejectedBeforeResolution":  true,
+                           "AclUnchanged":  true,
+                           "Error":  "Reparse point found below protected tree: C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-reparse-target\\disposable-link",
+                           "ResolveRejected":  true,
+                           "ResolveError":  "ACL manifest path traverses a reparse point: C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\run-2\\negative-reparse-target\\disposable-link"
+                       },
+    "Anchor":  {
+                   "Created":  "pass",
+                   "Verified":  "pass",
+                   "Entries":  9,
+                   "AllFour":  "pass",
+                   "Sha256":  "7ABECBA7804445A21007A1983015476F940DC61B9B9EE49D48036732FBA597F7"
+               }
+}

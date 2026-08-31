@@ -1,0 +1,91 @@
+race_id	class_id	race_name	class_name	allowed
+1	1	Human	Warrior	1
+1	2	Human	Paladin	1
+1	3	Human	Hunter	1
+1	4	Human	Rogue	1
+1	5	Human	Priest	1
+1	7	Human	Shaman	0
+1	8	Human	Mage	1
+1	9	Human	Warlock	1
+1	11	Human	Druid	0
+2	1	Orc	Warrior	1
+2	2	Orc	Paladin	0
+2	3	Orc	Hunter	1
+2	4	Orc	Rogue	1
+2	5	Orc	Priest	0
+2	7	Orc	Shaman	1
+2	8	Orc	Mage	1
+2	9	Orc	Warlock	1
+2	11	Orc	Druid	0
+3	1	Dwarf	Warrior	1
+3	2	Dwarf	Paladin	1
+3	3	Dwarf	Hunter	1
+3	4	Dwarf	Rogue	1
+3	5	Dwarf	Priest	1
+3	7	Dwarf	Shaman	0
+3	8	Dwarf	Mage	1
+3	9	Dwarf	Warlock	1
+3	11	Dwarf	Druid	0
+4	1	Night Elf	Warrior	1
+4	2	Night Elf	Paladin	0
+4	3	Night Elf	Hunter	1
+4	4	Night Elf	Rogue	1
+4	5	Night Elf	Priest	1
+4	7	Night Elf	Shaman	0
+4	8	Night Elf	Mage	0
+4	9	Night Elf	Warlock	0
+4	11	Night Elf	Druid	1
+5	1	Undead	Warrior	1
+5	2	Undead	Paladin	0
+5	3	Undead	Hunter	1
+5	4	Undead	Rogue	1
+5	5	Undead	Priest	1
+5	7	Undead	Shaman	0
+5	8	Undead	Mage	1
+5	9	Undead	Warlock	1
+5	11	Undead	Druid	0
+6	1	Tauren	Warrior	1
+6	2	Tauren	Paladin	0
+6	3	Tauren	Hunter	1
+6	4	Tauren	Rogue	0
+6	5	Tauren	Priest	1
+6	7	Tauren	Shaman	1
+6	8	Tauren	Mage	0
+6	9	Tauren	Warlock	0
+6	11	Tauren	Druid	1
+7	1	Gnome	Warrior	1
+7	2	Gnome	Paladin	0
+7	3	Gnome	Hunter	1
+7	4	Gnome	Rogue	1
+7	5	Gnome	Priest	0
+7	7	Gnome	Shaman	0
+7	8	Gnome	Mage	1
+7	9	Gnome	Warlock	1
+7	11	Gnome	Druid	0
+8	1	Troll	Warrior	1
+8	2	Troll	Paladin	0
+8	3	Troll	Hunter	1
+8	4	Troll	Rogue	1
+8	5	Troll	Priest	1
+8	7	Troll	Shaman	1
+8	8	Troll	Mage	1
+8	9	Troll	Warlock	1
+8	11	Troll	Druid	0
+9	1	Goblin	Warrior	1
+9	2	Goblin	Paladin	0
+9	3	Goblin	Hunter	1
+9	4	Goblin	Rogue	1
+9	5	Goblin	Priest	0
+9	7	Goblin	Shaman	0
+9	8	Goblin	Mage	1
+9	9	Goblin	Warlock	1
+9	11	Goblin	Druid	0
+10	1	High Elf	Warrior	1
+10	2	High Elf	Paladin	1
+10	3	High Elf	Hunter	1
+10	4	High Elf	Rogue	1
+10	5	High Elf	Priest	1
+10	7	High Elf	Shaman	0
+10	8	High Elf	Mage	1
+10	9	High Elf	Warlock	0
+10	11	High Elf	Druid	0

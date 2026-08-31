@@ -1,0 +1,43 @@
+{
+  "production_exe_codeview": {
+    "signature": "RSDS",
+    "guid": "c5ddd5cc-4b8d-47ae-b2a5-ab4e5f158cc3",
+    "age": 1,
+    "embedded_pdb_path": "C:\\TW\\ComTW\\source\\bin\\Release\\mangosd.pdb",
+    "file_offset": 17345156
+  },
+  "server_pdb": {
+    "file": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.pdb",
+      "size_bytes": 205090816,
+      "creation_utc": "2026-08-25T16:54:55.7725823Z",
+      "last_write_utc": "2026-08-25T16:54:59.8492979Z",
+      "sha256": "0BBABAC50A4CF8D413ED651AF1BE74DC67BF02B0403E69193D9D9FB7907FC7A8"
+    },
+    "identity": {
+      "container": "MSF 7.00",
+      "pdb_stream_version": 20000404,
+      "signature": 1787676895,
+      "age": 1,
+      "guid": "c5ddd5cc-4b8d-47ae-b2a5-ab4e5f158cc3"
+    },
+    "matches_production_exe": true
+  },
+  "later_source_pdb": {
+    "file": {
+      "path": "C:\\TW\\ComTW\\source\\bin\\Release\\mangosd.pdb",
+      "size_bytes": 212389888,
+      "creation_utc": "2026-08-25T16:54:55.7725823Z",
+      "last_write_utc": "2026-08-26T18:41:28.4000019Z",
+      "sha256": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873"
+    },
+    "identity": {
+      "container": "MSF 7.00",
+      "pdb_stream_version": 20000404,
+      "signature": 1787676895,
+      "age": 4,
+      "guid": "c5ddd5cc-4b8d-47ae-b2a5-ab4e5f158cc3"
+    },
+    "matches_production_exe": false
+  }
+}

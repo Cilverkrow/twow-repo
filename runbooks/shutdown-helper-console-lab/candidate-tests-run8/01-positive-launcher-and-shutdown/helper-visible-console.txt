@@ -1,0 +1,1 @@
+[OK] Worldserver PID 19100, Pfad 'C:\TW\ComTW\runbooks\shutdown-helper-console-lab\candidate-tests-run8\01-positive-launcher-and-shutdown\mangosd.exe', Konsole 'mangosd': kontrolliert beendet.                                                

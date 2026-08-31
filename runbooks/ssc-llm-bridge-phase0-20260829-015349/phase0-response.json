@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "request_id": "72e080a9-225b-49cc-92cc-012c352109d3",
+  "bot_guid": 18281,
+  "status": "ok",
+  "model": "qwen2.5:7b",
+  "latency_ms": 8487,
+  "text": "Heute werde ich die Stadt abspähen und eventuelle Gefahren auskundschaften."
+}

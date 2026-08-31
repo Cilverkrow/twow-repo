@@ -1,0 +1,901 @@
+{
+  "contract_id": "ssc-llm-production-bridge-v1-a-r2",
+  "contract_version": 1,
+  "revision": "A-R2_IMPLEMENTATION_CLOSURE",
+  "result": "PASS",
+  "implementation_status": "PLANNED_NOT_IMPLEMENTED",
+  "baseline": {
+    "commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+    "core_source_modified": false,
+    "active_config_modified": false
+  },
+  "active_artifact_pins": {
+    "correction_zip_sha256": "36485E409BEBD3A9ECD5B85EE5CB58D1EC39CEB5661AA079559BCD2E76777434",
+    "root_manifest_sha256": "522D3358D28D7A8CC69DEF1D385A38399557F6E2C9BED777565C6CB4A403353C",
+    "payload_manifest_sha256": "814A8988ACF7F9651735A5AC111BA5A13ECD227C837665C0F8F9BA518B07171B",
+    "config_sha256": "D2925AA891F1B9F93454F631E30E1BCDC3557FB5EEBC56CA4F9E1F6A955E3902",
+    "personality_sha256": "386659245CB8298221465FD8B40339C13A01C7C10CBC58E876CDD264DC64D07E",
+    "cli_sha256": "C5D2C01DB3AEBBBF65A2ECFACC1515326334220A5F79395DF3E24550345CA611",
+    "personality_relative_path": "bridge/context/personality-context-profile-v1.json",
+    "cli_relative_path": "bridge/src/cli.mjs"
+  },
+  "package_responsibility": {
+    "deployment_tool": {
+      "verifies_outer_zip_hash": true,
+      "verifies_archive_path_safety": true,
+      "verifies_root_manifest_hash_and_all_entries": true,
+      "extracts_to_new_previously_nonexistent_package_root": true,
+      "rejects_absolute_dotdot_duplicate_ads_device_symlink_junction_and_reparse_escape": true
+    },
+    "core": {
+      "implements_zip_parser": false,
+      "extracts_archives": false,
+      "receives_already_extracted_absolute_package_root": true,
+      "reads_root_manifest": false,
+      "verifies_payload_manifest_before_every_child_start": true,
+      "verifies_every_payload_file_before_every_child_start": true,
+      "verifies_config_personality_and_cli_individual_pins": true,
+      "rejects_payload_path_escape_or_reparse_target": true,
+      "cli_path_derivation": "PackageRoot/bridge/src/cli.mjs",
+      "free_cli_script_option_allowed": false
+    },
+    "phase_b_deployment": false,
+    "phase_b_active_config_change": false
+  },
+  "core_constants": {
+    "CORE_READY_TIMEOUT_MS": 35000,
+    "CORE_STATUS_POLL_INTERVAL_MS": 100,
+    "CORE_SHUTDOWN_OVERALL_TIMEOUT_MS": 40000,
+    "CORE_STDERR_DIAGNOSTIC_CAP_BYTES": 65536,
+    "CORE_STDOUT_NDJSON_LINE_CAP_BYTES": 16384,
+    "CORE_MAX_OUTSTANDING_ROUTES": 3,
+    "CORE_COMPLETION_CAPACITY": 3,
+    "CORE_REQUEST_TTL_MS": 45000
+  },
+  "process_and_pipes": {
+    "creation_api": "CreateProcessW",
+    "shell_allowed": false,
+    "command": {
+      "executable": "absolute_node_runtime_reference",
+      "arguments": [
+        "PackageRoot/bridge/src/cli.mjs",
+        "--run"
+      ]
+    },
+    "only_explicit_pipe_handles_inherited": true,
+    "handle_allowlist_mechanism": "PROC_THREAD_ATTRIBUTE_HANDLE_LIST",
+    "parent_handles_inheritable": false,
+    "stdout": {
+      "purpose": "protocol_only",
+      "encoding": "strict_utf8_without_bom",
+      "framing": "one_json_object_per_lf_terminated_ndjson_line",
+      "crlf_accepted_as_line_ending": true,
+      "empty_lines_allowed": false,
+      "unknown_or_malformed_record_behavior": "permanent_admission_close"
+    },
+    "stderr": {
+      "purpose": "diagnostic_only",
+      "drained_separately_and_continuously": true,
+      "storage": "last_bytes_ring_buffer",
+      "storage_cap_bytes": 65536,
+      "excess_bytes": "discard_oldest_and_continue_draining",
+      "parsed_as_protocol": false,
+      "may_reach_game_chat": false
+    },
+    "io_worker_count": 1,
+    "io_worker_joinable": true,
+    "detached_threads": false,
+    "maximum_pending_cli_commands": 1,
+    "response_correlation": "strict_serial_order_to_single_pending_command",
+    "automatic_restart": false
+  },
+  "wire_common": {
+    "unknown_fields": "fail_closed",
+    "missing_fields": "fail_closed_no_defaults",
+    "unknown_codes": "fail_closed",
+    "known_code_in_wrong_context": "fail_closed",
+    "wrong_type_or_nullability": "fail_closed",
+    "duplicate_json_keys": "fail_closed",
+    "unsolicited_duplicate_or_out_of_order_response": "fail_closed",
+    "all_envelope_fields_are_required": true,
+    "additional_properties_allowed": false
+  },
+  "startup_records": {
+    "ready": {
+      "exact_fields_in_any_json_member_order": [
+        "code",
+        "mode",
+        "active_limit",
+        "waiting_capacity",
+        "ledger_capacity",
+        "bot_guid",
+        "model"
+      ],
+      "exact_values": {
+        "code": "ready",
+        "mode": "server_free_ndjson",
+        "active_limit": 1,
+        "waiting_capacity": 2,
+        "ledger_capacity": 64,
+        "bot_guid": 18281,
+        "model": "qwen2.5:7b"
+      },
+      "deadline_ms_after_successful_process_creation": 35000,
+      "mismatch_behavior": "permanent_admission_close_no_restart"
+    },
+    "fatal_top_level_error": {
+      "exact_fields": [
+        "result",
+        "code",
+        "message"
+      ],
+      "exact_result": "PHASE1A_BRIDGE_ERROR",
+      "code_type": "nonempty_string",
+      "message_type": "string",
+      "meaning": "fatal_process_level_failure_not_a_command_response",
+      "behavior": "permanent_admission_close_no_restart"
+    },
+    "other_record_before_ready": "fail_closed"
+  },
+  "command_error_envelope": {
+    "exact_fields": [
+      "code",
+      "message"
+    ],
+    "code_type": "nonempty_string",
+    "message_type": "string",
+    "not_a_normal_result_variant": true,
+    "core_generated_commands_are_prevalidated": true,
+    "policy_if_received_for_a_core_generated_command": "retire_pending_and_permanently_close_admission_without_retry"
+  },
+  "commands": {
+    "submit": {
+      "request": {
+        "exact_fields": [
+          "command",
+          "request"
+        ],
+        "command": "submit",
+        "request": "request_envelope_v1"
+      },
+      "normal_response_exact_fields": [
+        "accepted",
+        "code",
+        "status"
+      ],
+      "result_variants": [
+        {
+          "code": "queued",
+          "accepted": true,
+          "status": "status_envelope_state_queued"
+        },
+        {
+          "code": "duplicate",
+          "accepted": false,
+          "status": "status_envelope_any_state"
+        },
+        {
+          "code": "identity_mismatch",
+          "accepted": false,
+          "status": null
+        },
+        {
+          "code": "queue_full",
+          "accepted": false,
+          "status": "status_envelope_state_failed_attempt_0_error_queue_full"
+        },
+        {
+          "code": "expired",
+          "accepted": false,
+          "status": "status_envelope_state_expired_attempt_0_error_expired_before_run"
+        },
+        {
+          "code": "ledger_full",
+          "accepted": false,
+          "status": null
+        }
+      ],
+      "submit_count_per_request_id": 1,
+      "automatic_resubmit": false,
+      "ledger_full_is_latch_trigger_only_in_exact_variant": true
+    },
+    "status": {
+      "request": {
+        "exact_fields": [
+          "command",
+          "request_id",
+          "bot_guid"
+        ],
+        "command": "status",
+        "request_id": "canonical_lowercase_uuidv4",
+        "bot_guid": "integer_1_to_4294967295"
+      },
+      "normal_response_exact_fields": [
+        "code",
+        "status"
+      ],
+      "result_variants": [
+        {
+          "code": "ok",
+          "status": "status_envelope_any_state"
+        },
+        {
+          "code": "invalid_uuid",
+          "status": null
+        },
+        {
+          "code": "invalid_bot_guid",
+          "status": null
+        },
+        {
+          "code": "not_found",
+          "status": null
+        },
+        {
+          "code": "identity_mismatch",
+          "status": null
+        }
+      ],
+      "polling_creates_inference": false,
+      "minimum_global_poll_interval_ms": 100,
+      "scheduling": "round_robin_over_previously_accepted_outstanding_keys"
+    },
+    "consume": {
+      "request": {
+        "exact_fields": [
+          "command",
+          "request_id",
+          "bot_guid"
+        ],
+        "command": "consume",
+        "request_id": "canonical_lowercase_uuidv4",
+        "bot_guid": "integer_1_to_4294967295"
+      },
+      "normal_response_exact_fields": [
+        "code",
+        "status",
+        "completion"
+      ],
+      "result_variants": [
+        {
+          "code": "consumed",
+          "status": "status_envelope_state_consumed",
+          "completion": "completion_envelope_terminal"
+        },
+        {
+          "code": "not_ready",
+          "status": "status_envelope_state_queued_or_running",
+          "completion": null
+        },
+        {
+          "code": "already_consumed",
+          "status": "status_envelope_state_consumed",
+          "completion": null
+        },
+        {
+          "code": "invalid_uuid",
+          "status": null,
+          "completion": null
+        },
+        {
+          "code": "invalid_bot_guid",
+          "status": null,
+          "completion": null
+        },
+        {
+          "code": "not_found",
+          "status": null,
+          "completion": null
+        },
+        {
+          "code": "identity_mismatch",
+          "status": null,
+          "completion": null
+        }
+      ],
+      "consume_count_returning_completion": 1,
+      "second_consume_code": "already_consumed",
+      "second_consume_text_or_completion": null
+    },
+    "metrics": {
+      "request": {
+        "exact_fields": [
+          "command"
+        ],
+        "command": "metrics"
+      },
+      "response": {
+        "exact_fields": [
+          "code",
+          "metrics"
+        ],
+        "code": "metrics",
+        "metrics": "metrics_envelope"
+      }
+    },
+    "shutdown": {
+      "request": {
+        "exact_fields": [
+          "command",
+          "drain"
+        ],
+        "command": "shutdown",
+        "drain_type": "boolean",
+        "core_value": true
+      },
+      "response": {
+        "exact_fields": [
+          "code",
+          "metrics"
+        ],
+        "code": "shutdown",
+        "metrics": "metrics_envelope_stopped"
+      },
+      "send_count": 1,
+      "overall_core_timeout_ms": 40000,
+      "commands_allowed_after_send": 0
+    }
+  },
+  "normal_result_code_catalog": {
+    "startup": [
+      "ready"
+    ],
+    "submit": [
+      "queued",
+      "duplicate",
+      "identity_mismatch",
+      "queue_full",
+      "expired",
+      "ledger_full"
+    ],
+    "status": [
+      "ok",
+      "invalid_uuid",
+      "invalid_bot_guid",
+      "not_found",
+      "identity_mismatch"
+    ],
+    "consume": [
+      "consumed",
+      "not_ready",
+      "already_consumed",
+      "invalid_uuid",
+      "invalid_bot_guid",
+      "not_found",
+      "identity_mismatch"
+    ],
+    "metrics": [
+      "metrics"
+    ],
+    "shutdown": [
+      "shutdown"
+    ]
+  },
+  "request_envelope_v1": {
+    "immutable": true,
+    "exact_fields": [
+      "schema_version",
+      "request_id",
+      "bot_guid",
+      "created_utc",
+      "expires_utc",
+      "message"
+    ],
+    "schema_version": 1,
+    "request_id": "canonical_lowercase_uuidv4",
+    "bot_guid": 18281,
+    "created_utc": "canonical_utc_milliseconds_yyyy_mm_ddThh_mm_ss_mmmZ",
+    "expires_utc": "canonical_utc_milliseconds_yyyy_mm_ddThh_mm_ss_mmmZ",
+    "created_and_expires_preserved_as_wire_evidence": true,
+    "expires_after_created": true,
+    "maximum_wire_lifetime_ms": 60000,
+    "core_selected_lifetime_ms": 45000,
+    "maximum_created_future_skew_ms": 5000,
+    "message": "nonempty_utf8_string_without_controls_u0000_to_u001f_or_u007f",
+    "maximum_message_utf8_bytes": 2048,
+    "maximum_request_json_utf8_bytes": 16384,
+    "core_deadline_clock": "steady_clock",
+    "bridge_deadline_clock": "single_monotonic_deadline_derived_at_admission",
+    "accepted_lifetime_affected_by_later_wall_clock_change": false
+  },
+  "status_envelope": {
+    "immutable_snapshot": true,
+    "exact_fields": [
+      "schema_version",
+      "request_id",
+      "bot_guid",
+      "state",
+      "queued_utc",
+      "updated_utc",
+      "attempt_count",
+      "error_code"
+    ],
+    "schema_version": 1,
+    "request_id": "canonical_lowercase_uuidv4_equal_to_route",
+    "bot_guid": "integer_equal_to_route_and_18281",
+    "queued_utc": "canonical_utc_milliseconds_nonnull",
+    "updated_utc": "canonical_utc_milliseconds_nonnull",
+    "states": [
+      "queued",
+      "running",
+      "ready",
+      "failed",
+      "expired",
+      "consumed"
+    ],
+    "state_invariants": {
+      "queued": {
+        "attempt_count": 0,
+        "error_code": null
+      },
+      "running": {
+        "attempt_count": 1,
+        "error_code": null
+      },
+      "ready": {
+        "attempt_count": 1,
+        "error_code": null
+      },
+      "failed": {
+        "attempt_count": "0_or_1",
+        "error_code": "known_nonempty_terminal_error_code"
+      },
+      "expired": {
+        "attempt_count": "0_or_1",
+        "error_code": "expired_before_run_or_stale_result_or_expired_before_consume"
+      },
+      "consumed": {
+        "attempt_count": "same_as_consumed_completion",
+        "error_code": "same_as_consumed_completion_error_code_null_for_ready_nonempty_for_nonready"
+      }
+    }
+  },
+  "completion_envelope": {
+    "immutable": true,
+    "exact_fields": [
+      "schema_version",
+      "request_id",
+      "bot_guid",
+      "outcome",
+      "model",
+      "attempt_count",
+      "started_utc",
+      "completed_utc",
+      "text",
+      "error_code",
+      "raw_response_bytes"
+    ],
+    "schema_version": 1,
+    "request_id": "canonical_lowercase_uuidv4_equal_to_request_and_route",
+    "bot_guid": "integer_equal_to_request_route_and_18281",
+    "outcomes": [
+      "ready",
+      "failed",
+      "expired"
+    ],
+    "completed_utc": "canonical_utc_milliseconds_nonnull",
+    "ready_invariants": {
+      "outcome": "ready",
+      "model": "qwen2.5:7b",
+      "attempt_count": 1,
+      "started_utc": "canonical_utc_milliseconds_nonnull",
+      "text": "nonempty_canonical_sanitized_english_dialogue",
+      "error_code": null,
+      "raw_response_bytes": "integer_0_to_65536",
+      "maximum_unicode_codepoints": 240,
+      "maximum_utf8_bytes": 240,
+      "maximum_sentence_terminator_runs": 2,
+      "terminators": [
+        ".",
+        "!",
+        "?",
+        "…"
+      ],
+      "truncation_allowed": false
+    },
+    "nonready_invariants": {
+      "outcome": "failed_or_expired",
+      "text": null,
+      "error_code": "known_nonempty_terminal_error_code",
+      "attempt_count": "0_or_1",
+      "model": "null_or_qwen2.5:7b",
+      "started_utc": "null_or_canonical_utc_milliseconds",
+      "raw_response_bytes": "null_or_integer_0_to_65536",
+      "attempt_0_requires": {
+        "started_utc": null,
+        "model": null,
+        "raw_response_bytes": null,
+        "allowed_error_codes": [
+          "queue_full",
+          "expired_before_run",
+          "shutdown_cancelled",
+          "shutdown_timeout"
+        ]
+      },
+      "attempt_1_requires": {
+        "started_utc": "canonical_utc_milliseconds_nonnull",
+        "model": "null_or_qwen2.5:7b",
+        "raw_response_bytes": "null_or_integer_0_to_65536"
+      },
+      "expired_outcome_allowed_error_codes": [
+        "expired_before_run",
+        "stale_result",
+        "expired_before_consume"
+      ],
+      "failed_outcome_forbids_error_codes": [
+        "expired_before_run",
+        "stale_result",
+        "expired_before_consume"
+      ]
+    },
+    "all_fields_present_even_when_null": true,
+    "no_text_in_nonready_completion": true
+  },
+  "metrics_envelope": {
+    "exact_fields": [
+      "lifecycle",
+      "accepting",
+      "waiting",
+      "ledger_entries",
+      "active",
+      "max_active_observed",
+      "inference_attempts",
+      "stale_results_discarded",
+      "worker_owned",
+      "worker_settled"
+    ],
+    "field_count": 10,
+    "fields": {
+      "lifecycle": {
+        "type": "string_enum",
+        "values": [
+          "new",
+          "starting",
+          "running",
+          "stopping",
+          "stopped",
+          "failed"
+        ]
+      },
+      "accepting": {
+        "type": "boolean"
+      },
+      "waiting": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "ledger_entries": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 64
+      },
+      "active": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "max_active_observed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "inference_attempts": {
+        "type": "nonnegative_integer",
+        "maximum": 64
+      },
+      "stale_results_discarded": {
+        "type": "nonnegative_integer"
+      },
+      "worker_owned": {
+        "type": "boolean"
+      },
+      "worker_settled": {
+        "type": "boolean"
+      }
+    },
+    "shutdown_response_invariants": {
+      "lifecycle": "stopped",
+      "accepting": false,
+      "waiting": 0,
+      "active": 0,
+      "worker_owned": true,
+      "worker_settled": true
+    }
+  },
+  "terminal_completion_error_codes": {
+    "zero_or_one_attempt_lifecycle": [
+      "shutdown_cancelled",
+      "shutdown_timeout"
+    ],
+    "zero_attempt_only": [
+      "queue_full",
+      "expired_before_run"
+    ],
+    "expired_one_attempt_or_ready_before_consume": [
+      "stale_result",
+      "expired_before_consume"
+    ],
+    "identity_or_model": [
+      "completion_mismatch",
+      "response_model_mismatch"
+    ],
+    "transport_and_deadline": [
+      "invalid_monotonic_deadline",
+      "request_expired",
+      "http_request_too_large",
+      "inference_http_error",
+      "invalid_content_length",
+      "raw_response_too_large",
+      "response_aborted",
+      "http_response_error",
+      "http_transport_error",
+      "connect_failed",
+      "connect_deadline",
+      "response_deadline",
+      "request_cancelled"
+    ],
+    "response_json_and_schema": [
+      "input_too_large",
+      "utf8_bom_forbidden",
+      "invalid_utf8",
+      "invalid_json",
+      "json_trailing_content",
+      "json_depth_exceeded",
+      "duplicate_json_key",
+      "invalid_json_string",
+      "invalid_json_number",
+      "invalid_unicode_scalar",
+      "schema_type_mismatch",
+      "schema_missing_field",
+      "schema_unknown_field",
+      "invalid_inference_schema",
+      "incomplete_inference_response",
+      "invalid_assistant_role",
+      "invalid_assistant_text"
+    ],
+    "sanitizer_and_internal": [
+      "empty_assistant_text",
+      "assistant_text_too_long",
+      "assistant_text_too_many_bytes",
+      "too_many_sentences",
+      "invalid_raw_response_bytes",
+      "inference_failed"
+    ]
+  },
+  "command_error_code_catalog": {
+    "json_and_command_record": [
+      "input_too_large",
+      "utf8_bom_forbidden",
+      "invalid_utf8",
+      "invalid_json",
+      "json_trailing_content",
+      "json_depth_exceeded",
+      "duplicate_json_key",
+      "invalid_json_string",
+      "invalid_json_number",
+      "invalid_unicode_scalar",
+      "schema_type_mismatch",
+      "schema_missing_field",
+      "schema_unknown_field",
+      "invalid_command",
+      "unknown_command"
+    ],
+    "submit_request_validation": [
+      "unsupported_schema_version",
+      "invalid_uuid",
+      "invalid_bot_guid",
+      "invalid_timestamp",
+      "invalid_expiry",
+      "ttl_too_large",
+      "created_in_future",
+      "invalid_message",
+      "forbidden_message_control",
+      "message_too_large",
+      "personality_guid_mismatch",
+      "prompt_too_large",
+      "admission_closed"
+    ],
+    "consume_invariant": [
+      "missing_completion"
+    ],
+    "fallback": [
+      "internal_error"
+    ]
+  },
+  "fatal_top_level_error_code_catalog": {
+    "framing": [
+      "command_too_large"
+    ],
+    "instance_lock": [
+      "instance_lock_held",
+      "instance_lock_failed",
+      "instance_lock_release_failed"
+    ],
+    "config_and_context": [
+      "unsupported_config_version",
+      "invalid_bridge_name",
+      "invalid_config_range",
+      "output_limits_not_approved",
+      "invalid_shutdown_timeout",
+      "endpoint_not_allowlisted",
+      "endpoint_path_not_allowlisted",
+      "inventory_verification_required",
+      "invalid_model_allowlist",
+      "model_pin_not_allowlisted",
+      "model_pin_not_approved",
+      "invalid_model_name",
+      "invalid_model_digest",
+      "invalid_context_path",
+      "invalid_context_hash",
+      "invalid_system_instruction",
+      "unsupported_context_schema",
+      "invalid_profile_version",
+      "context_version_mismatch",
+      "invalid_profile_status",
+      "invalid_population_key",
+      "invalid_race_variant",
+      "invalid_dialogue_rule",
+      "context_path_escape",
+      "invalid_context_filename",
+      "context_too_large",
+      "context_hash_mismatch",
+      "invalid_identity_id",
+      "invalid_identity_field",
+      "invalid_context_array",
+      "schema_type_mismatch",
+      "schema_missing_field",
+      "schema_unknown_field",
+      "input_too_large",
+      "utf8_bom_forbidden",
+      "invalid_utf8",
+      "invalid_json",
+      "json_trailing_content",
+      "json_depth_exceeded",
+      "duplicate_json_key",
+      "invalid_json_string",
+      "invalid_json_number",
+      "invalid_unicode_scalar"
+    ],
+    "startup_inventory_and_transport": [
+      "startup_cancelled",
+      "model_inventory_http_error",
+      "invalid_model_inventory",
+      "pinned_model_unavailable",
+      "model_digest_mismatch",
+      "invalid_content_length",
+      "raw_response_too_large",
+      "response_aborted",
+      "http_response_error",
+      "http_transport_error",
+      "connect_failed",
+      "connect_deadline",
+      "response_deadline",
+      "request_cancelled"
+    ],
+    "internal": [
+      "invalid_bridge_lifecycle",
+      "invalid_state",
+      "invalid_attempt_count",
+      "invalid_error_code",
+      "invalid_outcome",
+      "invalid_completion_model",
+      "invalid_raw_response_bytes",
+      "invalid_ready_completion",
+      "invalid_nonready_completion",
+      "internal_error"
+    ],
+    "any_unknown_fatal_code_behavior": "permanent_admission_close"
+  },
+  "ledger_full_latch": {
+    "trigger_pending_command": "submit",
+    "trigger_exact_response": {
+      "accepted": false,
+      "code": "ledger_full",
+      "status": null
+    },
+    "core_adapter_state": "ledger_exhausted",
+    "triggering_request_local_terminal_state": "retired_ledger_full",
+    "triggering_request_may_be_polled_or_consumed": false,
+    "future_submit_commands_to_same_child": 0,
+    "future_external_requests": "locally_rejected_ledger_exhausted_before_uuid_or_route_creation",
+    "previously_accepted_requests": "status_poll_then_consume_or_local_discard_only",
+    "logging": "at_most_once_per_child_instance_with_further_messages_throttled_or_suppressed",
+    "normal_non_llm_playerbot_chat_affected": false,
+    "fallback_llm_allowed": false,
+    "retry_allowed": false,
+    "resubmit_allowed": false,
+    "child_restart_allowed": false,
+    "process_switch_allowed": false,
+    "automatic_reset_allowed": false,
+    "reset_condition": "later_explicitly_authorized_manual_full_restart_creating_new_child_instance",
+    "malformed_or_wrong_context_ledger_full": "protocol_failed_not_ledger_exhausted"
+  },
+  "child_lifecycle": {
+    "adapter_states": [
+      "disabled",
+      "starting",
+      "ready",
+      "ledger_exhausted",
+      "protocol_failed",
+      "child_failed",
+      "shutting_down",
+      "stopped"
+    ],
+    "permanent_admission_close_events": [
+      "ledger_exhausted",
+      "stdout_eof",
+      "invalid_ndjson",
+      "ready_timeout",
+      "ready_mismatch",
+      "unknown_field",
+      "missing_field",
+      "unknown_code",
+      "known_code_in_wrong_context",
+      "unsolicited_duplicate_or_out_of_order_response",
+      "child_exit_or_abort",
+      "package_or_pin_failure"
+    ],
+    "normal_shutdown": {
+      "command": {
+        "command": "shutdown",
+        "drain": true
+      },
+      "send_count": 1,
+      "overall_timeout_ms": 40000,
+      "requires_worker_join": true,
+      "requires_all_owned_handles_closed": true
+    },
+    "shutdown_timeout_fallback": {
+      "may_terminate_process": true,
+      "only_handle": "exact_hProcess_returned_by_this_CreateProcessW_call_and_still_owned",
+      "pid_or_name_enumeration_allowed": false,
+      "foreign_node_or_ollama_process_termination_allowed": false,
+      "game_server_or_database_process_termination_allowed": false,
+      "automatic_restart_after_termination": false,
+      "worker_join_after_termination": true,
+      "close_all_owned_pipe_thread_and_process_handles": true
+    }
+  },
+  "delivery": {
+    "channel": "whisper_only",
+    "action_allowlist": [],
+    "semantic_output_language": "English_regardless_of_input",
+    "semantic_english_equals_wow_LANG_COMMON": false,
+    "wow_protocol_language": "derive_from_freshly_resolved_bot_team_using_existing_alliance_LANG_COMMON_horde_LANG_ORCISH_mapping",
+    "world_thread_revalidation_required": [
+      "outstanding_request_id_and_bot_guid",
+      "steady_clock_deadline",
+      "completion_envelope_and_context_bound_code",
+      "pinned_model_and_single_attempt",
+      "strict_utf8_codepoint_byte_sentence_and_sanitizer_canonicality",
+      "bot_guid_ai_world_session_account_join_time_and_generation",
+      "target_guid_real_player_world_session_account_join_time_generation_and_name",
+      "external_flag_and_whisper_route"
+    ],
+    "model_text_may_trigger_action_emote_command_tool_or_alternate_channel": false,
+    "maximum_whispers_per_request": 1
+  },
+  "phase_b_boundary": {
+    "requires_separate_authorization": true,
+    "allowed_later": [
+      "isolated_source_implementation_with_adapter_disabled_by_default",
+      "fake_child_unit_and_world_thread_tests_without_real_bridge_or_ollama",
+      "isolated_clean_build"
+    ],
+    "forbidden": [
+      "deployment",
+      "production_package_extraction",
+      "active_config_change",
+      "real_node_bridge_start",
+      "real_bridge_inference",
+      "ollama_access",
+      "game_chat",
+      "database_access",
+      "game_or_database_process_control"
+    ],
+    "node_runtime_status": "reference_only_until_later_deployment_gate",
+    "phase_b_started": false
+  }
+}

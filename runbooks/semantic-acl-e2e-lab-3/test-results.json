@@ -1,0 +1,6 @@
+{
+    "Status":  "fail",
+    "StartedUtc":  "2026-08-27T18:04:16.2819212Z",
+    "CompletedUtc":  "2026-08-27T18:04:16.8619262Z",
+    "Error":  "DACL SID set for root ACL between \u0027C:\\TW\\ComTW\\runbooks\\semantic-acl-e2e-lab-3\\source-root\u0027 and \u0027E:\\TWoW-Migration-Backups\\semantic-acl-e2e-lab-3\\probe-run\\cold-backup\u0027 count differs. Expected=7, actual=4."
+}

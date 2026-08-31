@@ -1,0 +1,13 @@
+{
+  "captured_utc": "2026-08-29T19:13:44.4176128Z",
+  "config_sha256_initial": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+  "config_sha256_final": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+  "config_unchanged": true,
+  "source_or_config_writes": [],
+  "database_statement_class": "SELECT only",
+  "database_writes": [],
+  "bot_login_actions": [],
+  "process_control_actions": [],
+  "ollama_inference_actions": [],
+  "phase2_started": false
+}

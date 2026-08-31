@@ -1,0 +1,1 @@
+[FEHLER] Unerwarteter Konsolentitel fuer PID 37080: 'wrong-title' statt 'mangosd'.                                      赀

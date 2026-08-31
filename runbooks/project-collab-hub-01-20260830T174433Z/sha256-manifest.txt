@@ -1,0 +1,9 @@
+# sha256 manifest for evidence directory
+# task_id=PROJECT-COLLAB-HUB-01
+# generated_utc=20260830T174433Z
+# encoding=utf-8-no-bom
+# line_endings=lf
+
+# file bytes sha256 absolute_path
+2629	1908F0A5A7B9F5F4249EB2BCEF8BAD22CC3681E411BE424FF1697EC0FC4D94D4	C:\TW\ComTW\runbooks\project-collab-hub-01-20260830T174433Z\project-collab-hub-report-v1.md
+435	9C893384DA1051EFCADA0106DAE7CD5AED97DE4FD58F4D2212580F7688ACD842	C:\TW\ComTW\runbooks\project-collab-hub-01-20260830T174433Z\sha256-manifest.txt

@@ -1,0 +1,54 @@
+===== sql/create_databases.sql @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 640-662 =====
+   640: /*!40101 SET character_set_client = @saved_cs_client */;
+   641: 
+   642: --
+   643: -- Table structure for table `character_pvp_currency`
+   644: --
+   645: 
+   646: DROP TABLE IF EXISTS `character_pvp_currency`;
+   647: /*!40101 SET @saved_cs_client     = @@character_set_client */;
+   648: /*!40101 SET character_set_client = utf8mb4 */;
+   649: CREATE TABLE `character_pvp_currency` (
+   650:   `guid` int(10) unsigned NOT NULL DEFAULT 0,
+   651:   `honor` int(10) unsigned NOT NULL DEFAULT 0,
+   652:   `conquest` int(10) unsigned NOT NULL DEFAULT 0,
+   653:   `weekly_honor` int(10) unsigned NOT NULL DEFAULT 0,
+   654:   `week_begin_day` int(10) unsigned NOT NULL DEFAULT 0,
+   655:   PRIMARY KEY (`guid`) USING BTREE
+   656: ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
+   657: /*!40101 SET character_set_client = @saved_cs_client */;
+   658: 
+   659: --
+   660: -- Table structure for table `character_queststatus`
+   661: --
+   662: 
+===== src/game/Handlers/CharacterHandler.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 80-90 =====
+    80:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADGROUP,           "SELECT groupId FROM group_member WHERE memberGuid ='%u'", m_guid.GetCounter());
+    81:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADBOUNDINSTANCES,  "SELECT id, permanent, map, resettime FROM character_instance LEFT JOIN instance ON instance = id WHERE guid = '%u'", m_guid.GetCounter());
+    82:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADAURAS,           "SELECT caster_guid,item_guid,spell,stackcount,remaincharges,basepoints0,basepoints1,basepoints2,periodictime0,periodictime1,periodictime2,maxduration,remaintime,effIndexMask FROM character_aura WHERE guid = '%u'", m_guid.GetCounter());
+    83:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADSPELLS,          "SELECT spell,active,disabled FROM character_spell WHERE guid = '%u'", m_guid.GetCounter());
+    84:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADQUESTSTATUS,     "SELECT quest,status,rewarded,explored,timer,mobcount1,mobcount2,mobcount3,mobcount4,itemcount1,itemcount2,itemcount3,itemcount4,reward_choice FROM character_queststatus WHERE guid = '%u'", m_guid.GetCounter());
+    85:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADHONORCP,         "SELECT victimType,victim,cp,date,type FROM character_honor_cp WHERE guid = '%u'", m_guid.GetCounter());
+    86:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADPVPCURRENCY,     "SELECT honor,conquest,weekly_honor,week_begin_day FROM character_pvp_currency WHERE guid = '%u'", m_guid.GetCounter());
+    87:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADREPUTATION,      "SELECT faction,standing,flags FROM character_reputation WHERE guid = '%u'", m_guid.GetCounter());
+    88:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADTRANSMOGS,       "SELECT itemId FROM character_transmogs WHERE guid = '%u'", m_guid.GetCounter());
+    89:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADINVENTORY,       "SELECT * FROM (SELECT creatorGuid, giftCreatorGuid, count, duration, charges, flags, enchantments, randomPropertyId, transmogrifyId, durability, text, bag, slot, item, itemEntry, generated_loot FROM character_inventory JOIN item_instance ON character_inventory.item = item_instance.guid WHERE character_inventory.guid = '%u') as t ORDER BY bag,slot", m_guid.GetCounter());
+    90:     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADITEMLOOT,        "SELECT guid,itemid,amount,property FROM item_loot WHERE owner_guid = '%u'", m_guid.GetCounter());
+===== src/game/HonorMgr.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 580-593 =====
+   580: {
+   581:     if (!m_owner)
+   582:         return;
+   583: 
+   584:     ResetCurrencyWeekIfNeeded();
+   585: 
+   586:     CharacterDatabase.PExecute("REPLACE INTO `character_pvp_currency` (`guid`, `honor`, `conquest`, `weekly_honor`, `week_begin_day`) "
+   587:         "VALUES (%u, %u, %u, %u, %u)", m_owner->GetGUIDLow(), m_spendableHonor, m_conquestPoints, m_weeklySpendableHonor, m_currencyWeekBeginDay);
+   588: }
+   589: 
+   590: void HonorMgr::SendHonorCurrencyUpdate() const
+   591: {
+   592:     if (!m_owner)
+   593:         return;
+===== file history (read-only) =====
+643d5bafb243411a8281c81bbf5d6c9abaeb25be	2026-08-17T20:08:46-07:00	Implemented the new honor and rank system Honor gains reduces to 10% of their previous values Rank gains are now immediate and not pool based Honor gains as a currency instead of just a ranking measurement new PvP vendors have been implemented with the new honor cost items Rank requirements have been updated The rating point requirements for rank 4-14 are made up based on time requirements pulled from a boosting service and will be updated when better data is available
+7c67018f80caaf74befd9b289f3274e72d16ca38	2026-08-17T20:08:46-07:00	Implemented the new honor and rank system Honor gains reduces to 10% of their previous values Rank gains are now immediate and not pool based Honor gains as a currency instead of just a ranking measurement new PvP vendors have been implemented with the new honor cost items Rank requirements have been updated The rating point requirements for rank 4-14 are made up based on time requirements pulled from a boosting service and will be updated when better data is available

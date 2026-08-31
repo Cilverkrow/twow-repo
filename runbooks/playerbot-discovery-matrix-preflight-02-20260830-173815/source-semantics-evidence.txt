@@ -1,0 +1,1645 @@
+PLAYERBOT-DISCOVERY-AND-MATRIX-PREFLIGHT-02 source semantics evidence
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\PlayerbotAIConfig.cpp LINES 246-263 =====
+246:    botAutologin = BotAutoLogin(config.GetIntDefault("AiPlayerbot.BotAutologin", 0));
+247:    randomBotAutologin = config.GetBoolDefault("AiPlayerbot.RandomBotAutologin", true);
+248:    randomBotAutoCreate = config.GetBoolDefault("AiPlayerbot.RandomBotAutoCreate", true);
+249:    minRandomBots = config.GetIntDefault("AiPlayerbot.MinRandomBots", 50);
+250:    maxRandomBots = config.GetIntDefault("AiPlayerbot.MaxRandomBots", 200);
+251:    randomBotUpdateInterval = config.GetIntDefault("AiPlayerbot.RandomBotUpdateInterval", 1 * 1000);
+252:    randomBotCountChangeMinInterval = config.GetIntDefault("AiPlayerbot.RandomBotCountChangeMinInterval", 1 * 1800);
+253:    randomBotCountChangeMaxInterval = config.GetIntDefault("AiPlayerbot.RandomBotCountChangeMaxInterval", 2 * 3600);
+254:    randomBotTimedLogout = config.GetBoolDefault("AiPlayerbot.RandomBotTimedLogout", true);
+255:    randomBotTimedOffline = config.GetBoolDefault("AiPlayerbot.RandomBotTimedOffline", false);
+256:    minRandomBotInWorldTime = config.GetIntDefault("AiPlayerbot.MinRandomBotInWorldTime", 1 * 1800);
+257:    maxRandomBotInWorldTime = config.GetIntDefault("AiPlayerbot.MaxRandomBotInWorldTime", 6 * 3600);
+258:    minRandomBotRandomizeTime = config.GetIntDefault("AiPlayerbot.MinRandomBotRandomizeTime", 6 * 3600);
+259:    maxRandomBotRandomizeTime = config.GetIntDefault("AiPlayerbot.MaxRandomRandomizeTime", 24 * 3600);
+260:    minRandomBotChangeStrategyTime = config.GetIntDefault("AiPlayerbot.MinRandomBotChangeStrategyTime", 1800);
+261:    maxRandomBotChangeStrategyTime = config.GetIntDefault("AiPlayerbot.MaxRandomBotChangeStrategyTime", 2 * 3600);
+262:    minRandomBotReviveTime = config.GetIntDefault("AiPlayerbot.MinRandomBotReviveTime", 60);
+263:    maxRandomBotReviveTime = config.GetIntDefault("AiPlayerbot.MaxRandomReviveTime", 300);
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\PlayerbotAIConfig.cpp LINES 294-340 =====
+294:    // Comma separated character names. A pinned bot is kept logged in and is
+295:    // exempt from the random relocation the manager applies to everyone else,
+296:    // so its run can be followed from one level to the next.
+297:    {
+298:        std::string names = config.GetStringDefault("AiPlayerbot.PinnedBots", "");
+299:        std::stringstream ss(names);
+300:        std::string name;
+301:        while (std::getline(ss, name, ','))
+302:        {
+303:            size_t b = name.find_first_not_of(" 	");
+304:            size_t e = name.find_last_not_of(" 	");
+305:            if (b != std::string::npos)
+306:                pinnedBotNames.push_back(name.substr(b, e - b + 1));
+307:        }
+308:    }
+309:    enableMinimalMove = config.GetBoolDefault("AiPlayerbot.EnableMinimalMove", true);
+310:    
+311:    randomBotTeleportDistance = config.GetIntDefault("AiPlayerbot.RandomBotTeleportDistance", 1000);
+312:    transportTeleportType = config.GetIntDefault("AiPlayerbot.TransportTeleportType", 2);
+313:    randomBotTeleportNearPlayer = config.GetBoolDefault("AiPlayerbot.RandomBotTeleportNearPlayer", false);
+314:    randomBotTeleportNearPlayerMaxAmount = config.GetIntDefault("AiPlayerbot.RandomBotTeleportNearPlayerMaxAmount", 0);
+315:    randomBotTeleportNearPlayerMaxAmountRadius = config.GetFloatDefault("AiPlayerbot.RandomBotTeleportNearPlayerMaxAmountRadius", 0.0f);
+316:    randomBotTeleportMinInterval = config.GetIntDefault("AiPlayerbot.RandomBotTeleportTeleportMinInterval", 2 * 3600);
+317:    randomBotTeleportMaxInterval = config.GetIntDefault("AiPlayerbot.RandomBotTeleportTeleportMaxInterval", 48 * 3600);
+318:    randomBotsMaxLoginsPerInterval = config.GetIntDefault("AiPlayerbot.RandomBotsMaxLoginsPerInterval", 10);
+319:    randomBotsPerInterval = config.GetIntDefault("AiPlayerbot.RandomBotsPerInterval", 0);
+320:    minRandomBotsPriceChangeInterval = config.GetIntDefault("AiPlayerbot.MinRandomBotsPriceChangeInterval", 2 * 3600);
+321:    maxRandomBotsPriceChangeInterval = config.GetIntDefault("AiPlayerbot.MaxRandomBotsPriceChangeInterval", 48 * 3600);
+322:    //Auction house settings
+323:    shouldQueryAHListingsOutsideOfAH = config.GetBoolDefault("AiPlayerbot.ShouldQueryAHListingsOutsideOfAH", true);
+324:    LoadList<std::list<uint32> >(config.GetStringDefault("AiPlayerbot.AhOverVendorItemIds", ""), ahOverVendorItemIds);
+325:    LoadList<std::list<uint32> >(config.GetStringDefault("AiPlayerbot.VendorOverAHItemIds", ""), vendorOverAHItemIds);
+326:    botCheckAllAuctionListings = config.GetBoolDefault("AiPlayerbot.BotCheckAllAuctionListings", false);
+327:    botsSaveEpics = config.GetBoolDefault("AiPlayerbot.BotsSaveEpics", true);
+328:    //
+329:    randomBotJoinLfg = config.GetBoolDefault("AiPlayerbot.RandomBotJoinLfg", true);
+330:    logRandomBotJoinLfg = config.GetBoolDefault("AiPlayerbot.LogRandomBotJoinLfg", false);
+331:    randomBotJoinBG = config.GetBoolDefault("AiPlayerbot.RandomBotJoinBG", true);
+332:    randomBotAutoJoinBG = config.GetBoolDefault("AiPlayerbot.RandomBotAutoJoinBG", false);
+333:    randomBotBracketCount = config.GetIntDefault("AiPlayerbot.RandomBotBracketCount", 3);
+334:    logInGroupOnly = config.GetBoolDefault("AiPlayerbot.LogInGroupOnly", true);
+335:    logValuesPerTick = config.GetBoolDefault("AiPlayerbot.LogValuesPerTick", false);
+336:    fleeingEnabled = config.GetBoolDefault("AiPlayerbot.FleeingEnabled", true);
+337:    summonAtInnkeepersEnabled = config.GetBoolDefault("AiPlayerbot.SummonAtInnkeepersEnabled", true);
+338:    randomBotMinLevel = config.GetIntDefault("AiPlayerbot.RandomBotMinLevel", 1);
+339:    randomBotMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotMaxLevel", 255);
+340:    randomBotLoginAtStartup = config.GetBoolDefault("AiPlayerbot.RandomBotLoginAtStartup", true);
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\PlayerbotAIConfig.cpp LINES 362-500 =====
+362:    randomBotLoginWithPlayer = config.GetBoolDefault("AiPlayerbot.RandomBotLoginWithPlayer", false);
+363:    asyncBotLogin = config.GetBoolDefault("AiPlayerbot.AsyncBotLogin", false);
+364:    preloadHolders = config.GetBoolDefault("AiPlayerbot.PreloadHolders", false);
+365:    
+366:    freeRoomForNonSpareBots = config.GetIntDefault("AiPlayerbot.FreeRoomForNonSpareBots", 1);
+367:
+368:    loginBotsNearPlayerRange = config.GetIntDefault("AiPlayerbot.LoginBotsNearPlayerRange", 1000);
+369:    
+370:    LoadListString<std::vector<std::string> >(config.GetStringDefault("AiPlayerbot.DefaultLoginCriteria", "maxbots,spareroom,offline"), defaultLoginCriteria);
+371:
+372:    std::vector<std::string> criteriaValues = configA->GetValues("AiPlayerbot.LoginCriteria");
+373:    std::sort(criteriaValues.begin(), criteriaValues.end());
+374:    loginCriteria.clear();
+375:    for (auto& value : criteriaValues)
+376:    {
+377:        loginCriteria.push_back({});
+378:        LoadListString<std::vector<std::string> >(config.GetStringDefault(value, ""), loginCriteria.back());
+379:    }
+380:
+381:    if (criteriaValues.empty())
+382:    {
+383:        loginCriteria.push_back({ "group" });
+384:        loginCriteria.push_back({ "arena" });
+385:        loginCriteria.push_back({ "bg" });
+386:        loginCriteria.push_back({ "guild" });
+387:        loginCriteria.push_back({ "logoff,classrace,level,online" });
+388:        loginCriteria.push_back({ "logoff,classrace,level" });
+389:        loginCriteria.push_back({ "logoff,classrace" });
+390:    }
+391:    
+392:
+393:    // There is no level 0, but the array has that slot and GetLevelBucketSize
+394:    // indexes it with whatever it is handed - so give it a defined value.
+395:    levelProbability[0] = 0;
+396:
+397:    for (uint32 level = 1; level <= PLAYER_STRONG_MAX_LEVEL; ++level)
+398:    {
+399:        levelProbability[level] = config.GetIntDefault("AiPlayerbot.LevelProbability." + std::to_string(level), 100);
+400:    }
+401:
+402:    sLog.outString("Loading Race/Class probabilities");
+403:
+404:    classRaceProbabilityTotal = 0;
+405:
+406:    useFixedClassRaceCounts = config.GetBoolDefault("AiPlayerbot.ClassRace.UseFixedClassRaceCounts", false);
+407:    RandomPlayerbotFactory factory(0);
+408:
+409:    for (uint32 race = 1; race < MAX_RACES; ++race)
+410:    {
+411:        //Set race defaults
+412:        if (race > 0)
+413:        {
+414:            int rProb = config.GetIntDefault("AiPlayerbot.ClassRaceProb.0." + std::to_string(race), 100);
+415:
+416:            for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+417:            {
+418:                classRaceProbability[cls][race] = rProb;
+419:            }
+420:        }
+421:    }
+422:
+423:    //Class overrides
+424:    for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+425:    {
+426:        int cProb = config.GetIntDefault("AiPlayerbot.ClassRaceProb." + std::to_string(cls), -1);
+427:
+428:        if (cProb >= 0)
+429:        {
+430:            for (uint32 race = 1; race < MAX_RACES; ++race)
+431:            {
+432:                classRaceProbability[cls][race] = cProb;
+433:            }
+434:        }
+435:    }
+436:
+437:    //Race Class overrides
+438:    for (uint32 race = 1; race < MAX_RACES; ++race)
+439:    {
+440:        for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+441:        {
+442:            int rcProb = config.GetIntDefault("AiPlayerbot.ClassRaceProb." + std::to_string(cls) + "." + std::to_string(race), -1);
+443:            if (rcProb >= 0)
+444:                classRaceProbability[cls][race] = rcProb;
+445:
+446:            if (!factory.isAvailableRace(cls, race))
+447:            {
+448:                // Dropped without a word until now, so an entry naming a
+449:                // combination that cannot exist looked like it had been accepted
+450:                // and the bots simply came out as something else.
+451:                if (rcProb > 0)
+452:                    sLog.outError("AiPlayerbot.ClassRaceProb.%u.%u is set to %d, but that class cannot be that race. Ignoring it - those bots will be created as another race.",
+453:                        cls, race, rcProb);
+454:
+455:                classRaceProbability[cls][race] = 0;
+456:            }
+457:            else
+458:                classRaceProbabilityTotal += classRaceProbability[cls][race];
+459:        }
+460:    }
+461:
+462:    if (useFixedClassRaceCounts)
+463:    {
+464:
+465:        // Warn about unsupported config keys
+466:        for (uint32 race = 1; race < MAX_RACES; ++race)
+467:        {
+468:            std::string raceKey = "AiPlayerbot.ClassRaceProb.0." + std::to_string(race);
+469:            int val = config.GetIntDefault(raceKey.c_str(), -1);
+470:            if (val >= 0)
+471:                sLog.outError("Fixed class/race counts does not yet support '%s' (race-only). This config entry will be ignored.", raceKey.c_str());
+472:        }
+473:
+474:        for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+475:        {
+476:            std::string classKey = "AiPlayerbot.ClassRaceProb." + std::to_string(cls);
+477:            int val = config.GetIntDefault(classKey.c_str(), -1);
+478:            if (val >= 0)
+479:                sLog.outError("Fixed class/race counts does not yet support '%s' (class-only). This config entry will be ignored.", classKey.c_str());
+480:        }
+481:
+482:        //Parse and build fixedClassRacesCounts
+483:        {
+484:            for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+485:	    {
+486:	        for (uint32 race = 1; race < MAX_RACES; ++race)
+487:	        {
+488:		    std::string key = "AiPlayerbot.ClassRaceProb." + std::to_string(cls) + "." + std::to_string(race);
+489:		    int count = config.GetIntDefault(key, -1);
+490:
+491:		    if (count >= 0 && !factory.isAvailableRace(cls, race))
+492:		        sLog.outError("AiPlayerbot.ClassRaceProb.%u.%u asks for %d bots, but that class cannot be that race. Ignoring it.",
+493:		            cls, race, count);
+494:		    else if (count >= 0)
+495:		    {
+496:		        fixedClassRaceCounts[{cls, race}] = count;
+497:		    }
+498:	        }
+499:	    }
+500:        }
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\RandomPlayerbotFactory.cpp LINES 34-151 =====
+34:RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(accountId)
+35:{
+36:    availableRaces[CLASS_WARRIOR].push_back(RACE_HUMAN);
+37:    availableRaces[CLASS_WARRIOR].push_back(RACE_NIGHTELF);
+38:    availableRaces[CLASS_WARRIOR].push_back(RACE_GNOME);
+39:    availableRaces[CLASS_WARRIOR].push_back(RACE_DWARF);
+40:    availableRaces[CLASS_WARRIOR].push_back(RACE_ORC);
+41:    availableRaces[CLASS_WARRIOR].push_back(RACE_UNDEAD);
+42:    availableRaces[CLASS_WARRIOR].push_back(RACE_TAUREN);
+43:    availableRaces[CLASS_WARRIOR].push_back(RACE_TROLL);
+44:    availableRaces[CLASS_WARRIOR].push_back(RACE_GOBLIN);
+45:    availableRaces[CLASS_WARRIOR].push_back(RACE_HIGH_ELF);
+46:#ifndef MANGOSBOT_ZERO
+47:    availableRaces[CLASS_WARRIOR].push_back(RACE_DRAENEI);
+48:#endif
+49:
+50:    availableRaces[CLASS_PALADIN].push_back(RACE_HUMAN);
+51:    availableRaces[CLASS_PALADIN].push_back(RACE_DWARF);
+52:    availableRaces[CLASS_PALADIN].push_back(RACE_HIGH_ELF);
+53:#ifndef MANGOSBOT_ZERO
+54:    availableRaces[CLASS_PALADIN].push_back(RACE_DRAENEI);
+55:    availableRaces[CLASS_PALADIN].push_back(RACE_BLOODELF);
+56:#endif
+57:
+58:    availableRaces[CLASS_ROGUE].push_back(RACE_HUMAN);
+59:    availableRaces[CLASS_ROGUE].push_back(RACE_DWARF);
+60:    availableRaces[CLASS_ROGUE].push_back(RACE_NIGHTELF);
+61:    availableRaces[CLASS_ROGUE].push_back(RACE_GNOME);
+62:    availableRaces[CLASS_ROGUE].push_back(RACE_ORC);
+63:    availableRaces[CLASS_ROGUE].push_back(RACE_UNDEAD);
+64:    availableRaces[CLASS_ROGUE].push_back(RACE_TROLL);
+65:    availableRaces[CLASS_ROGUE].push_back(RACE_GOBLIN);
+66:    availableRaces[CLASS_ROGUE].push_back(RACE_HIGH_ELF);
+67:#ifndef MANGOSBOT_ZERO
+68:    availableRaces[CLASS_ROGUE].push_back(RACE_BLOODELF);
+69:#endif
+70:
+71:    availableRaces[CLASS_PRIEST].push_back(RACE_HUMAN);
+72:    availableRaces[CLASS_PRIEST].push_back(RACE_DWARF);
+73:    availableRaces[CLASS_PRIEST].push_back(RACE_NIGHTELF);
+74:    availableRaces[CLASS_PRIEST].push_back(RACE_TROLL);
+75:    availableRaces[CLASS_PRIEST].push_back(RACE_UNDEAD);
+76:    availableRaces[CLASS_PRIEST].push_back(RACE_HIGH_ELF);
+77:#ifndef MANGOSBOT_ZERO
+78:    availableRaces[CLASS_PRIEST].push_back(RACE_DRAENEI);
+79:    availableRaces[CLASS_PRIEST].push_back(RACE_BLOODELF);
+80:#endif
+81:
+82:    availableRaces[CLASS_MAGE].push_back(RACE_HUMAN);
+83:    availableRaces[CLASS_MAGE].push_back(RACE_GNOME);
+84:    availableRaces[CLASS_MAGE].push_back(RACE_UNDEAD);
+85:    availableRaces[CLASS_MAGE].push_back(RACE_TROLL);
+86:    availableRaces[CLASS_MAGE].push_back(RACE_GOBLIN);
+87:    availableRaces[CLASS_MAGE].push_back(RACE_HIGH_ELF);
+88:#ifndef MANGOSBOT_ZERO
+89:    availableRaces[CLASS_MAGE].push_back(RACE_DRAENEI);
+90:    availableRaces[CLASS_MAGE].push_back(RACE_BLOODELF);
+91:#endif
+92:
+93:    availableRaces[CLASS_WARLOCK].push_back(RACE_HUMAN);
+94:    availableRaces[CLASS_WARLOCK].push_back(RACE_GNOME);
+95:    availableRaces[CLASS_WARLOCK].push_back(RACE_UNDEAD);
+96:    availableRaces[CLASS_WARLOCK].push_back(RACE_ORC);
+97:    availableRaces[CLASS_WARLOCK].push_back(RACE_GOBLIN);
+98:#ifndef MANGOSBOT_ZERO
+99:    availableRaces[CLASS_WARLOCK].push_back(RACE_BLOODELF);
+100:#endif
+101:
+102:    availableRaces[CLASS_SHAMAN].push_back(RACE_ORC);
+103:    availableRaces[CLASS_SHAMAN].push_back(RACE_TAUREN);
+104:    availableRaces[CLASS_SHAMAN].push_back(RACE_TROLL);
+105:#ifndef MANGOSBOT_ZERO
+106:    availableRaces[CLASS_SHAMAN].push_back(RACE_DRAENEI);
+107:#endif
+108:
+109:    // This server's playercreateinfo table already has a Human Hunter entry (custom, non-vanilla
+110:    // combo) - the bot factory's allow-list just hadn't been updated to match.
+111:    availableRaces[CLASS_HUNTER].push_back(RACE_HUMAN);
+112:    availableRaces[CLASS_HUNTER].push_back(RACE_DWARF);
+113:    availableRaces[CLASS_HUNTER].push_back(RACE_NIGHTELF);
+114:    availableRaces[CLASS_HUNTER].push_back(RACE_ORC);
+115:    availableRaces[CLASS_HUNTER].push_back(RACE_TAUREN);
+116:    availableRaces[CLASS_HUNTER].push_back(RACE_TROLL);
+117:    availableRaces[CLASS_HUNTER].push_back(RACE_GOBLIN);
+118:    availableRaces[CLASS_HUNTER].push_back(RACE_HIGH_ELF);
+119:#ifndef MANGOSBOT_ZERO
+120:    availableRaces[CLASS_HUNTER].push_back(RACE_DRAENEI);
+121:    availableRaces[CLASS_HUNTER].push_back(RACE_BLOODELF);
+122:#endif
+123:
+124:    availableRaces[CLASS_DRUID].push_back(RACE_NIGHTELF);
+125:    availableRaces[CLASS_DRUID].push_back(RACE_TAUREN);
+126:
+127:#ifdef MANGOSBOT_TWO
+128:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_NIGHTELF);
+129:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_TAUREN);
+130:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_HUMAN);
+131:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_ORC);
+132:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_UNDEAD);
+133:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_TROLL);
+134:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_BLOODELF);
+135:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_DRAENEI);
+136:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_GNOME);
+137:    availableRaces[CLASS_DEATH_KNIGHT].push_back(RACE_DWARF);
+138:#endif
+139:}
+140:
+141:bool RandomPlayerbotFactory::isAvailableRace(uint8 cls, uint8 race)
+142:{
+143:#ifdef MANGOSBOT_TWO
+144:    if (cls == 10)
+145:#else
+146:    if (cls == 10 || cls == 6)
+147:#endif
+148:        return false;
+149:
+150:    return std::find(availableRaces[cls].begin(), availableRaces[cls].end(), race) != availableRaces[cls].end();
+151:}
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\RandomPlayerbotFactory.cpp LINES 874-1003 =====
+874:    sLog.outString("Creating random bot characters...");
+875:    uint32 botsCreated = 0;
+876:    BarGoLink bar1(totalCharCount);
+877:
+878:
+879:    // Shallow copy of the fixed config so we can modify it
+880:    std::map<std::pair<uint8, uint8>, uint32> remaining = sPlayerbotAIConfig.fixedClassRaceCounts;
+881:
+882:    for (uint32 accountNumber = 0; accountNumber < sPlayerbotAIConfig.randomBotAccountCount; ++accountNumber)
+883:    {
+884:        std::ostringstream out; out << sPlayerbotAIConfig.randomBotAccountPrefix << accountNumber;
+885:        std::string accountName = out.str();
+886:
+887:        auto results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+888:        if (!results)
+889:            continue;
+890:
+891:        Field* fields = results->Fetch();
+892:        uint32 accountId = fields[0].GetUInt32();
+893:
+894:        sPlayerbotAIConfig.randomBotAccounts.push_back(accountId);
+895:
+896:        int count = sAccountMgr.GetCharactersCount(accountId);
+897:#ifdef MANGOSBOT_TWO
+898:        if (count >= 10)
+899:#else
+900:        if (count >= 9)
+901:#endif
+902:        {
+903:            totalRandomBotChars += count;
+904:            continue;
+905:        }
+906:
+907:	RandomPlayerbotFactory factory(accountId);
+908:	if (sPlayerbotAIConfig.useFixedClassRaceCounts)
+909:	{
+910:#ifdef MANGOSBOT_TWO
+911:	    uint32 maxAllowed = 10 - count;
+912:#else
+913:	    uint32 maxAllowed = 9 - count;
+914:#endif
+915:	    uint32 created = 0;
+916:
+917:	    while (!remaining.empty() && created < maxAllowed)
+918:	    {
+919:	        std::vector<std::pair<uint8, uint8>> shuffledKeys;
+920:	        for (const auto& entry : remaining)
+921:	            shuffledKeys.push_back(entry.first);
+922:
+923:	        // Shuffle the keys of the map
+924:	        std::random_device rnd;
+925:		std::mt19937 rng(rnd()); // Mersenne Twister RNG
+926:		std::shuffle(shuffledKeys.begin(), shuffledKeys.end(), rng);
+927:
+928:	        for (const auto& key : shuffledKeys)
+929:	        {
+930:	            if (created >= maxAllowed)
+931:	                break;
+932:
+933:	            uint8 cls = key.first;
+934:	            uint8 race = key.second;
+935:
+936:	            if (!((1 << (cls - 1)) & CLASSMASK_ALL_PLAYABLE))
+937:	                continue;
+938:
+939:#ifdef MANGOSBOT_TWO
+940:	            if (cls == 10)
+941:	                continue;
+942:#else
+943:	            if (cls == 10 || cls == 6)
+944:	                continue;
+945:#endif
+946:
+947:	            if (factory.CreateRandomBot(cls, race))
+948:	            {
+949:	                created++;
+950:	                botsCreated++;
+951:	                bar1.step();
+952:	                if (--remaining[key] == 0)
+953:	                    remaining.erase(key);
+954:	            }
+955:	        }
+956:	    }
+957:	}
+958:	else
+959:	{
+960:            for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES - count; ++cls)
+961:            {
+962:                // skip nonexistent classes
+963:                if (!((1 << (cls - 1)) & CLASSMASK_ALL_PLAYABLE))
+964:                    continue;
+965:
+966:#ifdef MANGOSBOT_TWO
+967:                if (cls != 10)
+968:#else
+969:                if (cls != 10 && cls != 6)
+970:#endif
+971:                {
+972:                    uint8 rclss = factory.GetRandomClass();
+973:                    botsCreated++;
+974:                    factory.CreateRandomBot(rclss);
+975:                    bar1.step();
+976:                }
+977:            }
+978:	}
+979:
+980:        totalRandomBotChars += sAccountMgr.GetCharactersCount(accountId);
+981:    }
+982:    if (sPlayerbotAIConfig.useFixedClassRaceCounts && !remaining.empty())
+983:    {
+984:	sLog.outError("Unable to create all requested fixed class/race bots due to account character limits.");
+985:	sLog.outError("The following class/race combination(s) were left uncreated:");
+986:
+987:	uint32 totalCount = 0;
+988:	for(const auto& entry : remaining)
+989:	{
+990:	    uint8 cls = entry.first.first;
+991:	    uint8 race = entry.first.second;
+992:	    uint32 count = entry.second;
+993:	    totalCount += count;
+994:
+995:	    sLog.outError(" - Class %u, Race %u: %u bots remaining", cls, race, count);
+996:	}
+997:#ifdef MANGOSBOT_TWO
+998:	uint32 missingAccounts = (totalCount + 9) / 10;
+999:#else
+1000:        uint32 missingAccounts = (totalCount + 8) / 9;
+1001:#endif
+1002:	sLog.outError("You need at least %u additional account(s) to fill the remaining fixed class/race combinations.", missingAccounts);
+1003:    }
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\PlayerbotScripts.cpp LINES 32-55 =====
+32:class PlayerbotWorldScript : public WorldScript
+33:{
+34:    public:
+35:        PlayerbotWorldScript() : WorldScript("PlayerbotWorldScript") {}
+36:
+37:        // Was World::FinalizePlayerbotsPostPlayerInfo(). Fires at the end of
+38:        // SetInitialWorldSettings(), where the old call sat - AhBot::Init()
+39:        // scans sItemStorage and needs the world data already loaded.
+40:        void OnStartup() override
+41:        {
+42:            if (!sPlayerbotAIConfig.enabled)
+43:                return;
+44:            RandomPlayerbotFactory::CreateRandomBots();
+45:            auctionbot.Init();
+46:        }
+47:
+48:        // Was World::UpdatePlayerbotsTick(diff).
+49:        void OnUpdate(uint32 diff) override
+50:        {
+51:            if (!sPlayerbotAIConfig.enabled)
+52:                return;
+53:            sRandomPlayerbotMgr.UpdateAI(diff);
+54:            auctionbot.Update();
+55:        }
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\RandomPlayerbotMgr.cpp LINES 644-775 =====
+644:void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
+645:{
+646:#ifdef MEMORY_MONITOR
+647:    sMemoryMonitor.Print();
+648:    sMemoryMonitor.LogCount(sConfig.GetStringDefault("LogsDir") + "/" + "memory.csv");
+649:#endif
+650:
+651:    // tick random bots' sessions so
+652:    // teleport ACKs (HandleTeleportAck) and queued packets get processed.
+653:    // See PlayerbotMgr::UpdateAIInternal for the rationale â€” same call,
+654:    // same purpose, applied to the random-bot pool.
+655:    UpdateSessions(elapsed);
+656:
+657:    if (!sPlayerbotAIConfig.randomBotAutologin || !sPlayerbotAIConfig.enabled)
+658:        return;
+659:
+660:    if (!playersLevel)
+661:        playersLevel = sPlayerbotAIConfig.syncLevelNoPlayer;
+662:
+663:    ScaleBotActivity();
+664:    if (sPlayerbotAIConfig.asyncBotLogin)
+665:    {
+666:        auto pmo = sPerformanceMonitor.start(PERF_MON_RNDBOT, "AsyncBotLogin");
+667:        sPlayerBotLoginMgr.Update(players);
+668:        pmo.reset();
+669:    }
+670:
+671:    uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
+672:    if (!maxAllowedBotCount || ((uint32)maxAllowedBotCount < sPlayerbotAIConfig.minRandomBots || (uint32)maxAllowedBotCount > sPlayerbotAIConfig.maxRandomBots))
+673:    {
+674:        maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
+675:        SetEventValue(0, "bot_count", maxAllowedBotCount,
+676:            urand(sPlayerbotAIConfig.randomBotCountChangeMinInterval, sPlayerbotAIConfig.randomBotCountChangeMaxInterval));
+677:    }
+678:
+679:    std::list<uint32> availableBots = GetBots();    
+680:    uint32 availableBotCount = availableBots.size();
+681:    uint32 onlineBotCount = GetPlayerbotsAmount();
+682:    
+683:    SetAIInternalUpdateDelay(sPlayerbotAIConfig.randomBotUpdateInterval);
+684:
+685:    auto pmo = sPerformanceMonitor.start(PERF_MON_RNDBOT,
+686:        onlineBotCount < maxAllowedBotCount ? "RandomPlayerbotMgr::Login" : "RandomPlayerbotMgr::UpdateAIInternal");
+687:
+688:    if (time(nullptr) > (EventTimeSyncTimer + 30))
+689:        SaveCurTime();
+690:
+691:    if (availableBotCount < maxAllowedBotCount && !sWorld.IsShutdowning())
+692:    {
+693:        bool logInAllowed = true;
+694:        if (sPlayerbotAIConfig.randomBotLoginWithPlayer)
+695:        {
+696:            logInAllowed = !players.empty();
+697:        }
+698:
+699:        if (logInAllowed)
+700:        {
+701:            AddRandomBots();
+702:            EnsurePinnedBotsOnline();
+703:        }
+704:    }
+705:
+706:    if (sPlayerbotAIConfig.syncLevelWithPlayers && players.size())
+707:    {
+708:        if (time(nullptr) > (PlayersCheckTimer + 60))
+709:            CheckPlayers();
+710:    }
+711:
+712:    if (sPlayerbotAIConfig.randomBotJoinLfg && players.size())
+713:    {
+714:        if (time(nullptr) > (LfgCheckTimer + 30))
+715:            CheckLfgQueue();
+716:    }
+717:
+718:    if (sPlayerbotAIConfig.randomBotJoinBG/* && players.size()*/)
+719:    {
+720:        if (time(nullptr) > (BgCheckTimer + 30))
+721:            CheckBgQueue();
+722:    }
+723:
+724:    if (time(nullptr) > (OfflineGroupBotsTimer + 5) && players.size())
+725:        AddOfflineGroupBots();
+726:
+727:    uint32 updateBots = sPlayerbotAIConfig.randomBotsPerInterval == 0 ? UINT32_MAX : sPlayerbotAIConfig.randomBotsPerInterval;
+728:
+729:    //Update bots
+730:    for (auto bot : availableBots)
+731:    {
+732:        if (GetPlayerBot(bot))
+733:        {
+734:            if (ProcessBot(bot))
+735:                updateBots--;
+736:
+737:            if (!updateBots)
+738:                break;
+739:        }
+740:    }
+741:
+742:    uint32 maxLogins = sPlayerbotAIConfig.randomBotsMaxLoginsPerInterval;
+743:
+744:    //Log in bots
+745:    if (sRandomPlayerbotMgr.GetDatabaseDelay("CharacterDatabase") < 10 * IN_MILLISECONDS && !sPlayerbotAIConfig.asyncBotLogin && onlineBotCount < maxAllowedBotCount && maxLogins > 0)
+746:    {
+747:        for (auto bot : availableBots)
+748:        {
+749:            if (GetPlayerBot(bot))
+750:                continue;   
+751:
+752:            if (!eventCache[bot].empty() && GetEventValue(bot, "login"))
+753:            {
+754:                onlineBotCount++;
+755:                continue;
+756:            }
+757:
+758:            if (GetEventValue(bot, "login"))
+759:                onlineBotCount++;
+760:
+761:            if (onlineBotCount >= maxAllowedBotCount)
+762:                break;
+763:
+764:            if (ProcessBot(bot)) {
+765:                --maxLogins;
+766:            }
+767:
+768:            if (maxLogins == 0)
+769:                break;
+770:        }
+771:    }
+772:
+773:    LoginFreeBots();
+774:
+775:    //sLog.outString("[char %d, bot %d]", CharacterDatabase.m_threadBody->m_sqlQueue.size(), CharacterDatabase.m_threadBody->m_sqlQueue.size());
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\RandomPlayerbotMgr.cpp LINES 1121-1399 =====
+1121:uint32 RandomPlayerbotMgr::AddRandomBots()
+1122:{
+1123:    uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");    
+1124:    uint32 currentAllowedBotCount = maxAllowedBotCount;
+1125:
+1126:    uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+1127:    float currentAvgLevel = 0, wantedAvgLevel = 0, randomAvgLevel = 0;
+1128:
+1129:    if(sPlayerbotAIConfig.asyncBotLogin)
+1130:        return 0;
+1131:  
+1132:    if (currentBots.size() < currentAllowedBotCount)
+1133:    {
+1134:        if (sPlayerbotAIConfig.syncLevelWithPlayers)
+1135:        {
+1136:            maxLevel = std::max(sPlayerbotAIConfig.randomBotMinLevel, std::min(playersLevel + sPlayerbotAIConfig.syncLevelMaxAbove, sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL)));
+1137:
+1138:            wantedAvgLevel = maxLevel / 2;
+1139:            uint32 botsAmount = 0;
+1140:            ForEachPlayerbot([&](Player* bot)
+1141:            {
+1142:                currentAvgLevel += bot->GetLevel();
+1143:                botsAmount++;
+1144:            });
+1145:                
+1146:
+1147:            if(currentAvgLevel)
+1148:            {
+1149:                currentAvgLevel = currentAvgLevel / botsAmount;
+1150:            }
+1151:
+1152:            randomAvgLevel = (sPlayerbotAIConfig.randomBotMinLevel + std::max(sPlayerbotAIConfig.randomBotMinLevel, std::min(playersLevel+ sPlayerbotAIConfig.syncLevelMaxAbove, sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL)))) / 2;
+1153:        }
+1154:
+1155:        currentAllowedBotCount -= currentBots.size();
+1156:
+1157:        int32 neededAddBots = currentAllowedBotCount;
+1158:
+1159:    // BOTPROBE - temporary. Bots below level 20 are almost never online (2.4%)
+1160:    // while those at 30-49 are online 96% of the time, and measurement has ruled
+1161:    // out guid order, class, race, the logout event and any level filter. The
+1162:    // only gate left is the classRaceAllowed quota, which lives in memory only.
+1163:    // Counts every row this loop looks at, by level band and by the reason it
+1164:    // was skipped, so the answer comes from one startup instead of another guess.
+1165:    uint32 botProbe[7][7] = {};
+1166:#define BOTPROBE(b, r) do { botProbe[(b)][(r)]++; } while (0)
+1167:
+1168:        currentAllowedBotCount = currentAllowedBotCount*2;      
+1169:
+1170:        CharacterDatabase.AllowAsyncTransactions();
+1171:        CharacterDatabase.BeginTransaction();
+1172:
+1173:        bool enoughBotsForCriteria = true;
+1174:
+1175:        for (uint32 noCriteria = 0; noCriteria < 3; noCriteria++)
+1176:        {
+1177:            int32  classRaceAllowed[MAX_CLASSES][MAX_RACES] = { 0 };
+1178:
+1179:            for (uint32 race = 1; race < MAX_RACES; ++race)
+1180:            {
+1181:                for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+1182:                {
+1183:                    if (sPlayerbotAIConfig.useFixedClassRaceCounts)
+1184:                    {
+1185:                        classRaceAllowed[cls][race] = sPlayerbotAIConfig.fixedClassRaceCounts[{cls, race}];
+1186:                    }
+1187:                    else
+1188:                    {
+1189:                        if (sPlayerbotAIConfig.classRaceProbability[cls][race])
+1190:                            classRaceAllowed[cls][race] = ((sPlayerbotAIConfig.classRaceProbability[cls][race] * maxAllowedBotCount / sPlayerbotAIConfig.classRaceProbabilityTotal) + 1) * (noCriteria + 1);
+1191:                    }
+1192:                }
+1193:            }
+1194:
+1195:            // The account list used to be walked in the same order on every pass
+1196:            // while classRaceAllowed is one global quota - so the first accounts
+1197:            // spent it and everything behind them was never reached at all.
+1198:            // Measured with the counters below before this fix: accounts 14-135
+1199:            // were online ~99% of the time, everything from 138 up sat at 4-6%,
+1200:            // and their levels followed, 37 against 11, because only the bots the
+1201:            // loop could reach ever got to play. That also starved the LFT queue
+1202:            // of low level companions. Shuffling per pass gives every account the
+1203:            // same chance of being served first.
+1204:            std::vector<uint32> accountOrder(sPlayerbotAIConfig.randomBotAccounts.begin(),
+1205:                                             sPlayerbotAIConfig.randomBotAccounts.end());
+1206:            std::shuffle(accountOrder.begin(), accountOrder.end(), *GetRandomGenerator());
+1207:
+1208:            for (std::vector<uint32>::iterator i = accountOrder.begin(); i != accountOrder.end(); i++)
+1209:            {
+1210:                uint32 accountId = *i;
+1211:
+1212:                std::unique_ptr<QueryResult> result;
+1213:
+1214:                if (noCriteria == 2)
+1215:                {
+1216:                    result.reset(CharacterDatabase.PQuery("SELECT guid, level, totaltime, race, class FROM characters WHERE account = '%u'", accountId));
+1217:                }
+1218:                else
+1219:                {
+1220:                    bool needToIncrease = wantedAvgLevel && currentAvgLevel + 1 < wantedAvgLevel;
+1221:                    bool needToLower = wantedAvgLevel && currentAvgLevel > wantedAvgLevel + 1;
+1222:                    bool rndCanIncrease = !sPlayerbotAIConfig.disableRandomLevels && randomAvgLevel > currentAvgLevel;
+1223:                    bool rndCanLower = !sPlayerbotAIConfig.disableRandomLevels && randomAvgLevel < currentAvgLevel;
+1224:
+1225:                    std::string query = "SELECT guid, level, totaltime, race, class FROM characters WHERE account = '%u' AND level <= %u";
+1226:                    std::string wasRand = sPlayerbotAIConfig.instantRandomize ? "totaltime" : "(level > 1)";
+1227:
+1228:                    if (needToIncrease) //We need more higher level bots.
+1229:                    {
+1230:                        query += " AND (level > %u";
+1231:                        if (rndCanIncrease) //Log in higher level bots or bots that will be randomized.
+1232:                            query += " OR !" + wasRand;
+1233:                        query += ")";
+1234:
+1235:                        result.reset(CharacterDatabase.PQuery(query.c_str(), accountId, maxLevel, (uint32)wantedAvgLevel));
+1236:                    }
+1237:                    else
+1238:                    {
+1239:                        if (needToLower && !rndCanLower) //Do not load unrandomized if it'll only increase level.
+1240:                            query += " AND " + wasRand;
+1241:
+1242:                        result.reset(CharacterDatabase.PQuery(query.c_str(), accountId, maxLevel));
+1243:                    }
+1244:                }
+1245:
+1246:                if (!result)
+1247:                    continue;
+1248:
+1249:                do
+1250:                {
+1251:                    Field* fields = result->Fetch();
+1252:                    uint32 guid = fields[0].GetUInt32();
+1253:                    uint32 level = fields[1].GetUInt32();
+1254:                    uint32 totaltime = fields[2].GetUInt32();
+1255:                    uint32 race = fields[3].GetUInt32();
+1256:                    uint32 cls = fields[4].GetUInt32();
+1257:
+1258:                    uint32 const band = std::min<uint32>(level / 10, 6);
+1259:                    BOTPROBE(band, 0);
+1260:
+1261:                    if (GetEventValue(guid, "add"))
+1262:                    {
+1263:                        BOTPROBE(band, 1);
+1264:                        if (!noCriteria)
+1265:                            classRaceAllowed[cls][race]--;
+1266:                        continue;
+1267:                    }
+1268:
+1269:                    if (GetEventValue(guid, "logout"))
+1270:                    {
+1271:                        BOTPROBE(band, 2);
+1272:                        continue;
+1273:                    }
+1274:
+1275:                    if (GetPlayerBot(guid))
+1276:                    {
+1277:                        BOTPROBE(band, 3);
+1278:                        if (!noCriteria)
+1279:                            classRaceAllowed[cls][race]--;
+1280:                        continue;
+1281:                    }
+1282:
+1283:                    if (std::find(currentBots.begin(), currentBots.end(), guid) != currentBots.end())
+1284:                    {
+1285:                        BOTPROBE(band, 4);
+1286:                        if (!noCriteria)
+1287:                            classRaceAllowed[cls][race]--;
+1288:                        continue;
+1289:                    }
+1290:
+1291:                    if (classRaceAllowed[cls][race] <= 0)
+1292:                    {
+1293:                        BOTPROBE(band, 5);
+1294:                        continue;
+1295:                    }
+1296:
+1297:                    BOTPROBE(band, 6);
+1298:                    SetEventValue(guid, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
+1299:                    SetEventValue(guid, "logout", 0, 0);
+1300:                    currentBots.push_back(guid);
+1301:
+1302:                    if(!noCriteria)
+1303:                        classRaceAllowed[cls][race]--;
+1304:
+1305:                    if (wantedAvgLevel)
+1306:                    {
+1307:                        if (sPlayerbotAIConfig.instantRandomize ? totaltime : level > 1)
+1308:                            currentAvgLevel += (float)level / currentBots.size();
+1309:                        else
+1310:                            currentAvgLevel += (float)level + randomAvgLevel; //Use predicted randomized level. This will be wrong but avarage out correct.
+1311:                    }
+1312:
+1313:                    currentAllowedBotCount--;
+1314:                    neededAddBots--;
+1315:
+1316:                    if (!currentAllowedBotCount)
+1317:                        break;
+1318:
+1319:                } while (result->NextRow());
+1320:
+1321:                if (!currentAllowedBotCount)
+1322:                    break;
+1323:            }
+1324:
+1325:            if (!currentAllowedBotCount)
+1326:                break;
+1327:
+1328:            {
+1329:        uint32 gesamt = 0;
+1330:        for (uint32 b = 0; b < 7; ++b)
+1331:            gesamt += botProbe[b][0];
+1332:
+1333:        if (gesamt)
+1334:        {
+1335:            sLog.outBasic("BOTPROBE: band | seen | has-add | logout | in-world | in-list | quota | taken");
+1336:            for (uint32 b = 0; b < 7; ++b)
+1337:            {
+1338:                if (!botProbe[b][0])
+1339:                    continue;
+1340:                sLog.outBasic("BOTPROBE: %2u-%2u | %5u | %7u | %6u | %8u | %7u | %5u | %5u",
+1341:                    b * 10, b * 10 + 9, botProbe[b][0], botProbe[b][1], botProbe[b][2],
+1342:                    botProbe[b][3], botProbe[b][4], botProbe[b][5], botProbe[b][6]);
+1343:            }
+1344:        }
+1345:    }
+1346:#undef BOTPROBE
+1347:
+1348:    if (showLoginWarning && neededAddBots > 0)
+1349:            {
+1350:                sLog.outError("Not enough accounts to meet selection criteria. A random selection of bots was activated to fill the server.");
+1351:
+1352:                if (sPlayerbotAIConfig.syncLevelWithPlayers)
+1353:                    sLog.outError("Only bots between level %d and %d are selected to sync with player level", uint32((currentAvgLevel + 1 < wantedAvgLevel) ? wantedAvgLevel : 1), maxLevel);
+1354:
+1355:                ChatHelper chat(nullptr);
+1356:
+1357:                for (uint32 race = 1; race < MAX_RACES; ++race)
+1358:                {
+1359:                    for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+1360:                    {
+1361:
+1362:                            int32 moreWanted = classRaceAllowed[cls][race];
+1363:                            if (moreWanted > 0)
+1364:                            {
+1365:                                if (sPlayerbotAIConfig.useFixedClassRaceCounts)
+1366:                                {
+1367:                                    int32 totalWanted = sPlayerbotAIConfig.fixedClassRaceCounts[{cls, race}];
+1368:                                    sLog.outError("%d %s %ss needed but only %d found.", totalWanted, chat.formatRace(race).c_str(), chat.formatClass(cls).c_str(), totalWanted - moreWanted);
+1369:                                }
+1370:                                else
+1371:                                {
+1372:                                    int32 totalWanted = ((sPlayerbotAIConfig.classRaceProbability[cls][race] * maxAllowedBotCount / sPlayerbotAIConfig.classRaceProbabilityTotal) + 1);
+1373:                                    float percentage = float(sPlayerbotAIConfig.classRaceProbability[cls][race]) * 100.0f / sPlayerbotAIConfig.classRaceProbabilityTotal;
+1374:                                    sLog.outError("%d %s %ss needed to get %3.2f%% of total but only %d found.", totalWanted, chat.formatRace(race).c_str(), chat.formatClass(cls).c_str(), percentage, totalWanted - moreWanted);
+1375:                                }
+1376:                            }
+1377:                        
+1378:                    }
+1379:                }
+1380:
+1381:                showLoginWarning = false;
+1382:            }
+1383:        }
+1384:
+1385:        CharacterDatabase.CommitTransaction();
+1386:
+1387:        if (currentAllowedBotCount)
+1388:            currentAllowedBotCount = std::max(int64(GetEventValue(0, "bot_count")) - int64(currentBots.size()), int64(0));
+1389:
+1390:        if(currentAllowedBotCount && sPlayerbotAIConfig.randomBotAutoCreate && !sPlayerbotAIConfig.useFixedClassRaceCounts)
+1391:#ifdef MANGOSBOT_TWO
+1392:            sLog.outError("Not enough random bot accounts available. Need %d more!!", (uint32)ceil(currentAllowedBotCount / 10));
+1393:#else
+1394:            sLog.outError("Not enough random bot accounts available. Need %d more!!", (uint32)ceil(currentAllowedBotCount / 9));
+1395:#endif
+1396:      
+1397:    }
+1398:
+1399:    return currentBots.size();
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\RandomPlayerbotMgr.cpp LINES 1992-2062 =====
+1992:void RandomPlayerbotMgr::AddOfflineGroupBots()
+1993:{
+1994:    if (!OfflineGroupBotsTimer || time(NULL) > (OfflineGroupBotsTimer + 5))
+1995:        OfflineGroupBotsTimer = time(NULL);
+1996:
+1997:    uint32 totalCounter = 0;
+1998:    for (const auto& i : players)
+1999:    {
+2000:        Player* player = i.second;
+2001:
+2002:        if (!player || !player->IsInWorld() || !player->GetGroup())
+2003:            continue;
+2004:
+2005:        Group* group = player->GetGroup();
+2006:        if (group && group->IsLeader(player->GetObjectGuid()))
+2007:        {
+2008:            std::vector<uint32> botsToAdd;
+2009:            Group::MemberSlotList const& slots = group->GetMemberSlots();
+2010:            for (Group::MemberSlotList::const_iterator i = slots.begin(); i != slots.end(); ++i)
+2011:            {
+2012:                ObjectGuid member = i->guid;
+2013:                if (member == player->GetObjectGuid())
+2014:                    continue;
+2015:
+2016:                if (!IsFreeBot(member.GetCounter()))
+2017:                    continue;
+2018:
+2019:                if (sObjectMgr.GetPlayer(member))
+2020:                    continue;
+2021:
+2022:                if (GetPlayerBot(member))
+2023:                    continue;
+2024:
+2025:                botsToAdd.push_back(member.GetCounter());
+2026:            }
+2027:
+2028:            if (botsToAdd.empty())
+2029:                return;
+2030:
+2031:            uint32 maxToAdd = urand(1, 5);
+2032:            uint32 counter = 0;
+2033:            for (auto& guid : botsToAdd)
+2034:            {
+2035:                if (counter >= maxToAdd)
+2036:                    break;
+2037:
+2038:                if (sPlayerbotAIConfig.IsFreeAltBot(guid))
+2039:                {
+2040:                    for (auto& bot : sPlayerbotAIConfig.freeAltBots)
+2041:                    {
+2042:                        if (bot.second == guid)
+2043:                        {
+2044:                            Player* player = GetPlayerBot(bot.second);
+2045:                            if (!player)
+2046:                            {
+2047:                                AddPlayerBot(bot.second, bot.first);
+2048:                            }
+2049:                        }
+2050:                    }
+2051:                }
+2052:                else
+2053:                    AddRandomBot(guid);
+2054:
+2055:                counter++;
+2056:                totalCounter++;
+2057:            }
+2058:        }
+2059:    }
+2060:
+2061:    if (totalCounter)
+2062:        sLog.outDetail("Added %u offline bots from groups", totalCounter);
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\RandomPlayerbotMgr.cpp LINES 2302-2386 =====
+2302:bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
+2303:{
+2304:    // A test-harness login is not this manager's bot AT ALL: not just exempt
+2305:    // from the timed logout (older guard below), but from Randomize /
+2306:    // ResetStrategies / RandomTeleport too. Live (tr-20260822-215152-1): the
+2307:    // rotation refresh rebuilt a dc run member's strategies every ~90s and
+2308:    // RandomTeleportForLevel ported it out of the Deadmines run onto a
+2309:    // Westfall grind spot mid-run.
+2310:    if (IsExternallyManaged(bot))
+2311:        return false;
+2312:
+2313:    Player* player = GetPlayerBot(bot);
+2314:    if (player && sPlayerbotAIConfig.IsFreeAltBot(player))
+2315:    {
+2316:        return false;
+2317:    }
+2318:
+2319:    PlayerbotAI* ai = player ? GetBotAI(player) : NULL;
+2320:
+2321:    bool botsAllowedInWorld = !sPlayerbotAIConfig.randomBotLoginWithPlayer || (!players.empty() && sWorld.GetActiveSessionCount() > 0);
+2322:
+2323:    bool isValid = true;
+2324:   
+2325:    if (sPlayerbotAIConfig.randomBotTimedLogout && !GetEventValue(bot, "add") && !sPlayerbotAIConfig.asyncBotLogin) // RandomBotInWorldTime is expired.
+2326:        isValid = false;
+2327:    else if(!botsAllowedInWorld)                                               // Logout if all players logged out
+2328:        isValid = false;
+2329:
+2330:    //Log out bot
+2331:    if (!isValid)
+2332:    {
+2333:        // An externally-managed login (dc test harness) is not ours to reap -
+2334:        // its owner logs it out in its own teardown.
+2335:        if (IsExternallyManaged(bot))
+2336:            return false;
+2337:
+2338:        if (botsAllowedInWorld && player && player->GetGroup())
+2339:        {
+2340:            SetEventValue(bot, "add", 1, 120);                                 // Delay logout for 2 minutes while in group.
+2341:            return false;
+2342:        }
+2343:
+2344:        if (!player || !player->IsInWorld())
+2345:            sLog.outDetail("Bot #%d: log out", bot);
+2346:        else
+2347:            sLog.outDetail("Bot #%d %s:%d <%s>: log out", bot, IsAlliance(player->getRace()) ? "A" : "H", player->GetLevel(), player->GetName());
+2348:
+2349:        currentBots.remove(bot);
+2350:        SetEventValue(bot, "add", 0, 0);
+2351:
+2352:        if (!player)
+2353:        {
+2354:            return false;
+2355:        }    
+2356:
+2357:        LogoutPlayerBot(bot);
+2358:
+2359:        if (sPlayerbotAIConfig.randomBotTimedOffline)
+2360:        {
+2361:            uint32 logout = GetEventValue(bot, "logout");
+2362:
+2363:            if (!logout)
+2364:                SetEventValue(bot, "logout", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
+2365:        }
+2366:
+2367:        return false;
+2368:    }
+2369:
+2370:    //Log in bot (Added in AddRandomBots)
+2371:    if (!player)
+2372:    {
+2373:        if (!botsAllowedInWorld)
+2374:            return false;
+2375:
+2376:        if (GetEventValue(bot, "login"))
+2377:            return true;
+2378:
+2379:        AddPlayerBot(bot, 0);
+2380:
+2381:        SetEventValue(bot, "login", 1, -1); // This will be reset to 0 on server startup. Check RandomPlayerbotMgr constructor
+2382:
+2383:        uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
+2384:        SetEventValue(bot, "update", 1, randomTime);
+2385:
+2386:        return true;
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\RandomPlayerbotMgr.cpp LINES 3456-3532 =====
+3456:std::list<uint32> RandomPlayerbotMgr::GetBots()
+3457:{
+3458:    if (!currentBots.empty()) return currentBots;
+3459:
+3460:    auto results = CharacterDatabase.Query(
+3461:            "SELECT bot FROM ai_playerbot_random_bots WHERE owner = 0 AND event = 'add'");
+3462:
+3463:    if (results)
+3464:    {
+3465:        do
+3466:        {
+3467:            Field* fields = results->Fetch();
+3468:            uint32 bot = fields[0].GetUInt32();
+3469:            currentBots.push_back(bot);
+3470:        } while (results->NextRow());
+3471:    }
+3472:
+3473:    return currentBots;
+3474:}
+3475:
+3476:std::list<uint32> RandomPlayerbotMgr::GetBgBots(uint32 bracket)
+3477:{
+3478:    //if (!currentBgBots.empty()) return currentBgBots;
+3479:
+3480:    auto results = CharacterDatabase.PQuery(
+3481:        "SELECT bot FROM ai_playerbot_random_bots WHERE event = 'bg' AND value = '%d'", bracket);
+3482:    std::list<uint32> BgBots;
+3483:    if (results)
+3484:    {
+3485:        do
+3486:        {
+3487:            Field* fields = results->Fetch();
+3488:            uint32 bot = fields[0].GetUInt32();
+3489:            BgBots.push_back(bot);
+3490:        } while (results->NextRow());
+3491:    }
+3492:
+3493:    return BgBots;
+3494:}
+3495:
+3496:uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, std::string event)
+3497:{
+3498:    // load all events at once on first event load
+3499:    if (eventCache[bot].empty())
+3500:    {
+3501:        auto results = CharacterDatabase.PQuery("SELECT `event`, `value`, `time`, validIn, `data` FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '%u'", bot);
+3502:        if (results)
+3503:        {
+3504:            do
+3505:            {
+3506:                Field* fields = results->Fetch();
+3507:                // defensive null-handling.
+3508:                // Penqle's Field::GetString() returns the bare pointer without null-check;
+3509:                // constructing std::string from nullptr is UB and segfaults. The bot's
+3510:                // ai_playerbot_random_bots table has `data` column nullable, and most rows
+3511:                // store NULL there. Guard against null so the cache load doesn't crash.
+3512:                const char* nameStr = fields[0].GetString();
+3513:                const char* dataStr = fields[4].GetString();
+3514:                std::string eventName = nameStr ? nameStr : "";
+3515:                if (eventName.empty())
+3516:                    continue; // skip malformed rows entirely
+3517:                CachedEvent e;
+3518:                e.value = fields[1].GetUInt32();
+3519:                e.lastChangeTime = fields[2].GetUInt32();
+3520:                e.validIn = fields[3].GetUInt32();
+3521:                e.data = dataStr ? std::string(dataStr) : std::string();
+3522:                eventCache[bot][eventName] = e;
+3523:            } while (results->NextRow());
+3524:        }
+3525:    }
+3526:    CachedEvent e = eventCache[bot][event];
+3527:
+3528:    if ((time(0) - e.lastChangeTime) >= e.validIn && event != "specNo" && event != "specLink" && event != "init" && event != "current_time" && event != "always" && event != "selfbot")
+3529:        e.value = 0;
+3530:
+3531:    return e.value;
+3532:}
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\PlayerbotLoginMgr.cpp LINES 510-548 =====
+510:LoginCriteria PlayerBotLoginMgr::GetLoginCriteria(const uint8 attempt)
+511:{
+512:    LoginCriteria criteria;
+513:
+514:    std::vector<std::string> configCriteria = sPlayerbotAIConfig.defaultLoginCriteria;
+515:    std::vector<std::string> attemptCriteria = GetVariableLoginCriteria(attempt);
+516:    configCriteria.insert(configCriteria.end(), attemptCriteria.begin(), attemptCriteria.end());
+517:
+518:    for (auto& criterion : configCriteria)
+519:    {
+520:        if (criterion == "maxbots")
+521:            ADD_CRITERIA(MAX_BOTS, space.totalSpace <= int(0));
+522:        if (criterion == "spareroom" && attempt > 0)
+523:            ADD_CRITERIA(SPARE_ROOM, space.totalSpace <= (int32)sPlayerbotAIConfig.freeRoomForNonSpareBots);
+524:        if (criterion == "online")
+525:            ADD_KEEP_CRITERIA(ONLINE, info.IsOnline());
+526:        if (criterion == "logoff" && sPlayerbotAIConfig.randomBotTimedLogout)
+527:            ADD_CRITERIA(RANDOM_TIMED_LOGOUT, info.IsOnline() && !sRandomPlayerbotMgr.GetValue(info.GetId(), "add"));
+528:        if (criterion == "offline" && sPlayerbotAIConfig.randomBotTimedOffline)
+529:            ADD_CRITERIA(RANDOM_TIMED_OFFLINE, !info.IsOnline() && sRandomPlayerbotMgr.GetValue(info.GetId(), "logout"));
+530:        if (criterion == "bg")
+531:            ADD_KEEP_CRITERIA(BG, info.IsOnline() && info.IsInBG());
+532:        if (criterion == "arena")
+533:            ADD_KEEP_CRITERIA(ARENA, info.IsOnline() && info.IsInArena());
+534:        if (criterion == "instance")
+535:            ADD_KEEP_CRITERIA(INSTANCE, info.IsOnline() && info.IsInInstance());
+536:        if (criterion == "classrace")
+537:            ADD_CRITERIA(CLASSRACE, space.classRaceBucket[info.GetClass()][info.GetRace()] <= 0);
+538:        if (criterion == "level")
+539:            ADD_CRITERIA(LEVEL, space.levelBucket[info.GetLevel()] <= 0);
+540:        if (criterion == "range")
+541:            ADD_KEEP_CRITERIA(RANGE, info.IsNearPlayer(space));
+542:        if (criterion == "map")
+543:            ADD_KEEP_CRITERIA(MAP, info.IsOnPlayerMap(space));
+544:        if (criterion == "guild")
+545:            ADD_KEEP_CRITERIA(GUILD, info.IsInPlayerGuild(space));
+546:        if (criterion == "group")
+547:            ADD_KEEP_CRITERIA(GROUP, info.IsInPlayerGroup(space));
+548:    }
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\PlayerbotLoginMgr.cpp LINES 562-769 =====
+562:void PlayerBotLoginMgr::FillLoginSpace(BotPool* pool, LoginSpace& space, FillStep step)
+563:{
+564:    space.currentSpace = GetMaxOnlineBotCount();
+565:    space.totalSpace = GetMaxOnlineBotCount();
+566:
+567:    space.levelBucket[0] = 0;
+568:    for (uint32 level = 1; level <= PLAYER_STRONG_MAX_LEVEL; ++level)
+569:    {
+570:        space.levelBucket[level] = GetLevelBucketSize(level);
+571:    }
+572:
+573:    for (uint32 race = 1; race < MAX_RACES; ++race)
+574:    {
+575:        for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+576:        {
+577:            space.classRaceBucket[cls][race] = GetClassRaceBucketSize(cls, race);
+578:        }
+579:    }
+580:
+581:    for (auto& [guid, botInfo] : *pool)
+582:    {
+583:        botInfo.FillLoginSpace(space, step);
+584:
+585:        if (botInfo.GetLoginState() == LoginState::BOT_ONLINE || botInfo.GetLoginState() == LoginState::BOT_ON_LOGOUTQUEUE)
+586:            space.currentSpace--;
+587:    }   
+588:}
+589:
+590:bool PlayerBotLoginMgr::CriteriaStillValid(const LoginCriterionFailType oldFailType, const LoginCriteria& criteria)
+591:{
+592:    switch (oldFailType) //These depends on previous bots accepted/rejected so need to be recalculated.
+593:    {
+594:    case LoginCriterionFailType::UNKNOWN:
+595:    case LoginCriterionFailType::MAX_BOTS:
+596:    case LoginCriterionFailType::SPARE_ROOM:
+597:    case LoginCriterionFailType::CLASSRACE:
+598:    case LoginCriterionFailType::LEVEL:
+599:        return false;
+600:    };
+601:
+602:    for (auto& [criterionfail, criterion] : criteria)
+603:        if (criterionfail == oldFailType)
+604:            return true;
+605:
+606:    return false;
+607:}
+608:
+609:BotInfos PlayerBotLoginMgr::FillLoginLogoutQueue(BotPool* pool, const RealPlayers& realPlayers)
+610:{
+611:    LoginSpace loginSpace{};
+612:    loginSpace.realPlayerInfos = GetPlayerInfos(realPlayers);
+613:    FillLoginSpace(pool, loginSpace, FillStep::NEXT_STEP);
+614:
+615:    std::unordered_map<uint32, LoginCriterionFailType> loginFails;
+616:    std::set<PlayerLoginInfo*> potentialQueue;
+617:
+618:    if(sPlayerBotLoginMgr.debug)
+619:        sLog.outError("PlayerbotLoginMgr: Initial space %d", loginSpace.totalSpace);
+620:
+621:    for (uint8 attempt = 0; attempt <= GetLoginCriteriaSize(); attempt++)
+622:    {
+623:        LoginCriteria criteria = GetLoginCriteria(attempt);
+624:
+625:        for (auto& [guid, botInfo] : *pool)
+626:        {
+627:            if (CriteriaStillValid(loginFails[guid], criteria))
+628:                continue;
+629:
+630:            botInfo.EmptyLoginSpace(loginSpace, FillStep::NOW); //Pretend the bot isn't logged in for a moment.
+631:            loginFails[guid] = botInfo.MatchNoCriteria(loginSpace, criteria);
+632:            botInfo.FillLoginSpace(loginSpace, FillStep::NOW);
+633:
+634:            bool isWanted = (loginFails[guid] == LoginCriterionFailType::LOGIN_OK);
+635:
+636:            if (!isWanted && attempt)
+637:                continue;
+638:
+639:            botInfo.SetQueue(isWanted, loginSpace);
+640:
+641:            if (botInfo.IsQueued())
+642:                potentialQueue.insert(&botInfo);
+643:
+644:            if (attempt && loginSpace.totalSpace <= 0)
+645:            {
+646:                break;
+647:            }
+648:        }
+649:
+650:        if (sPlayerBotLoginMgr.debug)
+651:        {
+652:            std::string variableCriteria;
+653:            for (auto& crit : GetVariableLoginCriteria(attempt))
+654:                variableCriteria += crit + ",";
+655:            if (!variableCriteria.empty())
+656:                variableCriteria.pop_back();
+657:            sLog.outError("PlayerbotLoginMgr: Attempt %d (%s), space left %d", attempt, variableCriteria.c_str(), loginSpace.totalSpace);
+658:        }
+659:
+660:        if (loginSpace.totalSpace <= 0)
+661:            break;
+662:    }
+663:
+664:    BotInfos queue;
+665:    uint32 logins = 0;
+666:
+667:    for (auto& info : potentialQueue)
+668:        if (info->GetLoginState() == LoginState::BOT_ON_LOGINQUEUE)
+669:        {
+670:            queue.push_back(info);
+671:            logins++;
+672:
+673:            if (logins >= sPlayerbotAIConfig.randomBotsMaxLoginsPerInterval)
+674:                break;
+675:        }
+676:
+677:    loginSpace.currentSpace -= logins;
+678:
+679:    uint32 maxLogouts = 0;
+680:
+681:    if (loginSpace.currentSpace < (int32)sPlayerbotAIConfig.freeRoomForNonSpareBots)
+682:        maxLogouts = (int32)sPlayerbotAIConfig.freeRoomForNonSpareBots - loginSpace.currentSpace;
+683:
+684:    uint32 logouts = 0;
+685:
+686:    for (auto& info : potentialQueue)
+687:        if (info->GetLoginState() == LoginState::BOT_ON_LOGOUTQUEUE)
+688:        {
+689:            if (logouts >= maxLogouts)
+690:                break;
+691:
+692:            queue.push_back(info);
+693:            logouts++;
+694:        }
+695:
+696:    if (sPlayerBotLoginMgr.debug)
+697:        sLog.outError("PlayerbotLoginMgr: Queued to log in: %d, out: %d", logins, logouts);
+698:
+699:    if(!sPlayerbotAIConfig.preloadHolders)
+700:        SendHolders(queue);
+701:    else
+702:        SendHolders(pool);
+703:
+704:    return queue;
+705:}
+706:
+707:void PlayerBotLoginMgr::LoginLogoutBots(const BotInfos& queue)
+708:{
+709:    for (auto& info : queue)
+710:    {        
+711:        if (info->LoginBot())
+712:        {
+713:            onlineBots.push_back(info);
+714:        }
+715:        if (info->LogoutBot())
+716:        {
+717:            onlineBots.erase(std::remove(onlineBots.begin(), onlineBots.end(), info), onlineBots.end());
+718:        }
+719:    }
+720:}
+721:
+722:uint32 PlayerBotLoginMgr::GetMaxLevel() 
+723:{
+724:    return std::max(sPlayerbotAIConfig.randomBotMinLevel, std::min(sRandomPlayerbotMgr.GetPlayersLevel() + sPlayerbotAIConfig.syncLevelMaxAbove, sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL)));
+725:}
+726:
+727:uint32 PlayerBotLoginMgr::GetMaxOnlineBotCount() 
+728:{
+729:    return sRandomPlayerbotMgr.GetValue(uint32(0), "bot_count");
+730:}
+731:
+732:uint32 PlayerBotLoginMgr::GetClassRaceBucketSize(uint8 cls, uint8 race) 
+733:{
+734:    uint32 prob = sPlayerbotAIConfig.classRaceProbability[cls][race];
+735:
+736:    if (prob == 0)
+737:        return 0;
+738:
+739:    if (sPlayerbotAIConfig.useFixedClassRaceCounts)
+740:        return sPlayerbotAIConfig.classRaceProbability[cls][race];
+741:
+742:    return GetMaxOnlineBotCount() * sPlayerbotAIConfig.classRaceProbability[cls][race] / sPlayerbotAIConfig.classRaceProbabilityTotal;
+743:}
+744:
+745:uint32 PlayerBotLoginMgr::GetLevelBucketSize(uint32 level) 
+746:{
+747:    if (level > PLAYER_STRONG_MAX_LEVEL)
+748:        return 0;
+749:
+750:    uint32 prob = sPlayerbotAIConfig.levelProbability[level];
+751:
+752:    if (prob == 0 || level > GetMaxLevel())
+753:        return 0;
+754:
+755:    uint32 levelProbabilityTotal = 0;
+756:    for (uint32 sumLevel = 1; sumLevel < GetMaxLevel(); ++sumLevel)
+757:    {
+758:        levelProbabilityTotal += sPlayerbotAIConfig.levelProbability[sumLevel];
+759:    }
+760:
+761:    // The loop above runs zero times when GetMaxLevel() is 1, and the core does
+762:    // allow MaxPlayerLevel = 1. Every probability being zero has the same
+763:    // result. Dividing by that is an integer division by zero, which takes the
+764:    // server down with SIGFPE the moment random levels are switched on.
+765:    if (!levelProbabilityTotal)
+766:        return 0;
+767:
+768:    return GetMaxOnlineBotCount() * sPlayerbotAIConfig.levelProbability[level] / levelProbabilityTotal;
+769:}
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\AiFactory.cpp LINES 90-288 =====
+90:int AiFactory::GetPlayerSpecTab(const Player* bot)
+91:{
+92:    std::map<uint32, int32> tabs = GetPlayerSpecTabs(bot);
+93:
+94:    if (bot->GetLevel() >= 10 && ((tabs[0] + tabs[1] + tabs[2]) > 0))
+95:    {
+96:        int tab = -1, max = 0;
+97:        for (uint32 i = 0; i < uint32(3); i++)
+98:        {
+99:            if (tab == -1 || max < tabs[i])
+100:            {
+101:                tab = i;
+102:                max = tabs[i];
+103:            }
+104:        }
+105:        return tab;
+106:    }
+107:    else
+108:    {
+109:        int tab = 0;
+110:
+111:        switch (bot->getClass())
+112:        {
+113:        case CLASS_MAGE:
+114:            tab = 1;
+115:            break;
+116:        case CLASS_PALADIN:
+117:            tab = 2;
+118:            break;
+119:        case CLASS_PRIEST:
+120:            tab = 1;
+121:            break;
+122:        case CLASS_WARRIOR:
+123:            tab = 2;
+124:            break;
+125:        case CLASS_SHAMAN:
+126:            tab = 1;
+127:            break;
+128:        }
+129:        return tab;
+130:    }
+131:}
+132:
+133:std::map<uint32, int32> AiFactory::GetPlayerSpecTabs(const Player* bot)
+134:{
+135:    std::map<uint32, int32> tabs;
+136:    for (uint32 i = 0; i < uint32(3); i++)
+137:        tabs[i] = 0;
+138:
+139:    uint32 classMask = bot->getClassMask();
+140:    for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
+141:    {
+142:        TalentEntry const *talentInfo = sTalentStore.LookupEntry(i);
+143:        if (!talentInfo)
+144:            continue;
+145:
+146:        TalentTabEntry const *talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+147:        if (!talentTabInfo)
+148:            continue;
+149:
+150:        if ((classMask & talentTabInfo->ClassMask) == 0)
+151:            continue;
+152:
+153:        int maxRank = 0;
+154:        for (int rank = MAX_TALENT_RANK - 1; rank >= 0; --rank)
+155:        {
+156:            if (!talentInfo->RankID[rank])
+157:                continue;
+158:
+159:            uint32 spellid = talentInfo->RankID[rank];
+160:            if (spellid && bot->HasSpell(spellid))
+161:                maxRank = rank + 1;
+162:
+163:        }
+164:        tabs[talentTabInfo->tabpage] += maxRank;
+165:    }
+166:
+167:    return tabs;
+168:}
+169:
+170:BotRoles AiFactory::GetPlayerRoles(uint8 cls, uint8 tab)
+171:{
+172:    BotRoles role = BOT_ROLE_NONE;
+173:    switch (cls)
+174:    {
+175:        case CLASS_PRIEST: {
+176:            if (tab == 2)
+177:            {
+178:                role = BOT_ROLE_DPS;
+179:            }
+180:            else
+181:            {
+182:                role = BOT_ROLE_HEALER;
+183:            }
+184:
+185:            break;
+186:        }
+187:
+188:        case CLASS_SHAMAN: {
+189:            if (tab == 2)
+190:            {
+191:                role = BOT_ROLE_HEALER;
+192:            }
+193:            else
+194:            {
+195:                role = BOT_ROLE_DPS;
+196:            }
+197:
+198:            break;
+199:        }
+200:
+201:        case CLASS_WARRIOR: {
+202:            if (tab == 2)
+203:            {
+204:                role = BOT_ROLE_TANK;
+205:            }
+206:            else
+207:            {
+208:                role = BOT_ROLE_DPS;
+209:            }
+210:
+211:            break;
+212:        }
+213:
+214:        case CLASS_PALADIN: {
+215:            if (tab == 1)
+216:            {
+217:                role = BOT_ROLE_TANK;
+218:            }
+219:            else if (tab == 0)
+220:            {
+221:                role = BOT_ROLE_HEALER;
+222:            }
+223:            else if (tab == 2)
+224:            {
+225:                role = BOT_ROLE_DPS;
+226:            }
+227:
+228:            break;
+229:        }
+230:
+231:        case CLASS_DRUID: {
+232:            if (tab == 0)
+233:            {
+234:                role = BOT_ROLE_DPS;
+235:            }
+236:            else if (tab == 1)
+237:            {
+238:                // Feral counts as tank here. The dungeon finder can put a druid
+239:                // on the tank slot, and this mapping decides which premade
+240:                // talent build it gets - with DPS it would be handed a balance
+241:                // build and try to tank in caster form.
+242:                role = BOT_ROLE_TANK;
+243:            }
+244:            else if (tab == 2)
+245:            {
+246:                role = BOT_ROLE_HEALER;
+247:            }
+248:
+249:            break;
+250:        }
+251:
+252:#ifdef MANGOSBOT_TWO
+253:        case CLASS_DEATH_KNIGHT: {
+254:            if (tab == 0)
+255:            {
+256:                role = BOT_ROLE_TANK;
+257:            }
+258:            else if (tab == 1)
+259:            {
+260:                role = (BotRoles)(BOT_ROLE_TANK | BOT_ROLE_DPS);
+261:            }
+262:            else if (tab == 2)
+263:            {
+264:                role = BOT_ROLE_DPS;
+265:            }
+266:
+267:            break;
+268:        }
+269:#endif
+270:        default: {
+271:            role = BOT_ROLE_DPS;
+272:            break;
+273:        }
+274:    }
+275:
+276:    return role;
+277:}
+278:
+279:BotRoles AiFactory::GetPlayerRoles(const Player* player)
+280:{
+281:    // This used to work out a role from what the character was doing right then
+282:    // - defensive stance, righteous fury, bear form - and then return the talent
+283:    // based answer anyway, throwing that work away. Restoring it would have made
+284:    // things worse, not better: the switch only ever set the tank bit, so a fury
+285:    // warrior who happened to stand in defensive stance would have been handed
+286:    // the tank slot with a fury build, while a feral druid was already
+287:    // recognised through its talents. The aura check is gone. The tree decides.
+288:    return GetPlayerRoles(player->getClass(), GetPlayerSpecTab(player));
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\PlayerbotFactory.cpp LINES 243-253 =====
+243:    // Assign a premade spec (specNo), then let the "auto talents" action apply the
+244:    // matching premade build. If no premade spec is configured for the class, the
+245:    // action falls back to its generic per-tree auto-selection.
+246:    if (!incremental)
+247:        SelectPremadeSpecNo();
+248:    ai->DoSpecificAction("auto talents");
+249:
+250:    if (!incremental && isRandomBot)
+251:        sPlayerbotDbStore.Reset(ai);
+252:
+253:    ai->ResetStrategies(incremental); // fix wrong stored strategy
+
+===== C:\TW\ComTW\source\src\modules\PlayerBots\playerbot\PlayerbotFactory.cpp LINES 2502-2536 =====
+2502:bool PlayerbotFactory::SelectPremadeSpecNo()
+2503:{
+2504:    uint8 cls = bot->getClass();
+2505:    std::vector<TalentPath>& paths = sPlayerbotAIConfig.classSpecs[cls].talentPath;
+2506:    if (paths.empty())
+2507:        return false;
+2508:
+2509:    // Weighted roll across the configured premade specs (currently one PvE spec per
+2510:    // class, but this keeps working if more are added). GetBestPremadeSpec indexes
+2511:    // getPremadePath(cls, specNo - 1) by TalentPath::id, so store id + 1.
+2512:    uint32 totalProbability = 0;
+2513:    for (TalentPath& path : paths)
+2514:        totalProbability += std::max(0, path.probability);
+2515:
+2516:    TalentPath* chosen = &paths.front();
+2517:    if (totalProbability > 0)
+2518:    {
+2519:        uint32 roll = urand(0, totalProbability - 1);
+2520:        uint32 cumulative = 0;
+2521:        for (TalentPath& path : paths)
+2522:        {
+2523:            cumulative += std::max(0, path.probability);
+2524:            if (roll < cumulative)
+2525:            {
+2526:                chosen = &path;
+2527:                break;
+2528:            }
+2529:        }
+2530:    }
+2531:
+2532:    sLog.outBasic("SPECROLL: factory picked %s for class %u (%u paths, weight %u)",
+2533:        chosen->name.c_str(), uint32(cls), uint32(paths.size()), totalProbability);
+2534:
+2535:    sRandomPlayerbotMgr.SetValue(bot, "specNo", chosen->id + 1);
+2536:    return true;

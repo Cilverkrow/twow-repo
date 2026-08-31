@@ -1,0 +1,46 @@
+{
+  "latest_successful_log": {
+    "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_19-19-30.log",
+    "size_bytes": 1089248,
+    "creation_utc": "2026-08-29T17:19:30.3971276Z",
+    "last_write_utc": "2026-08-29T17:25:28.9389707Z",
+    "sha256": "4721E34F09E2AD4989CA45B73EBD238F2BC0F1C4401A8DA7E1CCB4CA8E10E318"
+  },
+  "uptime_revision_rows": [
+    {
+      "line": 2115,
+      "timestamp": "2026-08-29 19:19:33",
+      "revision": "42b8a7f742548793910f"
+    }
+  ],
+  "donation_activity_log": {
+    "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_18-45-43.log",
+    "size_bytes": 3151767,
+    "creation_utc": "2026-08-29T16:45:43.3135335Z",
+    "last_write_utc": "2026-08-29T17:11:16.4967658Z",
+    "sha256": "985B8E3C591D254F8412BE39A7565A524E8326E49E4C4928F2DC5513EF91F94B"
+  },
+  "donation_activity": [
+    {
+      "line": 10911,
+      "timestamp": "2026-08-29 18:51:23",
+      "operation": "SELECT"
+    },
+    {
+      "line": 15104,
+      "timestamp": "2026-08-29 18:56:22",
+      "operation": "UPSERT"
+    },
+    {
+      "line": 19223,
+      "timestamp": "2026-08-29 19:01:22",
+      "operation": "UPSERT"
+    },
+    {
+      "line": 23083,
+      "timestamp": "2026-08-29 19:06:22",
+      "operation": "UPSERT"
+    }
+  ],
+  "redaction": "SQL literals, realm/account identifiers, and values other than the embedded 20-hex revision are omitted."
+}

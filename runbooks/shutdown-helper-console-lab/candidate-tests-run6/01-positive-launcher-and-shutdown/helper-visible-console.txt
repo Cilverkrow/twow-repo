@@ -1,0 +1,1 @@
+Interner Win32-Fehler "Das Handle ist ungültig" 0x6 beim Abrufen des Konsolenmodus. Wenden Sie sich an Microsoft Customer Support Services.                                                                                                                                                                                                                             ʂ

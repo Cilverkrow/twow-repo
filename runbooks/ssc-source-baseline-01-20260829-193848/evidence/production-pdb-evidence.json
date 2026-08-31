@@ -1,0 +1,11 @@
+{
+  "pdb": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.pdb",
+    "size_bytes": 205090816,
+    "creation_utc": "2026-08-25T16:54:55.7725823Z",
+    "last_write_utc": "2026-08-25T16:54:59.8492979Z",
+    "sha256": "0BBABAC50A4CF8D413ED651AF1BE74DC67BF02B0403E69193D9D9FB7907FC7A8"
+  },
+  "codeview_identity_source": "production-exe-pe-headers.txt",
+  "embedded_pdb_path_source": "production-exe-pe-headers.txt"
+}

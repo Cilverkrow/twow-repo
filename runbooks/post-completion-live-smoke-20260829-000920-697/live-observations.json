@@ -1,0 +1,1093 @@
+{
+  "schemaVersion": 1,
+  "phase": "live-observation",
+  "userWorldEntryConfirmation": {
+    "token": "CHARACTER_ONLINE",
+    "confirmed": true,
+    "independentConnectionEvidence": "established world-port connection count only; no addresses or identities captured"
+  },
+  "observationIntervalSeconds": 30.9507692,
+  "observations": [
+    {
+      "observedAtUtc": "2026-08-28T22:27:44.9749079Z",
+      "roles": {
+        "mariaDb": [
+          {
+            "name": "mysqld",
+            "pid": 14776,
+            "executablePath": "C:\\TW\\ComTW\\DB\\bin\\mysqld.exe",
+            "startTimeUtc": "2026-08-28T22:12:37.9655841Z"
+          }
+        ],
+        "mangosd": [
+          {
+            "name": "mangosd",
+            "pid": 9628,
+            "executablePath": "C:\\TW\\ComTW\\server\\mangosd.exe",
+            "startTimeUtc": "2026-08-28T22:12:48.2884890Z"
+          }
+        ],
+        "realmd": [
+          {
+            "name": "realmd",
+            "pid": 24080,
+            "executablePath": "C:\\TW\\ComTW\\server\\realmd.exe",
+            "startTimeUtc": "2026-08-28T22:12:45.2939531Z"
+          }
+        ]
+      },
+      "matchingRunningWindowsServices": [],
+      "configuredPortState": [
+        {
+          "port": 3307,
+          "listenerCount": 1,
+          "listeners": [
+            {
+              "owningPid": 14776
+            }
+          ],
+          "establishedConnectionCount": 33,
+          "establishedOwningPids": [
+            14776
+          ]
+        },
+        {
+          "port": 3724,
+          "listenerCount": 1,
+          "listeners": [
+            {
+              "owningPid": 24080
+            }
+          ],
+          "establishedConnectionCount": 0,
+          "establishedOwningPids": []
+        },
+        {
+          "port": 8090,
+          "listenerCount": 1,
+          "listeners": [
+            {
+              "owningPid": 9628
+            }
+          ],
+          "establishedConnectionCount": 1,
+          "establishedOwningPids": [
+            9628
+          ]
+        }
+      ],
+      "ollamaProcesses": [
+        {
+          "name": "ollama",
+          "pid": 5528,
+          "executablePath": "C:\\Users\\djfav\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+          "startTimeUtc": "2026-08-28T21:21:58.8358817Z"
+        }
+      ]
+    },
+    {
+      "observedAtUtc": "2026-08-28T22:28:15.9256771Z",
+      "roles": {
+        "mariaDb": [
+          {
+            "name": "mysqld",
+            "pid": 14776,
+            "executablePath": "C:\\TW\\ComTW\\DB\\bin\\mysqld.exe",
+            "startTimeUtc": "2026-08-28T22:12:37.9655841Z"
+          }
+        ],
+        "mangosd": [
+          {
+            "name": "mangosd",
+            "pid": 9628,
+            "executablePath": "C:\\TW\\ComTW\\server\\mangosd.exe",
+            "startTimeUtc": "2026-08-28T22:12:48.2884890Z"
+          }
+        ],
+        "realmd": [
+          {
+            "name": "realmd",
+            "pid": 24080,
+            "executablePath": "C:\\TW\\ComTW\\server\\realmd.exe",
+            "startTimeUtc": "2026-08-28T22:12:45.2939531Z"
+          }
+        ]
+      },
+      "matchingRunningWindowsServices": [],
+      "configuredPortState": [
+        {
+          "port": 3307,
+          "listenerCount": 1,
+          "listeners": [
+            {
+              "owningPid": 14776
+            }
+          ],
+          "establishedConnectionCount": 33,
+          "establishedOwningPids": [
+            14776
+          ]
+        },
+        {
+          "port": 3724,
+          "listenerCount": 1,
+          "listeners": [
+            {
+              "owningPid": 24080
+            }
+          ],
+          "establishedConnectionCount": 0,
+          "establishedOwningPids": []
+        },
+        {
+          "port": 8090,
+          "listenerCount": 1,
+          "listeners": [
+            {
+              "owningPid": 9628
+            }
+          ],
+          "establishedConnectionCount": 1,
+          "establishedOwningPids": [
+            9628
+          ]
+        }
+      ],
+      "ollamaProcesses": [
+        {
+          "name": "ollama",
+          "pid": 5528,
+          "executablePath": "C:\\Users\\djfav\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+          "startTimeUtc": "2026-08-28T21:21:58.8358817Z"
+        }
+      ]
+    }
+  ],
+  "processStability": [
+    {
+      "role": "mariaDb",
+      "firstCount": 1,
+      "secondCount": 1,
+      "firstPid": 14776,
+      "secondPid": 14776,
+      "samePid": true,
+      "sameStartTime": true,
+      "aliveAcrossBothObservations": true
+    },
+    {
+      "role": "mangosd",
+      "firstCount": 1,
+      "secondCount": 1,
+      "firstPid": 9628,
+      "secondPid": 9628,
+      "samePid": true,
+      "sameStartTime": true,
+      "aliveAcrossBothObservations": true
+    },
+    {
+      "role": "realmd",
+      "firstCount": 1,
+      "secondCount": 1,
+      "firstPid": 24080,
+      "secondPid": 24080,
+      "samePid": true,
+      "sameStartTime": true,
+      "aliveAcrossBothObservations": true
+    }
+  ],
+  "unexpectedDuplicateProcess": false,
+  "unexpectedDuplicateListener": false,
+  "appendedLogEvidence": [
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\anticheat.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-001-anticheat.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\bg.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-002-bg.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\bot_events.csv",
+      "classification": "adjacent-runtime-evidence",
+      "isBaselined": true,
+      "baselineOffset": 351498,
+      "observedLength": 298252,
+      "sourceCreationTimeUtc": "2026-08-25T19:55:53.8542669Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:28:16.7240776Z",
+      "prefixMatchedBaseline": null,
+      "status": "indeterminate-shorter",
+      "captureFile": "appended-003-bot_events.csv.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\bot_test_results.log",
+      "classification": "adjacent-runtime-evidence",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:48:03.9874562Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:13:21.4749492Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-004-bot_test_results.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\char.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 19483,
+      "observedLength": 23955,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:16:02.5251789Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-005-char.log.bin",
+      "capturedByteCount": 4472,
+      "captureSha256": "B7A6EFD0F0F9A69F192E61251643C5C0FD733E183A6239E9CE20166301868C07",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\chat.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 792,
+      "observedLength": 1299,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:22:45.5287266Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-006-chat.log.bin",
+      "capturedByteCount": 507,
+      "captureSha256": "F0497ED4BE570C3B8FDE9CABAC5B5E8EA60C4490D94934A471673FAAB82AC380",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\chatspam.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-007-chatspam.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\client.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-008-client.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\crash_20260826_205523.dmp",
+      "classification": "adjacent-runtime-evidence",
+      "isBaselined": true,
+      "baselineOffset": 7240428,
+      "observedLength": 7240428,
+      "sourceCreationTimeUtc": "2026-08-26T18:55:23.9830072Z",
+      "sourceLastWriteTimeUtc": "2026-08-26T18:55:24.1358655Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-009-crash_20260826_205523.dmp.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\crash_20260826_205523.dmp.txt",
+      "classification": "adjacent-runtime-evidence",
+      "isBaselined": true,
+      "baselineOffset": 231,
+      "observedLength": 231,
+      "sourceCreationTimeUtc": "2026-08-26T18:55:24.1368673Z",
+      "sourceLastWriteTimeUtc": "2026-08-26T18:55:24.1368673Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-010-crash_20260826_205523.dmp.txt.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\deaths.csv",
+      "classification": "adjacent-runtime-evidence",
+      "isBaselined": true,
+      "baselineOffset": 834,
+      "observedLength": 657,
+      "sourceCreationTimeUtc": "2026-08-25T19:55:53.1420493Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:24:38.8863299Z",
+      "prefixMatchedBaseline": null,
+      "status": "indeterminate-shorter",
+      "captureFile": "appended-011-deaths.csv.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\errors.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 1138512,
+      "observedLength": 1328260,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3396409Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:16:26.1004794Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-012-errors.log.bin",
+      "capturedByteCount": 189748,
+      "captureSha256": "33A58AE560AC9748BC4006C9A47FFADF53DDF1910E4079BE080AF400C48C9348",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\gm_critical.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-013-gm_critical.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\gm.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 985,
+      "observedLength": 1206,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3396409Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:21:41.6869700Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-014-gm.log.bin",
+      "capturedByteCount": 221,
+      "captureSha256": "84C4A234D6E39625F8E0607458777D21F7781419F66057E7146F3ED96DD46A3F",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\hardcore.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-015-hardcore.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\honor.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 407,
+      "observedLength": 407,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3396409Z",
+      "sourceLastWriteTimeUtc": "2026-08-27T21:00:32.9785362Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-016-honor.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\info.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 11020,
+      "observedLength": 12621,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3396409Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:12:53.0314124Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-017-info.log.bin",
+      "capturedByteCount": 1601,
+      "captureSha256": "54315E0CE2B65E483CBAFC287F7DA03E16D03343881AC8A4BE4ED06F80271C2F",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\levelup.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 37921,
+      "observedLength": 46160,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:28:15.7325503Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-018-levelup.log.bin",
+      "capturedByteCount": 8239,
+      "captureSha256": "E814473A47D6941984B51A279891BB9ED25019FC3FA653B37AF1425A75F85F0D",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\loot.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 260899,
+      "observedLength": 299446,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:28:14.7055748Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-019-loot.log.bin",
+      "capturedByteCount": 38547,
+      "captureSha256": "B9D415F29BDB7E7FC2C68E64CCA056D324023B660CDFAB6BA64D320206B9FBD2",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\perf.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 6296,
+      "observedLength": 6345,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:15:05.6577297Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-020-perf.log.bin",
+      "capturedByteCount": 49,
+      "captureSha256": "BDECE10C6DA930DB69BEF8DDCBD523197CB318637F979A9FE451286F2561FD3B",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\racechange.log",
+      "classification": "adjacent-runtime-evidence",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:21.3592957Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:21.3592957Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-021-racechange.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\raid.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-022-raid.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\rareloot.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-023-rareloot.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\Realmd.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 1056,
+      "observedLength": 3862,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:21.3592957Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:26:49.4351259Z",
+      "prefixMatchedBaseline": false,
+      "status": "indeterminate-replaced-or-modified",
+      "captureFile": "appended-024-Realmd.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\server_2026-08-25_22-47-24.log",
+      "classification": "configured-timestamped-primary",
+      "isBaselined": true,
+      "baselineOffset": 2199065,
+      "observedLength": 2199065,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3396409Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T21:22:27.9362534Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-025-server_2026-08-25_22-47-24.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\server_2026-08-26_00-10-53.log",
+      "classification": "configured-timestamped-primary",
+      "isBaselined": true,
+      "baselineOffset": 17619124,
+      "observedLength": 17619124,
+      "sourceCreationTimeUtc": "2026-08-25T22:10:53.3047029Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T22:18:01.1404647Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-026-server_2026-08-26_00-10-53.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\server_2026-08-26_18-09-20.log",
+      "classification": "configured-timestamped-primary",
+      "isBaselined": true,
+      "baselineOffset": 18456755,
+      "observedLength": 18456755,
+      "sourceCreationTimeUtc": "2026-08-26T16:09:20.3786075Z",
+      "sourceLastWriteTimeUtc": "2026-08-26T16:27:34.8547428Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-027-server_2026-08-26_18-09-20.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\server_2026-08-26_20-55-17.log",
+      "classification": "configured-timestamped-primary",
+      "isBaselined": true,
+      "baselineOffset": 273301,
+      "observedLength": 273301,
+      "sourceCreationTimeUtc": "2026-08-26T18:55:17.5522220Z",
+      "sourceLastWriteTimeUtc": "2026-08-26T18:55:24.1368673Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-028-server_2026-08-26_20-55-17.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\server_2026-08-27_23-00-06.log",
+      "classification": "configured-timestamped-primary",
+      "isBaselined": true,
+      "baselineOffset": 20378285,
+      "observedLength": 20378285,
+      "sourceCreationTimeUtc": "2026-08-27T21:00:06.5808512Z",
+      "sourceLastWriteTimeUtc": "2026-08-27T22:13:35.9487942Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-029-server_2026-08-27_23-00-06.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\server_2026-08-28_18-07-31.log",
+      "classification": "configured-timestamped-primary",
+      "isBaselined": true,
+      "baselineOffset": 18544236,
+      "observedLength": 18544236,
+      "sourceCreationTimeUtc": "2026-08-28T16:07:31.3430739Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T16:25:03.9055550Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-030-server_2026-08-28_18-07-31.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\trades.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 4561,
+      "observedLength": 5479,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:28:12.6288882Z",
+      "prefixMatchedBaseline": true,
+      "status": "appended-range-captured",
+      "captureFile": "appended-031-trades.log.bin",
+      "capturedByteCount": 918,
+      "captureSha256": "54C5308DCBA5A96398386A68C2F4206AB11B62694F77E7CC23DA7D44C54FEA34",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\warden.log",
+      "classification": "configured-exact",
+      "isBaselined": true,
+      "baselineOffset": 0,
+      "observedLength": 0,
+      "sourceCreationTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "sourceLastWriteTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "prefixMatchedBaseline": true,
+      "status": "unchanged-empty-range",
+      "captureFile": "appended-032-warden.log.bin",
+      "capturedByteCount": 0,
+      "captureSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 0,
+        "genericError": 0,
+        "newCrashArtifact": 0
+      }
+    },
+    {
+      "sourcePath": "C:\\TW\\ComTW\\logs\\server_2026-08-29_00-12-48.log",
+      "classification": "new-configured-timestamped-primary",
+      "isBaselined": false,
+      "baselineOffset": 0,
+      "observedLength": 18554273,
+      "sourceCreationTimeUtc": "2026-08-28T22:12:48.3314892Z",
+      "sourceLastWriteTimeUtc": "2026-08-28T22:28:17.1945306Z",
+      "prefixMatchedBaseline": true,
+      "status": "created-after-baseline",
+      "captureFile": "appended-033-server_2026-08-29_00-12-48.log.bin",
+      "capturedByteCount": 18554273,
+      "captureSha256": "A2B3255B5AD6F0FDCF59053811543B00983A5D9FC4F6B01578D2B2602DB9D7FF",
+      "markerCounts": {
+        "fatal": 0,
+        "crash": 0,
+        "assertion": 0,
+        "unhandledException": 0,
+        "databaseConnectionFailure": 0,
+        "loginFailure": 0,
+        "worldEntryFailure": 0,
+        "warning": 1,
+        "genericError": 1602,
+        "newCrashArtifact": 0
+      }
+    }
+  ],
+  "appendedMarkerAggregate": {
+    "fatal": 0,
+    "crash": 0,
+    "assertion": 0,
+    "unhandledException": 0,
+    "databaseConnectionFailure": 0,
+    "loginFailure": 0,
+    "worldEntryFailure": 0,
+    "warning": 1,
+    "genericError": 1602,
+    "newCrashArtifact": 0
+  },
+  "smokeResult": "INDETERMINATE",
+  "failFindings": [],
+  "indeterminateFindings": [
+    "3 log range(s) could not be captured reliably."
+  ],
+  "warnings": [
+    "1 warning marker(s) were found in appended ranges; warnings alone do not fail the smoke test.",
+    "1602 generic error marker(s) were found and classified separately from the result-rule fatal categories."
+  ],
+  "prohibitedOperationsInvoked": {
+    "launcher": false,
+    "shutdown": false,
+    "sql": false,
+    "migration": false,
+    "rollback": false,
+    "dump": false,
+    "honorMaintenance": false,
+    "audit": false,
+    "compilation": false,
+    "ollamaQueryOrModification": false
+  }
+}

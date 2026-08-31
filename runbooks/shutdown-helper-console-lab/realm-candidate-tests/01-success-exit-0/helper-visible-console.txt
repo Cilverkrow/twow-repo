@@ -1,0 +1,1 @@
+[OK] Realmd PID 5824, Pfad 'C:\TW\ComTW\runbooks\shutdown-helper-console-lab\realm-candidate-tests\01-success-exit-0\realmd.exe', Konsole 'realmd': kontrolliert beendet.                                                                       

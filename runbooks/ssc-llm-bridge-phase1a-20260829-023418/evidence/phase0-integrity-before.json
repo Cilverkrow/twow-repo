@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "label": "before",
+  "phase0_directory": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase0-20260829-015349",
+  "captured_utc": "2026-08-29T00:38:30.1423551Z",
+  "file_count": 48,
+  "total_bytes": 1381525,
+  "content_fingerprint_sha256": "1968C9B4B4C1874A7709EE1101ED7E2A8BDD8644D487E75C925359CD27E11009",
+  "files": [
+    {
+      "relative_path": "discovery-extracted/bot-personality-discovery-report.md",
+      "size_bytes": 6351,
+      "last_write_utc": "2026-08-28T20:59:34.0000000Z",
+      "sha256": "286558342E85EBC34B36732917D07E4037FD468DA42278BA6FCED64CDF867235"
+    },
+    {
+      "relative_path": "discovery-extracted/bot-personality-mapping-v1.json",
+      "size_bytes": 934830,
+      "last_write_utc": "2026-08-28T20:59:18.0000000Z",
+      "sha256": "F98623451F548A419BAED800C3A48B52F914EB8FA199D9D17184210E592B62C7"
+    },
+    {
+      "relative_path": "discovery-extracted/bot-populations.tsv",
+      "size_bytes": 2129,
+      "last_write_utc": "2026-08-28T20:57:26.0000000Z",
+      "sha256": "77C29EA7D38A0FCBD08641F7F92B904A7D9B28F4CEF6E28FE808E61955E9545B"
+    },
+    {
+      "relative_path": "discovery-extracted/bot-professions.tsv",
+      "size_bytes": 263604,
+      "last_write_utc": "2026-08-28T20:58:18.0000000Z",
+      "sha256": "3C480AC678701CDF848421353CF488E4C01E71373A0B94794339EE3EC1AF1E7E"
+    },
+    {
+      "relative_path": "discovery-extracted/class-summary.tsv",
+      "size_bytes": 1190,
+      "last_write_utc": "2026-08-28T20:57:26.0000000Z",
+      "sha256": "4D1C31DC90A1E5B899BB70CD7E7CC0A0377DF15791FEA14F4F42B75A382A2A00"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/authoritative-assets.tsv",
+      "size_bytes": 3387,
+      "last_write_utc": "2026-08-28T20:58:20.0000000Z",
+      "sha256": "27F65D27B1E376BE49D4DDE91ECD9DBF05402EFB6EB430D1C800F31F9C7DF065"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/config-evidence.txt",
+      "size_bytes": 484,
+      "last_write_utc": "2026-08-28T20:58:22.0000000Z",
+      "sha256": "A7F2DD44AED541EC8A4F415F64F91A7FAA1C2343D7491AD470F50926C09C72D8"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/database-engine-runtime-changes.tsv",
+      "size_bytes": 577,
+      "last_write_utc": "2026-08-28T21:02:02.0000000Z",
+      "sha256": "EBC3CBD516282F91260ADCC56209521E4192A1F93021C45B3BC390B791E9F5C2"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/database-harness-console.txt",
+      "size_bytes": 2011,
+      "last_write_utc": "2026-08-28T20:41:28.0000000Z",
+      "sha256": "7AE2B383FFD083287551DB0868C328C6F70E799DF0B82FE78B06B6E718C8CBEF"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/database-harness-result.json",
+      "size_bytes": 756,
+      "last_write_utc": "2026-08-28T20:41:28.0000000Z",
+      "sha256": "8A71CDBDDF914B97B2D38FB3E4169F534112496CFF66B1803428F84EF6D5340F"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/database-runtime-hashes.tsv",
+      "size_bytes": 782,
+      "last_write_utc": "2026-08-28T21:02:02.0000000Z",
+      "sha256": "D287621AE632A7D0204D682CE82A10F47CCC9D88CE8284D539AE939B755252DE"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/query-result-hashes.tsv",
+      "size_bytes": 3126,
+      "last_write_utc": "2026-08-28T20:59:18.0000000Z",
+      "sha256": "083725DFA65A9FD2588A495BDC01FC61B0C46F771BFACEFF4B7426F8EC624D15"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/read-only-sql-transcript.txt",
+      "size_bytes": 11331,
+      "last_write_utc": "2026-08-28T20:41:26.0000000Z",
+      "sha256": "F80AB75A42A28F8D53D930516FE215D02C4DDC68C76F30433A96726D7CB9F570"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/result-row-counts.tsv",
+      "size_bytes": 401,
+      "last_write_utc": "2026-08-28T21:02:02.0000000Z",
+      "sha256": "B3FC5F6400F42B5907A5581034293583B50CF144120F1C4F3B60C1B40AA8ADF7"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/reviewed-function-imports.tsv",
+      "size_bytes": 2638,
+      "last_write_utc": "2026-08-28T21:02:02.0000000Z",
+      "sha256": "DB76E0245B972E4E2C4B10FE2315435666D2B47DF6112C2712391D53AE714BEF"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/schema-definitions.txt",
+      "size_bytes": 23087,
+      "last_write_utc": "2026-08-28T20:41:26.0000000Z",
+      "sha256": "F3ECE939519200575387E53E5F339CB24964A18BBC96B28C1F8F589DC9BA4CEB"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/source-excerpts.txt",
+      "size_bytes": 19804,
+      "last_write_utc": "2026-08-28T20:58:22.0000000Z",
+      "sha256": "6DE267594F4EB2AAF2625B42301EF1313E6B23ABBDF49DDB3BA30E2E9C5880E5"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/sql-write-capability-audit.json",
+      "size_bytes": 425,
+      "last_write_utc": "2026-08-28T20:41:20.0000000Z",
+      "sha256": "57B7CF92F9669667C40BC59D1DB1496377F6D4EB0CA6F35A2305CB2665B3B1EA"
+    },
+    {
+      "relative_path": "discovery-extracted/evidence/validation-result.json",
+      "size_bytes": 628,
+      "last_write_utc": "2026-08-28T20:59:18.0000000Z",
+      "sha256": "821E5F6ED4BF5EABB7AC41CAE4A61AF0BF40F0667565AC525C369D0744B5A4A7"
+    },
+    {
+      "relative_path": "discovery-extracted/mapping-provenance.tsv",
+      "size_bytes": 10034,
+      "last_write_utc": "2026-08-28T20:58:22.0000000Z",
+      "sha256": "247C8449840228D493D9151DFAA02F1EDECA32CCA250280F982C6CBFD38676BF"
+    },
+    {
+      "relative_path": "discovery-extracted/package-entry-list.txt",
+      "size_bytes": 776,
+      "last_write_utc": "2026-08-28T21:02:04.0000000Z",
+      "sha256": "18299221663FFDD55B7977967CAD3FDBC780710B8797DAAF37602057389201B8"
+    },
+    {
+      "relative_path": "discovery-extracted/profession-summary.tsv",
+      "size_bytes": 6798,
+      "last_write_utc": "2026-08-28T20:58:18.0000000Z",
+      "sha256": "CB5C91B347C8FAFE49413B06A442A6D0E6702FADB2B1B730DA623EC58876D79D"
+    },
+    {
+      "relative_path": "discovery-extracted/race-class-combinations.tsv",
+      "size_bytes": 8103,
+      "last_write_utc": "2026-08-28T20:57:26.0000000Z",
+      "sha256": "C81A26C4A1451BFEAA0FB8F929D9D376C1F98223B9C84887AAD1E7ADDA18CC69"
+    },
+    {
+      "relative_path": "discovery-extracted/race-summary.tsv",
+      "size_bytes": 1660,
+      "last_write_utc": "2026-08-28T20:57:26.0000000Z",
+      "sha256": "6F561E0FDADE0357D688757C224055D13EFA82BA3795EF3896D268E7BAC1AF33"
+    },
+    {
+      "relative_path": "discovery-extracted/sha256-manifest.txt",
+      "size_bytes": 2406,
+      "last_write_utc": "2026-08-28T21:02:04.0000000Z",
+      "sha256": "C6598760C34F0A7F680B184B326287239F42F383EE5130FF3F0C1871A564C64E"
+    },
+    {
+      "relative_path": "discovery-extracted/unmapped-skills.tsv",
+      "size_bytes": 98,
+      "last_write_utc": "2026-08-28T20:58:20.0000000Z",
+      "sha256": "D8713173367EE8864E110359940245BECF7CBBDDAA7965AEF85352FBCE4259A2"
+    },
+    {
+      "relative_path": "future-integration-map.md",
+      "size_bytes": 9802,
+      "last_write_utc": "2026-08-29T00:12:02.6126980Z",
+      "sha256": "591C70A429078E516941E64746B95DE8EBB7FF1C35FC778E3842C34F34136852"
+    },
+    {
+      "relative_path": "harness-test-results.json",
+      "size_bytes": 2579,
+      "last_write_utc": "2026-08-29T00:12:25.7948228Z",
+      "sha256": "C1B442D01447DDEB8688559231F78FBD9081C2324EE2CAE2C6DCDB7FF434C5CE"
+    },
+    {
+      "relative_path": "inference-evidence.json",
+      "size_bytes": 416,
+      "last_write_utc": "2026-08-29T00:04:48.8229820Z",
+      "sha256": "004ADD8425B9CD4C1E5AD80E1E2E34988376494B4A041F90604A511559FA969A"
+    },
+    {
+      "relative_path": "ollama-inventory.json",
+      "size_bytes": 2104,
+      "last_write_utc": "2026-08-29T00:03:15.1655402Z",
+      "sha256": "612AC4307F9A97BD7556FF5075927F4C95E17E7149B7CB243F60796C942977EB"
+    },
+    {
+      "relative_path": "personality-context-phase0.json",
+      "size_bytes": 601,
+      "last_write_utc": "2026-08-29T00:02:13.8754561Z",
+      "sha256": "AB876B90B9DBE006A785C44E272ACEE70671A359DF8B95AB65A9629A117EED10"
+    },
+    {
+      "relative_path": "phase0-console-harness.ps1",
+      "size_bytes": 12217,
+      "last_write_utc": "2026-08-29T00:04:09.8963182Z",
+      "sha256": "ED88F32B7858B8E38C9EC84DBFE2D02A314C32A78AD0C248B3EF3EEDCF9F53AA"
+    },
+    {
+      "relative_path": "phase0-harness-tests.ps1",
+      "size_bytes": 8166,
+      "last_write_utc": "2026-08-29T00:02:17.3045427Z",
+      "sha256": "60D0831AC8E1623E159D1E91D9C29A77EE0BB0808FCD65B93867C8ACA7202E08"
+    },
+    {
+      "relative_path": "phase0-report.md",
+      "size_bytes": 9744,
+      "last_write_utc": "2026-08-29T00:13:44.0524949Z",
+      "sha256": "AAA4111F18672C6C1B631AE4424E7BFC6A9EDB8A2FFCBDDD52AE1C9D403C78D8"
+    },
+    {
+      "relative_path": "phase0-request.json",
+      "size_bytes": 211,
+      "last_write_utc": "2026-08-29T00:02:15.0209138Z",
+      "sha256": "75F958DDC5AB5804DDC0ABD4CE75AB1066369D6EB965A8ECBC3A61C0FC9A7F34"
+    },
+    {
+      "relative_path": "phase0-response.json",
+      "size_bytes": 267,
+      "last_write_utc": "2026-08-29T00:04:48.8330193Z",
+      "sha256": "660325CD1BFF48F82080B3C278F5E40F8F8D9DFC78B4E6AA1028A0E9A7C7EB6E"
+    },
+    {
+      "relative_path": "post-inference-state.json",
+      "size_bytes": 3497,
+      "last_write_utc": "2026-08-29T00:05:11.8174764Z",
+      "sha256": "FB68CA2E699A1ECC868A39828AF97C5C1A547A1A1D3EB6710C67FDF97ADD8081"
+    },
+    {
+      "relative_path": "pre-inference-state.json",
+      "size_bytes": 1945,
+      "last_write_utc": "2026-08-29T00:03:47.2486859Z",
+      "sha256": "AE89B282E60C0685ACE32AEFB3E325C81C1852354D1EF413A535D437E1CC5428"
+    },
+    {
+      "relative_path": "selected-bot-evidence.json",
+      "size_bytes": 2367,
+      "last_write_utc": "2026-08-29T00:12:01.4645210Z",
+      "sha256": "8F78719205B09A8D57AFA5D18DE29CE8BD46204AD7F521C2D872106C94F2D5B6"
+    },
+    {
+      "relative_path": "sha256-manifest.txt",
+      "size_bytes": 812,
+      "last_write_utc": "2026-08-29T00:14:30.1850044Z",
+      "sha256": "144071A9D475B2E370A44D8455FB7698FCCF9E2A5C6FDB1D15229F3E2A161FDA"
+    },
+    {
+      "relative_path": "ssc-llm-bridge-phase0-20260829-015349-deliverables.zip",
+      "size_bytes": 17317,
+      "last_write_utc": "2026-08-29T00:14:30.2080332Z",
+      "sha256": "E3B9B69C58201186E9A742B796F5A130E0C92A29790A25818EAB4A5A98CA467D"
+    },
+    {
+      "relative_path": "test-fixtures/control-multiline-response.json",
+      "size_bytes": 266,
+      "last_write_utc": "2026-08-29T00:04:29.1879486Z",
+      "sha256": "36AA5D12914124C01D4C8D470D6A37363AC5A181DAE6F4D2878A3318D8FA7BC0"
+    },
+    {
+      "relative_path": "test-fixtures/empty-message-request.json",
+      "size_bytes": 182,
+      "last_write_utc": "2026-08-29T00:04:26.7876223Z",
+      "sha256": "E9E83AEE5589A01ECE9ADBDFC26522D78ADBDE2061268480F7E9A5D7C358D3AC"
+    },
+    {
+      "relative_path": "test-fixtures/invalid-request.json",
+      "size_bytes": 14,
+      "last_write_utc": "2026-08-29T00:04:26.3736127Z",
+      "sha256": "3E50CC60BB91D4883C32909DE3CCEA07181A3744F0D163FDADA16522746FA8F0"
+    },
+    {
+      "relative_path": "test-fixtures/mismatch-request.json",
+      "size_bytes": 180,
+      "last_write_utc": "2026-08-29T00:04:25.9506189Z",
+      "sha256": "6FD4B693CCDA6DD046CBE4DAB926780E2CE25EC94815B200C245296B3C8D51C1"
+    },
+    {
+      "relative_path": "test-fixtures/missing-guid-request.json",
+      "size_bytes": 162,
+      "last_write_utc": "2026-08-29T00:04:25.5230944Z",
+      "sha256": "EF0D64904D8B5F39450D12F272624AE98493987DB9E79A45987EEF8C67373920"
+    },
+    {
+      "relative_path": "test-fixtures/oversized-response.json",
+      "size_bytes": 1001,
+      "last_write_utc": "2026-08-29T00:04:28.7290875Z",
+      "sha256": "DD950C5DE79E13918612F94CD88F941953F94E7438FD75ADF5AEC993C6D54DF9"
+    },
+    {
+      "relative_path": "test-fixtures/valid-response.json",
+      "size_bytes": 259,
+      "last_write_utc": "2026-08-29T00:04:25.0392140Z",
+      "sha256": "AF559405B15F0107D83579216E343761A6347A97354FDC329B805F42A99F3462"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "phase": "immediate-post-purchase-client-observation",
+  "recordedAtUtc": "2026-08-28T23:52:12.8676149Z",
+  "sanitizedCharacter": "CONTROL-FA3F04D11843",
+  "ability": "Devotion Aura, Rank 1",
+  "learnedSpellId": 465,
+  "abilityAppearedImmediately": true,
+  "abilityUsableImmediately": true,
+  "clientDisplayedMoneyDeltaReported": null,
+  "clientSuccessOrErrorMessageReported": null,
+  "source": "user observation after the single controlled purchase",
+  "characterNameExported": false,
+  "internalGuidExported": false,
+  "accountIdExported": false
+}

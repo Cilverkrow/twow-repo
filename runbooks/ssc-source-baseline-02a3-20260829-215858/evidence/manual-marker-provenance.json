@@ -1,0 +1,77 @@
+{
+  "task": "SSC-SOURCE-BASELINE-02A3",
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "normal_writer": {
+    "code": "AutoUpdater::ExecuteUpdate inserts migration.Name, migration.Module and migration.Hash at AutoUpdater.cpp:441-442.",
+    "algorithm": "SHA-1 over the entire file opened std::ios::binary; uppercase hexadecimal via ByteArrayToHexStr.",
+    "emits_manual": false
+  },
+  "manual_marker": {
+    "value": "manual",
+    "cryptographic": false,
+    "explicitly_documented_external_import_marker": true,
+    "specially_recognized_by_autoupdater": false,
+    "generated_by_normal_autoupdater": false,
+    "origin_requires_external_or_manual_sql_insert": true
+  },
+  "database_auto_update_disabled_effect": {
+    "source": "AutoUpdater.cpp:489-495",
+    "effect": "ProcessUpdates returns before scanning files, loading the migrations table, calculating hashes or writing rows.",
+    "rewrites_manual_rows": false,
+    "makes_manual_equal_file_hash": false
+  },
+  "local_import_route": {
+    "archived_script_path": "C:\\TW\\ComTW\\runbooks\\compile-script-archive-20260828\\compile-tortoise-wow-1C9C9149.ps1",
+    "archived_script_sha256": "1C9C914950E153FEEF773D319114FDBB69E27EDB4FF72557963B3F1D5C732FBD",
+    "archived_script_last_write_utc": "2026-08-25T16:39:53.5835063Z",
+    "behavior_lines": [
+      "Step \"Importing world content from sql\\base (186 files, can take a few minutes)\"",
+      "Get-ChildItem \"$SourceDir\\sql\\base\\*.sql\" | ForEach-Object {",
+      "    Invoke-SqlFile $_.FullName \"tw_world\"",
+      "}",
+      "Ok \"sql\\base imported\"",
+      "",
+      "Step \"Applying schema migrations (tolerating duplicate-key errors on purpose, per the repo docs)\"",
+      "# -Recurse matters: a chunk of the migration files live in subfolders like",
+      "# sql\\database_updates\\world\\, not directly in sql\\database_updates\\. Missing",
+      "# those caused a \"database structure is not up to date\" crash on first start.",
+      "Get-ChildItem \"$SourceDir\\sql\\database_updates\" -Recurse -Filter \"*.sql\" | Sort-Object Name | ForEach-Object {",
+      "    Invoke-SqlFile $_.FullName \"tw_world\" @(\"--force\")",
+      "    Invoke-Sql \"INSERT IGNORE INTO migrations (Name,Hash,AppliedAt) VALUES ('$($_.BaseName)','manual',NOW());\" \"tw_world\"",
+      "}",
+      "Ok \"Migrations applied and recorded\""
+    ],
+    "behavior": "Recursively enumerates sql/database_updates, sorts by basename, imports every file into tw_world with --force, then INSERT IGNOREs Name + manual + NOW().",
+    "live_behavioral_match": {
+      "base_dump_next_id": 632,
+      "live_id_range": "632-777",
+      "names_and_order_match": true,
+      "all_hashes_manual": true,
+      "first_applied_at": "2026-08-25 18:55:38",
+      "last_applied_at": "2026-08-25 18:56:16"
+    },
+    "conclusion": "The script and live tracker form a strong, exact behavioral provenance match. No execution transcript is available here, so this remains evidence of the import route, not proof of historical SQL byte effects."
+  },
+  "base_dump_tracker": {
+    "source_path": "sql/base/tw_world_migrations.sql",
+    "auto_increment_line": [
+      ") ENGINE=InnoDB AUTO_INCREMENT=632 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;"
+    ],
+    "data_insert_line_count": 0,
+    "assessment": "The candidate base dump defines an empty tracker whose next ID is 632, exactly the first live manual row ID."
+  },
+  "git_history": {
+    "manual_documentation_commits": [
+      "9a8ad6fb07201b2ce41b9075ae05788d838ade17\t2026-07-31T07:59:21+01:00\tDocument the database procedure that actually works, and why",
+      "903b269dcda43439e049ddb36e555e62127f3787\t2026-07-30T18:56:14+01:00\tAdd a Linux installation walkthrough",
+      "32d3062ec1324a5a66f596b76834639efc0e41fe\t2026-07-30T12:30:15+01:00\tAdd a Windows installation walkthrough",
+      "d134e12b1a346e5574d08c3efeabe4d17fde980d\t2026-07-28T11:31:42+01:00\tREADME: describe this fork"
+    ],
+    "auto_updater_hash_writer_commits": [
+      "818b3861f87178a09a3d35aea1321cd39f3a0f12\t2025-12-16T02:25:28-08:00\tInitial Upload"
+    ],
+    "key_manual_documentation_commit": "9a8ad6fb07201b2ce41b9075ae05788d838ade17"
+  },
+  "historical_byte_equality_claimed": false,
+  "contrary_schema_evidence_found": false
+}

@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C",
+  "generated_utc": "2026-08-29T22:13:14.9722449Z",
+  "result": "BLOCKED",
+  "blocking_phase": "B_CONTROLLED_STANDSTILL",
+  "blocker": "WriteConsoleInput failed",
+  "candidate_hash_match": true,
+  "production_exe_final_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+  "production_exe_unchanged": true,
+  "backup_created": false,
+  "phase_c_started": false,
+  "phase_d_started": false,
+  "rollback_copy_required": false,
+  "mangosd_final_state": "RUNNING",
+  "realmd_final_state": "RUNNING",
+  "production_promotion_started": false,
+  "ssc_llm_production_bridge_started": false,
+  "listed_payload_count": 21,
+  "entries": [
+    {
+      "relative_path": "evidence/action-phase-b-stop-mangosd.json",
+      "length": 1237,
+      "sha256": "02AA99A5029FD8785DA4F8CF2F0F1AC200B813E2F73974FB1B41B03A68583088"
+    },
+    {
+      "relative_path": "evidence/action-phase-b-stop-mangosd.log",
+      "length": 761,
+      "sha256": "16CCDBEAFAADBFD9818A7C24368ABD69DE127264FE4310411DC7050F3BCD5829"
+    },
+    {
+      "relative_path": "evidence/active-production-log-tail-after-phase-b-block.json",
+      "length": 607,
+      "sha256": "8ACB1BA9389B5C9AFB3A668855BC83A885B2448CC3DBC40DE960F0723514FA3F"
+    },
+    {
+      "relative_path": "evidence/active-production-log-tail-after-phase-b-block.txt",
+      "length": 1048576,
+      "sha256": "2EBF305BE37CD2848FF1277BAD27BA46C3AAE4CF938A63FA5CE0828D6D46D8C9"
+    },
+    {
+      "relative_path": "evidence/authorized-work-order.txt",
+      "length": 8054,
+      "sha256": "0A3C3797E72F17F75286D2D2F6D8CBBB00E4F83976FDE1654878C196259A0AFD"
+    },
+    {
+      "relative_path": "evidence/blocked-decision.json",
+      "length": 4437,
+      "sha256": "9BE3A06C124639F2A723E2D72A535E117C80F0DA40B3A0C77FCE7B475741C699"
+    },
+    {
+      "relative_path": "evidence/final-status-block.txt",
+      "length": 664,
+      "sha256": "3776E71A251B7CF5236C0B5E5743EE81C2173274AC62DD642765CAD81CBA6B13"
+    },
+    {
+      "relative_path": "evidence/phase-a-listener-netstat-supplement.json",
+      "length": 2213,
+      "sha256": "FE88187A5CC8A33FEE450B941FAF0E9AF0CBA486E050473D43A5652A3249F092"
+    },
+    {
+      "relative_path": "evidence/phase-a-read-only-preflight.json",
+      "length": 3552,
+      "sha256": "E91C346D68431031384C2BA54FEB5A597241A97D2E95B1A9AF60343FCBE47891"
+    },
+    {
+      "relative_path": "evidence/phase-a-read-only-preflight.txt",
+      "length": 641,
+      "sha256": "76DDE1436A0C6B2B43E1BF064E8441F2AEA7737EA43FBB938F2A43E72BB78DE1"
+    },
+    {
+      "relative_path": "evidence/runtime-state-final-before-package.json",
+      "length": 13319,
+      "sha256": "AB0F68B1032E51D42444D142F235CCEF46EF0E154E6C227A15F1411F4354A367"
+    },
+    {
+      "relative_path": "evidence/runtime-state-phase-b-before.json",
+      "length": 13313,
+      "sha256": "317D325DF1F7039A5EF2762EBE3D22555FEF034F73FC04A64F26073D27724F68"
+    },
+    {
+      "relative_path": "evidence/runtime-state-phase-b-blocked-after-world-shutdown-failure.json",
+      "length": 13343,
+      "sha256": "E04744B3EB9BB0BA9F80CB5CE65071CAB7BA4329ADEE8855ED8B496E8368C31E"
+    },
+    {
+      "relative_path": "source-baseline-02c-blocked-report.md",
+      "length": 6589,
+      "sha256": "C46F08AA591753D5C54A50D8F0F40C7B202C770890F6BC0AD3E22B9DB628D8FE"
+    },
+    {
+      "relative_path": "tools/capture-active-log-tail.ps1",
+      "length": 1722,
+      "sha256": "E541999C0F4DDBCC5351DB9742E2019232A819644337E8FA9CAAB8DE9EF6DAF8"
+    },
+    {
+      "relative_path": "tools/capture-phase-a-netstat-supplement.ps1",
+      "length": 2741,
+      "sha256": "81248A9A2EA886D8ACD2DF00534EDDECC0E1654FB49C9A766DD87A72A2B75411"
+    },
+    {
+      "relative_path": "tools/capture-phase-a-preflight.ps1",
+      "length": 7027,
+      "sha256": "90CBCBE77D3ABEC08003027DCEBB1FCA963798B22E262919B2FEB474D2BA680C"
+    },
+    {
+      "relative_path": "tools/capture-runtime-state.ps1",
+      "length": 5088,
+      "sha256": "6AAFA5E39337789A3FBCE9116D6B1F5614594C05DFBB33BD370DEF808310CADD"
+    },
+    {
+      "relative_path": "tools/finalize-blocked-package.ps1",
+      "length": 5805,
+      "sha256": "021096D03EC178E9D13EBAA7A5C2726F7612F23E70C03E5F143001A10785B6D9"
+    },
+    {
+      "relative_path": "tools/generate-blocked-decision.ps1",
+      "length": 6739,
+      "sha256": "6FF5F4C251946582513A95C587C5524F727025F2EFE64AA43E85C7BD27D81A01"
+    },
+    {
+      "relative_path": "tools/invoke-recorded-action.ps1",
+      "length": 2677,
+      "sha256": "CF0083D47521D0E800F18E12FE0A2F4AC2D5B1EEF3E681F9462F18476C37226F"
+    }
+  ]
+}

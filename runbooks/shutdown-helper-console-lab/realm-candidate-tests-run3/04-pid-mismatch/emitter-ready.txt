@@ -1,0 +1,7 @@
+PID=44980
+EXE=C:\TW\ComTW\runbooks\shutdown-helper-console-lab\realm-candidate-tests-run3\04-pid-mismatch\realmd.exe
+TITLE=realmd
+CTRL_BREAK_EXIT_CODE=0
+HOLD_AFTER_BREAK=false
+IDLE_EXIT_MS=5000
+READY_UTC=2026-08-28T15:01:41.462Z

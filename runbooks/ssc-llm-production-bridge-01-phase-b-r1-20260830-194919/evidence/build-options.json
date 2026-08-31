@@ -1,0 +1,32 @@
+{
+  "generator": "Visual Studio 17 2022",
+  "architecture": "x64",
+  "configuration": "Release",
+  "target": "mangosd only",
+  "cmake": "4.4.2",
+  "msvc": "19.44.35228; tools 14.44.35207",
+  "windows_sdk": "10.0.26100.0",
+  "parallel_projects": 2,
+  "cl_mp_count": 2,
+  "cache_sha256": "31901FD828F112E76DFBD1A8D1F6194B9D691E94F74E9C4261325F21385B016C",
+  "configure_definitions": [
+    "CMAKE_INSTALL_PREFIX=C:/TW/ssc-llm-phase-b-20260830-173121/install-r1-clean-final2",
+    "CMAKE_BUILD_TYPE=Release",
+    "ACE_ROOT=C:/TW/ComTW/vcpkg/installed/x64-windows",
+    "BOOST_ROOT=C:/TW/ComTW/vcpkg/installed/x64-windows",
+    "ALLOW_TURTLE_ADDONS=ON",
+    "BUILD_PLAYERBOTS=ON",
+    "MODULES=disabled",
+    "USE_ADDRESS_SANITIZER=OFF",
+    "USE_ANTICHEAT=ON",
+    "USE_DISCORD_BOT=OFF",
+    "USE_EXTRACTORS=ON",
+    "USE_LIBCURL=OFF",
+    "USE_PCH=ON",
+    "USE_PCH_OLD=ON",
+    "USE_REALMMERGE=OFF",
+    "USE_SCRIPTS=ON",
+    "USE_STD_MALLOC=ON",
+    "USE_TRACY=OFF"
+  ]
+}

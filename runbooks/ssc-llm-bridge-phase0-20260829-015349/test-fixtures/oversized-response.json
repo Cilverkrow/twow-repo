@@ -1,0 +1,12 @@
+{
+  "model": "qwen2.5:7b",
+  "message": {
+    "role": "assistant",
+    "content": "Heute ziehe ich los, um mir die Gegend gründlich anzusehen und dabei wachsam zu bleiben. Heute ziehe ich los, um mir die Gegend gründlich anzusehen und dabei wachsam zu bleiben. Heute ziehe ich los, um mir die Gegend gründlich anzusehen und dabei wachsam zu bleiben. Heute ziehe ich los, um mir die Gegend gründlich anzusehen und dabei wachsam zu bleiben. Heute ziehe ich los, um mir die Gegend gründlich anzusehen und dabei wachsam zu bleiben. Heute ziehe ich los, um mir die Gegend gründlich anzusehen und dabei wachsam zu bleiben. Heute ziehe ich los, um mir die Gegend gründlich anzusehen und dabei wachsam zu bleiben. Heute ziehe ich los, um mir die Gegend gründlich anzusehen und dabei wachsam zu bleiben. Danach ruhe ich mich aus. Ein dritter Satz darf nicht erscheinen."
+  },
+  "done": true,
+  "total_duration": 1000000,
+  "load_duration": 0,
+  "prompt_eval_count": 20,
+  "eval_count": 8
+}

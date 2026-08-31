@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "task_id": "PROJECT-STRUCTURE-ALIGNMENT-01",
+  "captured_utc": "2026-08-30T16:34:08Z",
+  "mode": "READ_ONLY_ALIGNMENT",
+  "result": "PASS",
+  "online_inventory_accepted": true,
+  "local_inventory_accepted": true,
+  "counts": {
+    "canonical_workstream_count": 9,
+    "online_current_chat_count": 9,
+    "online_canonical_chat_count_after_actions": 9,
+    "online_legacy_reference_count_after_actions": 2,
+    "online_total_chat_count_after_actions": 11,
+    "online_rename_count": 7,
+    "online_create_count": 2,
+    "local_current_chat_count": 6,
+    "local_canonical_chat_count_after_actions": 9,
+    "local_total_chat_count_after_actions": 9,
+    "local_rename_count": 1,
+    "local_create_count": 3,
+    "total_rename_count": 8,
+    "total_create_count": 5,
+    "total_proposed_ui_action_count": 13,
+    "delete_count": 0,
+    "physical_merge_count": 0,
+    "historical_content_copy_count": 0,
+    "legacy_reference_count": 2,
+    "unresolved_alignment_count": 0,
+    "ui_mutations_performed": 0,
+    "project_file_mutations_performed": 5
+  },
+  "approved_inputs": [
+    {
+      "side": "ONLINE",
+      "role": "markdown_inventory",
+      "path": "C:\\Users\\djfav\\Downloads\\online-project-structure-inventory-v1-r2.md",
+      "bytes": 11117,
+      "sha256": "820D020BBB7150B9DE677771347BEC5C690CCEA7E30D0A1DEBEC66B201E329E0",
+      "accepted": true
+    },
+    {
+      "side": "ONLINE",
+      "role": "json_inventory",
+      "path": "C:\\Users\\djfav\\Downloads\\online-project-structure-inventory-v1-r2.json",
+      "bytes": 12522,
+      "sha256": "1F271FAA395B5B93919693C93B2672A89395B7933FABF4D04BE5459F3A1B2B51",
+      "accepted": true
+    },
+    {
+      "side": "ONLINE",
+      "role": "handoff",
+      "path": "C:\\Users\\djfav\\Downloads\\online-project-structure-handoff-v1-r2.md",
+      "bytes": 1262,
+      "sha256": "34A15D4FFCBFC4FE4DB3364F87064FAC49EAD53FED2526B9E8D0B3069A6EE94A",
+      "accepted": true
+    },
+    {
+      "side": "LOCAL",
+      "role": "markdown_inventory",
+      "path": "C:\\TW\\ComTW\\runbooks\\project-structure-local-inventory-r1-closure-20260830T162349Z\\local-project-structure-inventory-v1-r1.md",
+      "bytes": 6473,
+      "sha256": "CCFF07188E86534A7FE4F790B48738106FD531B83BAD18097F5160A14A19FA24",
+      "accepted": true
+    },
+    {
+      "side": "LOCAL",
+      "role": "json_inventory",
+      "path": "C:\\TW\\ComTW\\runbooks\\project-structure-local-inventory-r1-closure-20260830T162349Z\\local-project-structure-inventory-v1-r1.json",
+      "bytes": 8817,
+      "sha256": "77E97BB469D98453830D4F925C89700EB04A28F1DB1F02BAA10681A18F09F433",
+      "accepted": true
+    },
+    {
+      "side": "LOCAL",
+      "role": "handoff",
+      "path": "C:\\TW\\ComTW\\runbooks\\project-structure-local-inventory-r1-closure-20260830T162349Z\\local-project-structure-handoff-v1-r1.md",
+      "bytes": 3966,
+      "sha256": "49B14A69D1EB7EB907F31229982A24D2424112C487B067F3E96A5EE565B2122F",
+      "accepted": true
+    },
+    {
+      "side": "LOCAL",
+      "role": "manifest",
+      "path": "C:\\TW\\ComTW\\runbooks\\project-structure-local-inventory-r1-closure-20260830T162349Z\\sha256-manifest.txt",
+      "bytes": 1497,
+      "sha256": "7CB3E50A76228E9E8F967F1DC388CA3FED94DD98D4224F1673EB06443098A105",
+      "accepted": true
+    }
+  ],
+  "canonical_workstreams": [
+    {
+      "id": "WS-00",
+      "canonical_title": "Projektsteuerung und Workspace",
+      "online": {
+        "current_title": "Workspace einrichten",
+        "action": "RENAME",
+        "target_title": "Projektsteuerung und Workspace",
+        "legacy_references": []
+      },
+      "local": {
+        "current_title": "Analysiere TWoW-Projektstruktur",
+        "action": "RENAME",
+        "target_title": "Projektsteuerung und Workspace"
+      }
+    },
+    {
+      "id": "WS-10",
+      "canonical_title": "SSC – Analyse und Entwicklung",
+      "online": {
+        "current_title": "SSC Analyse und Entwicklung",
+        "action": "RENAME",
+        "target_title": "SSC – Analyse und Entwicklung",
+        "legacy_references": []
+      },
+      "local": {
+        "current_title": "SSC – Analyse und Entwicklung",
+        "action": "KEEP",
+        "target_title": "SSC – Analyse und Entwicklung"
+      }
+    },
+    {
+      "id": "WS-20",
+      "canonical_title": "Datenbank und Migrationen",
+      "online": {
+        "current_title": "Datenbankmigrationen Übersicht",
+        "action": "RENAME",
+        "target_title": "Datenbank und Migrationen",
+        "legacy_references": []
+      },
+      "local": {
+        "current_title": "Datenbank und Migrationen",
+        "action": "KEEP",
+        "target_title": "Datenbank und Migrationen"
+      }
+    },
+    {
+      "id": "WS-30",
+      "canonical_title": "Serverkonfiguration",
+      "online": {
+        "current_title": "Serverkonfiguration prüfen",
+        "action": "RENAME",
+        "target_title": "Serverkonfiguration",
+        "legacy_references": [
+          "Bot Anzahl einschätzen"
+        ]
+      },
+      "local": {
+        "current_title": null,
+        "action": "CREATE",
+        "target_title": "Serverkonfiguration"
+      }
+    },
+    {
+      "id": "WS-40",
+      "canonical_title": "Deployment und Skripte",
+      "online": {
+        "current_title": "Deployment Skripte beschreiben",
+        "action": "RENAME",
+        "target_title": "Deployment und Skripte",
+        "legacy_references": []
+      },
+      "local": {
+        "current_title": "Deployment und Skripte",
+        "action": "KEEP",
+        "target_title": "Deployment und Skripte"
+      }
+    },
+    {
+      "id": "WS-50",
+      "canonical_title": "Build und Serverbetrieb",
+      "online": {
+        "current_title": null,
+        "action": "CREATE",
+        "target_title": "Build und Serverbetrieb",
+        "legacy_references": [
+          "Serverdateien gemeinsam nutzen"
+        ]
+      },
+      "local": {
+        "current_title": "Build und Serverbetrieb",
+        "action": "KEEP",
+        "target_title": "Build und Serverbetrieb"
+      }
+    },
+    {
+      "id": "WS-60",
+      "canonical_title": "Referenzserver und Backups",
+      "online": {
+        "current_title": null,
+        "action": "CREATE",
+        "target_title": "Referenzserver und Backups",
+        "legacy_references": []
+      },
+      "local": {
+        "current_title": "Referenzserver und Backups",
+        "action": "KEEP",
+        "target_title": "Referenzserver und Backups"
+      }
+    },
+    {
+      "id": "WS-70",
+      "canonical_title": "Bot-Persönlichkeiten",
+      "online": {
+        "current_title": "Ollama Botpersönlichkeiten planen",
+        "action": "RENAME",
+        "target_title": "Bot-Persönlichkeiten",
+        "legacy_references": []
+      },
+      "local": {
+        "current_title": null,
+        "action": "CREATE",
+        "target_title": "Bot-Persönlichkeiten"
+      }
+    },
+    {
+      "id": "WS-80",
+      "canonical_title": "Dokumentation und Entscheidungen",
+      "online": {
+        "current_title": "Dokumentation anlegen TWoW Server",
+        "action": "RENAME",
+        "target_title": "Dokumentation und Entscheidungen",
+        "legacy_references": []
+      },
+      "local": {
+        "current_title": null,
+        "action": "CREATE",
+        "target_title": "Dokumentation und Entscheidungen"
+      }
+    }
+  ],
+  "proposed_ui_actions": [
+    {
+      "sequence": 1,
+      "action_id": "ONLINE-RENAME-WS-10",
+      "side": "ONLINE",
+      "type": "RENAME",
+      "workstream_id": "WS-10",
+      "from_title": "SSC Analyse und Entwicklung",
+      "to_title": "SSC – Analyse und Entwicklung"
+    },
+    {
+      "sequence": 2,
+      "action_id": "ONLINE-RENAME-WS-20",
+      "side": "ONLINE",
+      "type": "RENAME",
+      "workstream_id": "WS-20",
+      "from_title": "Datenbankmigrationen Übersicht",
+      "to_title": "Datenbank und Migrationen"
+    },
+    {
+      "sequence": 3,
+      "action_id": "ONLINE-RENAME-WS-30",
+      "side": "ONLINE",
+      "type": "RENAME",
+      "workstream_id": "WS-30",
+      "from_title": "Serverkonfiguration prüfen",
+      "to_title": "Serverkonfiguration"
+    },
+    {
+      "sequence": 4,
+      "action_id": "ONLINE-RENAME-WS-40",
+      "side": "ONLINE",
+      "type": "RENAME",
+      "workstream_id": "WS-40",
+      "from_title": "Deployment Skripte beschreiben",
+      "to_title": "Deployment und Skripte"
+    },
+    {
+      "sequence": 5,
+      "action_id": "ONLINE-RENAME-WS-70",
+      "side": "ONLINE",
+      "type": "RENAME",
+      "workstream_id": "WS-70",
+      "from_title": "Ollama Botpersönlichkeiten planen",
+      "to_title": "Bot-Persönlichkeiten"
+    },
+    {
+      "sequence": 6,
+      "action_id": "ONLINE-RENAME-WS-80",
+      "side": "ONLINE",
+      "type": "RENAME",
+      "workstream_id": "WS-80",
+      "from_title": "Dokumentation anlegen TWoW Server",
+      "to_title": "Dokumentation und Entscheidungen"
+    },
+    {
+      "sequence": 7,
+      "action_id": "ONLINE-RENAME-WS-00",
+      "side": "ONLINE",
+      "type": "RENAME",
+      "workstream_id": "WS-00",
+      "from_title": "Workspace einrichten",
+      "to_title": "Projektsteuerung und Workspace"
+    },
+    {
+      "sequence": 8,
+      "action_id": "ONLINE-CREATE-WS-50",
+      "side": "ONLINE",
+      "type": "CREATE",
+      "workstream_id": "WS-50",
+      "to_title": "Build und Serverbetrieb",
+      "opening_text": "Dieser Chat ist der kanonische Arbeitsbereich WS-50 für Build und Serverbetrieb. Hier dokumentieren wir Builds, Start-/Stop-Abläufe, Laufzeitdiagnosen, Betriebszustände und reproduzierbare Verifikationen. Konfigurationsänderungen bleiben in WS-30, Deployment-Automation in WS-40 und Referenz-/Backup-Themen in WS-60; hier werden sie nur verknüpft."
+    },
+    {
+      "sequence": 9,
+      "action_id": "ONLINE-CREATE-WS-60",
+      "side": "ONLINE",
+      "type": "CREATE",
+      "workstream_id": "WS-60",
+      "to_title": "Referenzserver und Backups",
+      "opening_text": "Dieser Chat ist der kanonische Arbeitsbereich WS-60 für Referenzserver und Backups. Hier dokumentieren wir Referenzbestände, Freigabe- und Zugriffsregeln, Backup- und Restore-Verfahren sowie deren Verifikation. Deployment-Skripte bleiben in WS-40 und laufender Serverbetrieb in WS-50; hier werden sie nur referenziert."
+    },
+    {
+      "sequence": 10,
+      "action_id": "LOCAL-RENAME-WS-00",
+      "side": "LOCAL",
+      "type": "RENAME",
+      "workstream_id": "WS-00",
+      "from_title": "Analysiere TWoW-Projektstruktur",
+      "to_title": "Projektsteuerung und Workspace"
+    },
+    {
+      "sequence": 11,
+      "action_id": "LOCAL-CREATE-WS-30",
+      "side": "LOCAL",
+      "type": "CREATE",
+      "workstream_id": "WS-30",
+      "to_title": "Serverkonfiguration",
+      "opening_text": "Dieser Chat ist der kanonische lokale Arbeitsbereich WS-30 für Serverkonfiguration. Hier prüfen und dokumentieren wir sanitisierte Server- und PlayerBot-Konfigurationen, Pfade, Ports und Laufzeitparameter. Datenbankänderungen bleiben in WS-20, Deployment- und Steuerskripte in WS-40 und beobachtete Betriebszustände in WS-50; hier werden sie nur referenziert."
+    },
+    {
+      "sequence": 12,
+      "action_id": "LOCAL-CREATE-WS-70",
+      "side": "LOCAL",
+      "type": "CREATE",
+      "workstream_id": "WS-70",
+      "to_title": "Bot-Persönlichkeiten",
+      "opening_text": "Dieser Chat ist der kanonische lokale Arbeitsbereich WS-70 für Bot-Persönlichkeiten. Hier planen und dokumentieren wir Persönlichkeiten, Verhalten, Prompts, Gedächtnis und Dialogregeln. Die technische SSC-/PlayerBot-/LLM-Brücke bleibt in WS-10, Konfiguration in WS-30 und migrationspflichtige Persistenz in WS-20; hier werden sie nur verknüpft."
+    },
+    {
+      "sequence": 13,
+      "action_id": "LOCAL-CREATE-WS-80",
+      "side": "LOCAL",
+      "type": "CREATE",
+      "workstream_id": "WS-80",
+      "to_title": "Dokumentation und Entscheidungen",
+      "opening_text": "Dieser Chat ist der kanonische lokale Arbeitsbereich WS-80 für Dokumentation und Entscheidungen. Hier pflegen wir projektweite Entscheidungen, ADRs, verbindliche Betriebsdokumentation und kanonische Indizes. Arbeitssteuerung und Übergaben bleiben in WS-00, fachliche Detaildokumentation beim jeweiligen Workstream; hier werden sie nur referenziert."
+    }
+  ],
+  "historical_content_policy": {
+    "value": "CROSS_REFERENCES_ONLY",
+    "copy_old_chat_content": false,
+    "rewrite_old_chat_content": false,
+    "delete_legacy_chats": false,
+    "legacy_chats": [
+      "Bot Anzahl einschätzen",
+      "Serverdateien gemeinsam nutzen"
+    ]
+  },
+  "local_content_freshness_limitations": [
+    "Der WS-10-Turn war beim lokalen V1-Snapshot aktiv.",
+    "Der jüngste WS-20-Turn war in der App-Ansicht kompaktiert.",
+    "Der jüngste WS-40-Turn war kompaktiert.",
+    "Der letzte sichtbare WS-50-Trainer-Control-Punkt war fachlich WS-20 zuzuordnen und nicht abschließend sichtbar."
+  ],
+  "verification_checklist": [
+    "Online existieren nach Freigabe genau neun kanonische Titel und zwei unveränderte Legacy-Referenzen.",
+    "Lokal existieren nach Freigabe genau neun kanonische Titel und keine zusätzlichen Legacy-Chats.",
+    "Die beiden Online-Legacy-Titel sind unverändert.",
+    "Kein Chat wurde gelöscht, physisch zusammengeführt oder inhaltlich kopiert.",
+    "Jeder der fünf neuen Chats enthält exakt den freigegebenen Eröffnungstext.",
+    "Es bestehen keine doppelten kanonischen Titel innerhalb derselben Projektseite.",
+    "Keine zukünftigen Workstream-Verzeichnisse wurden durch die UI-Materialisierung angelegt."
+  ],
+  "rollback_policy": {
+    "renames": "Nur den betroffenen Titel manuell auf den unmittelbar vorherigen Titel zurücksetzen.",
+    "accidental_creations": "Nur einen nachweislich versehentlich erzeugten und noch leeren Chat entfernen.",
+    "historical_chats": "Legacy-Chats niemals löschen oder zusammenführen."
+  },
+  "unresolved_alignment": [],
+  "user_approval_required": true,
+  "ui_mutations_performed": 0,
+  "next_task_authorized": false
+}

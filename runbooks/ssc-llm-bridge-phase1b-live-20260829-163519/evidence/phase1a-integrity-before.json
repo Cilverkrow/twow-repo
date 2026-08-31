@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "label": "before",
+  "phase1a_directory": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-hardening-20260829-035317",
+  "captured_utc": "2026-08-29T14:49:16.4098660Z",
+  "file_count": 52,
+  "total_bytes": 297947,
+  "content_fingerprint_sha256": "D458FA595A776DF36A586BB240D3B3F0271853DF8CAAD431620ABCBEA59710FA",
+  "files": [
+    {
+      "relative_path": "config/bridge-config-v1.json",
+      "size_bytes": 1653,
+      "last_write_utc": "2026-08-29T00:39:15.8994354Z",
+      "sha256": "DD29159CC35DFAB3D15988D114E5F11119E40E095017853CD5FCF3D057E6D00A"
+    },
+    {
+      "relative_path": "context/personality-context-profile-v0.json",
+      "size_bytes": 601,
+      "last_write_utc": "2026-08-29T00:37:53.2875495Z",
+      "sha256": "AB876B90B9DBE006A785C44E272ACEE70671A359DF8B95AB65A9629A117EED10"
+    },
+    {
+      "relative_path": "evidence/automated-test-result.json",
+      "size_bytes": 984,
+      "last_write_utc": "2026-08-29T02:07:24.8058494Z",
+      "sha256": "7383A748376434AAE782756CB6336F0EEC139DC3327C929447DC7D183758C795"
+    },
+    {
+      "relative_path": "evidence/automated-tests.tap",
+      "size_bytes": 13747,
+      "last_write_utc": "2026-08-29T02:07:24.7918484Z",
+      "sha256": "FE2C48637D96B484409D40610AB72B1C198D3B513DBE60BB765F800994C97030"
+    },
+    {
+      "relative_path": "evidence/config-validation.jsonl",
+      "size_bytes": 271,
+      "last_write_utc": "2026-08-29T02:07:23.8062354Z",
+      "sha256": "A60DFAB5B189F879690F0CE0454D43A089A39BC20B74E25CA2B620F73BEF3B94"
+    },
+    {
+      "relative_path": "evidence/operational-boundary-final.json",
+      "size_bytes": 723,
+      "last_write_utc": "2026-08-29T02:07:36.0241490Z",
+      "sha256": "BFF8EFABEC663B56FB3C6B9B2754F2CDC78FD6BCAADBA54EB8F7604423961FC4"
+    },
+    {
+      "relative_path": "evidence/package-evidence.json",
+      "size_bytes": 2296,
+      "last_write_utc": "2026-08-29T02:09:17.7142622Z",
+      "sha256": "7C81F1E299AF8B200C02F4CEF031D662B73DB9A2F5367619F2ED13B1E6C51F6A"
+    },
+    {
+      "relative_path": "evidence/phase0-integrity-after.json",
+      "size_bytes": 12384,
+      "last_write_utc": "2026-08-29T02:07:36.0971479Z",
+      "sha256": "A846385691FB9597056574C9D1F952CEA4189DA3520868B8C7F40ABEF1C044E4"
+    },
+    {
+      "relative_path": "evidence/phase0-integrity-before.json",
+      "size_bytes": 12385,
+      "last_write_utc": "2026-08-29T01:53:35.0316534Z",
+      "sha256": "40C8208197E2192DB346641EC65714CD9A41A940EFDAF898FD1DEF5AFD77868A"
+    },
+    {
+      "relative_path": "evidence/phase0-integrity-comparison.json",
+      "size_bytes": 491,
+      "last_write_utc": "2026-08-29T02:07:36.1260431Z",
+      "sha256": "6F73CC4C29B3AFD240E95BBC4FE046E324ACDB78728793D9DD3C2EE14E4E1660"
+    },
+    {
+      "relative_path": "future-source-integration-gate.md",
+      "size_bytes": 2349,
+      "last_write_utc": "2026-08-29T01:01:33.2857271Z",
+      "sha256": "0369212421FF3BEC2637EC44BEB082ED53FFC941F2CAC328CE4F04758A3F88AE"
+    },
+    {
+      "relative_path": "package-entry-list.txt",
+      "size_bytes": 1463,
+      "last_write_utc": "2026-08-29T02:09:17.6292622Z",
+      "sha256": "8A437A376258BE7D43DF2F173420A70F2D3F34601FD37E32C1481CC312EFCB53"
+    },
+    {
+      "relative_path": "package.json",
+      "size_bytes": 296,
+      "last_write_utc": "2026-08-29T02:02:57.4492173Z",
+      "sha256": "5B4EDB59F9204D3C5D909611535218BDC21979B36A24219DD6C46F9CBB8C4850"
+    },
+    {
+      "relative_path": "phase1a-report.md",
+      "size_bytes": 8453,
+      "last_write_utc": "2026-08-29T02:09:06.8148785Z",
+      "sha256": "44A34CC1948106B258B9D4D43EE99654DA207DED3BB856729E3359E4FF743A0D"
+    },
+    {
+      "relative_path": "README.md",
+      "size_bytes": 5961,
+      "last_write_utc": "2026-08-29T02:02:55.2163461Z",
+      "sha256": "C0C3B09F616C3E766930EE38DD8BD6DFE49A0F1E04726585973AAEDFD4BC88A0"
+    },
+    {
+      "relative_path": "run-tests.ps1",
+      "size_bytes": 4890,
+      "last_write_utc": "2026-08-29T02:02:58.5724559Z",
+      "sha256": "D846A9F4CB67D2746F6A445A858F089CE7951067240DB88086A3343279004CA6"
+    },
+    {
+      "relative_path": "schemas/completion-envelope-v1.schema.json",
+      "size_bytes": 2255,
+      "last_write_utc": "2026-08-29T01:06:39.5983624Z",
+      "sha256": "EFDE56B4275ADA3F7810774462E11E964D1517EBF33B70AAB3B80E80C6F10B94"
+    },
+    {
+      "relative_path": "schemas/personality-context-v1.schema.json",
+      "size_bytes": 1501,
+      "last_write_utc": "2026-08-29T00:48:25.1176489Z",
+      "sha256": "738A26FD751DECF7A150B8354974CF06A14635F9F90DFDF354E2FB135AE98943"
+    },
+    {
+      "relative_path": "schemas/request-envelope-v1.schema.json",
+      "size_bytes": 975,
+      "last_write_utc": "2026-08-29T01:06:41.8724560Z",
+      "sha256": "3E7AA2FD09A8A45B1EFB2DB65FDE33497A2F1F2A570A1356343834EDEC4F9808"
+    },
+    {
+      "relative_path": "schemas/status-envelope-v1.schema.json",
+      "size_bytes": 1915,
+      "last_write_utc": "2026-08-29T01:06:40.7496520Z",
+      "sha256": "FD1C4BCC82B39577A0924EE2A23DE47B877E0FEE7B21AF04A5336B2822ACA5C9"
+    },
+    {
+      "relative_path": "sha256-manifest.txt",
+      "size_bytes": 4677,
+      "last_write_utc": "2026-08-29T02:09:17.6562615Z",
+      "sha256": "7494F26C2CBA47084691D57ED7DEA372B5E895C90F58FF86304101B48305FA8E"
+    },
+    {
+      "relative_path": "src/bridge.mjs",
+      "size_bytes": 18638,
+      "last_write_utc": "2026-08-29T01:58:53.5931283Z",
+      "sha256": "1CC967766E0C127E123A89B295A5952C3D7F1D1411BEE59E39C7058A723F9003"
+    },
+    {
+      "relative_path": "src/cli.mjs",
+      "size_bytes": 5360,
+      "last_write_utc": "2026-08-29T01:57:24.7159682Z",
+      "sha256": "C5D2C01DB3AEBBBF65A2ECFACC1515326334220A5F79395DF3E24550345CA611"
+    },
+    {
+      "relative_path": "src/configuration.mjs",
+      "size_bytes": 11040,
+      "last_write_utc": "2026-08-29T00:56:56.4494017Z",
+      "sha256": "1EC5DAF5E06EB20CF93020670E7C4504904DF0028A06949E7F1640C71E44B703"
+    },
+    {
+      "relative_path": "src/contracts.mjs",
+      "size_bytes": 7204,
+      "last_write_utc": "2026-08-29T00:46:05.1308624Z",
+      "sha256": "8B106F38D2A10AFD5A73399DA4FA44004684EEB013A0FFD7902A621176D0E1BA"
+    },
+    {
+      "relative_path": "src/errors.mjs",
+      "size_bytes": 487,
+      "last_write_utc": "2026-08-29T00:40:16.7666821Z",
+      "sha256": "1365F319B004679BBC1BD64AD5C1F323F507967F84E1B0EAB132A8B1B09D70A4"
+    },
+    {
+      "relative_path": "src/instance-lock.mjs",
+      "size_bytes": 1582,
+      "last_write_utc": "2026-08-29T00:57:29.9962696Z",
+      "sha256": "E5641B73B444A993E4C0BAF99E5E6614A613F98E57983D079FB8BDD70E604D03"
+    },
+    {
+      "relative_path": "src/ndjson.mjs",
+      "size_bytes": 1069,
+      "last_write_utc": "2026-08-29T01:08:43.7815060Z",
+      "sha256": "DF8F0B39998E8DE9CB7E0FF5840D2C0216CC50BA146E65AEC9AB1A41B1ABF369"
+    },
+    {
+      "relative_path": "src/prompt.mjs",
+      "size_bytes": 1820,
+      "last_write_utc": "2026-08-29T01:57:21.3713484Z",
+      "sha256": "E18710F89800D668BE2320C09582169D42906513236AEDE6CDC121A3419178BB"
+    },
+    {
+      "relative_path": "src/strict-json.mjs",
+      "size_bytes": 7665,
+      "last_write_utc": "2026-08-29T01:00:06.3818897Z",
+      "sha256": "B7BEF059A6BE5135C0ABC9D48C6F22085C77386FE9D1EB5BA3B66ED423A48961"
+    },
+    {
+      "relative_path": "src/transport.mjs",
+      "size_bytes": 17527,
+      "last_write_utc": "2026-08-29T02:05:02.8382656Z",
+      "sha256": "0EF690743B12C45BDC985353088A276E70E0373CD461AA3A3A6CBBA758FDC1FB"
+    },
+    {
+      "relative_path": "ssc-llm-bridge-phase1a-hardening-20260829-035317-deliverables.zip",
+      "size_bytes": 71689,
+      "last_write_utc": "2026-08-29T02:09:17.6942613Z",
+      "sha256": "BADE583E726F5177D2BA9AF753962D6DC74BC3297B6C610A3CB91FF5251DDF11"
+    },
+    {
+      "relative_path": "state-and-error-contract.md",
+      "size_bytes": 4316,
+      "last_write_utc": "2026-08-29T02:02:56.3415043Z",
+      "sha256": "9585380BA2AEFDE5ED5D36009ACDA98ED979D7F5D2E9B104B535390E11D6F1C7"
+    },
+    {
+      "relative_path": "test/bridge.test.mjs",
+      "size_bytes": 24447,
+      "last_write_utc": "2026-08-29T02:00:24.4421738Z",
+      "sha256": "011B58C0306938A602438140FCE3AE8EC62C8C9365BDDB645C89BC3C18233DDB"
+    },
+    {
+      "relative_path": "test/fixtures/duplicate-key-request.json",
+      "size_bytes": 207,
+      "last_write_utc": "2026-08-29T00:48:27.3831645Z",
+      "sha256": "3BE683E50074D1E585115332F4026D26CF324960E8F81298BEAC8E1A493406FC"
+    },
+    {
+      "relative_path": "test/fixtures/lone-surrogate-request.json",
+      "size_bytes": 191,
+      "last_write_utc": "2026-08-29T00:48:29.5708121Z",
+      "sha256": "64851C554F0173E605375B2B76D424287C08CA13ED1ED95939A056B3B8387D0F"
+    },
+    {
+      "relative_path": "test/fixtures/malformed-utf8.hex",
+      "size_bytes": 71,
+      "last_write_utc": "2026-08-29T00:48:30.6661280Z",
+      "sha256": "88C908BAC0451B4505A6402BA83D46212E48704E120AEB44DE4B9999C3EE0851"
+    },
+    {
+      "relative_path": "test/fixtures/ollama-inventory-valid.json",
+      "size_bytes": 174,
+      "last_write_utc": "2026-08-29T00:48:32.8132533Z",
+      "sha256": "A04103F23107D4E56B4BD3796FE68C198A642EAC2FDEF8C5B5F6817DD290693E"
+    },
+    {
+      "relative_path": "test/fixtures/ollama-inventory-wrong-digest.json",
+      "size_bytes": 174,
+      "last_write_utc": "2026-08-29T00:48:33.9324424Z",
+      "sha256": "FA6A28F805E6171399111ABBC1B36F17424AD938A47FF150DD109A3905097260"
+    },
+    {
+      "relative_path": "test/fixtures/ollama-response-tool-call.json",
+      "size_bytes": 129,
+      "last_write_utc": "2026-08-29T00:48:36.1430489Z",
+      "sha256": "855EC8737FF6088EA4E5AAC38AFD2E1524B90830AB32BADA40C2EB035322AC0A"
+    },
+    {
+      "relative_path": "test/fixtures/ollama-response-valid.json",
+      "size_bytes": 329,
+      "last_write_utc": "2026-08-29T00:48:35.0665795Z",
+      "sha256": "419136CD0568A81BF7A8DD8F196D1CB9279FF959A463AD696FEF7A686B9026B2"
+    },
+    {
+      "relative_path": "test/fixtures/README.md",
+      "size_bytes": 945,
+      "last_write_utc": "2026-08-29T01:01:34.4765109Z",
+      "sha256": "6CFD0193BDD46BB30D4DA9C2D423FF72DD6172FBBAD4814E4FCCFEC85B8DFF94"
+    },
+    {
+      "relative_path": "test/fixtures/unknown-field-request.json",
+      "size_bytes": 241,
+      "last_write_utc": "2026-08-29T00:48:28.4606408Z",
+      "sha256": "16D8D9275920BDB59E5429C787B9DCF53B9C414B11BD2D676D7670C185F87DEA"
+    },
+    {
+      "relative_path": "test/fixtures/utf8-bom.hex",
+      "size_bytes": 11,
+      "last_write_utc": "2026-08-29T00:48:31.7334860Z",
+      "sha256": "2B4FDD11CE2F5C8657B8669125543323DDA80289F37C2CDFABE9678AF97C9A46"
+    },
+    {
+      "relative_path": "test/fixtures/valid-request.json",
+      "size_bytes": 241,
+      "last_write_utc": "2026-08-29T00:48:26.2394556Z",
+      "sha256": "15D310A04F67400F68ECED4FE4BECC9F0FA48623E7B2511ACE8957FFDD09A78E"
+    },
+    {
+      "relative_path": "test/helpers.mjs",
+      "size_bytes": 4321,
+      "last_write_utc": "2026-08-29T01:57:22.4793568Z",
+      "sha256": "E7FCE5DBBB094707008F9E185EFDD10D82792A055E284A7BF76BC3501C8A6737"
+    },
+    {
+      "relative_path": "test/transport.test.mjs",
+      "size_bytes": 14514,
+      "last_write_utc": "2026-08-29T02:05:27.0745874Z",
+      "sha256": "84ACD4C886C2EBD8C2B84633C55EB49E042AB4C527E6F326BD43EC2C71C6946B"
+    },
+    {
+      "relative_path": "test/validation.test.mjs",
+      "size_bytes": 11741,
+      "last_write_utc": "2026-08-29T02:00:44.9696535Z",
+      "sha256": "C89DDBB0E58B7BC9DAAB3F4C0176FA111376FE0BED6884B11A5213FDED8DB5D8"
+    },
+    {
+      "relative_path": "tools/build-deliverables.ps1",
+      "size_bytes": 3935,
+      "last_write_utc": "2026-08-29T01:10:55.5194233Z",
+      "sha256": "AD3F1CB30B6577351C94D90F14962203F8413B2F7980FE45603FA4CDA36D4D10"
+    },
+    {
+      "relative_path": "tools/capture-boundary-state.ps1",
+      "size_bytes": 2905,
+      "last_write_utc": "2026-08-29T01:12:33.7442316Z",
+      "sha256": "1F43509E3F31D2B727CF024E5ED27E2A5B43405DFBCE258375FC62E2F6BF0B5B"
+    },
+    {
+      "relative_path": "tools/capture-phase0-integrity.ps1",
+      "size_bytes": 1942,
+      "last_write_utc": "2026-08-29T00:38:26.1742944Z",
+      "sha256": "4036E3295CD60E441DE9A42E610698AB486A16515C3C58DCA609642860BE3017"
+    },
+    {
+      "relative_path": "tools/compare-phase0-integrity.ps1",
+      "size_bytes": 2762,
+      "last_write_utc": "2026-08-29T01:04:07.1202108Z",
+      "sha256": "299173ED6BBF45706D87835CC25A724373E1F0ECBBAFCE29971E8D2C973D9D23"
+    }
+  ]
+}

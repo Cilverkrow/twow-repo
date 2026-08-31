@@ -1,0 +1,7 @@
+PID=45608
+EXE=C:\TW\ComTW\runbooks\shutdown-helper-console-lab\realm-candidate-tests-run2\03-wrong-title\realmd.exe
+TITLE=wrong-title
+CTRL_BREAK_EXIT_CODE=0
+HOLD_AFTER_BREAK=false
+IDLE_EXIT_MS=5000
+READY_UTC=2026-08-28T14:59:33.087Z

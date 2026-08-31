@@ -1,0 +1,11 @@
+{
+  "file": {
+    "path": "C:\\TW\\ComTW\\server\\start-mangosd.bat",
+    "size_bytes": 54,
+    "creation_utc": "2026-08-25T16:56:21.2113098Z",
+    "last_write_utc": "2026-08-28T14:13:02.2746633Z",
+    "sha256": "0C9A97A7E528F0A4451AA9CD0637C3246271CBAACD09DFB8895AFCB3C57B82AF"
+  },
+  "content": "@echo off\r\ntitle mangosd\r\ncd /d \"%~dp0\"\r\nmangosd.exe\r\n",
+  "interpretation": "The launcher changes to its own directory and invokes mangosd.exe from that directory."
+}

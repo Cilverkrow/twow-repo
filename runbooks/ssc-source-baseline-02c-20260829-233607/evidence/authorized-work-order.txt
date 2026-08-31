@@ -1,0 +1,242 @@
+ARBEITSAUFTRAG
+SSC-SOURCE-BASELINE-02C – KONTROLLIERTER LAUFZEIT- UND RÜCKFALLTEST
+
+Datum: 2026-08-29
+
+Freigabestatus:
+
+```text
+MAINTENANCE_WINDOW_CONFIRMED=YES
+PHASE_B_TO_E_AUTHORIZED=YES
+CLEAN_BUILD_02B_RESULT=PASS_CONFIRMED
+02B_INDEPENDENT_REVIEW=PASS
+PRODUCTION_PROMOTION_APPROVED=NO
+SSC_LLM_PRODUCTION_BRIDGE_01=QUEUED_NOT_AUTHORIZED
+```
+
+Ziel:
+
+Den unveränderten Clean-Build-Kandidaten einmal kontrolliert mit der vorhandenen Produktionsdatenbank und den bestehenden Serverkonfigurationen starten. Nach dem Laufzeittest ist unabhängig vom Testergebnis die bisherige Produktions-EXE wiederherzustellen.
+
+Dieser Auftrag ist ausschließlich ein temporärer Laufzeittest. Er ist keine dauerhafte Installation und keine Freigabe der LLM-Produktionsbrücke.
+
+Verbindliche Artefakte:
+
+```text
+Kandidatencommit:
+42b8a7f742548793910fe8880463aeeb71627fb9
+
+Eingebettete Revision:
+42b8a7f742548793910f
+
+Kandidaten-EXE SHA-256:
+2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE
+
+Produktions-EXE SHA-256:
+FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC
+
+mangosd.conf SHA-256:
+C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D
+
+aiplayerbot.conf SHA-256:
+490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF
+
+Backupziel:
+C:\TW\ComTW\server\mangosd.pre-source-baseline-02c-20260829.exe
+```
+
+Das Backupziel wurde in Phase A als unbenutzt bestätigt und darf nicht überschrieben werden.
+
+Phase B – Kontrollierter Stillstand:
+
+1. Aktuellen Zustand und Uhrzeit dokumentieren.
+2. `mangosd` mit der vorhandenen kontrollierten Shutdown-Methode beenden.
+3. `realmd` ebenfalls kontrolliert beenden.
+4. Kein erzwungenes Beenden mit `taskkill /F` oder vergleichbaren Mitteln.
+5. Falls ein Prozess nicht kontrolliert endet:
+
+   * keine EXE ersetzen;
+   * Phase B als `BLOCKED` beenden;
+   * vollständigen Prozesszustand melden.
+6. Anschließend bestätigen:
+
+   * keine `mangosd.exe` aktiv;
+   * keine `realmd.exe` aktiv;
+   * Port 8090 frei;
+   * Port 3724 frei.
+7. MariaDB muss unverändert auf `127.0.0.1:3307` weiterlaufen.
+8. Ollama bleibt unverändert und darf weder gestoppt noch angesprochen werden.
+
+Phase C – Backup und temporäre Testinstallation:
+
+1. Produktions-EXE unmittelbar vor dem Kopieren erneut hashen.
+
+2. Bei einer Abweichung von folgendem Hash sofort abbrechen:
+
+   ```text
+   FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC
+   ```
+
+3. Nochmals bestätigen, dass das Backupziel nicht existiert.
+
+4. Produktions-EXE nach folgendem Pfad kopieren:
+
+   ```text
+   C:\TW\ComTW\server\mangosd.pre-source-baseline-02c-20260829.exe
+   ```
+
+5. Backupgröße und SHA-256 prüfen.
+
+6. Kandidaten-EXE an ihrem isolierten Buildpfad erneut hashen.
+
+7. Nur bei exakt folgendem Hash fortfahren:
+
+   ```text
+   2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE
+   ```
+
+8. Kandidaten-EXE nach `C:\TW\ComTW\server\mangosd.exe` kopieren.
+
+9. Installierte EXE erneut hashen.
+
+10. Keine PDB installieren.
+
+11. Keine Configdatei verändern.
+
+12. Keine Datenbankänderung und keine Migration ausführen.
+
+Phase D – Kontrollierter Kandidatenstart:
+
+1. Ausschließlich `mangosd` mit der bestehenden Produktionsstartmethode starten.
+2. `realmd` bleibt während des gesamten Tests ausgeschaltet.
+3. Startzeit, PID, ExecutablePath und CommandLine erfassen.
+4. Im neuen Startlog folgende Punkte nachweisen:
+
+   * Revision `42b8a7f742548793910f`;
+   * keine Meldung „database structure is not up to date“;
+   * kein Fehler zu `character_inventory_copy`;
+   * keine ungefangene C++-/SEH-Exception;
+   * kein Crash;
+   * vollständiger Abschluss der World-Initialisierung.
+5. Listener `0.0.0.0:8090` muss der neuen Kandidaten-PID zugeordnet sein.
+6. Kandidat mindestens 180 Sekunden stabil beobachten.
+7. Während der Beobachtung dokumentieren:
+
+   * PID bleibt gleich;
+   * Prozess bleibt aktiv;
+   * Listener bleibt vorhanden;
+   * keine neuen fatalen Fehler;
+   * keine ungewöhnliche Prozessbeendigung.
+8. Keine Spieleranmeldung durchführen.
+9. Keinen Bot manuell anmelden oder hinzufügen.
+10. Keinen Chat-, GM-, Debug- oder PlayerBot-Befehl ausführen.
+11. Keine Bridge starten.
+12. Keine Ollama-Inferenz durchführen.
+13. Keine gewöhnlichen LLM-Chatpfade aktivieren.
+14. Bestehende automatische Serveraktivität aus unveränderter Config nur beobachten und dokumentieren; nicht korrigierend eingreifen.
+15. Keine Configänderung vornehmen, auch nicht am weiterhin direkten Ollama-Endpoint.
+
+Phase E – Kontrollierter Rückfall:
+
+Der Rückfall wird bei PASS und bei BLOCKED durchgeführt.
+
+1. Kandidaten-`mangosd` mit der kontrollierten Shutdown-Methode beenden.
+
+2. Vollständiges Prozessende und Freigabe von Port 8090 bestätigen.
+
+3. Falls der Kandidatenprozess nicht kontrolliert endet:
+
+   * kein erzwungenes Beenden;
+   * keine EXE im laufenden Zustand ersetzen;
+   * sofort berichten und auf weitere Freigabe warten.
+
+4. Die bisherige Produktions-EXE aus dem geprüften Backup nach folgendem Pfad zurückkopieren:
+
+   ```text
+   C:\TW\ComTW\server\mangosd.exe
+   ```
+
+5. Aktive Produktions-EXE erneut hashen. Erwartet:
+
+   ```text
+   FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC
+   ```
+
+6. `mangosd.conf` und `aiplayerbot.conf` erneut hashen.
+
+7. Das geprüfte Backup nicht löschen.
+
+8. Kandidaten-Build und PDB nicht löschen oder verändern.
+
+9. `mangosd` und `realmd` ausgeschaltet lassen.
+
+10. MariaDB und Ollama in ihrem bestehenden Zustand belassen; keine Prozesssteuerung an diesen beiden Diensten durchführen.
+
+11. Produktionsserver nicht erneut starten, bevor das Ergebnis geprüft wurde.
+
+Sofortige Abbruchgründe:
+
+* unerwarteter Datei- oder Config-Hash;
+* Backupziel existiert entgegen dem Preflight;
+* Backup kann nicht vollständig verifiziert werden;
+* falsche installierte Kandidaten-EXE;
+* MariaDB nicht erreichbar;
+* falsche eingebettete Revision;
+* Datenbankschemafehler;
+* Fehler zu `character_inventory_copy`;
+* Crash oder ungefangene Exception;
+* World-Initialisierung wird nicht abgeschlossen;
+* Listener 8090 fehlt oder gehört einer falschen PID;
+* unerwarteter LLM-/Ollama-Aufruf;
+* kontrollierter Shutdown schlägt fehl.
+
+Erwartete Evidenz:
+
+* Aktionsprotokoll mit UTC- und lokaler Zeit;
+* Prozess- und Listenerzustand vor Phase B;
+* Hashnachweis vor und nach jeder Kopieroperation;
+* Backupnachweis;
+* Kandidaten-PID, Pfad, CommandLine und Listener;
+* vollständiges neues Startlog;
+* gesonderter Auszug der entscheidenden Startzeilen;
+* Beobachtungsnachweis über mindestens 180 Sekunden;
+* Shutdown- und Rückfallnachweis;
+* Config-Hashes nach dem Rückfall;
+* SHA-256-Manifest aller Berichtdateien;
+* finales Deliverable-ZIP mit Größe, Eintragszahl und SHA-256.
+
+Erwarteter Abschlussblock:
+
+```text
+SOURCE_BASELINE_02C_RESULT=PASS|BLOCKED
+CANDIDATE_HASH_MATCH=YES|NO
+BACKUP_HASH_MATCH=YES|NO
+STARTUP_REVISION_MATCH=YES|NO
+DATABASE_STRUCTURE_ACCEPTED=YES|NO
+CHARACTER_INVENTORY_COPY_ERROR=NO|YES
+WORLD_STARTUP_COMPLETE=YES|NO
+LISTENER_8090_READY=YES|NO
+OBSERVATION_WINDOW_SECONDS=
+OBSERVATION_WINDOW_PASS=YES|NO
+LLM_ACTIVITY=NONE|DETECTED
+OLLAMA_PROCESS_CONTROL=NONE|DETECTED
+CONFIG_CHANGED=NO|YES
+CONTROLLED_SHUTDOWN_PASS=YES|NO
+ROLLBACK_TESTED=YES|NO
+PRODUCTION_EXE_RESTORED=YES|NO
+PRODUCTION_EXE_FINAL_SHA256=
+MANGOSD_FINAL_STATE=STOPPED|RUNNING|UNKNOWN
+REALMD_FINAL_STATE=STOPPED|RUNNING|UNKNOWN
+STABLE_REVISION_RESULT=PASS|BLOCKED
+PRODUCTION_PROMOTION_STARTED=NO
+SSC_LLM_PRODUCTION_BRIDGE_STARTED=NO
+```
+
+Nur wenn sämtliche Pflichtkriterien bestanden und die alte Produktions-EXE nachweislich wiederhergestellt wurde, darf das Ergebnis lauten:
+
+```text
+SOURCE_BASELINE_02C_RESULT=PASS
+STABLE_REVISION_RESULT=PASS
+```
+
+Auch bei PASS wird `SSC-LLM-PRODUCTION-BRIDGE-01` nicht automatisch begonnen. Dafür ist anschließend eine gesonderte Freigabe erforderlich.

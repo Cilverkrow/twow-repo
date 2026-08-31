@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "result": "V1_ENGLISH_DELIVERABLE_AUDIT=PASS",
+  "created_utc": "2026-08-30T11:28:00.8769052Z",
+  "zip_path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-v1-english-correction-20260830-131349-deliverables.zip",
+  "size_bytes": 112411,
+  "sha256": "36485E409BEBD3A9ECD5B85EE5CB58D1EC39CEB5661AA079559BCD2E76777434",
+  "entry_count": 78,
+  "unique_entry_count": 78,
+  "unsafe_entry_count": 0,
+  "root_manifest_sha256": "522D3358D28D7A8CC69DEF1D385A38399557F6E2C9BED777565C6CB4A403353C",
+  "root_manifest_entries": 77,
+  "archive_manifest_failures": 0,
+  "bridge_payload_manifest_sha256": "814A8988ACF7F9651735A5AC111BA5A13ECD227C837665C0F8F9BA518B07171B",
+  "phase1b_package_unchanged": true,
+  "production_bridge_phase_a_package_unchanged": true,
+  "core_source_modified": false,
+  "phase_b_started": false
+}

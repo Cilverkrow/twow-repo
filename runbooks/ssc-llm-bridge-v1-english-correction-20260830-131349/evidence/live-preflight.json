@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "result": "V1_ENGLISH_LIVE_PREFLIGHT=PASS",
+  "captured_utc": "2026-08-30T11:24:06.6475099Z",
+  "preserved_packages": [
+    {
+      "label": "phase1a",
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-20260829-023418\\ssc-llm-bridge-phase1a-20260829-023418-deliverables.zip",
+      "expected_sha256": "2A39C09AACDC5CDEAD1CAC5EE78143D634A3FE006311DD1C67EC253115C1DE51",
+      "size_bytes": 67659,
+      "last_write_utc": "2026-08-29T01:14:54.2296421Z",
+      "actual_sha256": "2A39C09AACDC5CDEAD1CAC5EE78143D634A3FE006311DD1C67EC253115C1DE51",
+      "match": true
+    },
+    {
+      "label": "phase1a_hardening",
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-hardening-20260829-035317\\ssc-llm-bridge-phase1a-hardening-20260829-035317-deliverables.zip",
+      "expected_sha256": "BADE583E726F5177D2BA9AF753962D6DC74BC3297B6C610A3CB91FF5251DDF11",
+      "size_bytes": 71689,
+      "last_write_utc": "2026-08-29T02:09:17.6942613Z",
+      "actual_sha256": "BADE583E726F5177D2BA9AF753962D6DC74BC3297B6C610A3CB91FF5251DDF11",
+      "match": true
+    },
+    {
+      "label": "phase1b",
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1b-live-20260829-163519\\ssc-llm-bridge-phase1b-live-20260829-163519-deliverables.zip",
+      "expected_sha256": "020BDBA7BDE016FEACD2E484818E02BFAD8BE792AD84735BDEA845C2A2D9A5C8",
+      "size_bytes": 200585,
+      "last_write_utc": "2026-08-29T15:15:52.9006832Z",
+      "actual_sha256": "020BDBA7BDE016FEACD2E484818E02BFAD8BE792AD84735BDEA845C2A2D9A5C8",
+      "match": true
+    },
+    {
+      "label": "production_bridge_phase_a",
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-20260830-012815-deliverables.zip",
+      "expected_sha256": "A4EB4552EF029C41F61D9BF4F247332F0239A5058FC32EE7ECCF1961EAF79A9D",
+      "size_bytes": 27715,
+      "last_write_utc": "2026-08-29T23:40:03.3402887Z",
+      "actual_sha256": "A4EB4552EF029C41F61D9BF4F247332F0239A5058FC32EE7ECCF1961EAF79A9D",
+      "match": true
+    }
+  ],
+  "bridge_payload": {
+    "files": 50,
+    "manifest_entries": 49,
+    "entry_list_matches": true,
+    "manifest_failures": 0,
+    "manifest_sha256": "814A8988ACF7F9651735A5AC111BA5A13ECD227C837665C0F8F9BA518B07171B",
+    "config_sha256": "D2925AA891F1B9F93454F631E30E1BCDC3557FB5EEBC56CA4F9E1F6A955E3902",
+    "personality_sha256": "386659245CB8298221465FD8B40339C13A01C7C10CBC58E876CDD264DC64D07E",
+    "bot_guid": 18281,
+    "active_limit": 1,
+    "waiting_capacity": 2,
+    "ledger_capacity": 64,
+    "max_output_codepoints": 240,
+    "max_output_utf8_bytes": 240
+  },
+  "node": {
+    "path": "C:\\Users\\djfav\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+    "sha256": "3602F2BB1A10F2CBAB4C36886218A33C1AB3DB87290E73B033C46C77147D0237",
+    "file_version": "24.19.0"
+  },
+  "ollama_listeners": [
+    {
+      "local_address": "127.0.0.1",
+      "local_port": 11434,
+      "owning_process": 5528
+    }
+  ],
+  "listener_exact_loopback_only": true,
+  "config_validation_exit_code": 0,
+  "config_validation_stdout": "{\"result\":\"PHASE1A_CONFIG_VALIDATION=PASS\",\"bot_guid\":18281,\"profile_version\":1,\"context_sha256\":\"386659245CB8298221465FD8B40339C13A01C7C10CBC58E876CDD264DC64D07E\",\"model\":{\"name\":\"qwen2.5:7b\",\"digest\":\"845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e\"}}",
+  "config_validation_stderr": "",
+  "instance_lock_present": false,
+  "one_shot_guard_present": false,
+  "inference_attempts_before_run": 0,
+  "game_chat_performed": false,
+  "core_source_modified": false,
+  "phase_b_started": false
+}

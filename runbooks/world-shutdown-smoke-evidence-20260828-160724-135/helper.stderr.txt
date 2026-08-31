@@ -1,0 +1,1 @@
+[FEHLER] Unerwarteter Konsolentitel fuer PID 41620: 'Administrator:  mangosd' statt 'mangosd'.                          

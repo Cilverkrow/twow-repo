@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "request_id": "72e080a9-225b-49cc-92cc-012c352109d3",
+  "bot_guid": 18281,
+  "model": "qwen2.5:7b",
+  "wall_clock_latency_ms": 8487,
+  "ollama_total_duration": 8341960600,
+  "ollama_load_duration": 7968958000,
+  "prompt_token_count": 273,
+  "output_token_count": 22,
+  "sanitized_response_text": "Heute werde ich die Stadt abspähen und eventuelle Gefahren auskundschaften."
+}

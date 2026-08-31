@@ -1,0 +1,17 @@
+{
+  "captured_utc": "2026-08-29T19:40:20.9946647Z",
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "source_status_short": " M src/modules/PlayerBots/CMakeLists.txt\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h\n M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp\n?? bin/Release/MoveMapGen.pdb\n?? bin/Release/mangosd.pdb\n?? bin/Release/mapextractor.pdb\n?? bin/Release/realmd.pdb\n?? bin/Release/vmap_assembler.pdb\n?? bin/Release/vmapextractor.pdb",
+  "source_status_equals_prior_captured_status": true,
+  "candidate_sql_directories_unchanged": true,
+  "reused_live_select_sha256": "B866C9F412526AF05D13823D4F3D508F04CDC74005A720DE0FD08195F223888B",
+  "new_sql_queries": [],
+  "sql_writes": [],
+  "migrations_executed": [],
+  "process_control_actions": [],
+  "source_or_config_changes": [],
+  "build_actions": [],
+  "clean_build_started": false,
+  "task_writes_scope": "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02a2-20260829-213222"
+}

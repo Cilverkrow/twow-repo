@@ -1,0 +1,14 @@
+{
+  "accepted": true,
+  "code": "queued",
+  "status": {
+    "schema_version": 1,
+    "request_id": "2b7dce77-a3e7-4a1c-b268-0c85e088fa51",
+    "bot_guid": 18281,
+    "state": "queued",
+    "queued_utc": "2026-08-29T14:50:19.297Z",
+    "updated_utc": "2026-08-29T14:50:19.297Z",
+    "attempt_count": 0,
+    "error_code": null
+  }
+}

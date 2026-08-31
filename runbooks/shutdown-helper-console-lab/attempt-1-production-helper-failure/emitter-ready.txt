@@ -1,0 +1,5 @@
+PID=29652
+EXE=C:\TW\ComTW\runbooks\shutdown-helper-console-lab\mangosd.exe
+TITLE_BEFORE=mangosd 
+TITLE=mangosd
+READY_UTC=2026-08-28T13:51:10.556Z

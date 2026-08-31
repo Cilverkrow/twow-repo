@@ -1,0 +1,225 @@
+table_schema\ttable_name\tordinal_position\tcolumn_name\tcolumn_type
+tw_char	characters	10	playerBytes	int(10) unsigned
+tw_char	characters	11	playerBytes2	int(10) unsigned
+tw_char	characters_namecleanup2020_2	10	playerBytes	int(10) unsigned
+tw_char	characters_namecleanup2020_2	11	playerBytes2	int(10) unsigned
+tw_char	character_bck	10	playerBytes	int(10) unsigned
+tw_char	character_bck	11	playerBytes2	int(10) unsigned
+tw_char	character_pet	4	modelid	int(10) unsigned
+tw_char	item_transmogs	3	DisplayID	int(10) unsigned
+tw_char	store_racechange	4	playerbytes1	int(10) unsigned
+tw_char	store_racechange	5	playerbytes2	int(10) unsigned
+tw_world	charstartoutfit	30	displayInfo1	int(11)
+tw_world	charstartoutfit	31	displayInfo2	int(11)
+tw_world	charstartoutfit	32	displayInfo3	int(11)
+tw_world	charstartoutfit	33	displayInfo4	int(11)
+tw_world	charstartoutfit	34	displayInfo5	int(11)
+tw_world	charstartoutfit	35	displayInfo6	int(11)
+tw_world	charstartoutfit	36	displayInfo7	int(11)
+tw_world	charstartoutfit	37	displayInfo8	int(11)
+tw_world	charstartoutfit	38	displayInfo9	int(11)
+tw_world	charstartoutfit	39	displayInfo10	int(11)
+tw_world	charstartoutfit	40	displayInfo11	int(11)
+tw_world	charstartoutfit	41	displayInfo12	int(11)
+tw_world	charstartoutfit	42	displayInfo13	int(11)
+tw_world	charstartoutfit	43	displayInfo14	int(11)
+tw_world	charstartoutfit	44	displayInfo15	int(11)
+tw_world	charstartoutfit	45	displayInfo16	int(11)
+tw_world	charstartoutfit	46	displayInfo17	int(11)
+tw_world	charstartoutfit	47	displayInfo18	int(11)
+tw_world	charstartoutfit	48	displayInfo19	int(11)
+tw_world	charstartoutfit	49	displayInfo20	int(11)
+tw_world	charstartoutfit	50	displayInfo21	int(11)
+tw_world	charstartoutfit	51	displayInfo22	int(11)
+tw_world	charstartoutfit	52	displayInfo23	int(11)
+tw_world	charstartoutfit	53	displayInfo24	int(11)
+tw_world	chrclasses	3	DisplayPower	int(10) unsigned
+tw_world	chrraces	5	MaleDisplayId	int(10) unsigned
+tw_world	chrraces	6	FemaleDisplayId	int(10) unsigned
+tw_world	chrraces	66	FacialHairCustom1	text
+tw_world	chrraces	67	FacialHairCustom2	text
+tw_world	chrraces	68	HairCustomisation	text
+tw_world	creaturedisplayinfo	1	ID	int(10) unsigned
+tw_world	creaturedisplayinfo	2	ModelID	int(10) unsigned
+tw_world	creaturedisplayinfo	3	SoundID	int(10) unsigned
+tw_world	creaturedisplayinfo	4	ExtendedDisplayInfoID	int(10) unsigned
+tw_world	creaturedisplayinfo	5	CreatureModelScale	float
+tw_world	creaturedisplayinfo	6	CreatureModelAlpha	int(10) unsigned
+tw_world	creaturedisplayinfo	7	TextureVariation_1	text
+tw_world	creaturedisplayinfo	8	TextureVariation_2	text
+tw_world	creaturedisplayinfo	9	TextureVariation_3	text
+tw_world	creaturedisplayinfo	10	PortraitTextureName	text
+tw_world	creaturedisplayinfo	11	BloodLevel	int(11)
+tw_world	creaturedisplayinfo	12	BloodID	int(10) unsigned
+tw_world	creaturedisplayinfo	13	NPCSoundID	int(10) unsigned
+tw_world	creaturedisplayinfo	14	ParticleColorID	int(10) unsigned
+tw_world	creaturedisplayinfo	15	CreatureGeosetData	int(10) unsigned
+tw_world	creaturedisplayinfo	16	ObjectEffectPackageID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	1	ID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	2	DisplayRaceID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	3	DisplaySexID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	4	SkinID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	5	FaceID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	6	HairStyleID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	7	HairColorID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	8	FacialHairID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	9	HeadDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	10	ShouldersDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	11	ShirtDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	12	ChestDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	13	BeltDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	14	LegsDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	15	BootsDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	16	BracersDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	17	GlovesDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	18	TabardDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	19	CapeDisplayID	int(10) unsigned
+tw_world	creaturedisplayinfoextra	20	Flags	int(10) unsigned
+tw_world	creaturedisplayinfoextra	21	BakedTextureIDblp	text
+tw_world	creaturemodeldata	1	id	int(10) unsigned
+tw_world	creaturemodeldata	2	flags	int(10) unsigned
+tw_world	creaturemodeldata	3	modelPath	text
+tw_world	creaturemodeldata	4	sizeClass	int(10) unsigned
+tw_world	creaturemodeldata	5	modelScale	float
+tw_world	creaturemodeldata	6	bloodId	int(10) unsigned
+tw_world	creaturemodeldata	7	footprintTextureId	int(10) unsigned
+tw_world	creaturemodeldata	8	footprintTextureLength	float
+tw_world	creaturemodeldata	9	footprintTextureWidth	float
+tw_world	creaturemodeldata	10	footprintParticleScale	float
+tw_world	creaturemodeldata	11	foleyMaterialId	int(10) unsigned
+tw_world	creaturemodeldata	12	footstepShakeSize	int(10) unsigned
+tw_world	creaturemodeldata	13	deathThudShakeSize	int(10) unsigned
+tw_world	creaturemodeldata	14	soundData	int(10) unsigned
+tw_world	creaturemodeldata	15	collisionWidth	float
+tw_world	creaturemodeldata	16	collisionHeight	float
+tw_world	creaturemodeldata	17	mountHeight	float
+tw_world	creaturemodeldata	18	geoBoxMinX	float
+tw_world	creaturemodeldata	19	geoBoxMinY	float
+tw_world	creaturemodeldata	20	geoBoxMinZ	float
+tw_world	creaturemodeldata	21	geoBoxMaxX	float
+tw_world	creaturemodeldata	22	geoBoxMaxY	float
+tw_world	creaturemodeldata	23	geoBoxMaxZ	float
+tw_world	creaturemodeldata	24	worldEffectScale	float
+tw_world	creaturemodeldata	25	attachedEffectScale	float
+tw_world	creaturemodeldata	26	MissileCollisionRadius	float
+tw_world	creaturemodeldata	27	MissileCollisionPush	float
+tw_world	creaturemodeldata	28	MissileCollisionRaise	float
+tw_world	creature_addon	2	display_id	smallint(5) unsigned
+tw_world	creature_addon	3	mount_display_id	smallint(6)
+tw_world	creature_display_info_addon	1	display_id	mediumint(8) unsigned
+tw_world	creature_display_info_addon	2	bounding_radius	float
+tw_world	creature_display_info_addon	3	combat_reach	float
+tw_world	creature_display_info_addon	4	gender	tinyint(3) unsigned
+tw_world	creature_display_info_addon	5	display_id_other_gender	mediumint(8) unsigned
+tw_world	creature_template	2	display_id1	mediumint(8) unsigned
+tw_world	creature_template	3	display_id2	mediumint(8) unsigned
+tw_world	creature_template	4	display_id3	mediumint(8) unsigned
+tw_world	creature_template	5	display_id4	mediumint(8) unsigned
+tw_world	creature_template	6	mount_display_id	smallint(5) unsigned
+tw_world	creature_template	49	skinning_loot_id	mediumint(8) unsigned
+tw_world	custom_character_skins	2	skin_male	smallint(5) unsigned
+tw_world	custom_character_skins	3	skin_female	smallint(5) unsigned
+tw_world	gameobjectdisplayinfo	1	ID	int(10) unsigned
+tw_world	gameobjectdisplayinfo	2	ModelName	text
+tw_world	gameobjectdisplayinfo	3	Sound1	int(10) unsigned
+tw_world	gameobjectdisplayinfo	4	Sound2	int(10) unsigned
+tw_world	gameobjectdisplayinfo	5	Sound3	int(10) unsigned
+tw_world	gameobjectdisplayinfo	6	Sound4	int(10) unsigned
+tw_world	gameobjectdisplayinfo	7	Sound5	int(10) unsigned
+tw_world	gameobjectdisplayinfo	8	Sound6	int(10) unsigned
+tw_world	gameobjectdisplayinfo	9	Sound7	int(10) unsigned
+tw_world	gameobjectdisplayinfo	10	Sound8	int(10) unsigned
+tw_world	gameobjectdisplayinfo	11	Sound9	int(10) unsigned
+tw_world	gameobjectdisplayinfo	12	Sound10	int(10) unsigned
+tw_world	gameobjectdisplayinfo	13	GeoBoxMinX	float
+tw_world	gameobjectdisplayinfo	14	GeoBoxMinY	float
+tw_world	gameobjectdisplayinfo	15	GeoBoxMinZ	float
+tw_world	gameobjectdisplayinfo	16	GeoBoxMaxX	float
+tw_world	gameobjectdisplayinfo	17	GeoBoxMaxY	float
+tw_world	gameobjectdisplayinfo	18	GeoBoxMaxZ	float
+tw_world	gameobjectdisplayinfo	19	ObjectEffectPackageID	int(10) unsigned
+tw_world	gameobject_display_info_addon	1	display_id	int(11)
+tw_world	gameobject_display_info_addon	2	min_x	float
+tw_world	gameobject_display_info_addon	3	min_y	float
+tw_world	gameobject_display_info_addon	4	min_z	float
+tw_world	gameobject_display_info_addon	5	max_x	float
+tw_world	gameobject_display_info_addon	6	max_y	float
+tw_world	gameobject_display_info_addon	7	max_z	float
+tw_world	gameobject_template	3	displayId	mediumint(8) unsigned
+tw_world	game_event_creature_data	3	display_id	mediumint(8) unsigned
+tw_world	item	6	ItemDisplayInfo	int(10) unsigned
+tw_world	itemdisplayinfo	1	ID	int(10) unsigned
+tw_world	itemdisplayinfo	2	LeftModel	text
+tw_world	itemdisplayinfo	3	RightModel	text
+tw_world	itemdisplayinfo	4	LeftModelTexture	text
+tw_world	itemdisplayinfo	5	RightModelTexture	text
+tw_world	itemdisplayinfo	6	InventoryIcon1	text
+tw_world	itemdisplayinfo	7	InventoryIcon2	text
+tw_world	itemdisplayinfo	8	GeosetGroup1	int(10) unsigned
+tw_world	itemdisplayinfo	9	GeosetGroup2	int(10) unsigned
+tw_world	itemdisplayinfo	10	GeosetGroup3	int(10) unsigned
+tw_world	itemdisplayinfo	11	Flags	int(10) unsigned
+tw_world	itemdisplayinfo	12	SpellVisualID	int(10) unsigned
+tw_world	itemdisplayinfo	13	GroupSoundIndex	int(10) unsigned
+tw_world	itemdisplayinfo	14	HelmetGeosetVisual1	int(10) unsigned
+tw_world	itemdisplayinfo	15	HelmetGeosetVisual2	int(10) unsigned
+tw_world	itemdisplayinfo	16	UpperArmTexture	text
+tw_world	itemdisplayinfo	17	LowerArmTexture	text
+tw_world	itemdisplayinfo	18	HandsTexture	text
+tw_world	itemdisplayinfo	19	UpperTorsoTexture	text
+tw_world	itemdisplayinfo	20	LowerTorsoTexture	text
+tw_world	itemdisplayinfo	21	UpperLegTexture	text
+tw_world	itemdisplayinfo	22	LowerLegTexture	text
+tw_world	itemdisplayinfo	23	FootTexture	text
+tw_world	itemdisplayinfo	24	ItemVisual	int(10) unsigned
+tw_world	itemdisplayinfo	25	ParticleColorID	int(10) unsigned
+tw_world	itemsubclass	6	displayFlags	int(10) unsigned
+tw_world	itemsubclass	11	displayName1	text
+tw_world	itemsubclass	12	displayName2	text
+tw_world	itemsubclass	13	displayName3	text
+tw_world	itemsubclass	14	displayName4	text
+tw_world	itemsubclass	15	displayName5	text
+tw_world	itemsubclass	16	displayName6	text
+tw_world	itemsubclass	17	displayName7	text
+tw_world	itemsubclass	18	displayName8	text
+tw_world	itemsubclass	19	displayName9	text
+tw_world	itemsubclass	20	displayName10	text
+tw_world	itemsubclass	21	displayName11	text
+tw_world	itemsubclass	22	displayName12	text
+tw_world	itemsubclass	23	displayName13	text
+tw_world	itemsubclass	24	displayName14	text
+tw_world	itemsubclass	25	displayName15	text
+tw_world	itemsubclass	26	displayName16	text
+tw_world	itemsubclass	27	displayNameFlag	int(10) unsigned
+tw_world	item_display_info	1	ID	int(11)
+tw_world	item_display_info	2	icon	varchar(255)
+tw_world	item_template	6	display_id	mediumint(8) unsigned
+tw_world	item_transmogrify_template	3	DisplayID	int(10) unsigned
+tw_world	shop_items	4	model_id	int(10) unsigned
+tw_world	spell	229	PowerDisplayId	int(10) unsigned
+tw_world	spellshapeshiftform	24	Display1	int(10) unsigned
+tw_world	spellshapeshiftform	25	Display2	int(10) unsigned
+tw_world	spellshapeshiftform	26	Display3	int(10) unsigned
+tw_world	spellshapeshiftform	27	Display4	int(10) unsigned
+tw_world	spellvisual	9	MissileModel	int(10) unsigned
+tw_world	spellvisualkitareamodel	1	ID	int(10) unsigned
+tw_world	spellvisualkitareamodel	2	Name	text
+tw_world	spellvisualkitareamodel	3	enumID	int(10) unsigned
+tw_world	spellvisualkitmodelattach	1	ID	int(10) unsigned
+tw_world	spellvisualkitmodelattach	2	ParentSpellVisualKitId	int(10) unsigned
+tw_world	spellvisualkitmodelattach	3	SpellVisualEffectNameId	int(10) unsigned
+tw_world	spellvisualkitmodelattach	4	AttachmentId	int(10) unsigned
+tw_world	spellvisualkitmodelattach	5	OffsetX	float
+tw_world	spellvisualkitmodelattach	6	OffsetY	float
+tw_world	spellvisualkitmodelattach	7	OffsetZ	float
+tw_world	spellvisualkitmodelattach	8	Yaw	float
+tw_world	spellvisualkitmodelattach	9	Pitch	float
+tw_world	spellvisualkitmodelattach	10	Roll	float
+tw_world	spell_template	39	modelNextSpell	int(10) unsigned
+tw_world	vehicle	32	msslTrgtImpactModel1	text
+tw_world	vehicle	33	msslTrgtImpactModel2	text
+tw_world	vehicle	38	PowerDisplay1	int(11)
+tw_world	vehicle	39	PowerDisplay2	int(11)
+tw_world	vehicle	40	PowerDisplay3	int(11)
+tw_world	vehicleseat	42	vehicleAbilityDisplay	int(10) unsigned
+tw_world	vehicleseat	45	uiSkin	int(10) unsigned

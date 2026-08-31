@@ -1,0 +1,1 @@
+[FEHLER] PID-Datei und laufender mangosd-Prozess stimmen nicht ueberein (Datei: 2147483647, Prozess: 24936).            ☐

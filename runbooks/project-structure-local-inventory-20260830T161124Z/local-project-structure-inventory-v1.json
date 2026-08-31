@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "project_side": "local",
+  "captured_utc": "2026-08-30T16:11:24Z",
+  "source_evidence": [
+    {
+      "type": "screenshot",
+      "role": "local_project_chat_list",
+      "path": "C:\\Users\\djfav\\Pictures\\Screenshots\\Screenshot 2026-08-30 174628.png",
+      "sha256": "7535E7CEA60D01177D6E85E13ADBD96ADF75B8E35A0750D6FD68523D431FBC9F"
+    },
+    {
+      "type": "screenshot",
+      "role": "online_project_comparison_only",
+      "path": "C:\\Users\\djfav\\Pictures\\Screenshots\\Screenshot 2026-08-30 174830.png",
+      "sha256": "47652E2C7C493E42082AB0CADCFA307FC865E1475825606447E1F0FED5F6CBA3"
+    },
+    {
+      "type": "work_order",
+      "role": "user_request",
+      "path": "C:\\Users\\djfav\\.codex\\attachments\\335198dc-6030-452f-9f67-ed9ced7030cc\\pasted-text.txt",
+      "sha256": "67C0CB448C6510DEA8D0CD03588F3E472F00A93A22631AB4CE5306D6841ACB15"
+    },
+    {
+      "type": "codex_app_inventory",
+      "role": "programmatic_local_chat_inventory",
+      "project_id": "bad28a62-cbc0-4374-bd12-e7e23a17aedf",
+      "project_label": "TWoW - Lokal",
+      "project_path": "C:\\TW",
+      "chat_count": 6
+    },
+    {
+      "type": "filesystem_and_git_snapshot",
+      "role": "local_workspace_evidence",
+      "path": "C:\\TW\\ComTW",
+      "source_branch": "playerbots-integration-gh",
+      "source_commit": "42b8a7f742548793910fe8880463aeeb71627fb9"
+    }
+  ],
+  "chats": [
+    {
+      "current_title": "Analysiere TWoW-Projektstruktur",
+      "canonical_workstream_id": "WS-00",
+      "canonical_title": "Projektsteuerung und Workspace",
+      "classification": "rename_proposed",
+      "purpose": "Projektkarte, Arbeitsregeln, gemeinsame Ausgangslage, Routing und Übergaben.",
+      "active_work": [
+        "PROJECT-STRUCTURE-LOCAL-INVENTORY-01",
+        "Lokale Struktur- und Zuständigkeitsaufnahme"
+      ],
+      "relevant_local_paths": [
+        "C:\\TW",
+        "C:\\TW\\ComTW\\runbooks"
+      ],
+      "runbook_groups": [
+        "project-structure-local-inventory-*"
+      ],
+      "dependencies": [
+        "Alle Arbeitsbereiche liefern kompakte Synchronisationsblöcke an WS-00."
+      ],
+      "proposed_action": "Nach ausdrücklicher Freigabe in den kanonischen Titel umbenennen.",
+      "confidence": "high"
+    },
+    {
+      "current_title": "SSC – Analyse und Entwicklung",
+      "canonical_workstream_id": "WS-10",
+      "canonical_title": "SSC – Analyse und Entwicklung",
+      "classification": "canonical_match",
+      "purpose": "Sourceanalyse, C++-Änderungen, PlayerBot, technische LLM-Brücke und Debugcode.",
+      "active_work": [
+        "SSC-LLM-Brücke und Produktionsbrücke",
+        "Source-Baselines",
+        "PlayerBot-Discovery-Matrix",
+        "Aktiver Turn beim Snapshot noch nicht abgeschlossen"
+      ],
+      "relevant_local_paths": [
+        "C:\\TW\\ComTW\\source\\src\\modules\\PlayerBots",
+        "C:\\TW\\ComTW\\source\\src\\modules\\PlayerBots\\playerbot\\PlayerbotLLMInterface.cpp",
+        "C:\\TW\\ComTW\\source\\src\\modules\\PlayerBots\\playerbot\\PlayerbotLLMInterface.h"
+      ],
+      "runbook_groups": [
+        "ssc-llm-*",
+        "ssc-source-baseline-*",
+        "ssc-ollama-*",
+        "playerbot-discovery-*",
+        "_superseded-phase1b-package-build-*"
+      ],
+      "dependencies": [
+        "WS-30 für Laufzeitkonfiguration",
+        "WS-40 für Build-/Deployment-Skripte",
+        "WS-50 für Live-Smoke",
+        "WS-70 für Persona-Inhalte"
+      ],
+      "proposed_action": "Titel beibehalten und laufenden Endstand später per kompaktem Sync-Block ergänzen.",
+      "confidence": "high"
+    },
+    {
+      "current_title": "Datenbank und Migrationen",
+      "canonical_workstream_id": "WS-20",
+      "canonical_title": "Datenbank und Migrationen",
+      "classification": "canonical_match",
+      "purpose": "Schema, Migrationen, ACL, Trainersteuerung, Berufe/Reiten, Spendenpunkte und migrationslokale Rücksicherung.",
+      "active_work": [
+        "Profession-/Riding-Discovery",
+        "Donation-Point-Migrationen",
+        "Trainer-Control",
+        "Jüngster abgeschlossener Turn in der App-Ansicht kompaktiert"
+      ],
+      "relevant_local_paths": [
+        "C:\\TW\\ComTW\\DB",
+        "C:\\TW\\ComTW\\runbooks"
+      ],
+      "runbook_groups": [
+        "acl-context-lab",
+        "semantic-acl-e2e-lab*",
+        "autodonationpoints-*",
+        "db-profession-riding-*",
+        "donation-*",
+        "trainer-*",
+        "tw-char-migration-*"
+      ],
+      "dependencies": [
+        "WS-60 übernimmt nur langfristige/historische Backups",
+        "WS-50 führt freigegebene Laufzeittests aus"
+      ],
+      "proposed_action": "Titel beibehalten; aktuellen kompaktierten Stand bei nächster Fortsetzung neu bestätigen.",
+      "confidence": "high"
+    },
+    {
+      "current_title": "Deployment und Skripte",
+      "canonical_workstream_id": "WS-40",
+      "canonical_title": "Deployment und Skripte",
+      "classification": "canonical_match",
+      "purpose": "Build-, Bereitstellungs-, Transfer-, Start-, Stopp- und Rollback-Skripte sowie Hilfsprogramme.",
+      "active_work": [
+        "Compile-Launcher-Regeneration",
+        "Script-/Runtime-Archive",
+        "Shutdown-Helper",
+        "Historischer Vorschautext verweist fachfremd auf LLM-Debugging"
+      ],
+      "relevant_local_paths": [
+        "C:\\TW\\ComTW\\compile-tortoise-wow.ps1",
+        "C:\\TW\\ComTW\\pull-docker.ps1",
+        "C:\\TW\\ComTW\\pull-oldnative.ps1",
+        "C:\\TW\\ComTW\\transfer-apply.ps1"
+      ],
+      "runbook_groups": [
+        "compile-launcher-regeneration-lab",
+        "compile-script-archive-*",
+        "runtime-file-archive-*",
+        "shutdown-helper-console-lab"
+      ],
+      "dependencies": [
+        "WS-30 liefert Konfigurationswerte",
+        "WS-50 besitzt Ausführungs- und Live-Smoke-Evidenz"
+      ],
+      "proposed_action": "Titel beibehalten; historischen LLM-Bezug nicht umschreiben und künftige LLM-Arbeit WS-10 zuweisen.",
+      "confidence": "high"
+    },
+    {
+      "current_title": "Build und Serverbetrieb",
+      "canonical_workstream_id": "WS-50",
+      "canonical_title": "Build und Serverbetrieb",
+      "classification": "canonical_match",
+      "purpose": "Buildausführung, Dienste, Live-Smoke, Laufzeitbeobachtung und Betriebsnachweise.",
+      "active_work": [
+        "Post-Completion-Live-Smoke",
+        "World-Shutdown-Smoke",
+        "Letzter sichtbarer Trainer-Control-Bezug gehört fachlich zu WS-20"
+      ],
+      "relevant_local_paths": [
+        "C:\\TW\\ComTW\\server",
+        "C:\\TW\\ComTW\\logs"
+      ],
+      "runbook_groups": [
+        "post-completion-live-smoke-*",
+        "world-shutdown-smoke-evidence-*",
+        "tw-world-shutdown-smoke-*"
+      ],
+      "dependencies": [
+        "WS-40 liefert ausführbare Skripte",
+        "WS-30 liefert Konfiguration",
+        "WS-20 autorisiert Datenbanktests"
+      ],
+      "proposed_action": "Titel beibehalten; Trainer-/DB-Fortsetzungen künftig WS-20 zuordnen.",
+      "confidence": "high"
+    },
+    {
+      "current_title": "Referenzserver und Backups",
+      "canonical_workstream_id": "WS-60",
+      "canonical_title": "Referenzserver und Backups",
+      "classification": "canonical_match",
+      "purpose": "Historische Sicherungen, Referenzzustände, Vergleichsstände und Wiederherstellungsplanung.",
+      "active_work": [
+        "Noch kein substanzieller sichtbarer Arbeitsstand im lokalen Chatinventar"
+      ],
+      "relevant_local_paths": [
+        "C:\\TW\\ComTW\\data",
+        "C:\\TW\\ComTW\\runbooks"
+      ],
+      "runbook_groups": [],
+      "dependencies": [
+        "WS-20 behält migrationslokale Sicherungen",
+        "WS-50 bestätigt Referenzserver-Zustände"
+      ],
+      "proposed_action": "Titel beibehalten und Zweck bei nächster Nutzung per Sync-Block bestätigen.",
+      "confidence": "medium"
+    }
+  ],
+  "filesystem_mapping_candidates": [
+    {
+      "canonical_workstream_id": "WS-00",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-00-projectsteuerung-workspace",
+      "owned_existing_runbook_groups": ["project-structure-local-inventory-*"],
+      "owner_rule": "Projektkarte, Routing, Governance und Übergaben.",
+      "action": "proposal_only"
+    },
+    {
+      "canonical_workstream_id": "WS-10",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung",
+      "owned_existing_runbook_groups": ["ssc-llm-*", "ssc-source-baseline-*", "ssc-ollama-*", "playerbot-discovery-*", "_superseded-phase1b-package-build-*"],
+      "owner_rule": "SSC, PlayerBot, Quellcode und technische LLM-Brücke.",
+      "action": "proposal_only"
+    },
+    {
+      "canonical_workstream_id": "WS-20",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-20-datenbank-migrationen",
+      "owned_existing_runbook_groups": ["acl-*", "semantic-acl-*", "autodonationpoints-*", "db-profession-riding-*", "donation-*", "trainer-*", "tw-char-migration-*"],
+      "owner_rule": "Datenbank, Migrationen und direkt zugehörige Rücksicherung.",
+      "action": "proposal_only"
+    },
+    {
+      "canonical_workstream_id": "WS-30",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-30-serverkonfiguration",
+      "owned_existing_runbook_groups": [],
+      "owner_rule": "Sanitisierte Konfiguration, Ports, Pfade und Laufzeitparameter.",
+      "action": "proposal_only"
+    },
+    {
+      "canonical_workstream_id": "WS-40",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-40-deployment-skripte",
+      "owned_existing_runbook_groups": ["compile-launcher-*", "compile-script-archive-*", "runtime-file-archive-*", "shutdown-helper-*"],
+      "owner_rule": "Entwicklung und Versionierung von Skripten, Launchern und Hilfsprogrammen.",
+      "action": "proposal_only"
+    },
+    {
+      "canonical_workstream_id": "WS-50",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-50-build-serverbetrieb",
+      "owned_existing_runbook_groups": ["post-completion-live-smoke-*", "world-shutdown-smoke-*", "tw-world-shutdown-smoke-*"],
+      "owner_rule": "Buildausführung, Dienstzustand und Live-Smoke-Evidenz.",
+      "action": "proposal_only"
+    },
+    {
+      "canonical_workstream_id": "WS-60",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-60-referenzserver-backups",
+      "owned_existing_runbook_groups": [],
+      "owner_rule": "Historische, langfristige und referenzserverbezogene Sicherungen.",
+      "action": "proposal_only"
+    },
+    {
+      "canonical_workstream_id": "WS-70",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-70-bot-persoenlichkeiten",
+      "owned_existing_runbook_groups": ["bot-personality-discovery-*", "personality-context-contract-v1.md", "bot-personality package/chunk files"],
+      "owner_rule": "Persönlichkeiten, Prompts, Verhalten, Gedächtnis und Dialogregeln.",
+      "action": "proposal_only"
+    },
+    {
+      "canonical_workstream_id": "WS-80",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-80-dokumentation-entscheidungen",
+      "owned_existing_runbook_groups": [],
+      "owner_rule": "Projektweite Entscheidungen, ADRs, Indizes und verbindliche Betriebsdokumentation.",
+      "action": "proposal_only"
+    }
+  ],
+  "missing_canonical_workstreams": [
+    {
+      "canonical_workstream_id": "WS-30",
+      "canonical_title": "Serverkonfiguration",
+      "proposed_action": "Lokalen Chat erst nach ausdrücklicher Freigabe anlegen."
+    },
+    {
+      "canonical_workstream_id": "WS-70",
+      "canonical_title": "Bot-Persönlichkeiten",
+      "proposed_action": "Lokalen Chat erst nach ausdrücklicher Freigabe anlegen."
+    },
+    {
+      "canonical_workstream_id": "WS-80",
+      "canonical_title": "Dokumentation und Entscheidungen",
+      "proposed_action": "Lokalen Chat erst nach ausdrücklicher Freigabe anlegen."
+    }
+  ],
+  "overlaps": [
+    {
+      "between": ["WS-40", "WS-50"],
+      "rule": "Skriptentwicklung gehört WS-40; konkrete Ausführung und Live-Smoke gehören WS-50."
+    },
+    {
+      "between": ["WS-20", "WS-60"],
+      "rule": "Migrationslokale Rücksicherung gehört WS-20; langfristige/historische Backups gehören WS-60."
+    },
+    {
+      "between": ["WS-10", "WS-70"],
+      "rule": "Technische LLM-/PlayerBot-Brücke gehört WS-10; Persona-Inhalt und Dialogverhalten gehören WS-70."
+    },
+    {
+      "between": ["WS-80", "domain_workstreams"],
+      "rule": "Fachdokumentation bleibt beim Fachbereich; WS-80 besitzt nur übergreifende Entscheidungen und Indizes."
+    },
+    {
+      "between": ["WS-30", "WS-40", "WS-50"],
+      "rule": "Konfigurationswerte gehören WS-30, Verteilungs-/Steuerskripte WS-40 und Laufzeitwirkung WS-50."
+    },
+    {
+      "between": ["historical_chat_context", "canonical_ownership"],
+      "rule": "Drei historische Fehlbezüge werden dokumentiert, nicht umgeschrieben; neue Arbeit folgt der Workstream-ID."
+    }
+  ],
+  "input_required": [
+    "Freigabe oder Ablehnung der vorgeschlagenen Umbenennung von WS-00.",
+    "Freigabe oder Ablehnung der späteren Anlage der fehlenden lokalen Chats WS-30, WS-70 und WS-80.",
+    "Entscheidung, ob historische Fehlzuordnungen nur am bisherigen Ort mit Querverweis verbleiben (empfohlen) oder zusätzlich manuell zusammengefasst werden."
+  ],
+  "unresolved": [
+    "WS-10 war beim Snapshot aktiv; ein endgültiges Ergebnis war nicht verfügbar.",
+    "Der jüngste abgeschlossene WS-20-Turn war in der App-Ansicht kompaktiert.",
+    "Der jüngste abgeschlossene WS-40-Turn war in der App-Ansicht kompaktiert; nur Vorschau und Zusammenfassung waren verfügbar.",
+    "Der letzte sichtbare WS-50-Trainer-Control-Übergabepunkt gehört fachlich zu WS-20; ein endgültiger Ergebnisstand war nicht sichtbar."
+  ]
+}

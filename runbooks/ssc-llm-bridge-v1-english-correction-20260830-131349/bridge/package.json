@@ -1,0 +1,13 @@
+{
+  "name": "ssc-llm-bridge-phase1a",
+  "version": "1.1.0-v1-english-correction",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test/*.test.mjs",
+    "validate": "node src/cli.mjs --validate-only"
+  }
+}

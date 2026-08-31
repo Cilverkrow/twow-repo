@@ -1,0 +1,12 @@
+{
+  "statement_class": "SELECT only",
+  "sql_sha256": "87E3BB90041F05DAFF7E7E49291ACC485796013ADD5707C7E0B4A963A446980B",
+  "started_utc": "2026-08-29T19:07:01.9945322Z",
+  "finished_utc": "2026-08-29T19:07:02.1010355Z",
+  "exit_code": 0,
+  "stdout_sha256": "1420338A9A9613F9FBB0AEABEC45BFF34065F7249682ED1216BB2AD2392A8431",
+  "stdout_size_bytes": 8567,
+  "stderr": "",
+  "database_writes": [],
+  "credentials_emitted": false
+}

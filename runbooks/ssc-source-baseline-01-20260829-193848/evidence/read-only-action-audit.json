@@ -1,0 +1,27 @@
+{
+  "task": "SSC-SOURCE-BASELINE-01",
+  "captured_utc": "2026-08-29T17:52:17.2683027Z",
+  "actions_performed": [
+    "Read Git metadata/status/diff/history/tree objects",
+    "Read and hash source/build/config/log/binary/database files",
+    "Inspect executable metadata and PDB identity",
+    "Run one correctly quoted finite MariaDB client attempt containing SELECT statements only",
+    "Create files only within this new runbook directory"
+  ],
+  "notes": [
+    "An earlier malformed local client invocation emitted help and did not connect; it is retained as evidence.",
+    "No database retry followed the correctly quoted connection result."
+  ],
+  "forbidden_actions_performed": [],
+  "confirmations": {
+    "git_checkout_switch_reset_clean_stash_rebase_pull_fetch": false,
+    "source_or_config_changes": false,
+    "build_or_compilation": false,
+    "database_writes_or_migrations": false,
+    "process_control_of_existing_services": false,
+    "executable_replacement_or_start": false,
+    "ollama_inference": false,
+    "game_chat": false,
+    "phase1b_code_integration": false
+  }
+}

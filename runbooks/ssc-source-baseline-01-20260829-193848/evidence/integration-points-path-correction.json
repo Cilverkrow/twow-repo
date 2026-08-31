@@ -1,0 +1,1907 @@
+{
+  "replaces_missing_paths": [
+    "src/modules/PlayerBots/playerbot/strategy/values/RpgTriggers.cpp",
+    "src/game/World/World.cpp",
+    "src/game/Server/WorldSession.h"
+  ],
+  "correct_files": [
+    {
+      "path": "src/modules/PlayerBots/playerbot/strategy/triggers/RpgTriggers.cpp",
+      "head_blob": "807d8af5c6ea2c7954f9b5937c30ce28c99db0f1",
+      "matches": [
+        {
+          "line": 629,
+          "pattern": "LLMEnabled",
+          "text": "    if (sPlayerbotAIConfig.llmEnabled == 0)"
+        },
+        {
+          "line": 635,
+          "pattern": "LLMEnabled",
+          "text": "    if (!ai->HasStrategy(\"ai chat\", BotState::BOT_STATE_NON_COMBAT) && sPlayerbotAIConfig.llmEnabled < 3)"
+        },
+        {
+          "line": 638,
+          "pattern": "LLMRpgAIChatChance",
+          "text": "    if (!sPlayerbotAIConfig.llmRpgAIChatChance || !(urand(0, 99) < sPlayerbotAIConfig.llmRpgAIChatChance))"
+        }
+      ]
+    },
+    {
+      "path": "src/game/World.cpp",
+      "head_blob": "951bdcf7f1e8782d5991e0e9cb3920a23412b4a2",
+      "matches": [
+        {
+          "line": 224,
+          "pattern": "UpdateSessions",
+          "text": "    sWorld.UpdateSessions(1);                               // real players unload required UpdateSessions call"
+        },
+        {
+          "line": 2553,
+          "pattern": "World::Update\\(",
+          "text": "// World::Update() and World.h's WorldBuffTimerState for context. Handles one"
+        },
+        {
+          "line": 2628,
+          "pattern": "World::Update\\(",
+          "text": "void World::Update(uint32 diff)"
+        },
+        {
+          "line": 2671,
+          "pattern": "UpdateSessions",
+          "text": "    UpdateSessions(diff);"
+        },
+        {
+          "line": 2897,
+          "pattern": "donation_point_progress",
+          "text": "    // Progress is persisted in `donation_point_progress` in the login"
+        },
+        {
+          "line": 2965,
+          "pattern": "donation_point_progress",
+          "text": "                    \"SELECT `accumulated_ms` FROM `donation_point_progress` WHERE `account_id` = %u\", dpAccountId));"
+        },
+        {
+          "line": 2984,
+          "pattern": "donation_point_progress",
+          "text": "                    \"INSERT INTO `donation_point_progress` (`account_id`, `accumulated_ms`) VALUES (%u, %u) \""
+        },
+        {
+          "line": 2992,
+          "pattern": "donation_point_progress",
+          "text": "                    \"INSERT INTO `donation_point_progress` (`account_id`, `accumulated_ms`) VALUES (%u, %u) \""
+        },
+        {
+          "line": 3036,
+          "pattern": "UpdateSessions",
+          "text": "    // acted before UpdateSessions, sMapMgr, sBattleGroundMgr and sLFTMgr had"
+        },
+        {
+          "line": 3654,
+          "pattern": "UpdateSessions",
+          "text": "void World::UpdateSessions(uint32 diff)"
+        }
+      ]
+    },
+    {
+      "path": "src/game/WorldSession.h",
+      "head_blob": "28a6fc2e7b6930d6b32e991b7116dfd22b9c1d25",
+      "matches": [
+        {
+          "line": 51,
+          "pattern": "packet",
+          "text": "class WorldPacket;"
+        },
+        {
+          "line": 118,
+          "pattern": "packet",
+          "text": "    FLOOD_TOTAL_PACKETS = 0,"
+        },
+        {
+          "line": 124,
+          "pattern": "packet",
+          "text": "enum PacketProcessing"
+        },
+        {
+          "line": 134,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_WORLD"
+        },
+        {
+          "line": 135,
+          "pattern": "packet",
+          "text": "     * Thread safe environment for this packet."
+        },
+        {
+          "line": 137,
+          "pattern": "World::UpdateSessions",
+          "text": "    PACKET_PROCESS_WORLD = 0,                               //packet is not thread-safe - process it in World::UpdateSessions()"
+        },
+        {
+          "line": 139,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_MAP"
+        },
+        {
+          "line": 149,
+          "pattern": "packet",
+          "text": "     * - Call player->GetSession()->SendPacket() for any player"
+        },
+        {
+          "line": 152,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_MAP,"
+        },
+        {
+          "line": 154,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_SPELLS"
+        },
+        {
+          "line": 155,
+          "pattern": "packet",
+          "text": "     * Same safety as PACKET_PROCESS_MAP"
+        },
+        {
+          "line": 158,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_SPELLS,"
+        },
+        {
+          "line": 160,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_MOVEMENT"
+        },
+        {
+          "line": 161,
+          "pattern": "packet",
+          "text": "     * Same safety as PACKET_PROCESS_MAP"
+        },
+        {
+          "line": 164,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_MOVEMENT,"
+        },
+        {
+          "line": 166,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_DB_QUERY"
+        },
+        {
+          "line": 170,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_DB_QUERY,"
+        },
+        {
+          "line": 171,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_MASTER_SAFE,"
+        },
+        {
+          "line": 172,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_MAX_TYPE,                                // no handler for this packet (server side, or not implemented)"
+        },
+        {
+          "line": 174,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_SELF_ITEMS"
+        },
+        {
+          "line": 185,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_SELF_ITEMS = PACKET_PROCESS_MAP,"
+        },
+        {
+          "line": 187,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_CHANNEL"
+        },
+        {
+          "line": 193,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_CHANNEL = PACKET_PROCESS_WORLD,"
+        },
+        {
+          "line": 195,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_CHANNEL"
+        },
+        {
+          "line": 202,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_GROUP = PACKET_PROCESS_WORLD,"
+        },
+        {
+          "line": 204,
+          "pattern": "packet",
+          "text": "     * PACKET_PROCESS_CHANNEL"
+        },
+        {
+          "line": 211,
+          "pattern": "packet",
+          "text": "    PACKET_PROCESS_GUILD = PACKET_PROCESS_WORLD,"
+        },
+        {
+          "line": 214,
+          "pattern": "packet",
+          "text": "enum PacketDumpType"
+        },
+        {
+          "line": 216,
+          "pattern": "packet",
+          "text": "    PACKET_DUMP_SKIP_FREQUENT_OPCODES       = 0x1,"
+        },
+        {
+          "line": 233,
+          "pattern": "packet",
+          "text": "//class to deal with packet processing"
+        },
+        {
+          "line": 234,
+          "pattern": "packet",
+          "text": "//allows to determine if next packet is safe to be processed"
+        },
+        {
+          "line": 235,
+          "pattern": "packet",
+          "text": "class PacketFilter"
+        },
+        {
+          "line": 238,
+          "pattern": "packet",
+          "text": "        explicit PacketFilter(WorldSession * pSession) : m_pSession(pSession), m_processLogout(false), m_processType(PACKET_PROCESS_MAX_TYPE) {}"
+        },
+        {
+          "line": 239,
+          "pattern": "packet",
+          "text": "        virtual ~PacketFilter() {}"
+        },
+        {
+          "line": 241,
+          "pattern": "packet",
+          "text": "        virtual bool Process(WorldPacket *) { return true; }"
+        },
+        {
+          "line": 243,
+          "pattern": "packet",
+          "text": "        inline PacketProcessing PacketProcessType() const { return m_processType; }"
+        },
+        {
+          "line": 244,
+          "pattern": "packet",
+          "text": "        inline void SetProcessType(PacketProcessing t) { m_processType = t; }"
+        },
+        {
+          "line": 249,
+          "pattern": "packet",
+          "text": "        PacketProcessing m_processType;"
+        },
+        {
+          "line": 251,
+          "pattern": "packet",
+          "text": "//process only thread-safe packets in Map::Update()"
+        },
+        {
+          "line": 252,
+          "pattern": "packet",
+          "text": "class MapSessionFilter : public PacketFilter"
+        },
+        {
+          "line": 255,
+          "pattern": "packet",
+          "text": "        explicit MapSessionFilter(WorldSession * pSession) : PacketFilter(pSession)"
+        },
+        {
+          "line": 258,
+          "pattern": "packet",
+          "text": "            m_processType = PACKET_PROCESS_MAP;"
+        },
+        {
+          "line": 262,
+          "pattern": "packet",
+          "text": "        bool Process(WorldPacket * packet) override;"
+        },
+        {
+          "line": 265,
+          "pattern": "packet",
+          "text": "//class used to filer only thread-unsafe packets from queue"
+        },
+        {
+          "line": 266,
+          "pattern": "World::UpdateSessions",
+          "text": "//in order to update only be used in World::UpdateSessions()"
+        },
+        {
+          "line": 267,
+          "pattern": "packet",
+          "text": "class WorldSessionFilter : public PacketFilter"
+        },
+        {
+          "line": 270,
+          "pattern": "packet",
+          "text": "        explicit WorldSessionFilter(WorldSession * pSession) : PacketFilter(pSession)"
+        },
+        {
+          "line": 273,
+          "pattern": "packet",
+          "text": "            m_processType = PACKET_PROCESS_WORLD;"
+        },
+        {
+          "line": 288,
+          "pattern": "packet",
+          "text": "    virtual void OnPacket(uint32 opcode) {}"
+        },
+        {
+          "line": 322,
+          "pattern": "packet",
+          "text": "        void SizeError(WorldPacket const& packet, uint32 size) const;"
+        },
+        {
+          "line": 324,
+          "pattern": "packet",
+          "text": "        void SendPacket(WorldPacket const* packet);"
+        },
+        {
+          "line": 325,
+          "pattern": "packet",
+          "text": "        // bot module calls SendPacket(packet) by value."
+        },
+        {
+          "line": 327,
+          "pattern": "packet",
+          "text": "        void SendPacket(WorldPacket const& packet) { SendPacket(&packet); }"
+        },
+        {
+          "line": 329,
+          "pattern": "packet",
+          "text": "        // Build SMSG_PLAY_SPELL_VISUAL packet from session and dispatch."
+        },
+        {
+          "line": 343,
+          "pattern": "packet",
+          "text": "        // HandleBotPackets: cmangos drains the bot's packet queue. Stub no-op."
+        },
+        {
+          "line": 344,
+          "pattern": "packet",
+          "text": "        void HandleBotPackets() {}"
+        },
+        {
+          "line": 422,
+          "pattern": "packet",
+          "text": "        void QueuePacket(WorldPacket* new_packet);"
+        },
+        {
+          "line": 423,
+          "pattern": "packet",
+          "text": "        // bot wraps packets in unique_ptr."
+        },
+        {
+          "line": 424,
+          "pattern": "packet",
+          "text": "        void QueuePacket(std::unique_ptr<WorldPacket> new_packet) { QueuePacket(new_packet.release()); }"
+        },
+        {
+          "line": 425,
+          "pattern": "packet",
+          "text": "        // Const-reference overload (bot sometimes constructs an inline WorldPacket)."
+        },
+        {
+          "line": 426,
+          "pattern": "packet",
+          "text": "        // Copies into a fresh heap WorldPacket so QueuePacket(WorldPacket*) — which"
+        },
+        {
+          "line": 429,
+          "pattern": "packet",
+          "text": "        // this header only forward-declares WorldPacket."
+        },
+        {
+          "line": 430,
+          "pattern": "packet",
+          "text": "        void QueuePacket(WorldPacket const& new_packet);"
+        },
+        {
+          "line": 432,
+          "pattern": "packet",
+          "text": "        bool Update(PacketFilter& updater);"
+        },
+        {
+          "line": 434,
+          "pattern": "packet",
+          "text": "         * @brief Returns true iif we can process packets (ie logged in Player, not a bot, etc ...)"
+        },
+        {
+          "line": 436,
+          "pattern": "packet",
+          "text": "        bool CanProcessPackets() const;"
+        },
+        {
+          "line": 437,
+          "pattern": "packet",
+          "text": "        void ProcessPackets(PacketFilter& updater);"
+        },
+        {
+          "line": 496,
+          "pattern": "packet",
+          "text": "        bool SendItemInfo( uint32 itemid, WorldPacket data );"
+        },
+        {
+          "line": 533,
+          "pattern": "packet",
+          "text": "        void BuildPartyMemberStatsChangedPacket(Player *player, WorldPacket *data);"
+        },
+        {
+          "line": 534,
+          "pattern": "packet",
+          "text": "        void BuildPartyMemberStatsPacket(Player* player, WorldPacket* data, uint32 updateMask, bool sendAllAuras);"
+        },
+        {
+          "line": 593,
+          "pattern": "packet",
+          "text": "        enum class PacketAllowResult"
+        },
+        {
+          "line": 600,
+          "pattern": "packet",
+          "text": "        PacketAllowResult AllowPacket(uint16 opcode, uint64 time);"
+        },
+        {
+          "line": 602,
+          "pattern": "packet",
+          "text": "        uint32 GetLastReceivedPacketTime() const { return m_lastReceivedPacketTime; }"
+        },
+        {
+          "line": 626,
+          "pattern": "packet",
+          "text": "        void ClearIncomingPacketsByType(PacketProcessing type);"
+        },
+        {
+          "line": 627,
+          "pattern": "packet",
+          "text": "        inline bool HasRecentPacket(PacketProcessing type) const { return _receivedPacketType[type]; }"
+        },
+        {
+          "line": 673,
+          "pattern": "packet",
+          "text": "        void Handle_NULL(WorldPacket& recvPacket);          // not used"
+        },
+        {
+          "line": 674,
+          "pattern": "packet",
+          "text": "        void Handle_EarlyProccess( WorldPacket& recvPacket);// just mark packets processed in WorldSocket::OnRead"
+        },
+        {
+          "line": 675,
+          "pattern": "packet",
+          "text": "        void Handle_ServerSide(WorldPacket& recvPacket);    // sever side only, can't be accepted from client"
+        },
+        {
+          "line": 676,
+          "pattern": "packet",
+          "text": "        void Handle_Deprecated(WorldPacket& recvPacket);    // never used anymore by client"
+        },
+        {
+          "line": 678,
+          "pattern": "packet",
+          "text": "        void HandleCharEnumOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 679,
+          "pattern": "packet",
+          "text": "        void HandleCharDeleteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 680,
+          "pattern": "packet",
+          "text": "        void HandleCharCreateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 681,
+          "pattern": "packet",
+          "text": "        void HandlePlayerLoginOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 684,
+          "pattern": "packet",
+          "text": "        void HandlePlayedTime(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 687,
+          "pattern": "packet",
+          "text": "        void HandleMoveRootAck(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 688,
+          "pattern": "packet",
+          "text": "        void HandleMoveKnockBackAck(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 689,
+          "pattern": "packet",
+          "text": "        void HandleMoveTeleportAckOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 690,
+          "pattern": "packet",
+          "text": "        void HandleForceSpeedChangeAckOpcodes(WorldPacket & recv_data);"
+        },
+        {
+          "line": 691,
+          "pattern": "packet",
+          "text": "        void HandleMoveWorldportAckOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 693,
+          "pattern": "packet",
+          "text": "        void HandleMovementOpcodes(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 694,
+          "pattern": "packet",
+          "text": "        void HandleSetActiveMoverOpcode(WorldPacket &recv_data);"
+        },
+        {
+          "line": 695,
+          "pattern": "packet",
+          "text": "        void HandleMoveNotActiveMoverOpcode(WorldPacket &recv_data);"
+        },
+        {
+          "line": 696,
+          "pattern": "packet",
+          "text": "        void HandleMoveTimeSkippedOpcode(WorldPacket &recv_data);"
+        },
+        {
+          "line": 697,
+          "pattern": "packet",
+          "text": "        void HandleMovementFlagChangeToggleAck(WorldPacket& recvData);"
+        },
+        {
+          "line": 698,
+          "pattern": "packet",
+          "text": "        void HandleMoveSplineDoneOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 699,
+          "pattern": "packet",
+          "text": "        void HandleMoveSetRawPosition(WorldPacket& recv_data);"
+        },
+        {
+          "line": 700,
+          "pattern": "packet",
+          "text": "        void HandleWorldTeleportOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 701,
+          "pattern": "packet",
+          "text": "        void HandleMountSpecialAnimOpcode(WorldPacket &recvdata);"
+        },
+        {
+          "line": 703,
+          "pattern": "packet",
+          "text": "        void HandleInspectOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 704,
+          "pattern": "packet",
+          "text": "        void HandleInspectHonorStatsOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 705,
+          "pattern": "packet",
+          "text": "        void HandleShowingHelmOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 706,
+          "pattern": "packet",
+          "text": "        void HandleShowingCloakOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 707,
+          "pattern": "packet",
+          "text": "        void HandleRepairItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 709,
+          "pattern": "packet",
+          "text": "        void HandlePingOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 710,
+          "pattern": "packet",
+          "text": "        void HandleAuthSessionOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 711,
+          "pattern": "packet",
+          "text": "        void HandleRepopRequestOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 712,
+          "pattern": "packet",
+          "text": "        void HandleAutostoreLootItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 713,
+          "pattern": "packet",
+          "text": "        void HandleLootMoneyOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 714,
+          "pattern": "packet",
+          "text": "        void HandleLootOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 715,
+          "pattern": "packet",
+          "text": "        void HandleLootReleaseOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 716,
+          "pattern": "packet",
+          "text": "        void HandleLootMasterGiveOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 717,
+          "pattern": "packet",
+          "text": "        void HandleWhoOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 718,
+          "pattern": "packet",
+          "text": "        void HandleLFGOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 719,
+          "pattern": "packet",
+          "text": "        void HandleLogoutRequestOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 720,
+          "pattern": "packet",
+          "text": "        void HandlePlayerLogoutOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 721,
+          "pattern": "packet",
+          "text": "        void HandleLogoutCancelOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 722,
+          "pattern": "packet",
+          "text": "        void HandleGMTicketGetTicketOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 723,
+          "pattern": "packet",
+          "text": "        void HandleGMTicketCreateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 724,
+          "pattern": "packet",
+          "text": "        void HandleGMTicketSystemStatusOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 726,
+          "pattern": "packet",
+          "text": "        void HandleGMTicketDeleteTicketOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 727,
+          "pattern": "packet",
+          "text": "        void HandleGMTicketUpdateTextOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 729,
+          "pattern": "packet",
+          "text": "        void HandleGMSurveySubmitOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 731,
+          "pattern": "packet",
+          "text": "        void HandleTogglePvP(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 733,
+          "pattern": "packet",
+          "text": "        void HandleZoneUpdateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 734,
+          "pattern": "packet",
+          "text": "        void HandleSetTargetOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 735,
+          "pattern": "packet",
+          "text": "        void HandleSetSelectionOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 736,
+          "pattern": "packet",
+          "text": "        void HandleStandStateChangeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 737,
+          "pattern": "packet",
+          "text": "        void HandleEmoteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 738,
+          "pattern": "packet",
+          "text": "        void HandleFriendListOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 739,
+          "pattern": "packet",
+          "text": "        void HandleAddFriendOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 740,
+          "pattern": "packet",
+          "text": "        void HandleDelFriendOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 741,
+          "pattern": "packet",
+          "text": "        void HandleAddIgnoreOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 742,
+          "pattern": "packet",
+          "text": "        void HandleDelIgnoreOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 743,
+          "pattern": "packet",
+          "text": "        void HandleBugOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 744,
+          "pattern": "packet",
+          "text": "        void HandleSetAmmoOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 745,
+          "pattern": "packet",
+          "text": "        void HandleItemNameQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 747,
+          "pattern": "packet",
+          "text": "        void HandleAreaTriggerOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 749,
+          "pattern": "packet",
+          "text": "        void HandleSetFactionAtWarOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 750,
+          "pattern": "packet",
+          "text": "        void HandleSetWatchedFactionOpcode(WorldPacket & recv_data);"
+        },
+        {
+          "line": 751,
+          "pattern": "packet",
+          "text": "        void HandleSetFactionInactiveOpcode(WorldPacket & recv_data);"
+        },
+        {
+          "line": 753,
+          "pattern": "packet",
+          "text": "        void HandleUpdateAccountData(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 754,
+          "pattern": "packet",
+          "text": "        void HandleRequestAccountData(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 755,
+          "pattern": "packet",
+          "text": "        void HandleSetActionButtonOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 757,
+          "pattern": "packet",
+          "text": "        void HandleGameObjectUseOpcode(WorldPacket& recPacket);"
+        },
+        {
+          "line": 758,
+          "pattern": "packet",
+          "text": "        void HandleMeetingStoneJoinOpcode(WorldPacket& recPacket);"
+        },
+        {
+          "line": 759,
+          "pattern": "packet",
+          "text": "        void HandleMeetingStoneLeaveOpcode(WorldPacket& recPacket);"
+        },
+        {
+          "line": 760,
+          "pattern": "packet",
+          "text": "        void HandleMeetingStoneInfoOpcode(WorldPacket& recPacket);"
+        },
+        {
+          "line": 762,
+          "pattern": "packet",
+          "text": "        void HandleNameQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 763,
+          "pattern": "packet",
+          "text": "        void HandleQueryTimeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 764,
+          "pattern": "packet",
+          "text": "        void HandleCreatureQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 765,
+          "pattern": "packet",
+          "text": "        void HandleGameObjectQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 766,
+          "pattern": "packet",
+          "text": "        void HandleRequestRaidInfoOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 768,
+          "pattern": "packet",
+          "text": "        void HandleGroupInviteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 769,
+          "pattern": "packet",
+          "text": "        void HandleGroupAcceptOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 770,
+          "pattern": "packet",
+          "text": "        void HandleGroupDeclineOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 771,
+          "pattern": "packet",
+          "text": "        void HandleGroupUninviteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 772,
+          "pattern": "packet",
+          "text": "        void HandleGroupUninviteGuidOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 773,
+          "pattern": "packet",
+          "text": "        void HandleGroupSetLeaderOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 774,
+          "pattern": "packet",
+          "text": "        void HandleGroupDisbandOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 775,
+          "pattern": "packet",
+          "text": "        void HandleLootMethodOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 776,
+          "pattern": "packet",
+          "text": "        void HandleLootRoll( WorldPacket &recv_data );"
+        },
+        {
+          "line": 777,
+          "pattern": "packet",
+          "text": "        void HandleRequestPartyMemberStatsOpcode( WorldPacket &recv_data );"
+        },
+        {
+          "line": 778,
+          "pattern": "packet",
+          "text": "        void HandleRaidTargetUpdateOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 779,
+          "pattern": "packet",
+          "text": "        void HandleRaidReadyCheckOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 780,
+          "pattern": "packet",
+          "text": "        void HandleGroupRaidConvertOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 781,
+          "pattern": "packet",
+          "text": "        void HandleGroupChangeSubGroupOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 782,
+          "pattern": "packet",
+          "text": "        void HandleGroupSwapSubGroupOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 783,
+          "pattern": "packet",
+          "text": "        void HandleGroupAssistantLeaderOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 785,
+          "pattern": "packet",
+          "text": "        void HandlePetitionBuyOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 786,
+          "pattern": "packet",
+          "text": "        void HandlePetitionShowSignOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 787,
+          "pattern": "packet",
+          "text": "        void HandlePetitionQueryOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 788,
+          "pattern": "packet",
+          "text": "        void HandlePetitionRenameOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 789,
+          "pattern": "packet",
+          "text": "        void HandlePetitionSignOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 790,
+          "pattern": "packet",
+          "text": "        void HandlePetitionDeclineOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 791,
+          "pattern": "packet",
+          "text": "        void HandleOfferPetitionOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 792,
+          "pattern": "packet",
+          "text": "        void HandleTurnInPetitionOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 794,
+          "pattern": "packet",
+          "text": "        void HandleGuildQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 795,
+          "pattern": "packet",
+          "text": "        void HandleGuildCreateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 796,
+          "pattern": "packet",
+          "text": "        void HandleGuildInviteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 797,
+          "pattern": "packet",
+          "text": "        void HandleGuildRemoveOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 798,
+          "pattern": "packet",
+          "text": "        void HandleGuildAcceptOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 799,
+          "pattern": "packet",
+          "text": "        void HandleGuildDeclineOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 800,
+          "pattern": "packet",
+          "text": "        void HandleGuildInfoOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 801,
+          "pattern": "packet",
+          "text": "        void HandleGuildRosterOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 802,
+          "pattern": "packet",
+          "text": "        void HandleGuildPromoteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 803,
+          "pattern": "packet",
+          "text": "        void HandleGuildDemoteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 804,
+          "pattern": "packet",
+          "text": "        void HandleGuildLeaveOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 805,
+          "pattern": "packet",
+          "text": "        void HandleGuildDisbandOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 806,
+          "pattern": "packet",
+          "text": "        void HandleGuildLeaderOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 807,
+          "pattern": "packet",
+          "text": "        void HandleGuildMOTDOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 808,
+          "pattern": "packet",
+          "text": "        void HandleGuildSetPublicNoteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 809,
+          "pattern": "packet",
+          "text": "        void HandleGuildSetOfficerNoteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 810,
+          "pattern": "packet",
+          "text": "        void HandleGuildRankOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 811,
+          "pattern": "packet",
+          "text": "        void HandleGuildAddRankOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 812,
+          "pattern": "packet",
+          "text": "        void HandleGuildDelRankOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 813,
+          "pattern": "packet",
+          "text": "        void HandleGuildChangeInfoTextOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 814,
+          "pattern": "packet",
+          "text": "        void HandleSaveGuildEmblemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 816,
+          "pattern": "packet",
+          "text": "        void HandleTaxiNodeStatusQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 817,
+          "pattern": "packet",
+          "text": "        void HandleTaxiQueryAvailableNodes(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 818,
+          "pattern": "packet",
+          "text": "        void HandleActivateTaxiOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 819,
+          "pattern": "packet",
+          "text": "        void HandleActivateTaxiExpressOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 821,
+          "pattern": "packet",
+          "text": "        void HandleTabardVendorActivateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 822,
+          "pattern": "packet",
+          "text": "        void HandleBankerActivateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 823,
+          "pattern": "packet",
+          "text": "        void HandleBuyBankSlotOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 824,
+          "pattern": "packet",
+          "text": "        void HandleTrainerListOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 825,
+          "pattern": "packet",
+          "text": "        void HandleTrainerBuySpellOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 826,
+          "pattern": "packet",
+          "text": "        void HandlePetitionShowListOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 827,
+          "pattern": "packet",
+          "text": "        void HandleGossipHelloOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 828,
+          "pattern": "packet",
+          "text": "        void HandleGossipSelectOptionOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 829,
+          "pattern": "packet",
+          "text": "        void HandleSpiritHealerActivateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 830,
+          "pattern": "packet",
+          "text": "        void HandleNpcTextQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 831,
+          "pattern": "packet",
+          "text": "        void HandleBinderActivateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 832,
+          "pattern": "packet",
+          "text": "        void HandleListStabledPetsOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 833,
+          "pattern": "packet",
+          "text": "        void HandleStablePet(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 834,
+          "pattern": "packet",
+          "text": "        void HandleUnstablePet(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 835,
+          "pattern": "packet",
+          "text": "        void HandleBuyStableSlot(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 836,
+          "pattern": "packet",
+          "text": "        void HandleStableRevivePet(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 837,
+          "pattern": "packet",
+          "text": "        void HandleStableSwapPet(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 839,
+          "pattern": "packet",
+          "text": "        void HandleDuelAcceptedOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 840,
+          "pattern": "packet",
+          "text": "        void HandleDuelCancelledOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 842,
+          "pattern": "packet",
+          "text": "        void HandleAcceptTradeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 843,
+          "pattern": "packet",
+          "text": "        void HandleBeginTradeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 844,
+          "pattern": "packet",
+          "text": "        void HandleBusyTradeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 845,
+          "pattern": "packet",
+          "text": "        void HandleCancelTradeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 846,
+          "pattern": "packet",
+          "text": "        void HandleClearTradeItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 847,
+          "pattern": "packet",
+          "text": "        void HandleIgnoreTradeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 848,
+          "pattern": "packet",
+          "text": "        void HandleInitiateTradeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 849,
+          "pattern": "packet",
+          "text": "        void HandleSetTradeGoldOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 850,
+          "pattern": "packet",
+          "text": "        void HandleSetTradeItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 851,
+          "pattern": "packet",
+          "text": "        void HandleUnacceptTradeOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 853,
+          "pattern": "packet",
+          "text": "        void HandleAuctionHelloOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 854,
+          "pattern": "packet",
+          "text": "        void HandleAuctionListItems( WorldPacket & recv_data );"
+        },
+        {
+          "line": 855,
+          "pattern": "packet",
+          "text": "        void HandleAuctionListBidderItems( WorldPacket & recv_data );"
+        },
+        {
+          "line": 856,
+          "pattern": "packet",
+          "text": "        void HandleAuctionSellItem( WorldPacket & recv_data );"
+        },
+        {
+          "line": 857,
+          "pattern": "packet",
+          "text": "        void HandleAuctionRemoveItem( WorldPacket & recv_data );"
+        },
+        {
+          "line": 858,
+          "pattern": "packet",
+          "text": "        void HandleAuctionListOwnerItems( WorldPacket & recv_data );"
+        },
+        {
+          "line": 859,
+          "pattern": "packet",
+          "text": "        void HandleAuctionPlaceBid( WorldPacket & recv_data );"
+        },
+        {
+          "line": 861,
+          "pattern": "packet",
+          "text": "        void HandleGetMailList( WorldPacket & recv_data );"
+        },
+        {
+          "line": 862,
+          "pattern": "packet",
+          "text": "        void HandleSendMail( WorldPacket & recv_data );"
+        },
+        {
+          "line": 865,
+          "pattern": "packet",
+          "text": "        void HandleMailTakeMoney( WorldPacket & recv_data );"
+        },
+        {
+          "line": 866,
+          "pattern": "packet",
+          "text": "        void HandleMailTakeItem( WorldPacket & recv_data );"
+        },
+        {
+          "line": 867,
+          "pattern": "packet",
+          "text": "        void HandleMailMarkAsRead( WorldPacket & recv_data );"
+        },
+        {
+          "line": 868,
+          "pattern": "packet",
+          "text": "        void HandleMailReturnToSender( WorldPacket & recv_data );"
+        },
+        {
+          "line": 869,
+          "pattern": "packet",
+          "text": "        void HandleMailDelete( WorldPacket & recv_data );"
+        },
+        {
+          "line": 870,
+          "pattern": "packet",
+          "text": "        void HandleItemTextQuery( WorldPacket & recv_data);"
+        },
+        {
+          "line": 871,
+          "pattern": "packet",
+          "text": "        void HandleMailCreateTextItem(WorldPacket & recv_data );"
+        },
+        {
+          "line": 872,
+          "pattern": "packet",
+          "text": "        void HandleQueryNextMailTime(WorldPacket & recv_data );"
+        },
+        {
+          "line": 873,
+          "pattern": "packet",
+          "text": "        void HandleCancelChanneling(WorldPacket & recv_data );"
+        },
+        {
+          "line": 876,
+          "pattern": "packet",
+          "text": "        void HandleSplitItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 877,
+          "pattern": "packet",
+          "text": "        void HandleSwapInvItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 878,
+          "pattern": "packet",
+          "text": "        void HandleDestroyItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 879,
+          "pattern": "packet",
+          "text": "        void HandleAutoEquipItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 880,
+          "pattern": "packet",
+          "text": "        void HandleItemQuerySingleOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 881,
+          "pattern": "packet",
+          "text": "        void HandleSellItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 882,
+          "pattern": "packet",
+          "text": "        void HandleBuyItemInSlotOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 883,
+          "pattern": "packet",
+          "text": "        void HandleBuyItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 884,
+          "pattern": "packet",
+          "text": "        void HandleListInventoryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 886,
+          "pattern": "packet",
+          "text": "        void HandleAutoStoreBagItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 887,
+          "pattern": "packet",
+          "text": "        void HandleReadItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 888,
+          "pattern": "packet",
+          "text": "        void HandleAutoEquipItemSlotOpcode(WorldPacket & recvPacket);"
+        },
+        {
+          "line": 889,
+          "pattern": "packet",
+          "text": "        void HandleSwapItem( WorldPacket & recvPacket);"
+        },
+        {
+          "line": 890,
+          "pattern": "packet",
+          "text": "        void HandleBuybackItem(WorldPacket & recvPacket);"
+        },
+        {
+          "line": 891,
+          "pattern": "packet",
+          "text": "        void HandleAutoBankItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 892,
+          "pattern": "packet",
+          "text": "        void HandleAutoStoreBankItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 893,
+          "pattern": "packet",
+          "text": "        void HandleWrapItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 895,
+          "pattern": "packet",
+          "text": "        void HandleAttackSwingOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 896,
+          "pattern": "packet",
+          "text": "        void HandleAttackStopOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 897,
+          "pattern": "packet",
+          "text": "        void HandleSetSheathedOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 899,
+          "pattern": "packet",
+          "text": "        void HandleUseItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 900,
+          "pattern": "packet",
+          "text": "        void HandleOpenItemOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 901,
+          "pattern": "packet",
+          "text": "        void HandleCastSpellOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 902,
+          "pattern": "packet",
+          "text": "        void HandleCancelCastOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 903,
+          "pattern": "packet",
+          "text": "        void HandleCancelAuraOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 904,
+          "pattern": "packet",
+          "text": "        void HandleCancelGrowthAuraOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 905,
+          "pattern": "packet",
+          "text": "        void HandleCancelAutoRepeatSpellOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 906,
+          "pattern": "packet",
+          "text": "        void HandleSetActionBarTogglesOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 907,
+          "pattern": "packet",
+          "text": "        void HandleLearnTalentOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 908,
+          "pattern": "packet",
+          "text": "        void HandleTalentWipeConfirmOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 909,
+          "pattern": "packet",
+          "text": "        void HandleUnlearnSkillOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 911,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverStatusQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 912,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverHelloOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 913,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverAcceptQuestOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 914,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverQueryQuestOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 915,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverChooseRewardOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 916,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverRequestRewardOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 917,
+          "pattern": "packet",
+          "text": "        void HandleQuestQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 918,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverCancel(WorldPacket& recv_data );"
+        },
+        {
+          "line": 919,
+          "pattern": "packet",
+          "text": "        void HandleQuestLogSwapQuest(WorldPacket& recv_data );"
+        },
+        {
+          "line": 920,
+          "pattern": "packet",
+          "text": "        void HandleQuestLogRemoveQuest(WorldPacket& recv_data);"
+        },
+        {
+          "line": 921,
+          "pattern": "packet",
+          "text": "        void HandleQuestConfirmAccept(WorldPacket& recv_data);"
+        },
+        {
+          "line": 922,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverCompleteQuest(WorldPacket& recv_data);"
+        },
+        {
+          "line": 923,
+          "pattern": "packet",
+          "text": "        void HandleQuestgiverQuestAutoLaunch(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 924,
+          "pattern": "packet",
+          "text": "        void HandlePushQuestToParty(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 925,
+          "pattern": "packet",
+          "text": "        void HandleQuestPushResult(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 933,
+          "pattern": "packet",
+          "text": "        void HandleMessagechatOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 938,
+          "pattern": "packet",
+          "text": "        void HandleTextEmoteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 939,
+          "pattern": "packet",
+          "text": "        void HandleChatIgnoredOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 942,
+          "pattern": "packet",
+          "text": "        void HandleReclaimCorpseOpcode( WorldPacket& recvPacket );"
+        },
+        {
+          "line": 943,
+          "pattern": "packet",
+          "text": "        void HandleCorpseQueryOpcode( WorldPacket& recvPacket );"
+        },
+        {
+          "line": 944,
+          "pattern": "packet",
+          "text": "        void HandleResurrectResponseOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 945,
+          "pattern": "packet",
+          "text": "        void HandleSummonResponseOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 947,
+          "pattern": "packet",
+          "text": "        void HandleJoinChannelOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 948,
+          "pattern": "packet",
+          "text": "        void HandleLeaveChannelOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 949,
+          "pattern": "packet",
+          "text": "        void HandleChannelListOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 950,
+          "pattern": "packet",
+          "text": "        void HandleChannelPasswordOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 951,
+          "pattern": "packet",
+          "text": "        void HandleChannelSetOwnerOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 952,
+          "pattern": "packet",
+          "text": "        void HandleChannelOwnerOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 953,
+          "pattern": "packet",
+          "text": "        void HandleChannelModeratorOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 954,
+          "pattern": "packet",
+          "text": "        void HandleChannelUnmoderatorOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 955,
+          "pattern": "packet",
+          "text": "        void HandleChannelMuteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 956,
+          "pattern": "packet",
+          "text": "        void HandleChannelUnmuteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 957,
+          "pattern": "packet",
+          "text": "        void HandleChannelInviteOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 958,
+          "pattern": "packet",
+          "text": "        void HandleChannelKickOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 959,
+          "pattern": "packet",
+          "text": "        void HandleChannelBanOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 960,
+          "pattern": "packet",
+          "text": "        void HandleChannelUnbanOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 961,
+          "pattern": "packet",
+          "text": "        void HandleChannelAnnouncementsOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 962,
+          "pattern": "packet",
+          "text": "        void HandleChannelModerateOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 964,
+          "pattern": "packet",
+          "text": "        void HandleCompleteCinematic(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 965,
+          "pattern": "packet",
+          "text": "        void HandleNextCinematicCamera(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 967,
+          "pattern": "packet",
+          "text": "        void HandlePageQuerySkippedOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 968,
+          "pattern": "packet",
+          "text": "        void HandlePageTextQueryOpcode(WorldPacket& recvPacket);"
+        },
+        {
+          "line": 970,
+          "pattern": "packet",
+          "text": "        void HandleTutorialFlagOpcode ( WorldPacket & recv_data );"
+        },
+        {
+          "line": 971,
+          "pattern": "packet",
+          "text": "        void HandleTutorialClearOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 972,
+          "pattern": "packet",
+          "text": "        void HandleTutorialResetOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 975,
+          "pattern": "packet",
+          "text": "        void HandlePetAction( WorldPacket & recv_data );"
+        },
+        {
+          "line": 976,
+          "pattern": "packet",
+          "text": "        void HandlePetStopAttack(WorldPacket& recv_data);"
+        },
+        {
+          "line": 977,
+          "pattern": "packet",
+          "text": "        void HandlePetNameQueryOpcode( WorldPacket & recv_data );"
+        },
+        {
+          "line": 978,
+          "pattern": "packet",
+          "text": "        void HandlePetSetAction( WorldPacket & recv_data );"
+        },
+        {
+          "line": 979,
+          "pattern": "packet",
+          "text": "        void HandlePetAbandon( WorldPacket & recv_data );"
+        },
+        {
+          "line": 980,
+          "pattern": "packet",
+          "text": "        void HandlePetRename( WorldPacket & recv_data );"
+        },
+        {
+          "line": 981,
+          "pattern": "packet",
+          "text": "        void HandlePetCancelAuraOpcode( WorldPacket& recvPacket );"
+        },
+        {
+          "line": 982,
+          "pattern": "packet",
+          "text": "        void HandlePetUnlearnOpcode( WorldPacket& recvPacket );"
+        },
+        {
+          "line": 983,
+          "pattern": "packet",
+          "text": "        void HandlePetSpellAutocastOpcode( WorldPacket& recvPacket );"
+        },
+        {
+          "line": 984,
+          "pattern": "packet",
+          "text": "        void HandlePetCastSpellOpcode( WorldPacket& recvPacket );"
+        },
+        {
+          "line": 985,
+          "pattern": "packet",
+          "text": "        void HandleRequestPetInfoOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 987,
+          "pattern": "packet",
+          "text": "        void HandleCharRenameOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 991,
+          "pattern": "packet",
+          "text": "        void HandleBattlefieldJoinOpcode( WorldPacket &recv_data );"
+        },
+        {
+          "line": 994,
+          "pattern": "packet",
+          "text": "        void HandleBattlefieldPortOpcode(WorldPacket& recv_data) { HandleBattlefieldJoinOpcode(recv_data); }"
+        },
+        {
+          "line": 995,
+          "pattern": "packet",
+          "text": "        void HandleBattlemasterHelloOpcode(WorldPacket &recv_data);"
+        },
+        {
+          "line": 996,
+          "pattern": "packet",
+          "text": "        void HandleBattlemasterJoinOpcode(WorldPacket &recv_data);"
+        },
+        {
+          "line": 997,
+          "pattern": "packet",
+          "text": "        void HandleBattleGroundPlayerPositionsOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 998,
+          "pattern": "packet",
+          "text": "        void HandlePVPLogDataOpcode( WorldPacket &recv_data );"
+        },
+        {
+          "line": 999,
+          "pattern": "packet",
+          "text": "        void HandleBattlefieldStatusOpcode(WorldPacket &recv_data);"
+        },
+        {
+          "line": 1000,
+          "pattern": "packet",
+          "text": "        void HandleBattleFieldPortOpcode( WorldPacket &recv_data );"
+        },
+        {
+          "line": 1001,
+          "pattern": "packet",
+          "text": "        void HandleBattlefieldListOpcode( WorldPacket &recv_data );"
+        },
+        {
+          "line": 1002,
+          "pattern": "packet",
+          "text": "        void HandleLeaveBattlefieldOpcode( WorldPacket &recv_data );"
+        },
+        {
+          "line": 1004,
+          "pattern": "packet",
+          "text": "        void HandleWardenDataOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1005,
+          "pattern": "packet",
+          "text": "        void HandleMinimapPingOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1006,
+          "pattern": "packet",
+          "text": "        void HandleRandomRollOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1007,
+          "pattern": "packet",
+          "text": "        void HandleFarSightOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1008,
+          "pattern": "packet",
+          "text": "        void HandleWhoisOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1009,
+          "pattern": "packet",
+          "text": "        void HandleResetInstancesOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1011,
+          "pattern": "packet",
+          "text": "        void HandleAreaSpiritHealerQueryOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1012,
+          "pattern": "packet",
+          "text": "        void HandleAreaSpiritHealerQueueOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1013,
+          "pattern": "packet",
+          "text": "        void HandleSelfResOpcode(WorldPacket& recv_data);"
+        },
+        {
+          "line": 1025,
+          "pattern": "packet",
+          "text": "        void ExecuteOpcode( OpcodeHandler const& opHandle, WorldPacket* packet );"
+        },
+        {
+          "line": 1028,
+          "pattern": "packet",
+          "text": "        void LogUnexpectedOpcode(WorldPacket *packet, const char * reason);"
+        },
+        {
+          "line": 1029,
+          "pattern": "packet",
+          "text": "        void LogUnprocessedTail(WorldPacket *packet);"
+        },
+        {
+          "line": 1059,
+          "pattern": "packet",
+          "text": "        LockedQueue<WorldPacket*, std::mutex> _recvQueue[PACKET_PROCESS_MAX_TYPE];"
+        },
+        {
+          "line": 1060,
+          "pattern": "packet",
+          "text": "        bool _receivedPacketType[PACKET_PROCESS_MAX_TYPE];"
+        },
+        {
+          "line": 1066,
+          "pattern": "packet",
+          "text": "        uint32 _floodPacketsCount[FLOOD_MAX_OPCODES_TYPE];"
+        },
+        {
+          "line": 1068,
+          "pattern": "packet",
+          "text": "        std::unordered_map<uint32, std::pair<uint32, uint32>> m_requeuePacketCount;"
+        },
+        {
+          "line": 1070,
+          "pattern": "packet",
+          "text": "        uint32 m_lastReceivedPacketTime;"
+        }
+      ]
+    }
+  ]
+}

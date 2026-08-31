@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C-R1",
+  "captured_utc": "2026-08-29T22:59:00.9303696Z",
+  "processes": {
+    "mangosd": [],
+    "realmd": [],
+    "mysqld": [{"pid": 31724, "path": "C:\\TW\\ComTW\\DB\\bin\\mysqld.exe"}],
+    "ollama": [{"pid": 5528, "path": "C:\\Users\\djfav\\AppData\\Local\\Programs\\Ollama\\ollama.exe"}]
+  },
+  "listeners": [
+    {"address": "127.0.0.1", "port": 3307, "pid": 31724},
+    {"address": "127.0.0.1", "port": 11434, "pid": 5528}
+  ],
+  "game_listener_8090_present": false,
+  "login_listener_3724_present": false,
+  "production_exe": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+    "length": 20376576,
+    "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "restored": true
+  },
+  "backup": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.pre-source-baseline-02c-20260829.exe",
+    "length": 20376576,
+    "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC"
+  },
+  "configs": {
+    "mangosd_conf_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+    "aiplayerbot_conf_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+    "unchanged": true
+  },
+  "prior_blocked_package": {
+    "path": "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-BLOCKED-20260830-001200.zip",
+    "sha256": "78B02C8B3D614581BF842129541BE5C2AE249978783D7CFAB4B88C049549D280",
+    "metadata_sha256": "1D40B17EC829255BABFCF9CE701FD6FA2917520E482FA938671854CE361E4177",
+    "unchanged": true
+  },
+  "controls": {
+    "mariadb_controlled": false,
+    "ollama_controlled": false,
+    "broken_shutdown_helper_used": false,
+    "deployment_left_active": false
+  },
+  "result": "PASS"
+}

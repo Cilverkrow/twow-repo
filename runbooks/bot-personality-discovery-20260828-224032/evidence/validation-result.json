@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "generated_utc": "2026-08-28T20:59:19.4390932Z",
+  "normalized_bot_rows": 4500,
+  "unique_proven_bot_guids": 4500,
+  "duplicate_population_guid_rows": 0,
+  "unmapped_exported_race_ids": 0,
+  "unmapped_exported_class_ids": 0,
+  "profession_lists_sorted": true,
+  "json_tsv_bot_count_match": true,
+  "race_summary_reconciles": true,
+  "class_summary_reconciles": true,
+  "profession_summary_reconciles": true,
+  "sql_write_capable_statement_count": 0,
+  "logical_database_writes": 0,
+  "appearance_tuple_mismatch_count": 0,
+  "prohibited_data_fields_exported": 0,
+  "trait_assignment_performed": false
+}

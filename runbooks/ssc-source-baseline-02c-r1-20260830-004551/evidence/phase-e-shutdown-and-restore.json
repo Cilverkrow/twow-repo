@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C-R1",
+  "phase": "E",
+  "shutdown": {
+    "method": "manual input in the original mangosd console",
+    "command_sequence_confirmed_by_operator": [
+      "saveall",
+      "server shutdown 0"
+    ],
+    "operator_confirmation": "SHUTDOWN_DONE",
+    "broken_shutdown_helper_used": false,
+    "graceful_log_evidence": [
+      {"line": 12022, "text": "2026-08-30 00:55:56 Shutting down world..."},
+      {"line": 12026, "text": "2026-08-30 00:55:57 Stopping network threads..."},
+      {"line": 12027, "text": "2026-08-30 00:55:57 Unloading all maps..."},
+      {"line": 12028, "text": "2026-08-30 00:55:57 Unloading all transports..."},
+      {"line": 12029, "text": "2026-08-30 00:55:57 Cleaning character database..."},
+      {"line": 12030, "text": "2026-08-30 00:55:57 Sending queued mail..."},
+      {"line": 12031, "text": "2026-08-30 00:55:57 Closing database connections..."},
+      {"line": 12035, "text": "2026-08-30 00:55:58 Halting process..."}
+    ],
+    "mangosd_process_after_shutdown": false,
+    "realmd_process_after_shutdown": false,
+    "listener_8090_after_shutdown": false,
+    "listener_3724_after_shutdown": false
+  },
+  "restore": {
+    "completed_utc": "2026-08-29T22:57:23.3427216Z",
+    "tested_candidate_preserved_at": "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02c-r1-20260830-004551\\artifacts\\mangosd.candidate-tested.exe",
+    "tested_candidate_sha256": "2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE",
+    "production_exe_restored_to": "C:\\TW\\ComTW\\server\\mangosd.exe",
+    "production_exe_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "verified_backup_retained_at": "C:\\TW\\ComTW\\server\\mangosd.pre-source-baseline-02c-20260829.exe",
+    "verified_backup_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "runtime_log_copy": "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02c-r1-20260830-004551\\logs\\server_2026-08-30_00-49-41.log",
+    "runtime_log_sha256": "493FA0F44ADEEC85BB75D6B21B2ED10DF60B2D9790638DEF78CC0ECF71DAAA97"
+  },
+  "configs_after_restore": {
+    "mangosd_conf_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+    "aiplayerbot_conf_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+    "unchanged": true
+  },
+  "result": "PASS"
+}

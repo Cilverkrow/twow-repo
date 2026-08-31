@@ -1,0 +1,27 @@
+# SHA-256 manifest
+# Task: PROJECT-STRUCTURE-ALIGNMENT-01
+# Captured UTC: 2026-08-30T16:34:08Z
+# Encoding: UTF-8 without BOM
+# Line endings: LF
+# Deliverable count: 5
+
+# New payload deliverables
+0A6EE9C86868A82C6C2BEC68BEBFA95286ECF848F204BF471CAE3A8A30190938  5727  project-structure-alignment-report-v1.md
+F78359A6F6EE69E413113C3F73BCABE2617DB15FC2783AA8FD3D8A6DD8172042  14011  canonical-workstream-matrix-v1.json
+EBD7C62CCCDD60DFB499714774B24B7B36A85B5E86F80FC404ABD36050536CBA  5758  proposed-ui-action-plan-v1.md
+3373173FF28DF3683491E14A3743A9433BDFE0CE97DEEBA6C77A902BF3C265BF  3330  project-structure-alignment-handoff-v1.md
+
+# This manifest is the fifth deliverable. Its final byte count and SHA-256 are
+# returned externally because embedding its own byte-level hash would change it.
+SELF_HASH_REPORTED_EXTERNALLY  sha256-manifest.txt
+
+# Approved online inputs
+820D020BBB7150B9DE677771347BEC5C690CCEA7E30D0A1DEBEC66B201E329E0  11117  C:\Users\djfav\Downloads\online-project-structure-inventory-v1-r2.md
+1F271FAA395B5B93919693C93B2672A89395B7933FABF4D04BE5459F3A1B2B51  12522  C:\Users\djfav\Downloads\online-project-structure-inventory-v1-r2.json
+34A15D4FFCBFC4FE4DB3364F87064FAC49EAD53FED2526B9E8D0B3069A6EE94A  1262  C:\Users\djfav\Downloads\online-project-structure-handoff-v1-r2.md
+
+# Approved local inputs
+CCFF07188E86534A7FE4F790B48738106FD531B83BAD18097F5160A14A19FA24  6473  C:\TW\ComTW\runbooks\project-structure-local-inventory-r1-closure-20260830T162349Z\local-project-structure-inventory-v1-r1.md
+77E97BB469D98453830D4F925C89700EB04A28F1DB1F02BAA10681A18F09F433  8817  C:\TW\ComTW\runbooks\project-structure-local-inventory-r1-closure-20260830T162349Z\local-project-structure-inventory-v1-r1.json
+49B14A69D1EB7EB907F31229982A24D2424112C487B067F3E96A5EE565B2122F  3966  C:\TW\ComTW\runbooks\project-structure-local-inventory-r1-closure-20260830T162349Z\local-project-structure-handoff-v1-r1.md
+7CB3E50A76228E9E8F967F1DC388CA3FED94DD98D4224F1673EB06443098A105  1497  C:\TW\ComTW\runbooks\project-structure-local-inventory-r1-closure-20260830T162349Z\sha256-manifest.txt

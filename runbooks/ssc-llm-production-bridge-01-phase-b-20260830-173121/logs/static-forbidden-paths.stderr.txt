@@ -1,0 +1,7 @@
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/PlayerbotAI.cpp', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/PlayerbotAI.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp', LF will be replaced by CRLF the next time Git touches it

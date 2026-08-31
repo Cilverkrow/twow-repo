@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "purpose": "prevents any restart, resubmit, or retry of the approved V1 English correction live run",
+  "created_utc": "2026-08-30T11:24:20.621Z",
+  "controller_pid": 16976
+}

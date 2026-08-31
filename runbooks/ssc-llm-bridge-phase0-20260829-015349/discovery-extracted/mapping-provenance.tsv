@@ -1,0 +1,86 @@
+namespace	numeric_id	normalized_key	local_name	category	authoritative_path	source_reference
+race	10	high_elf	High Elf	turtle_custom_playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	9	goblin	Goblin	turtle_custom_playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	8	troll	Troll	playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	7	gnome	Gnome	playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	6	tauren	Tauren	playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	5	undead	Undead	playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	4	night_elf	Night Elf	playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	3	dwarf	Dwarf	playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	2	orc	Orc	playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+race	1	human	Human	playable_race	C:\TW\ComTW\data\dbc\ChrRaces.dbc	DBCStructure.h ChrRacesEntry; SharedDefines.h Races
+class	11	druid	Druid	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+class	9	warlock	Warlock	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+class	8	mage	Mage	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+class	7	shaman	Shaman	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+class	5	priest	Priest	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+class	4	rogue	Rogue	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+class	3	hunter	Hunter	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+class	2	paladin	Paladin	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+class	1	warrior	Warrior	playable_class	C:\TW\ComTW\data\dbc\ChrClasses.dbc	DBCStructure.h ChrClassesEntry; SharedDefines.h Classes
+profession	182	herbalism	Herbalism	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	142	survival	Survival	custom_secondary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	171	alchemy	Alchemy	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	129	first_aid	First Aid	secondary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	202	engineering	Engineering	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	164	blacksmithing	Blacksmithing	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	356	fishing	Fishing	secondary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	165	leatherworking	Leatherworking	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	197	tailoring	Tailoring	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	755	jewelcrafting	Jewelcrafting	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	393	skinning	Skinning	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	185	cooking	Cooking	secondary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	186	mining	Mining	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+profession	333	enchanting	Enchanting	primary_profession	C:\TW\ComTW\data\dbc\SkillLine.dbc	SpellMgr.h IsProfessionSkill
+observed_skill	6	frost	Frost	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	8	fire	Fire	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	26	arms	Arms	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	38	combat	Combat	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	43	swords	Swords	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	44	axes	Axes	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	45	bows	Bows	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	46	guns	Guns	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	51	survival	Survival	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	54	maces	Maces	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	55	two_handed_swords	Two-Handed Swords	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	56	holy	Holy	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	95	defense	Defense	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	98	language_common	Language: Common	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	101	dwarven_racial	Dwarven Racial	secondary	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	109	language_orcish	Language: Orcish	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	111	language_dwarven	Language: Dwarven	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	113	language_darnassian	Language: Darnassian	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	115	language_taurahe	Language: Taurahe	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	124	tauren_racial	Tauren Racial	secondary	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	125	orc_racial	Orc Racial	secondary	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	126	night_elf_racial	Night Elf Racial	secondary	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	136	staves	Staves	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	137	language_thalassian	Language: Thalassian	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	160	two_handed_maces	Two-Handed Maces	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	162	unarmed	Unarmed	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	163	marksmanship	Marksmanship	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	172	two_handed_axes	Two-Handed Axes	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	173	daggers	Daggers	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	176	thrown	Thrown	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	183	generic_dnd	GENERIC (DND)	generic	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	220	racial_undead	Racial - Undead	secondary	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	228	wands	Wands	weapon	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	253	assassination	Assassination	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	267	protection	Protection	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	313	language_gnomish	Language: Gnomish	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	315	language_troll	Language: Troll	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	354	demonology	Demonology	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	374	restoration	Restoration	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	375	elemental_combat	Elemental Combat	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	413	mail	Mail	armor	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	414	leather	Leather	armor	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	415	cloth	Cloth	armor	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	433	shield	Shield	armor	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	573	restoration	Restoration	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	574	balance	Balance	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	593	destruction	Destruction	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	594	holy	Holy	class	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	673	language_gutterspeak	Language: Gutterspeak	language	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	733	racial_troll	Racial - Troll	secondary	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	753	racial_gnome	Racial - Gnome	secondary	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field
+observed_skill	754	racial_human	Racial - Human	secondary	C:\TW\ComTW\data\dbc\SkillLine.dbc	SkillLine.dbc category field

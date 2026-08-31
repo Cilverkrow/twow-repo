@@ -1,0 +1,7 @@
+PID=45208
+EXE=C:\TW\ComTW\runbooks\shutdown-helper-console-lab\realm-candidate-tests-run2\02-target-exit-7\realmd.exe
+TITLE=realmd
+CTRL_BREAK_EXIT_CODE=7
+HOLD_AFTER_BREAK=false
+IDLE_EXIT_MS=15000
+READY_UTC=2026-08-28T14:59:31.747Z

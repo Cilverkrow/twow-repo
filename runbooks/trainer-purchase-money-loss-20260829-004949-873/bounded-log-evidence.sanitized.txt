@@ -1,0 +1,26 @@
+TRAINER PURCHASE BOUNDED LOG EVIDENCE — SANITIZED
+
+Candidate window (server-local Europe/Berlin): 2026-08-29 00:38:22 through 00:49:49.
+Extended one state-closing record through 00:50:26; this is after diagnostic collection began.
+Reason: last logout/login pair before the report, user states no post-purchase relog, and diagnostic directory timestamp is 00:49:49.
+
+Selected bounded records:
+char.log:327: 2026-08-29 00:38:22 [ACCOUNT_REDACTED] Logout Character:[CHAR-2DD856EFD1A1] (guid: CHAR-2DD856EFD1A1)
+char.log:328: 2026-08-29 00:38:45 [ACCOUNT_REDACTED] Login Character:[CHAR-2DD856EFD1A1] (guid: CHAR-2DD856EFD1A1)
+gm.log:14: 2026-08-29 00:40:05 Command: gm  on [Player: CHAR-2DD856EFD1A1 (Group Leader "NULL", Account=[REDACTED]) X: -8915.218750 Y: -213.431122 Z: 82.492035 O: 5.503233 Map: 0 Selected: Creature (Entry: 925 Guid: 79967)]
+gm.log:15: 2026-08-29 00:50:26 Command: gm  off [Player: CHAR-2DD856EFD1A1 (Group Leader "NULL", Account=[REDACTED]) X: -8758.186523 Y: -172.596802 Z: 84.759346 O: 0.256773 Map: 0 Selected: Creature (Entry: 257 Guid: 80004)]
+server_2026-08-29_00-12-48.log:188802: 2026-08-29 00:38:45 [0 ms] SQL: SELECT spell,active,disabled FROM character_spell WHERE guid = 'CHAR-2DD856EFD1A1'
+server_2026-08-29_00-12-48.log:188824: 2026-08-29 00:38:45 [0 ms] SQL: UPDATE characters SET extra_flags = 19 WHERE guid = CHAR-2DD856EFD1A1
+
+Opcode/trainer success/failure/learn-event records in server candidate window: 0
+Trainer-specific -10c records in trades.log candidate window: 0
+Character-linked records in trades.log candidate window: 0; none are trainer deductions. Trainer handler calls ModifyMoney, not LogModifyMoney, so absence is not proof that no deduction occurred.
+Character-spell/database/assertion errors in errors.log candidate window: 0
+Character-spell/database/assertion errors in server candidate window: 0
+
+PlayerBot TrainerAction comparison rows for trainer spell 1875 in current session: 3
+PlayerBot event timestamps (CSV timezone marker retained): 2026-08-29 00:26:02+00, 2026-08-29 00:36:00+00, 2026-08-29 00:49:30+00
+Bot names and unrelated CSV rows are not exported.
+
+Limitations: DEBUG trainer opcode/effect messages are absent at the active log level. Packets were not captured. No pre-purchase money or spell snapshot exists. Current in-memory state is not exposed by these logs.
+Character name, internal GUID, account identifiers, usernames, and IP addresses are redacted.

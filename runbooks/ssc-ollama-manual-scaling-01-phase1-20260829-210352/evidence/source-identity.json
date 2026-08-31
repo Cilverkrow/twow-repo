@@ -1,0 +1,45 @@
+{
+  "repository": "C:\\TW\\ComTW\\source",
+  "head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+  "status_short": " M src/modules/PlayerBots/CMakeLists.txt\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h\n M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp\n?? bin/Release/MoveMapGen.pdb\n?? bin/Release/mangosd.pdb\n?? bin/Release/mapextractor.pdb\n?? bin/Release/realmd.pdb\n?? bin/Release/vmap_assembler.pdb\n?? bin/Release/vmapextractor.pdb",
+  "relevant_files": [
+    {
+      "path": "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+      "head_blob": "d4f2dbf35a9a5f4bdfd8f08fa26102a4af5de3de",
+      "working_file_sha256": "1F1A4F5BB257859A735B88C85CBEA5E6DC9B4974B8F2A2C09D7B02EEE01E9834",
+      "working_differs_from_head": false
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp",
+      "head_blob": "e6a536f51bd6060a34e77d3f78dcfb0f13dd0991",
+      "working_file_sha256": "8AB7BC2996134C727A2B99C7F5DC79EC7055F1B91C4464FE36A011FCC8D74549",
+      "working_differs_from_head": false
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/PlayerbotMgr.cpp",
+      "head_blob": "51f09926eff81e87fd3968ebc864e0328b6297be",
+      "working_file_sha256": "F1E6617FD674680CDA75C7CE77CA910BFA6A885987440BF6B5B7EF2C167B10EC",
+      "working_differs_from_head": false
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp",
+      "head_blob": "47ee5fde481bda6433aef93df0be759ff2fc39fb",
+      "working_file_sha256": "203B848C4CBE54E8EA917C9FBD305E050057166ABD5E8F0C022BCD1389791A15",
+      "working_differs_from_head": false
+    },
+    {
+      "path": "src/modules/PlayerBots/playerbot/strategy/triggers/RpgTriggers.cpp",
+      "head_blob": "807d8af5c6ea2c7954f9b5937c30ce28c99db0f1",
+      "working_file_sha256": "575E4218DFDCD0AEDDCC7CA6AC8F5872660A6F0B1C93849B6F15A22FB26C1D60",
+      "working_differs_from_head": false
+    },
+    {
+      "path": "src/game/SharedDefines.h",
+      "head_blob": "66776992c5e0139c9e8145f7459537ed110e3b99",
+      "working_file_sha256": "2184D692158DAB899D8FF324951AA49A0A21603700D8DDAA3F3E3F84213FB97C",
+      "working_differs_from_head": false
+    }
+  ],
+  "analysis_basis": "HEAD content for excerpts; relevant working files verified against HEAD"
+}

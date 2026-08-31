@@ -1,0 +1,395 @@
+===== src/shared/Database/AutoUpdater.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 112-129 =====
+   112:         std::unordered_map<std::string, FileMigration> fileMigrations;
+   113: 
+   114:         for (const auto& update : possibleUpdates)
+   115:         {
+   116:             FileMigration migration;
+   117: 
+   118: 
+   119:             if (CalculateFileHash(update.path().string(), migration.Hash, migration.FileData))
+   120:             {
+   121:                 migration.ModifiedAt = update.last_write_time();
+   122:                 migration.Name = update.path().stem().string();
+   123:                 migration.Module = moduleName;
+   124: 
+   125:                 auto migrationKey = GetMigrationKey(migration.Module, migration.Hash);
+   126: 
+   127:                 fileMigrations.insert({ migrationKey, std::move(migration) });
+   128:             }
+   129:         }
+===== src/shared/Database/AutoUpdater.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 133-209 =====
+   133:     std::unordered_map<std::string, Migration> AutoUpdater::LoadDatabaseMigrations(DatabaseType* targetDatabase) const
+   134:     {
+   135:         targetDatabase->DirectPExecute("CREATE TABLE IF NOT EXISTS `%s` (\
+   136:             `Id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,\
+   137:             `Name` VARCHAR(255) NOT NULL DEFAULT \'0\' COLLATE \'utf8_general_ci\',\
+   138:             `Module` VARCHAR(255) NOT NULL DEFAULT \'\' COLLATE \'utf8_general_ci\',\
+   139:             `Hash` VARCHAR(128) NOT NULL DEFAULT \'0\' COLLATE \'utf8_general_ci\',\
+   140:             `AppliedAt` DATETIME NOT NULL,\
+   141:             PRIMARY KEY(`Id`) USING BTREE\
+   142:             )\
+   143:             COLLATE = \'utf8_general_ci\'\
+   144:             ENGINE = InnoDB\
+   145:             ;", MigrationTable);
+   146: 
+   147:         std::unique_ptr<QueryResult> moduleColumnResult = std::unique_ptr<QueryResult>{ targetDatabase->PQuery("SHOW COLUMNS FROM `%s` LIKE 'Module'", MigrationTable) };
+   148:         if (!moduleColumnResult)
+   149:             targetDatabase->DirectPExecute("ALTER TABLE `%s` ADD COLUMN `Module` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_general_ci' AFTER `Name`", MigrationTable);
+   150: 
+   151:         std::unordered_map<std::string, Migration> dbMigrations;
+   152: 
+   153:         {
+   154:             std::unique_ptr<QueryResult> tableResult = std::unique_ptr<QueryResult>{ targetDatabase->PQuery("SELECT `Name`, `Hash`, `Module` FROM `%s`", MigrationTable) };
+   155: 
+   156:             if (!tableResult)
+   157:             {
+   158:                 sLog.outInfo("[DB Auto-Updater] No DB migrations found, table %s is empty.", MigrationTable);
+   159:                 return {};
+   160:             }
+   161: 
+   162: 
+   163:             do {
+   164:                 auto fields = tableResult->Fetch();
+   165:                 auto hash = fields[1].GetCppString();
+   166:                 auto module = fields[2].GetCppString();
+   167: 
+   168:                 dbMigrations.insert({ GetMigrationKey(module, hash), Migration{ hash, fields[0].GetCppString(), module } });
+   169:             } while (tableResult->NextRow());
+   170:         }
+   171: 
+   172:         return dbMigrations;
+   173:     }
+   174: 
+   175:     bool AutoUpdater::ProcessTargetUpdates(const fs::directory_entry& targetPath, DatabaseType* targetDatabase, bool region, bool sortByName, std::string const& moduleName) const
+   176:     {
+   177:         auto fileMigrations = LoadFileMigrations(targetPath, moduleName);
+   178:         auto dbMigrations = LoadDatabaseMigrations(targetDatabase);
+   179: 
+   180:         std::vector<FileMigration> updates;
+   181: 
+   182:         for (auto& fileMigrationPair : fileMigrations)
+   183:         {
+   184:             const auto& migrationKey = fileMigrationPair.first;
+   185:             const auto& migration = fileMigrationPair.second;
+   186: 
+   187:             if (dbMigrations.find(migrationKey) != dbMigrations.end()) // already applied, skip
+   188:             {
+   189:                 if (migration.Name != dbMigrations[migrationKey].Name)
+   190:                     sLog.outInfo("[DB Auto-Updater] Migration with hash %s%s was migrated with name %s but now has name %s.", migration.Hash.c_str(),
+   191:                         ModuleLogSuffix(migration.Module).c_str(), dbMigrations[migrationKey].Name.c_str(), migration.Name.c_str());
+   192: 
+   193:                 dbMigrations.erase(migrationKey);
+   194:                 continue;
+   195:             }
+   196: 
+   197:             updates.push_back(std::move(fileMigrationPair.second));
+   198:             dbMigrations.erase(migrationKey);
+   199:         }
+   200: 
+   201: 
+   202:         if (!region)
+   203:         {
+   204:             for (const auto& dbMigration : dbMigrations)
+   205:             {
+   206:                 if (dbMigration.second.Module == moduleName)
+   207:                     sLog.outInfo("[DB Auto-Updater] Migration %s with hash %s%s exists in DB but not as file, old migration?", dbMigration.second.Name.c_str(),
+   208:                         dbMigration.second.Hash.c_str(), ModuleLogSuffix(dbMigration.second.Module).c_str());
+   209:             }
+===== src/shared/Database/AutoUpdater.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 441-487 =====
+   441:         targetDatabase->PExecute("INSERT INTO `%s` (`Name`, `Module`, `Hash`, `AppliedAt`) VALUES (\'%s\', \'%s\', \'%s\', NOW());",
+   442:             MigrationTable, migration.Name.c_str(), migration.Module.c_str(), migration.Hash.c_str());
+   443: 
+   444:         bool res = targetDatabase->CommitTransactionDirect();
+   445: 
+   446:         if (res)
+   447:         {
+   448:             sLog.out(LOG_AUTOUPDATER, "[SUCCESS] Executed update %s, hash %s.", migration.Name.c_str(), migration.Hash.c_str());
+   449:         }
+   450:         else
+   451:         {
+   452:             sLog.out(LOG_AUTOUPDATER, "[FAIL] Failed to execute update %s, hash %s.", migration.Name.c_str(), migration.Hash.c_str());
+   453:         }
+   454:         return res;
+   455:     }
+   456: 
+   457:     bool AutoUpdater::CalculateFileHash(const std::string& fileName, std::string& hexResult, std::optional<std::reference_wrapper<std::vector<uint8>>> fileData) const
+   458:     {
+   459:         std::basic_ifstream<char, std::char_traits<char>> fileStream{ fileName, std::ios::binary };
+   460: 
+   461:         //char_traits isn't specialized for uint8_t for some reason so get_faucet std::locale won't work if we don't imbue first.
+   462:        // fileStream.imbue(std::locale{ fileStream.getloc(), new std::codecvt<uint8, char, std::mbstate_t> });
+   463: 
+   464:         if (!fileStream)
+   465:         {
+   466:             sLog.outError("[DB Auto-Updater] Can\'t open migration file %s.", fileName.c_str());
+   467:             return false;
+   468:         }
+   469:         
+   470:         std::vector<char> binCharData{ std::istreambuf_iterator<char>(fileStream), std::istreambuf_iterator<char>() };
+   471:         std::vector<uint8> binData{ binCharData.begin(), binCharData.end() };
+   472: 
+   473:         Sha1Hash hash;
+   474:         hash.Initialize();
+   475:         if (binData.size() > 0)
+   476:             hash.UpdateData(&binData[0], binData.size());
+   477:         hash.Finalize();
+   478: 
+   479:         std::vector<uint8> digest{ hash.GetDigest(), hash.GetDigest() + hash.GetLength() };
+   480: 
+   481:         hexResult = ByteArrayToHexStr(&digest[0], digest.size());
+   482: 
+   483:         if (fileData.has_value())
+   484:             fileData.value().get() = std::move(binData);
+   485: 
+   486:         return true;
+   487:     }
+===== src/shared/Database/AutoUpdater.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 489-530 =====
+   489:     bool AutoUpdater::ProcessUpdates()
+   490:     {
+   491:         if (!sConfig.GetBoolDefault("Database.AutoUpdate.Enabled", true))
+   492:         {
+   493:             sLog.outInfo("[DB Auto-Updater] Disabled.");
+   494:             return true;
+   495:         }
+   496: 
+   497:         auto pathString = sConfig.GetStringDefault("Database.AutoUpdate.Path", "");
+   498:         auto authUpdateFolder = sConfig.GetStringDefault("Database.AutoUpdate.AuthUpdateName", "Logon");
+   499:         auto charUpdateFolder = sConfig.GetStringDefault("Database.AutoUpdate.CharUpdateName", "Char");
+   500:         auto worldUpdateFolder = sConfig.GetStringDefault("Database.AutoUpdate.WorldUpdateName", "World");
+   501:         bool sortByName = sConfig.GetBoolDefault("Database.AutoUpdate.SortByName", false);
+   502:         path folderPath{ pathString };
+   503: #ifdef TW_SOURCE_MODULES_DIR
+   504:         path modulesPath{ TW_SOURCE_MODULES_DIR };
+   505: #else
+   506:         path modulesPath{ "modules" };
+   507: #endif
+   508: 
+   509: 
+   510:         directory_entry logonUpdatePath{ folderPath / authUpdateFolder };
+   511:         directory_entry charUpdatePath{ folderPath / charUpdateFolder };
+   512:         directory_entry worldUpdatePath{ folderPath / worldUpdateFolder };
+   513: 
+   514:         if (!ProcessTargetUpdates(logonUpdatePath, &LoginDatabase, false, sortByName))
+   515:             return false;
+   516: 
+   517:         if (!ProcessTargetUpdates(charUpdatePath, &CharacterDatabase, false, sortByName))
+   518:             return false;
+   519: 
+   520:         if (!ProcessTargetUpdates(worldUpdatePath, &WorldDatabase, false, sortByName))
+   521:             return false;
+   522: 
+   523:         if (!ProcessModuleUpdates(modulesPath, authUpdateFolder, &LoginDatabase, sortByName))
+   524:             return false;
+   525: 
+   526:         if (!ProcessModuleUpdates(modulesPath, charUpdateFolder, &CharacterDatabase, sortByName))
+   527:             return false;
+   528: 
+   529:         if (!ProcessModuleUpdates(modulesPath, worldUpdateFolder, &WorldDatabase, sortByName))
+   530:             return false;
+===== src/shared/Util.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 668-689 =====
+   668: std::string ByteArrayToHexStr(uint8 const* bytes, uint32 arrayLen, bool reverse /* = false */)
+   669: {
+   670:     int32 init = 0;
+   671:     int32 end = arrayLen;
+   672:     int8 op = 1;
+   673: 
+   674:     if (reverse)
+   675:     {
+   676:         init = arrayLen - 1;
+   677:         end = -1;
+   678:         op = -1;
+   679:     }
+   680: 
+   681:     std::ostringstream ss;
+   682:     for (int32 i = init; i != end; i += op)
+   683:     {
+   684:         char buffer[4];
+   685:         sprintf(buffer, "%02X", bytes[i]);
+   686:         ss << buffer;
+   687:     }
+   688: 
+   689:     return ss.str();
+===== INSTALL-WINDOWS.md @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 218-253 =====
+   218: ### The migrations, and why the auto-updater cannot do this for you
+   219: 
+   220: Turn the auto-updater **off** for the first start:
+   221: 
+   222: ```
+   223: Database.AutoUpdate.Enabled = 0
+   224: ```
+   225: 
+   226: Then apply the migrations yourself, tolerating errors, and record them as done:
+   227: 
+   228: ```
+   229: cd sql
+   230: for %f in (database_updates\*.sql) do mariadb --force -u root -p tw_world < "%f"
+   231: ```
+   232: 
+   233: Record them as applied so the updater does not retry — `%~nf` is the filename
+   234: without its extension, which is exactly what the table wants:
+   235: 
+   236: ```
+   237: for %f in (database_updates\*.sql) do mariadb -u root -p tw_world -e "INSERT IGNORE INTO migrations (Name,Hash,AppliedAt) VALUES ('%~nf','manual',NOW());"
+   238: ```
+   239: 
+   240: Afterwards switch `Database.AutoUpdate.Enabled` back on, and future updates apply
+   241: normally.
+   242: 
+   243: **Why the detour.** `sql/base` is not the state "the first N migrations were
+   244: applied". It is a mixed snapshot: of the 101 migration files, 37 contain keys
+   245: that are already in the base data — some entirely, one to 91%, another to 5% —
+   246: while 38 are wholly new and 26 only change the schema. So there is no set of
+   247: rows you could put into the `migrations` table that would let the updater run
+   248: cleanly. Left to itself it replays everything, collides on the first duplicate
+   249: key, and the server refuses to start.
+   250: 
+   251: `--force` is what makes it work: duplicate-key errors are skipped, the `ALTER
+   252: TABLE` statements land, and the database ends up on the current schema. It does
+   253: also swallow genuine errors, which is the price. Verify afterwards:
+===== INSTALL-LINUX.md @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 102-145 =====
+   102: ### The migrations, and why the auto-updater cannot do this for you
+   103: 
+   104: Turn the auto-updater **off** for the first start:
+   105: 
+   106: ```
+   107: Database.AutoUpdate.Enabled = 0
+   108: ```
+   109: 
+   110: Then apply the migrations yourself, tolerating errors:
+   111: 
+   112: ```bash
+   113: for f in sql/database_updates/*.sql; do mysql --force -u root -p tw_world < "$f"; done
+   114: ```
+   115: 
+   116: Record them as applied so the updater does not retry, then switch it back on for
+   117: future updates:
+   118: 
+   119: ```bash
+   120: for f in sql/database_updates/*.sql; do
+   121:   n=$(basename "$f" .sql)
+   122:   mysql -u root -p -e "INSERT IGNORE INTO tw_world.migrations (Name, Hash, AppliedAt) VALUES ('$n','manual',NOW());"
+   123: done
+   124: ```
+   125: 
+   126: **Why the detour.** `sql/base` is not the state "the first N migrations were
+   127: applied". It is a mixed snapshot: of the 101 migration files, 37 contain keys
+   128: that are already in the base data — some entirely, one to 91%, another to 5% —
+   129: while 38 are wholly new and 26 only change the schema. So there is no set of
+   130: rows you could put into the `migrations` table that would let the updater run
+   131: cleanly. Left to itself it replays everything, collides on the first duplicate
+   132: key, and the server refuses to start.
+   133: 
+   134: `--force` is what makes it work: duplicate-key errors are skipped, the `ALTER
+   135: TABLE` statements land, and the database ends up on the current schema. It does
+   136: also swallow genuine errors, which is the price. Verify afterwards:
+   137: 
+   138: ```bash
+   139: mysql -u root -p -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='tw_world' AND TABLE_NAME='spell_template' AND COLUMN_NAME='script_name';"
+   140: ```
+   141: 
+   142: A `1` means the schema changes went in.
+   143: 
+   144: `sql/tools/probe_migration_overlap.py` is the script those numbers come from; run
+   145: it against a checkout to re-derive them.
+===== README.md @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 169-189 =====
+   169: ## Database Setup
+   170: 
+   171: 1. Manually import sql/create_databases.sql
+   172: 2. Manually import all sql scripts in the sql/base folder
+   173: 3. Run mangosd to automatically import and track updates  
+   174: 
+   175: This will be streamlined once the core is more up to date
+   176: 
+   177: > **Caveat for this fork:** step 3 relies on the DB auto-updater
+   178: > (`Database.AutoUpdate.Enabled` in mangosd.conf). That works on a database
+   179: > built up through the auto-updater from the start. On a database that was
+   180: > instead restored from a full dump, the `migrations` table won't line up with
+   181: > the files in `sql/database_updates/`, and enabling the auto-updater makes it
+   182: > try to replay old migrations until one fails on a duplicate key — the server
+   183: > then refuses to start. If that applies to you, keep it disabled and apply new
+   184: > migration files by hand, recording each one afterwards:
+   185: >
+   186: > ```sql
+   187: > INSERT INTO migrations (Name, Hash, AppliedAt)
+   188: > VALUES ('20260726112016_world', 'manual', NOW());
+   189: > ```
+===== sql/base/tw_world_migrations.sql @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 20-44 =====
+    20: -- Table structure for table `migrations`
+    21: --
+    22: 
+    23: DROP TABLE IF EXISTS `migrations`;
+    24: /*!40101 SET @saved_cs_client     = @@character_set_client */;
+    25: /*!40101 SET character_set_client = utf8mb4 */;
+    26: CREATE TABLE `migrations` (
+    27:   `Id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+    28:   `Name` varchar(255) NOT NULL DEFAULT '0',
+    29:   `Hash` varchar(128) NOT NULL DEFAULT '0',
+    30:   `AppliedAt` datetime NOT NULL,
+    31:   PRIMARY KEY (`Id`) USING BTREE
+    32: ) ENGINE=InnoDB AUTO_INCREMENT=632 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
+    33: /*!40101 SET character_set_client = @saved_cs_client */;
+    34: 
+    35: --
+    36: -- Dumping data for table `migrations`
+    37: --
+    38: 
+    39: 
+    40: /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+    41: 
+    42: /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+    43: /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+    44: /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+===== src/mangosd/mangosd.conf.dist.in @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 45-51 =====
+    45: # DB Auto-updater
+    46: 
+    47: Database.AutoUpdate.Enabled = 1
+    48: Database.AutoUpdate.Path = "../../sql/database_updates/"
+    49: Database.AutoUpdate.AuthUpdateName = "auth"
+    50: Database.AutoUpdate.CharUpdateName = "character"
+    51: Database.AutoUpdate.WorldUpdateName = "world"
+===== sql/logon/donation_point_progress.sql @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 1-30 =====
+     1: -- Required by the AutoDonationPoints feature (see mangosd.conf).
+     2: --
+     3: -- Run against the LOGIN database - the one holding `account` and `shop_coins`
+     4: -- - NOT the world or character database.
+     5: --
+     6: -- Stores how much online time each account has accumulated towards its next
+     7: -- donation point. Without this table the feature still runs, but progress is
+     8: -- held in memory only and resets to zero on every server restart.
+     9: 
+    10: CREATE TABLE IF NOT EXISTS `donation_point_progress` (
+    11:   `account_id`     INT UNSIGNED NOT NULL PRIMARY KEY,
+    12:   `accumulated_ms` INT UNSIGNED NOT NULL DEFAULT 0
+    13: ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+===== sql/database_updates/character/20260817151028_character.sql @ 42b8a7f742548793910fe8880463aeeb71627fb9 lines 1-30 =====
+     1: CREATE TABLE IF NOT EXISTS `character_pvp_currency` (
+     2:   `guid` int(10) unsigned NOT NULL DEFAULT 0,
+     3:   `honor` int(10) unsigned NOT NULL DEFAULT 0,
+     4:   `conquest` int(10) unsigned NOT NULL DEFAULT 0,
+     5:   `weekly_honor` int(10) unsigned NOT NULL DEFAULT 0,
+     6:   `week_begin_day` int(10) unsigned NOT NULL DEFAULT 0,
+     7:   PRIMARY KEY (`guid`) USING BTREE
+     8: ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
+===== LOCAL ARCHIVED INSTALLER: C:\TW\ComTW\runbooks\compile-script-archive-20260828\compile-tortoise-wow-1C9C9149.ps1 lines 356-370 =====
+   356: Step "Importing world content from sql\base (186 files, can take a few minutes)"
+   357: Get-ChildItem "$SourceDir\sql\base\*.sql" | ForEach-Object {
+   358:     Invoke-SqlFile $_.FullName "tw_world"
+   359: }
+   360: Ok "sql\base imported"
+   361: 
+   362: Step "Applying schema migrations (tolerating duplicate-key errors on purpose, per the repo docs)"
+   363: # -Recurse matters: a chunk of the migration files live in subfolders like
+   364: # sql\database_updates\world\, not directly in sql\database_updates\. Missing
+   365: # those caused a "database structure is not up to date" crash on first start.
+   366: Get-ChildItem "$SourceDir\sql\database_updates" -Recurse -Filter "*.sql" | Sort-Object Name | ForEach-Object {
+   367:     Invoke-SqlFile $_.FullName "tw_world" @("--force")
+   368:     Invoke-Sql "INSERT IGNORE INTO migrations (Name,Hash,AppliedAt) VALUES ('$($_.BaseName)','manual',NOW());" "tw_world"
+   369: }
+   370: Ok "Migrations applied and recorded"
+===== GIT HISTORY: exact manual marker in migration instructions =====
+9a8ad6fb07201b2ce41b9075ae05788d838ade17	2026-07-31T07:59:21+01:00	Document the database procedure that actually works, and why
+903b269dcda43439e049ddb36e555e62127f3787	2026-07-30T18:56:14+01:00	Add a Linux installation walkthrough
+32d3062ec1324a5a66f596b76834639efc0e41fe	2026-07-30T12:30:15+01:00	Add a Windows installation walkthrough
+d134e12b1a346e5574d08c3efeabe4d17fde980d	2026-07-28T11:31:42+01:00	README: describe this fork
+===== GIT HISTORY: normal AutoUpdater Hash writer =====
+818b3861f87178a09a3d35aea1321cd39f3a0f12	2025-12-16T02:25:28-08:00	Initial Upload

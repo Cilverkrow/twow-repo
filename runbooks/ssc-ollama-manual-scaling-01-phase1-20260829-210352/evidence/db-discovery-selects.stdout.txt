@@ -1,0 +1,215 @@
+SECTION	TABLES
+tw_char	ai_playerbot_random_bots	InnoDB
+tw_char	characters	MyISAM
+tw_char	character_forgotten_skills	MyISAM
+tw_char	character_skills	MyISAM
+tw_char	character_skills_copy	MyISAM
+tw_char	groups	MyISAM
+tw_char	group_member	MyISAM
+tw_logon	account	InnoDB
+SECTION	COLUMNS
+tw_char	ai_playerbot_random_bots	id	1	bigint(20)
+tw_char	ai_playerbot_random_bots	owner	2	bigint(20)
+tw_char	ai_playerbot_random_bots	bot	3	bigint(20)
+tw_char	ai_playerbot_random_bots	time	4	bigint(20)
+tw_char	ai_playerbot_random_bots	validIn	5	bigint(20)
+tw_char	ai_playerbot_random_bots	event	6	varchar(45)
+tw_char	ai_playerbot_random_bots	value	7	bigint(20)
+tw_char	ai_playerbot_random_bots	data	8	varchar(255)
+tw_char	characters	guid	1	int(10) unsigned
+tw_char	characters	account	2	int(10) unsigned
+tw_char	characters	name	3	varchar(12)
+tw_char	characters	race	4	tinyint(3) unsigned
+tw_char	characters	class	5	tinyint(3) unsigned
+tw_char	characters	gender	6	tinyint(3) unsigned
+tw_char	characters	level	7	tinyint(3) unsigned
+tw_char	characters	xp	8	int(10) unsigned
+tw_char	characters	money	9	int(10) unsigned
+tw_char	characters	playerBytes	10	int(10) unsigned
+tw_char	characters	playerBytes2	11	int(10) unsigned
+tw_char	characters	playerFlags	12	int(10) unsigned
+tw_char	characters	position_x	13	float
+tw_char	characters	position_y	14	float
+tw_char	characters	position_z	15	float
+tw_char	characters	map	16	int(10) unsigned
+tw_char	characters	orientation	17	float
+tw_char	characters	taximask	18	longtext
+tw_char	characters	online	19	tinyint(3) unsigned
+tw_char	characters	cinematic	20	tinyint(3) unsigned
+tw_char	characters	totaltime	21	int(10) unsigned
+tw_char	characters	leveltime	22	int(10) unsigned
+tw_char	characters	logout_time	23	bigint(20) unsigned
+tw_char	characters	is_logout_resting	24	tinyint(3) unsigned
+tw_char	characters	rest_bonus	25	float
+tw_char	characters	resettalents_multiplier	26	int(10) unsigned
+tw_char	characters	resettalents_time	27	bigint(20) unsigned
+tw_char	characters	trans_x	28	float
+tw_char	characters	trans_y	29	float
+tw_char	characters	trans_z	30	float
+tw_char	characters	trans_o	31	float
+tw_char	characters	transguid	32	bigint(20) unsigned
+tw_char	characters	extra_flags	33	int(10) unsigned
+tw_char	characters	stable_slots	34	tinyint(1) unsigned
+tw_char	characters	at_login	35	int(10) unsigned
+tw_char	characters	zone	36	int(10) unsigned
+tw_char	characters	death_expire_time	37	bigint(20) unsigned
+tw_char	characters	taxi_path	38	text
+tw_char	characters	honorRankPoints	39	float
+tw_char	characters	honorHighestRank	40	int(10) unsigned
+tw_char	characters	honorStanding	41	int(10) unsigned
+tw_char	characters	honorLastWeekHK	42	int(10) unsigned
+tw_char	characters	honorLastWeekCP	43	decimal(11,1)
+tw_char	characters	honorStoredHK	44	int(11)
+tw_char	characters	honorStoredDK	45	int(11)
+tw_char	characters	watchedFaction	46	int(10) unsigned
+tw_char	characters	drunk	47	smallint(5) unsigned
+tw_char	characters	health	48	int(10) unsigned
+tw_char	characters	power1	49	int(10) unsigned
+tw_char	characters	power2	50	int(10) unsigned
+tw_char	characters	power3	51	int(10) unsigned
+tw_char	characters	power4	52	int(10) unsigned
+tw_char	characters	power5	53	int(10) unsigned
+tw_char	characters	exploredZones	54	longtext
+tw_char	characters	equipmentCache	55	longtext
+tw_char	characters	ammoId	56	int(10) unsigned
+tw_char	characters	actionBars	57	tinyint(3) unsigned
+tw_char	characters	deleteInfos_Account	58	int(10) unsigned
+tw_char	characters	deleteInfos_Name	59	varchar(12)
+tw_char	characters	deleteDate	60	bigint(20)
+tw_char	characters	area	61	int(10) unsigned
+tw_char	characters	world_phase_mask	62	int(11)
+tw_char	characters	customFlags	63	int(11)
+tw_char	characters	city_protector	64	tinyint(4)
+tw_char	characters	regexFilterCount	65	int(10) unsigned
+tw_char	characters	isGMCharacter	66	tinyint(1) unsigned
+tw_char	characters	ignore_titles	67	tinyint(4)
+tw_char	characters	mortality_status	68	tinyint(4)
+tw_char	characters	total_deaths	69	int(11)
+tw_char	characters	xp_gain	70	tinyint(3) unsigned
+tw_char	characters	active	71	tinyint(3) unsigned
+tw_char	characters	extraBonusTalentCount	72	int(11)
+tw_char	character_skills	guid	1	int(10) unsigned
+tw_char	character_skills	skill	2	mediumint(8) unsigned
+tw_char	character_skills	value	3	mediumint(8) unsigned
+tw_char	character_skills	max	4	mediumint(8) unsigned
+tw_char	groups	groupId	1	int(10) unsigned
+tw_char	groups	leaderGuid	2	int(10) unsigned
+tw_char	groups	mainTank	3	int(10) unsigned
+tw_char	groups	mainAssistant	4	int(10) unsigned
+tw_char	groups	lootMethod	5	tinyint(3) unsigned
+tw_char	groups	looterGuid	6	int(10) unsigned
+tw_char	groups	lootThreshold	7	tinyint(3) unsigned
+tw_char	groups	icon1	8	int(10) unsigned
+tw_char	groups	icon2	9	int(10) unsigned
+tw_char	groups	icon3	10	int(10) unsigned
+tw_char	groups	icon4	11	int(10) unsigned
+tw_char	groups	icon5	12	int(10) unsigned
+tw_char	groups	icon6	13	int(10) unsigned
+tw_char	groups	icon7	14	int(10) unsigned
+tw_char	groups	icon8	15	int(10) unsigned
+tw_char	groups	isRaid	16	tinyint(1) unsigned
+tw_char	group_member	groupId	1	int(10) unsigned
+tw_char	group_member	memberGuid	2	int(10) unsigned
+tw_char	group_member	assistant	3	tinyint(1) unsigned
+tw_char	group_member	subgroup	4	smallint(5) unsigned
+tw_logon	account	id	1	int(10) unsigned
+tw_logon	account	username	2	varchar(32)
+tw_logon	account	sha_pass_hash	3	varchar(40)
+tw_logon	account	rank	4	int(10) unsigned
+tw_logon	account	sessionkey	5	longtext
+tw_logon	account	v	6	longtext
+tw_logon	account	s	7	longtext
+tw_logon	account	email	8	text
+tw_logon	account	joindate	9	timestamp
+tw_logon	account	tfa_verif	10	varchar(255)
+tw_logon	account	last_ip	11	varchar(30)
+tw_logon	account	last_local_ip	12	varchar(30)
+tw_logon	account	failed_logins	13	int(10) unsigned
+tw_logon	account	locked	14	tinyint(3) unsigned
+tw_logon	account	last_login	15	timestamp
+tw_logon	account	online	16	tinyint(4)
+tw_logon	account	expansion	17	tinyint(3) unsigned
+tw_logon	account	mutetime	18	bigint(20)
+tw_logon	account	mutereason	19	varchar(255)
+tw_logon	account	muteby	20	varchar(50)
+tw_logon	account	locale	21	tinyint(3) unsigned
+tw_logon	account	os	22	varchar(4)
+tw_logon	account	platform	23	varchar(4)
+tw_logon	account	current_realm	24	tinyint(3) unsigned
+tw_logon	account	banned	25	tinyint(1) unsigned
+tw_logon	account	flags	26	int(10) unsigned
+tw_logon	account	security	27	varchar(255)
+tw_logon	account	pass_verif	28	varchar(255)
+tw_logon	account	email_verif	29	tinyint(1)
+tw_logon	account	forum_username	30	varchar(32)
+tw_logon	account	token_key	31	varchar(100)
+tw_logon	account	email_keyword	32	varchar(16)
+tw_logon	account	email_status	33	int(11)
+tw_logon	account	email_letterid	34	int(11)
+tw_logon	account	email_sub	35	tinyint(4)
+tw_logon	account	server	36	tinyint(4)
+tw_logon	account	comments	37	text
+tw_logon	account	geolock_pin	38	int(11)
+tw_logon	account	queue_skip	39	tinyint(4)
+tw_logon	account	active	40	tinyint(3) unsigned
+SECTION	RNDBOT_COUNTS
+500	4500
+SECTION	EVENT_COUNTS
+add	53	53	0	22450	25273
+bot_count	1	1	0	0	0
+SECTION	ADD_LOGIN_ROWS
+22450	add	1	1788026922	15355
+22451	add	1	1788015978	19556
+22456	add	1	1788015978	20338
+22466	add	1	1788015978	21253
+22467	add	1	1788026922	17328
+22471	add	1	1788015978	16573
+22497	add	1	1788026922	8736
+22500	add	1	1788015978	16931
+22847	add	1	1788015978	15751
+22849	add	1	1788015978	18153
+22850	add	1	1788026922	9944
+22852	add	1	1788015978	19226
+23142	add	1	1788015978	19374
+23143	add	1	1788026922	10848
+23286	add	1	1788015978	19384
+23287	add	1	1788015978	15545
+23290	add	1	1788015978	15997
+23292	add	1	1788015978	18724
+23817	add	1	1788026922	10775
+23822	add	1	1788015978	16930
+23823	add	1	1788015978	18535
+23824	add	1	1788026922	11151
+23852	add	1	1788015978	14455
+24258	add	1	1788015978	16517
+24833	add	1	1788026922	14465
+24834	add	1	1788026922	1973
+24835	add	1	1788015978	14314
+24838	add	1	1788026922	15780
+24839	add	1	1788015978	14755
+24905	add	1	1788026922	2864
+24909	add	1	1788015978	20662
+24910	add	1	1788015978	16417
+24911	add	1	1788015978	14658
+24912	add	1	1788015978	18372
+24914	add	1	1788026922	3207
+24917	add	1	1788015978	20679
+24918	add	1	1788026922	2852
+24920	add	1	1788026922	11517
+24921	add	1	1788015978	17317
+24922	add	1	1788015978	14776
+24995	add	1	1788015978	16283
+24996	add	1	1788015978	14817
+24998	add	1	1788026922	19896
+24999	add	1	1788015978	19562
+25001	add	1	1788026922	7836
+25003	add	1	1788026922	3156
+25265	add	1	1788015978	19709
+25267	add	1	1788015978	19874
+25268	add	1	1788026922	14383
+25270	add	1	1788026922	11268
+25271	add	1	1788026922	3848
+25272	add	1	1788015978	18703
+25273	add	1	1788015978	19132
+SECTION	RNDBOT_GROUP_MEMBERS
+11

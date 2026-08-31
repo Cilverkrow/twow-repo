@@ -1,0 +1,54 @@
+===== character_inventory =====
+
+MyISAM file:         C:\TW\ComTW\DB\data\tw_char\character_inventory.MYI
+Record format:       Packed
+Character set:       utf8mb3_general_ci (33)
+File-version:        1
+Creation time:       2026-08-25 18:55:09
+Recover time:        2026-08-29 16:22:10
+Status:              changed
+Data records:                  36132  Deleted blocks:                      1
+Datafile parts:                36136  Deleted data:                       32
+Datafile pointer (bytes):          6  Keyfile pointer (bytes):             6
+Datafile length:             1058136  Keyfile length:                 881664
+Max datafile length: 281474976710654  Max keyfile length: 288230376151710719
+Recordlength:                     18
+
+table description:
+Key Start Len Index   Type                     Rec/key           Root  Blocksize
+1   10    4   unique  unsigned long                  1         394240       1024
+2   1     4   multip. unsigned long                  8         272384       1024
+
+Field Start Length Nullpos Nullbit Type
+1     1     4                      no zeros                           
+2     5     4                      no zeros                           
+3     9     1                      no zeros                           
+4     10    4                      no zeros                           
+5     14    4                      no zeros                           
+===== character_inventory_copy =====
+
+MyISAM file:         C:\TW\ComTW\DB\data\tw_char\character_inventory_copy.MYI
+Record format:       Packed
+Character set:       utf8mb3_general_ci (33)
+File-version:        1
+Creation time:       2026-08-27 23:00:32
+Recover time:        2026-08-27 23:00:32
+Status:              checked,analyzed
+Data records:                  35240  Deleted blocks:                      0
+Datafile parts:                35240  Deleted data:                        0
+Datafile pointer (bytes):          6  Keyfile pointer (bytes):             6
+Datafile length:              704800  Keyfile length:                 781312
+Max datafile length: 281474976710654  Max keyfile length: 288230376151710719
+Recordlength:                     18
+
+table description:
+Key Start Len Index   Type                     Rec/key           Root  Blocksize
+1   10    4   unique  unsigned long                  1          69632       1024
+2   1     4   multip. unsigned long                  8         780288       1024
+
+Field Start Length Nullpos Nullbit Type
+1     1     4                      no zeros                           
+2     5     4                      no zeros                           
+3     9     1                      no zeros                           
+4     10    4                      no zeros                           
+5     14    4                      no zeros                           

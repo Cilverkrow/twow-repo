@@ -1,0 +1,490 @@
+{
+  "schemaVersion": 1,
+  "phase": "pre-start-baseline",
+  "capturedAtUtc": "2026-08-28T22:11:30.5326443Z",
+  "evidenceDirectory": "C:\\TW\\ComTW\\runbooks\\post-completion-live-smoke-20260829-000920-697",
+  "relevantProcesses": [],
+  "matchingRunningServices": [],
+  "listeners": [
+    {
+      "port": 3307,
+      "listenerCount": 0,
+      "listeners": []
+    },
+    {
+      "port": 3724,
+      "listenerCount": 0,
+      "listeners": []
+    },
+    {
+      "port": 8090,
+      "listenerCount": 0,
+      "listeners": []
+    }
+  ],
+  "completionNote": {
+    "path": "C:\\TW\\ComTW\\runbooks\\tw-char-migration-20260827-205920-completion.md",
+    "byteCount": 12164,
+    "sha256": "CCEF3FDF2341CA3A814146D70AF5B5F638FB3BC87909D67BB22D9E26B6A0733C",
+    "lastWriteTimeUtc": "2026-08-28T21:52:12.2337352Z"
+  },
+  "configurationFiles": [
+    {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.conf",
+      "byteCount": 69547,
+      "sha256": "2078618151892E41FE5059C22030D25A6E34042E02A457CB3E8E7C42399BB144",
+      "lastWriteTimeUtc": "2026-08-25T20:42:41.6943853Z"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\server\\realmd.conf",
+      "byteCount": 3559,
+      "sha256": "CEE8C8953E34AF1A9620FF9E5E0EB18254CF8A5292DE663AF89B8D6B06EA0CF7",
+      "lastWriteTimeUtc": "2026-08-25T16:56:21.0684450Z"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\DB\\data\\my.ini",
+      "byteCount": 109,
+      "sha256": "7039B21A8D50E85511EDF7D5BC2ECD501830AD151D9EF0331243B43ADA4BA9B8",
+      "lastWriteTimeUtc": "2026-08-25T16:41:02.6392384Z"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\server\\start-mangosd.bat",
+      "byteCount": 54,
+      "sha256": "0C9A97A7E528F0A4451AA9CD0637C3246271CBAACD09DFB8895AFCB3C57B82AF",
+      "lastWriteTimeUtc": "2026-08-28T14:13:02.2746633Z"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\server\\start-realmd.bat",
+      "byteCount": 36,
+      "sha256": "D7184CEECDA68CE939297A1D8110DFEBC8351D2AC7612E3408CD6A752AD8E9FC",
+      "lastWriteTimeUtc": "2026-08-25T16:56:21.2101864Z"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\DB\\start-database.bat",
+      "byteCount": 102,
+      "sha256": "C0EEC81CE8797DDE77685D5639E90AD36892EE473CAD01F8558B6A8C6237336A",
+      "lastWriteTimeUtc": "2026-08-25T16:41:04.5618356Z"
+    }
+  ],
+  "resolvedConfiguration": {
+    "serverWorkingDirectory": "C:\\TW\\ComTW\\server",
+    "worldConfigPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+    "realmConfigPath": "C:\\TW\\ComTW\\server\\realmd.conf",
+    "databaseConfigPath": "C:\\TW\\ComTW\\DB\\data\\my.ini",
+    "logDirectory": "C:\\TW\\ComTW\\logs",
+    "databasePort": 3307,
+    "worldPort": 8090,
+    "realmPort": 3724,
+    "worldPrimaryLogBaseName": "server.log",
+    "worldPrimaryLogTimestamped": true,
+    "worldPrimaryLogPattern": "server_*.log",
+    "realmPrimaryLog": "Realmd.log",
+    "databaseFileLog": null,
+    "databaseLoggingMode": "console-only from launcher and active my.ini",
+    "configuredLogTargets": [
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "HardcoreModeLogFile",
+        "configuredValue": "hardcore.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\hardcore.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "LogFile",
+        "configuredValue": "server.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\server.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "HonorLogFile",
+        "configuredValue": "honor.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\honor.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "RaidLogFile",
+        "configuredValue": "raid.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\raid.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "AnticheatLogFile",
+        "configuredValue": "anticheat.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\anticheat.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "WardenLogFile",
+        "configuredValue": "warden.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\warden.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "DBErrorLogFile",
+        "configuredValue": "errors.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\errors.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "CharLogFile",
+        "configuredValue": "char.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\char.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "ChatLogFile",
+        "configuredValue": "chat.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\chat.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "BgLogFile",
+        "configuredValue": "bg.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\bg.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "GmLogFile",
+        "configuredValue": "gm.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\gm.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "CriticalCommandsLogFile",
+        "configuredValue": "gm_critical.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\gm_critical.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "ChatSpamLogFile",
+        "configuredValue": "chatspam.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\chatspam.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "ClientIdsLogFile",
+        "configuredValue": "client.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\client.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "LootsLogFile",
+        "configuredValue": "loot.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\loot.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "RareLootsLogFile",
+        "configuredValue": "rareloot.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\rareloot.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "LevelupLogFile",
+        "configuredValue": "levelup.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\levelup.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "LogMoneyTrades",
+        "configuredValue": "trades.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\trades.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "NostalriusLogFile",
+        "configuredValue": "info.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\info.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\mangosd.conf",
+        "key": "PerformanceLog.File",
+        "configuredValue": "perf.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\perf.log"
+      },
+      {
+        "configPath": "C:\\TW\\ComTW\\server\\realmd.conf",
+        "key": "LogFile",
+        "configuredValue": "Realmd.log",
+        "resolvedPath": "C:\\TW\\ComTW\\logs\\Realmd.log"
+      }
+    ]
+  },
+  "logs": [
+    {
+      "path": "C:\\TW\\ComTW\\logs\\anticheat.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\bg.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\bot_events.csv",
+      "classification": "adjacent-runtime-evidence",
+      "byteCount": 351498,
+      "sha256": "A7DC89E28958AC4C65A3961287942620EC2910A508E9600227FBA2DBBA2BFAF6",
+      "lastWriteTimeUtc": "2026-08-28T16:25:01.4551737Z",
+      "byteOffset": 351498
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\bot_test_results.log",
+      "classification": "adjacent-runtime-evidence",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-28T16:09:04.5210082Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\char.log",
+      "classification": "configured-exact",
+      "byteCount": 19483,
+      "sha256": "C2B654D9327B9EE5ED9688C5B3AC24FC51F0452328CFB22123085AA17B197F64",
+      "lastWriteTimeUtc": "2026-08-28T16:11:34.7633635Z",
+      "byteOffset": 19483
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\chat.log",
+      "classification": "configured-exact",
+      "byteCount": 792,
+      "sha256": "FD637F57569F8688E6E2FFE39A7379E22F10517F978AE7B6DEF70DEB1A9D4F8E",
+      "lastWriteTimeUtc": "2026-08-26T16:19:51.7003478Z",
+      "byteOffset": 792
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\chatspam.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\client.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260826_205523.dmp",
+      "classification": "adjacent-runtime-evidence",
+      "byteCount": 7240428,
+      "sha256": "86A61A2755713F94A42E60242E326EAF9578D77BC9D9703BD10BFEE65255BA58",
+      "lastWriteTimeUtc": "2026-08-26T18:55:24.1358655Z",
+      "byteOffset": 7240428
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260826_205523.dmp.txt",
+      "classification": "adjacent-runtime-evidence",
+      "byteCount": 231,
+      "sha256": "D101E82E77C122ABD8E7356A8A49DDF131CAC0B2981ADB4760C4DB96B5DB6848",
+      "lastWriteTimeUtc": "2026-08-26T18:55:24.1368673Z",
+      "byteOffset": 231
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\deaths.csv",
+      "classification": "adjacent-runtime-evidence",
+      "byteCount": 834,
+      "sha256": "08AE4076A4E0603D6390178467B3725AB451130590F2C2A2D8E6B44DD8EB37A8",
+      "lastWriteTimeUtc": "2026-08-28T16:23:58.6788131Z",
+      "byteOffset": 834
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\errors.log",
+      "classification": "configured-exact",
+      "byteCount": 1138512,
+      "sha256": "3E238BF57559138BA43C1A3C547A42BFD5E29E83D124A9B52893CD01BA95F1B0",
+      "lastWriteTimeUtc": "2026-08-28T16:22:44.3132913Z",
+      "byteOffset": 1138512
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\gm_critical.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\gm.log",
+      "classification": "configured-exact",
+      "byteCount": 985,
+      "sha256": "FED797401B880A096B14785278E1EAB803CE84B7602356AAAE8E56DEAB299821",
+      "lastWriteTimeUtc": "2026-08-28T16:25:01.5594411Z",
+      "byteOffset": 985
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\hardcore.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3426451Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\honor.log",
+      "classification": "configured-exact",
+      "byteCount": 407,
+      "sha256": "1FA8D0C6D4740E06828FDF0F4B9BDF352E382DD4A82EA8A16943569FD97CFE83",
+      "lastWriteTimeUtc": "2026-08-27T21:00:32.9785362Z",
+      "byteOffset": 407
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\info.log",
+      "classification": "configured-exact",
+      "byteCount": 11020,
+      "sha256": "73F2F8A2980C2B4DA5B59E69414CBB522AF16223E23F0D791F381AFA586ED24B",
+      "lastWriteTimeUtc": "2026-08-28T16:25:03.9055550Z",
+      "byteOffset": 11020
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\levelup.log",
+      "classification": "configured-exact",
+      "byteCount": 37921,
+      "sha256": "EAF13AB6F265288B5918E7465939D64373C523779AC228874C30B93E084CF499",
+      "lastWriteTimeUtc": "2026-08-28T16:24:56.6828665Z",
+      "byteOffset": 37921
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\loot.log",
+      "classification": "configured-exact",
+      "byteCount": 260899,
+      "sha256": "C3B8FDB353BC11DAE4C79517782198CBAE8226C4377028568F992A0A6DE21FD2",
+      "lastWriteTimeUtc": "2026-08-28T16:25:00.6051845Z",
+      "byteOffset": 260899
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\perf.log",
+      "classification": "configured-exact",
+      "byteCount": 6296,
+      "sha256": "6C1AB52421254BEBEC826E9F7E334A5539BEA24264F45CB7E6408794168356F4",
+      "lastWriteTimeUtc": "2026-08-28T16:11:34.4895650Z",
+      "byteOffset": 6296
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\racechange.log",
+      "classification": "adjacent-runtime-evidence",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:21.3592957Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\raid.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\rareloot.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3416441Z",
+      "byteOffset": 0
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\Realmd.log",
+      "classification": "configured-exact",
+      "byteCount": 1056,
+      "sha256": "5E167C140F9D19E4A7613F9172632C5B9541E80EA02BFF25F9E2D920D8034D80",
+      "lastWriteTimeUtc": "2026-08-26T18:55:04.2741650Z",
+      "byteOffset": 1056
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-25_22-47-24.log",
+      "classification": "configured-timestamped-primary",
+      "byteCount": 2199065,
+      "sha256": "5343C35A8BB7105B8152EEB78EAEC9B21910E3455392638D48860DF7C593B224",
+      "lastWriteTimeUtc": "2026-08-25T21:22:27.9362534Z",
+      "byteOffset": 2199065
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-26_00-10-53.log",
+      "classification": "configured-timestamped-primary",
+      "byteCount": 17619124,
+      "sha256": "E5F48EACD6E2C020C99AAB11BACB450268A97DF73E83826C8017EA1E8571256E",
+      "lastWriteTimeUtc": "2026-08-25T22:18:01.1404647Z",
+      "byteOffset": 17619124
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-26_18-09-20.log",
+      "classification": "configured-timestamped-primary",
+      "byteCount": 18456755,
+      "sha256": "81F6D67EBD40C4BB043633C0C498814B45E621971166A4A56214477ED95D95EB",
+      "lastWriteTimeUtc": "2026-08-26T16:27:34.8547428Z",
+      "byteOffset": 18456755
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-26_20-55-17.log",
+      "classification": "configured-timestamped-primary",
+      "byteCount": 273301,
+      "sha256": "8841913C8D561941877235264D318BA95D43822C2023043E357011986DB29245",
+      "lastWriteTimeUtc": "2026-08-26T18:55:24.1368673Z",
+      "byteOffset": 273301
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-27_23-00-06.log",
+      "classification": "configured-timestamped-primary",
+      "byteCount": 20378285,
+      "sha256": "C01B0A13FEB88EAF4160A74FDC24D59B72BFFFDB4E4DFD4613955700E3495ADB",
+      "lastWriteTimeUtc": "2026-08-27T22:13:35.9487942Z",
+      "byteOffset": 20378285
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-28_18-07-31.log",
+      "classification": "configured-timestamped-primary",
+      "byteCount": 18544236,
+      "sha256": "D9B284691E3074E5347C41026569FA2A219B2CB094DD32F5965CD50EB95FDE7C",
+      "lastWriteTimeUtc": "2026-08-28T16:25:03.9055550Z",
+      "byteOffset": 18544236
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\trades.log",
+      "classification": "configured-exact",
+      "byteCount": 4561,
+      "sha256": "4781CACC71364AA3A135EBBCE692A020E727EA15F02D9D2FE6E363D4CB284380",
+      "lastWriteTimeUtc": "2026-08-25T22:15:47.6416835Z",
+      "byteOffset": 4561
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\warden.log",
+      "classification": "configured-exact",
+      "byteCount": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lastWriteTimeUtc": "2026-08-25T20:47:24.3406431Z",
+      "byteOffset": 0
+    }
+  ],
+  "ollamaProcesses": [
+    {
+      "name": "ollama",
+      "pid": 5528,
+      "startTimeUtc": "2026-08-28T21:21:58.8358817Z"
+    }
+  ],
+  "prohibitedOperationsInvoked": {
+    "launcher": false,
+    "shutdown": false,
+    "sql": false,
+    "migration": false,
+    "rollback": false,
+    "dump": false,
+    "honorMaintenance": false,
+    "audit": false,
+    "compilation": false,
+    "ollamaQueryOrModification": false
+  }
+}

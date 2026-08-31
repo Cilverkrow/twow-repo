@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "result": "PHASE1B_EXTRACTED_PAYLOAD_VERIFICATION=PASS",
+  "verified_utc": "2026-08-29T14:45:24.2130636Z",
+  "live_execution_started": false,
+  "bridge_directory": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1b-live-20260829-163519\\bridge",
+  "file_count": 50,
+  "entry_list_matches": true,
+  "manifest_sha256": "7494F26C2CBA47084691D57ED7DEA372B5E895C90F58FF86304101B48305FA8E",
+  "manifest_entries": 49,
+  "manifest_hash_failures": 0,
+  "instance_lock_present": false
+}

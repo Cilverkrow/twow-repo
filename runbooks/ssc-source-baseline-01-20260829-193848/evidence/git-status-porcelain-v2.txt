@@ -1,0 +1,14 @@
+# branch.oid 42b8a7f742548793910fe8880463aeeb71627fb9
+# branch.head playerbots-integration-gh
+# branch.upstream origin/playerbots-integration-gh
+# branch.ab +0 -0
+1 .M N... 100644 100644 100644 43b500056fe25e0b89e0bc68008fa91765570dc6 43b500056fe25e0b89e0bc68008fa91765570dc6 src/modules/PlayerBots/CMakeLists.txt
+1 .M N... 100644 100644 100644 3b9cadb778434d48c0a5129cbe0b976fcbe9e6f7 3b9cadb778434d48c0a5129cbe0b976fcbe9e6f7 src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp
+1 .M N... 100644 100644 100644 8b17e5e3b4eab0d59fc913508545087cbfa10de3 8b17e5e3b4eab0d59fc913508545087cbfa10de3 src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h
+1 .M N... 100644 100644 100644 1e388d197a5a1b781711f4c3331c9924da531e18 1e388d197a5a1b781711f4c3331c9924da531e18 src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp
+? bin/Release/MoveMapGen.pdb
+? bin/Release/mangosd.pdb
+? bin/Release/mapextractor.pdb
+? bin/Release/realmd.pdb
+? bin/Release/vmap_assembler.pdb
+? bin/Release/vmapextractor.pdb

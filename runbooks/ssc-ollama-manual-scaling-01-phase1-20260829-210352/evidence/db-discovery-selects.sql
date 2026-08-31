@@ -1,0 +1,12 @@
+SELECT 'SECTION','TABLES';
+SELECT TABLE_SCHEMA,TABLE_NAME,ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA IN ('tw_logon','tw_char') AND (TABLE_NAME IN ('account','characters','ai_playerbot_random_bots','group_member','groups') OR TABLE_NAME LIKE '%skill%') ORDER BY TABLE_SCHEMA,TABLE_NAME;
+SELECT 'SECTION','COLUMNS';
+SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,ORDINAL_POSITION,COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA IN ('tw_logon','tw_char') AND TABLE_NAME IN ('account','characters','ai_playerbot_random_bots','group_member','groups','character_skills') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION;
+SELECT 'SECTION','RNDBOT_COUNTS';
+SELECT COUNT(DISTINCT a.id),COUNT(c.guid) FROM tw_logon.account a JOIN tw_char.characters c ON c.account=a.id WHERE a.username LIKE 'RNDBOT%';
+SELECT 'SECTION','EVENT_COUNTS';
+SELECT event,COUNT(*),SUM(value<>0),SUM(validIn=0),MIN(bot),MAX(bot) FROM tw_char.ai_playerbot_random_bots WHERE owner=0 AND event IN ('add','login','logout','bot_count') GROUP BY event ORDER BY event;
+SELECT 'SECTION','ADD_LOGIN_ROWS';
+SELECT bot,event,value,time,validIn FROM tw_char.ai_playerbot_random_bots WHERE owner=0 AND event IN ('add','login') ORDER BY bot,event LIMIT 100;
+SELECT 'SECTION','RNDBOT_GROUP_MEMBERS';
+SELECT COUNT(*) FROM tw_char.group_member gm JOIN tw_char.characters c ON c.guid=gm.memberGuid JOIN tw_logon.account a ON a.id=c.account WHERE a.username LIKE 'RNDBOT%';

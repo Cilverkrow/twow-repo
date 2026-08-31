@@ -1,0 +1,36 @@
+DB-PROFESSION-RIDING-DISCOVERY-01 VALIDATION
+Captured UTC: 2026-08-29T23:08:56.9700979Z
+
+Repository: C:\TW\ComTW\source
+Branch: playerbots-integration-gh
+HEAD: 42b8a7f742548793910fe8880463aeeb71627fb9
+
+Database identity: tw_char | port 3307 | 11.4.10-MariaDB
+Read-only SQL top-level SELECT count: 15
+Forbidden write-statement token count: 0
+Read-only SQL validation client exit code: 0
+Read-only SQL validation stderr bytes: 0
+
+RNDBOT character rows: 4500
+Non-RNDBOT character rows: 9
+Orphan-account character rows included as non-RNDBOT: 4
+RNDBOT characters over two primary professions: 0
+Non-RNDBOT characters over two primary professions: 0
+Non-RNDBOT characters over six primary professions: 0
+
+Profession trainer offer rows: 679
+Riding spell rows: 4
+Riding trainer rows: 20
+Mount-aura item rows: 31
+
+Pre-existing MariaDB PID: 31724
+MariaDB started or stopped by task: no
+Worldserver process count: 0
+Realmd process count: 0
+Matching running service count: 0
+Port 8090 listener count: 0
+
+Database write statements: 0
+Migrations executed: 0
+Source/config/DBC/client modifications: 0
+Player or bot logins triggered: 0

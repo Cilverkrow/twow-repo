@@ -1,0 +1,16 @@
+query_id	result_rows
+database-identity	1
+relevant-table-presence	4
+relevant-columns	92
+appearance-columns	224
+show-create-characters	79
+show-create-character-skills	7
+show-create-playerbot-events	15
+account-join-quality	1
+population-aggregate	1
+bot-population-rows	9000
+bot-skill-rows	102248
+playerbot-event-summary	8
+playerbot-event-integrity	5
+bot-skill-integrity	2
+world-race-class-combinations	59

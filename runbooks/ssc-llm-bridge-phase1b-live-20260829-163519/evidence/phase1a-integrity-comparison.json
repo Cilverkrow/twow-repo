@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "result": "PHASE1A_HARDENING_INTEGRITY=UNCHANGED",
+  "compared_utc": "2026-08-29T14:51:24.4436736Z",
+  "before_file_count": 52,
+  "after_file_count": 52,
+  "before_total_bytes": 297947,
+  "after_total_bytes": 297947,
+  "before_fingerprint_sha256": "D458FA595A776DF36A586BB240D3B3F0271853DF8CAAD431620ABCBEA59710FA",
+  "after_fingerprint_sha256": "D458FA595A776DF36A586BB240D3B3F0271853DF8CAAD431620ABCBEA59710FA",
+  "difference_count": 0,
+  "differences": []
+}

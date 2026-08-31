@@ -1,0 +1,111 @@
+TAP version 13
+ok 1 - CORE_READY_TIMEOUT_MS pin
+ok 2 - CORE_STATUS_POLL_INTERVAL_MS pin
+ok 3 - CORE_SHUTDOWN_OVERALL_TIMEOUT_MS pin
+ok 4 - CORE_STDERR_DIAGNOSTIC_CAP_BYTES pin
+ok 5 - CORE_STDOUT_NDJSON_LINE_CAP_BYTES pin
+ok 6 - exact Ready accepted
+ok 7 - Ready missing code
+ok 8 - Ready missing mode
+ok 9 - Ready missing active_limit
+ok 10 - Ready missing waiting_capacity
+ok 11 - Ready missing ledger_capacity
+ok 12 - Ready missing bot_guid
+ok 13 - Ready missing model
+ok 14 - Ready extra field rejected
+ok 15 - Ready null rejected
+ok 16 - Ready wrong type rejected
+ok 17 - Ready wrong pin rejected
+ok 18 - strict JSON valid
+ok 19 - duplicate key rejected
+ok 20 - UTF-8 BOM rejected
+ok 21 - malformed UTF-8 rejected
+ok 22 - trailing JSON rejected
+ok 23 - empty NDJSON line rejected
+ok 24 - NDJSON line cap enforced
+ok 25 - submit queued variant
+ok 26 - submit duplicate variant
+ok 27 - submit mismatch variant
+ok 28 - submit queue-full variant
+ok 29 - submit expired variant
+ok 30 - submit ledger-full variant
+ok 31 - submit extra field rejected
+ok 32 - submit null rejected
+ok 33 - wrong-context code rejected
+ok 34 - unknown code rejected
+ok 35 - exact CLI error closes rather than becoming normal result
+ok 36 - status ok variant
+ok 37 - status invalid_uuid
+ok 38 - status invalid_bot_guid
+ok 39 - status not_found
+ok 40 - status identity_mismatch
+ok 41 - consume consumed ready variant
+ok 42 - consume not-ready variant
+ok 43 - consume already-consumed no text
+ok 44 - consume invalid_uuid
+ok 45 - consume invalid_bot_guid
+ok 46 - consume not_found
+ok 47 - consume identity_mismatch
+ok 48 - metrics exact envelope
+ok 49 - shutdown exact envelope
+ok 50 - shutdown running metrics rejected
+ok 51 - nonready attempt-zero invariants
+ok 52 - nonready text rejected
+ok 53 - exact two sentences accepted
+ok 54 - three sentences without spaces rejected
+ok 55 - Unicode ellipsis counted as terminator run
+ok 56 - three Unicode/ASCII terminator runs rejected
+ok 57 - 240-byte limit enforced without truncation
+ok 58 - non-ASCII sanitizer whitespace rejected
+ok 59 - fake child exact Ready
+ok 60 - one request admitted
+ok 61 - completion consumed once
+ok 62 - valid snapshot yields exactly one whisper token
+ok 63 - delivery retired before second whisper
+ok 64 - exactly one consume sent
+ok 65 - wire evidence uses exact 45-second lifetime
+ok 66 - revalidation child Ready
+ok 67 - revalidation request admitted
+ok 68 - revalidation completion ready
+ok 69 - logout removes inactive session fingerprint
+ok 70 - logout/relog generation mismatch discards completion
+ok 71 - ledger child Ready
+ok 72 - pre-latch route one admitted
+ok 73 - latch-triggering route admitted locally
+ok 74 - third local route admitted before latch
+ok 75 - ledger_full permanent latch set
+ok 76 - unsubmitted local route retired by latch
+ok 77 - post-latch request rejected before wire
+ok 78 - pre-latch accepted route still polled and consumed
+ok 79 - pre-latch completion remains deliverable
+ok 80 - no post-latch submit bytes
+ok 81 - queue child Ready
+ok 82 - queue slot 1
+ok 83 - queue slot 2
+ok 84 - queue slot 3
+ok 85 - fourth route rejected by bound
+ok 86 - deadline child Ready
+ok 87 - steady deadline expires route
+ok 88 - wire TTL and internal steady TTL derive from one admission
+ok 89 - large stderr child Ready without deadlock
+ok 90 - stderr ring exactly bounded
+ok 91 - stderr ring retains newest bytes
+ok 92 - handle test child Ready
+ok 93 - non-allowlisted inheritable handle not inherited
+ok 94 - Ready timeout closes admission
+ok 95 - Ready timeout classified protocol failure
+ok 96 - EOF before Ready rejected
+ok 97 - invalid NDJSON rejected
+ok 98 - Ready extra field rejected by process path
+ok 99 - unsolicited test reaches Ready
+ok 100 - unsolicited duplicate response closes admission
+ok 101 - poll child Ready
+ok 102 - round-robin poll reaches completion
+# observed_poll_delta_ms=108
+ok 103 - global poll interval is at least 100 ms
+ok 104 - sentinel fake process started
+ok 105 - hung-shutdown child Ready
+ok 106 - shutdown timeout leaves sentinel process untouched
+ok 107 - sentinel exits only after explicit test event
+1..107
+# failures=0

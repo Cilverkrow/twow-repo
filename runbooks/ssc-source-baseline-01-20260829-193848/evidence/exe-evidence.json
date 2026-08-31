@@ -1,0 +1,60 @@
+{
+  "production": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+    "size_bytes": 20376576,
+    "creation_utc": "2026-08-25T16:54:55.7705743Z",
+    "last_write_utc": "2026-08-25T16:54:59.8378295Z",
+    "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC"
+  },
+  "production_windows_version": {
+    "file_version": null,
+    "product_version": null,
+    "company_name": null,
+    "product_name": null,
+    "original_filename": null
+  },
+  "production_pe": {
+    "machine_hex": "0x8664",
+    "linker_timestamp_utc": "2026-08-25T16:54:59.0000000Z",
+    "linker_timestamp_raw": "0x6A8DC8E3",
+    "size_of_image_hex": "0x139F000",
+    "checksum_hex": "0x00000000",
+    "codeview": {
+      "signature": "RSDS",
+      "guid": "c5ddd5cc-4b8d-47ae-b2a5-ab4e5f158cc3",
+      "age": 1,
+      "embedded_pdb_path": "C:\\TW\\ComTW\\source\\bin\\Release\\mangosd.pdb",
+      "file_offset": 17345156
+    }
+  },
+  "embedded_revision_strings": [
+    "Core revision: 42b8a7f742548793910f / 2026-08-25 15:22:11 +0100 / Win64 (little-endian)"
+  ],
+  "embedded_revision_length": 20,
+  "embedded_revision_resolution": {
+    "prefix": "42b8a7f742548793910f",
+    "resolved_full_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "matching_commits_local": [
+      "42b8a7f742548793910fe8880463aeeb71627fb9"
+    ]
+  },
+  "pre_llm_backup": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.pre-llm-debug-20260826.exe",
+    "size_bytes": 20376576,
+    "creation_utc": "2026-08-26T18:53:01.1408464Z",
+    "last_write_utc": "2026-08-25T16:54:59.8378295Z",
+    "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC"
+  },
+  "later_dirty_build": {
+    "path": "C:\\TW\\ComTW\\source\\bin\\Release\\mangosd.exe",
+    "size_bytes": 20421632,
+    "creation_utc": "2026-08-25T16:54:55.7705743Z",
+    "last_write_utc": "2026-08-26T18:41:28.3633571Z",
+    "sha256": "43EEB340FE4F4FD8122E96FE464181EDF45A1374C890D4C2540577A274252961"
+  },
+  "equality": {
+    "production_equals_pre_llm_backup": true,
+    "production_equals_later_dirty_build": false
+  },
+  "provenance_limit": "CMake embeds git rev-parse --short=20 HEAD only; it does not embed or manifest dirty-tree state, source-tree hashes, build flags, or dependencies."
+}

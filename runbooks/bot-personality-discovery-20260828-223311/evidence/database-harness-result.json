@@ -1,0 +1,19 @@
+{
+    "status":  "failed",
+    "completed_utc":  "2026-08-28T20:39:47.4906361Z",
+    "powershell_version":  "5.1.26100.9168",
+    "powershell_edition":  "Desktop",
+    "administrator":  true,
+    "reviewed_runbook_path":  "C:\\TW\\ComTW\\runbooks\\tw-char-migration-F92F86D6.ps1",
+    "reviewed_runbook_sha256":  "F92F86D66FEB4C1743F1E09B1CA14101B8249E858CB5B18DC2894AA27E06F881",
+    "harness_sha256":  "FF764E2ABABBDACE7117629B638211D547D6A1858FF99390B7B15650E0AAF3EC",
+    "database_owned_pid":  null,
+    "sql_statement_count":  15,
+    "sql_write_capable_statement_count":  0,
+    "logical_database_writes":  0,
+    "database_engine_runtime_changed_path_count":  null,
+    "primary_error":  "SQL static audit rejected 1 statement(s).",
+    "cleanup_errors":  [
+
+                       ]
+}

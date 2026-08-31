@@ -1,0 +1,46 @@
+{
+  "test_id": "SSC-LLM-PRODUCTION-BRIDGE-01-PHASE-B-STATIC-GATE",
+  "checks": {
+    "exact_production_file_set": true,
+    "production_source_status_preserved": true,
+    "no_added_detached_thread": true,
+    "no_added_std_async": true,
+    "no_ollama_or_http_in_service": true,
+    "no_process_enumeration_or_shell": true,
+    "only_owned_process_termination": true,
+    "cli_path_is_derived": true,
+    "no_cliscript_option": true,
+    "only_three_external_config_keys": true,
+    "no_model_language_action_config": true,
+    "say_external_whisper_only": true,
+    "ai_world_queue_external_eligibility": true,
+    "non_llm_fallback_remains": true,
+    "no_external_action_dispatch": true,
+    "no_legacy_async_callsite": true,
+    "exact_constants": true,
+    "diff_whitespace_clean": true
+  },
+  "planned_files": [
+    "src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in",
+    "src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.cpp",
+    "src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotAI.cpp",
+    "src/modules/PlayerBots/playerbot/PlayerbotAI.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+    "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp",
+    "src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp"
+  ],
+  "actual_files": [
+    "src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in",
+    "src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.cpp",
+    "src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotAI.cpp",
+    "src/modules/PlayerBots/playerbot/PlayerbotAI.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+    "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp",
+    "src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp"
+  ],
+  "pass": true
+}

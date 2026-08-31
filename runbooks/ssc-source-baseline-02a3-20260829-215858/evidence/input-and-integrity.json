@@ -1,0 +1,20 @@
+{
+  "task": "SSC-SOURCE-BASELINE-02A3",
+  "generated_utc": "2026-08-29T20:04:09.6394417Z",
+  "repository": "C:\\TW\\ComTW\\source",
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "candidate_tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+  "head_equals_candidate": true,
+  "migration_paths_clean": true,
+  "core_autocrlf": "true",
+  "binding_select_sha256": "B866C9F412526AF05D13823D4F3D508F04CDC74005A720DE0FD08195F223888B",
+  "binding_select_matches": true,
+  "server_process_inspected": false,
+  "live_logs_inspected": false,
+  "new_sql_queries": [],
+  "database_writes": [],
+  "migrations": [],
+  "process_control_actions": [],
+  "source_or_config_changes": [],
+  "build_actions": []
+}

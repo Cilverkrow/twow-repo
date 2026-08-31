@@ -1,0 +1,93 @@
+table_schema\ttable_name\tordinal_position\tcolumn_name\tcolumn_type\tis_nullable\tcolumn_default\tcolumn_key
+tw_char	ai_playerbot_random_bots	1	id	bigint(20)	NO	<NULL>	PRI
+tw_char	ai_playerbot_random_bots	2	owner	bigint(20)	NO	<NULL>	MUL
+tw_char	ai_playerbot_random_bots	3	bot	bigint(20)	NO	<NULL>	MUL
+tw_char	ai_playerbot_random_bots	4	time	bigint(20)	NO	<NULL>	
+tw_char	ai_playerbot_random_bots	5	validIn	bigint(20)	YES	NULL	
+tw_char	ai_playerbot_random_bots	6	event	varchar(45)	YES	NULL	MUL
+tw_char	ai_playerbot_random_bots	7	value	bigint(20)	YES	NULL	
+tw_char	ai_playerbot_random_bots	8	data	varchar(255)	YES	NULL	
+tw_char	characters	1	guid	int(10) unsigned	NO	0	PRI
+tw_char	characters	2	account	int(10) unsigned	NO	0	MUL
+tw_char	characters	3	name	varchar(12)	NO	''	MUL
+tw_char	characters	4	race	tinyint(3) unsigned	NO	0	
+tw_char	characters	5	class	tinyint(3) unsigned	NO	0	
+tw_char	characters	6	gender	tinyint(3) unsigned	NO	0	
+tw_char	characters	7	level	tinyint(3) unsigned	NO	0	
+tw_char	characters	8	xp	int(10) unsigned	NO	0	
+tw_char	characters	9	money	int(10) unsigned	NO	0	
+tw_char	characters	10	playerBytes	int(10) unsigned	NO	0	
+tw_char	characters	11	playerBytes2	int(10) unsigned	NO	0	
+tw_char	characters	12	playerFlags	int(10) unsigned	NO	0	
+tw_char	characters	13	position_x	float	NO	0	
+tw_char	characters	14	position_y	float	NO	0	
+tw_char	characters	15	position_z	float	NO	0	
+tw_char	characters	16	map	int(10) unsigned	NO	0	
+tw_char	characters	17	orientation	float	NO	0	
+tw_char	characters	18	taximask	longtext	YES	NULL	
+tw_char	characters	19	online	tinyint(3) unsigned	NO	0	MUL
+tw_char	characters	20	cinematic	tinyint(3) unsigned	NO	0	
+tw_char	characters	21	totaltime	int(10) unsigned	NO	0	
+tw_char	characters	22	leveltime	int(10) unsigned	NO	0	
+tw_char	characters	23	logout_time	bigint(20) unsigned	NO	0	
+tw_char	characters	24	is_logout_resting	tinyint(3) unsigned	NO	0	
+tw_char	characters	25	rest_bonus	float	NO	0	
+tw_char	characters	26	resettalents_multiplier	int(10) unsigned	NO	0	
+tw_char	characters	27	resettalents_time	bigint(20) unsigned	NO	0	
+tw_char	characters	28	trans_x	float	NO	0	
+tw_char	characters	29	trans_y	float	NO	0	
+tw_char	characters	30	trans_z	float	NO	0	
+tw_char	characters	31	trans_o	float	NO	0	
+tw_char	characters	32	transguid	bigint(20) unsigned	NO	0	
+tw_char	characters	33	extra_flags	int(10) unsigned	NO	0	
+tw_char	characters	34	stable_slots	tinyint(1) unsigned	NO	0	
+tw_char	characters	35	at_login	int(10) unsigned	NO	0	
+tw_char	characters	36	zone	int(10) unsigned	NO	0	
+tw_char	characters	37	death_expire_time	bigint(20) unsigned	NO	0	
+tw_char	characters	38	taxi_path	text	YES	NULL	
+tw_char	characters	39	honorRankPoints	float	NO	0	
+tw_char	characters	40	honorHighestRank	int(10) unsigned	NO	0	
+tw_char	characters	41	honorStanding	int(10) unsigned	NO	0	
+tw_char	characters	42	honorLastWeekHK	int(10) unsigned	NO	0	
+tw_char	characters	43	honorLastWeekCP	decimal(11,1)	NO	0.0	
+tw_char	characters	44	honorStoredHK	int(11)	NO	0	
+tw_char	characters	45	honorStoredDK	int(11)	NO	0	
+tw_char	characters	46	watchedFaction	int(10) unsigned	NO	0	
+tw_char	characters	47	drunk	smallint(5) unsigned	NO	0	
+tw_char	characters	48	health	int(10) unsigned	NO	0	
+tw_char	characters	49	power1	int(10) unsigned	NO	0	
+tw_char	characters	50	power2	int(10) unsigned	NO	0	
+tw_char	characters	51	power3	int(10) unsigned	NO	0	
+tw_char	characters	52	power4	int(10) unsigned	NO	0	
+tw_char	characters	53	power5	int(10) unsigned	NO	0	
+tw_char	characters	54	exploredZones	longtext	YES	NULL	
+tw_char	characters	55	equipmentCache	longtext	YES	NULL	
+tw_char	characters	56	ammoId	int(10) unsigned	NO	0	
+tw_char	characters	57	actionBars	tinyint(3) unsigned	NO	0	
+tw_char	characters	58	deleteInfos_Account	int(10) unsigned	YES	NULL	
+tw_char	characters	59	deleteInfos_Name	varchar(12)	YES	NULL	
+tw_char	characters	60	deleteDate	bigint(20)	YES	NULL	MUL
+tw_char	characters	61	area	int(10) unsigned	NO	0	
+tw_char	characters	62	world_phase_mask	int(11)	YES	0	
+tw_char	characters	63	customFlags	int(11)	NO	0	
+tw_char	characters	64	city_protector	tinyint(4)	NO	0	
+tw_char	characters	65	regexFilterCount	int(10) unsigned	NO	0	
+tw_char	characters	66	isGMCharacter	tinyint(1) unsigned	NO	0	
+tw_char	characters	67	ignore_titles	tinyint(4)	NO	0	
+tw_char	characters	68	mortality_status	tinyint(4)	NO	0	
+tw_char	characters	69	total_deaths	int(11)	NO	0	
+tw_char	characters	70	xp_gain	tinyint(3) unsigned	NO	1	
+tw_char	characters	71	active	tinyint(3) unsigned	NO	1	
+tw_char	characters	72	extraBonusTalentCount	int(11)	NO	0	
+tw_char	character_skills	1	guid	int(10) unsigned	NO	<NULL>	PRI
+tw_char	character_skills	2	skill	mediumint(8) unsigned	NO	<NULL>	PRI
+tw_char	character_skills	3	value	mediumint(8) unsigned	NO	<NULL>	
+tw_char	character_skills	4	max	mediumint(8) unsigned	NO	<NULL>	
+tw_world	playercreateinfo	1	race	tinyint(3) unsigned	NO	0	PRI
+tw_world	playercreateinfo	2	class	tinyint(3) unsigned	NO	0	PRI
+tw_world	playercreateinfo	3	map	smallint(5) unsigned	NO	0	
+tw_world	playercreateinfo	4	zone	mediumint(8) unsigned	NO	0	
+tw_world	playercreateinfo	5	position_x	float	NO	0	
+tw_world	playercreateinfo	6	position_y	float	NO	0	
+tw_world	playercreateinfo	7	position_z	float	NO	0	
+tw_world	playercreateinfo	8	orientation	float	NO	0

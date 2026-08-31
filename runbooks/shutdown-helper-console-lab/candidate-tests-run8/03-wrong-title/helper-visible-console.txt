@@ -1,0 +1,1 @@
+[FEHLER] Unerwarteter Konsolentitel fuer PID 37104: 'wrong-title' statt 'mangosd'.                                      ☐

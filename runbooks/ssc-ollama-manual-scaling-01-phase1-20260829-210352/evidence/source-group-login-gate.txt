@@ -1,0 +1,110 @@
+===== src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 =====
+----- lines 1992-2055 -----
+  1992: void RandomPlayerbotMgr::AddOfflineGroupBots()
+  1993: {
+  1994:     if (!OfflineGroupBotsTimer || time(NULL) > (OfflineGroupBotsTimer + 5))
+  1995:         OfflineGroupBotsTimer = time(NULL);
+  1996: 
+  1997:     uint32 totalCounter = 0;
+  1998:     for (const auto& i : players)
+  1999:     {
+  2000:         Player* player = i.second;
+  2001: 
+  2002:         if (!player || !player->IsInWorld() || !player->GetGroup())
+  2003:             continue;
+  2004: 
+  2005:         Group* group = player->GetGroup();
+  2006:         if (group && group->IsLeader(player->GetObjectGuid()))
+  2007:         {
+  2008:             std::vector<uint32> botsToAdd;
+  2009:             Group::MemberSlotList const& slots = group->GetMemberSlots();
+  2010:             for (Group::MemberSlotList::const_iterator i = slots.begin(); i != slots.end(); ++i)
+  2011:             {
+  2012:                 ObjectGuid member = i->guid;
+  2013:                 if (member == player->GetObjectGuid())
+  2014:                     continue;
+  2015: 
+  2016:                 if (!IsFreeBot(member.GetCounter()))
+  2017:                     continue;
+  2018: 
+  2019:                 if (sObjectMgr.GetPlayer(member))
+  2020:                     continue;
+  2021: 
+  2022:                 if (GetPlayerBot(member))
+  2023:                     continue;
+  2024: 
+  2025:                 botsToAdd.push_back(member.GetCounter());
+  2026:             }
+  2027: 
+  2028:             if (botsToAdd.empty())
+  2029:                 return;
+  2030: 
+  2031:             uint32 maxToAdd = urand(1, 5);
+  2032:             uint32 counter = 0;
+  2033:             for (auto& guid : botsToAdd)
+  2034:             {
+  2035:                 if (counter >= maxToAdd)
+  2036:                     break;
+  2037: 
+  2038:                 if (sPlayerbotAIConfig.IsFreeAltBot(guid))
+  2039:                 {
+  2040:                     for (auto& bot : sPlayerbotAIConfig.freeAltBots)
+  2041:                     {
+  2042:                         if (bot.second == guid)
+  2043:                         {
+  2044:                             Player* player = GetPlayerBot(bot.second);
+  2045:                             if (!player)
+  2046:                             {
+  2047:                                 AddPlayerBot(bot.second, bot.first);
+  2048:                             }
+  2049:                         }
+  2050:                     }
+  2051:                 }
+  2052:                 else
+  2053:                     AddRandomBot(guid);
+  2054: 
+  2055:                 counter++;
+----- lines 3848-3890 -----
+  3848: void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
+  3849: {
+  3850:     if (!sPlayerbotAIConfig.enabled)
+  3851:         return;
+  3852: 
+  3853:     ForEachPlayerbot([&](Player* bot)
+  3854:     {
+  3855:         if (player == bot)
+  3856:             return;
+  3857: 
+  3858:         Group* group = bot->GetGroup();
+  3859:         if (!group)
+  3860:             return;
+  3861: 
+  3862:         for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
+  3863:         {
+  3864:             Player* member = gref->getSource();
+  3865:             PlayerbotAI* ai = GetBotAI(bot);
+  3866:             if (member == player && (!ai->GetMaster() || GetBotAI(ai->GetMaster())))
+  3867:             {
+  3868:                 if (!bot->InBattleGround())
+  3869:                 {
+  3870:                     ai->SetMaster(player);
+  3871:                     ai->ResetStrategies();
+  3872:                     ai->TellPlayer(ai->GetMaster(), BOT_TEXT("hello"));
+  3873:                 }
+  3874:                 break;
+  3875:             }
+  3876:         }
+  3877:     });
+  3878: 
+  3879:     if (IsFreeBot(player))
+  3880:     {
+  3881:         uint32 guid = player->GetGUIDLow();
+  3882:         if (!sPlayerbotAIConfig.IsFreeAltBot(player))
+  3883:            SetEventValue(guid, "login", 0, 0);
+  3884:     }
+  3885:     else
+  3886:     {
+  3887:         players[player->GetGUIDLow()] = player;
+  3888:         sLog.outDebug("Including non-random bot player %s into random bot update", player->GetName());
+  3889:     }
+  3890: }

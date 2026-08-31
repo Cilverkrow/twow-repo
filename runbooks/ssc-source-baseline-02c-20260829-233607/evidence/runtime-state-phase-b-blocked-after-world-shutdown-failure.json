@@ -1,0 +1,395 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C",
+  "label": "phase-b-blocked-after-world-shutdown-failure",
+  "captured_utc": "2026-08-29T22:08:40.2486165Z",
+  "captured_local": "2026-08-30T00:08:40.2494772+02:00",
+  "processes": [
+    {
+      "name": "mangosd.exe",
+      "process_id": 13808,
+      "executable_path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+      "start_utc": "2026-08-29T19:57:24.2761290Z",
+      "main_window_title": ""
+    },
+    {
+      "name": "mysqld.exe",
+      "process_id": 31724,
+      "executable_path": "C:\\TW\\ComTW\\DB\\bin\\mysqld.exe",
+      "start_utc": "2026-08-29T19:57:13.4383975Z",
+      "main_window_title": ""
+    },
+    {
+      "name": "ollama.exe",
+      "process_id": 5528,
+      "executable_path": "C:\\Users\\djfav\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+      "start_utc": "2026-08-28T21:21:58.8358817Z",
+      "main_window_title": ""
+    },
+    {
+      "name": "realmd.exe",
+      "process_id": 32260,
+      "executable_path": "C:\\TW\\ComTW\\server\\realmd.exe",
+      "start_utc": "2026-08-29T19:57:21.2924804Z",
+      "main_window_title": ""
+    }
+  ],
+  "command_lines": [],
+  "command_line_query_error": "Zugriff verweigert. ",
+  "listeners": [
+    {
+      "local_endpoint": "127.0.0.1:3307",
+      "local_port": 3307,
+      "normalized_state": "LISTEN",
+      "raw_localized_state": "ABH�REN",
+      "owning_process_id": 31724,
+      "owning_process_name": "mysqld.exe",
+      "raw_line": "  TCP    127.0.0.1:3307         0.0.0.0:0              ABH�REN         31724"
+    },
+    {
+      "local_endpoint": "0.0.0.0:3724",
+      "local_port": 3724,
+      "normalized_state": "LISTEN",
+      "raw_localized_state": "ABH�REN",
+      "owning_process_id": 32260,
+      "owning_process_name": "realmd.exe",
+      "raw_line": "  TCP    0.0.0.0:3724           0.0.0.0:0              ABH�REN         32260"
+    },
+    {
+      "local_endpoint": "0.0.0.0:8090",
+      "local_port": 8090,
+      "normalized_state": "LISTEN",
+      "raw_localized_state": "ABH�REN",
+      "owning_process_id": 13808,
+      "owning_process_name": "mangosd.exe",
+      "raw_line": "  TCP    0.0.0.0:8090           0.0.0.0:0              ABH�REN         13808"
+    },
+    {
+      "local_endpoint": "127.0.0.1:11434",
+      "local_port": 11434,
+      "normalized_state": "LISTEN",
+      "raw_localized_state": "ABH�REN",
+      "owning_process_id": 5528,
+      "owning_process_name": "ollama.exe",
+      "raw_line": "  TCP    127.0.0.1:11434        0.0.0.0:0              ABH�REN         5528"
+    }
+  ],
+  "pid_files": [
+    {
+      "path": "C:\\TW\\ComTW\\server\\twlive.pid",
+      "exists": true,
+      "length": 5,
+      "creation_utc": "2026-08-25T19:16:10.0777453Z",
+      "last_write_utc": "2026-08-29T19:57:24.3086714Z",
+      "sha256": "C302AA3DF509E3F4B31ECBEF8D2EBC39FAF7415CB6CADBD8667F95D7442F00BE",
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\server\\twrealmd.pid",
+      "exists": true,
+      "length": 5,
+      "creation_utc": "2026-08-25T19:16:00.9799450Z",
+      "last_write_utc": "2026-08-29T19:57:21.3178771Z",
+      "sha256": "20501239D6F99E41818A0A13C0134AE714DC4026DEE900E4F8D80DE84A090623",
+      "hash_error": null
+    }
+  ],
+  "files": {
+    "candidate": {
+      "path": "C:\\TW\\b02b-20260829-222913\\runbook\\artifacts\\mangosd.exe",
+      "exists": true,
+      "length": 20378624,
+      "creation_utc": "2026-08-29T20:49:44.7090616Z",
+      "last_write_utc": "2026-08-29T20:46:00.5108521Z",
+      "sha256": "2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE",
+      "hash_error": null
+    },
+    "production_slot": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+      "exists": true,
+      "length": 20376576,
+      "creation_utc": "2026-08-25T16:54:55.7705743Z",
+      "last_write_utc": "2026-08-25T16:54:59.8378295Z",
+      "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "hash_error": null
+    },
+    "backup": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.pre-source-baseline-02c-20260829.exe",
+      "exists": false
+    },
+    "mangosd_conf": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.conf",
+      "exists": true,
+      "length": 69515,
+      "creation_utc": "2026-08-25T16:56:21.0361503Z",
+      "last_write_utc": "2026-08-29T15:38:43.2579727Z",
+      "sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "hash_error": null
+    },
+    "aiplayerbot_conf": {
+      "path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+      "exists": true,
+      "length": 283717,
+      "creation_utc": "2026-08-25T16:56:21.0383696Z",
+      "last_write_utc": "2026-08-29T16:04:14.8193927Z",
+      "sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "hash_error": null
+    },
+    "start_mangosd": {
+      "path": "C:\\TW\\ComTW\\server\\start-mangosd.bat",
+      "exists": true,
+      "length": 54,
+      "creation_utc": "2026-08-25T16:56:21.2113098Z",
+      "last_write_utc": "2026-08-28T14:13:02.2746633Z",
+      "sha256": "0C9A97A7E528F0A4451AA9CD0637C3246271CBAACD09DFB8895AFCB3C57B82AF",
+      "hash_error": null
+    },
+    "shutdown_helper": {
+      "path": "C:\\TW\\ComTW\\server\\shutdown-tortoise-servers-gracefully.ps1",
+      "exists": true,
+      "length": 17837,
+      "creation_utc": "2026-08-26T16:39:20.4305450Z",
+      "last_write_utc": "2026-08-29T18:04:05.9242818Z",
+      "sha256": "CC0BD46FEA50F653778A11711BC9D9FE1A1B0BBE84980440A18734C6632FE3B1",
+      "hash_error": null
+    }
+  },
+  "server_logs": [
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-25_22-47-24.log",
+      "exists": true,
+      "length": 2199065,
+      "creation_utc": "2026-08-25T20:47:24.3396409Z",
+      "last_write_utc": "2026-08-25T21:22:27.9362534Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-26_00-10-53.log",
+      "exists": true,
+      "length": 17619124,
+      "creation_utc": "2026-08-25T22:10:53.3047029Z",
+      "last_write_utc": "2026-08-25T22:18:01.1404647Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-26_18-09-20.log",
+      "exists": true,
+      "length": 18456755,
+      "creation_utc": "2026-08-26T16:09:20.3786075Z",
+      "last_write_utc": "2026-08-26T16:27:34.8547428Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-26_20-55-17.log",
+      "exists": true,
+      "length": 273301,
+      "creation_utc": "2026-08-26T18:55:17.5522220Z",
+      "last_write_utc": "2026-08-26T18:55:24.1368673Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-27_23-00-06.log",
+      "exists": true,
+      "length": 20378285,
+      "creation_utc": "2026-08-27T21:00:06.5808512Z",
+      "last_write_utc": "2026-08-27T22:13:35.9487942Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-28_18-07-31.log",
+      "exists": true,
+      "length": 18544236,
+      "creation_utc": "2026-08-28T16:07:31.3430739Z",
+      "last_write_utc": "2026-08-28T16:25:03.9055550Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_00-12-48.log",
+      "exists": true,
+      "length": 33224430,
+      "creation_utc": "2026-08-28T22:12:48.3314892Z",
+      "last_write_utc": "2026-08-29T01:08:51.5509850Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_16-22-09.log",
+      "exists": true,
+      "length": 1587209,
+      "creation_utc": "2026-08-29T14:22:09.3682565Z",
+      "last_write_utc": "2026-08-29T14:29:21.5975769Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_18-45-43.log",
+      "exists": true,
+      "length": 3151767,
+      "creation_utc": "2026-08-29T16:45:43.3135335Z",
+      "last_write_utc": "2026-08-29T17:11:16.4967658Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_19-19-30.log",
+      "exists": true,
+      "length": 1089248,
+      "creation_utc": "2026-08-29T17:19:30.3971276Z",
+      "last_write_utc": "2026-08-29T17:25:28.9389707Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_20-05-17.log",
+      "exists": true,
+      "length": 64,
+      "creation_utc": "2026-08-29T18:05:17.3651105Z",
+      "last_write_utc": "2026-08-29T18:05:17.3706192Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_20-06-06.log",
+      "exists": true,
+      "length": 64,
+      "creation_utc": "2026-08-29T18:06:06.3836776Z",
+      "last_write_utc": "2026-08-29T18:06:06.3876976Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_20-07-02.log",
+      "exists": true,
+      "length": 64,
+      "creation_utc": "2026-08-29T18:07:02.2876987Z",
+      "last_write_utc": "2026-08-29T18:07:02.2912109Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_20-08-03.log",
+      "exists": true,
+      "length": 1092686,
+      "creation_utc": "2026-08-29T18:08:03.3720799Z",
+      "last_write_utc": "2026-08-29T18:11:52.1992882Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_20-14-35.log",
+      "exists": true,
+      "length": 842774,
+      "creation_utc": "2026-08-29T18:14:35.2910711Z",
+      "last_write_utc": "2026-08-29T18:16:26.8556273Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_21-57-24.log",
+      "exists": true,
+      "length": 11479236,
+      "creation_utc": "2026-08-29T19:57:24.3046704Z",
+      "last_write_utc": "2026-08-29T22:08:39.9434900Z",
+      "sha256": null,
+      "hash_error": null
+    }
+  ],
+  "crash_files": [
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260826_205523.dmp",
+      "exists": true,
+      "length": 7240428,
+      "creation_utc": "2026-08-26T18:55:23.9830072Z",
+      "last_write_utc": "2026-08-26T18:55:24.1358655Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260826_205523.dmp.txt",
+      "exists": true,
+      "length": 231,
+      "creation_utc": "2026-08-26T18:55:24.1368673Z",
+      "last_write_utc": "2026-08-26T18:55:24.1368673Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260829_162921.dmp",
+      "exists": true,
+      "length": 7869292,
+      "creation_utc": "2026-08-29T14:29:21.4431367Z",
+      "last_write_utc": "2026-08-29T14:29:21.5965784Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260829_162921.dmp.txt",
+      "exists": true,
+      "length": 240,
+      "creation_utc": "2026-08-29T14:29:21.5975769Z",
+      "last_write_utc": "2026-08-29T14:29:21.5975769Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260829_200517.dmp",
+      "exists": true,
+      "length": 5833506,
+      "creation_utc": "2026-08-29T18:05:17.3716262Z",
+      "last_write_utc": "2026-08-29T18:05:17.4625942Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260829_200517.dmp.txt",
+      "exists": true,
+      "length": 240,
+      "creation_utc": "2026-08-29T18:05:17.4625942Z",
+      "last_write_utc": "2026-08-29T18:05:17.4625942Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260829_200606.dmp",
+      "exists": true,
+      "length": 5834226,
+      "creation_utc": "2026-08-29T18:06:06.3902121Z",
+      "last_write_utc": "2026-08-29T18:06:06.4756510Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260829_200606.dmp.txt",
+      "exists": true,
+      "length": 240,
+      "creation_utc": "2026-08-29T18:06:06.4766509Z",
+      "last_write_utc": "2026-08-29T18:06:06.4766509Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260829_200702.dmp",
+      "exists": true,
+      "length": 5834170,
+      "creation_utc": "2026-08-29T18:07:02.2922118Z",
+      "last_write_utc": "2026-08-29T18:07:02.3803165Z",
+      "sha256": null,
+      "hash_error": null
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\crash_20260829_200702.dmp.txt",
+      "exists": true,
+      "length": 240,
+      "creation_utc": "2026-08-29T18:07:02.3803165Z",
+      "last_write_utc": "2026-08-29T18:07:02.3803165Z",
+      "sha256": null,
+      "hash_error": null
+    }
+  ]
+}

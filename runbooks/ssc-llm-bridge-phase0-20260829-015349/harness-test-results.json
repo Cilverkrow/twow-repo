@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-08-29T00:04:29.6338011Z",
+  "all_passed": true,
+  "test_count": 8,
+  "tests": [
+    {
+      "name": "valid_context_and_request",
+      "passed": true,
+      "detail": "exit=0; status=ok"
+    },
+    {
+      "name": "missing_bot_guid",
+      "passed": true,
+      "detail": "exit=2; status=error_validation"
+    },
+    {
+      "name": "request_context_guid_mismatch",
+      "passed": true,
+      "detail": "exit=2; status=error_validation"
+    },
+    {
+      "name": "invalid_json",
+      "passed": true,
+      "detail": "exit=2; status=error_validation"
+    },
+    {
+      "name": "empty_user_message",
+      "passed": true,
+      "detail": "exit=2; status=error_validation"
+    },
+    {
+      "name": "unreachable_loopback_endpoint",
+      "passed": true,
+      "detail": "port=61244; exit=3; status=error_http"
+    },
+    {
+      "name": "oversized_model_response",
+      "passed": true,
+      "detail": "exit=0; visible_characters=177; sentence_terminators=2"
+    },
+    {
+      "name": "control_characters_and_multiline_response",
+      "passed": true,
+      "detail": "exit=0; controls_remaining=False; text=Erste Zeile. Zweite Zeile."
+    }
+  ],
+  "real_inference": {
+    "executed_request_count": 1,
+    "status": "ok",
+    "request_id_preserved": true,
+    "bot_guid_preserved": true,
+    "nonempty_output": true,
+    "german_manual_check": true,
+    "control_characters_present": false,
+    "visible_character_count": 75,
+    "metrics": {
+      "schema_version": 1,
+      "request_id": "72e080a9-225b-49cc-92cc-012c352109d3",
+      "bot_guid": 18281,
+      "model": "qwen2.5:7b",
+      "wall_clock_latency_ms": 8487,
+      "ollama_total_duration": 8341960600,
+      "ollama_load_duration": 7968958000,
+      "prompt_token_count": 273,
+      "output_token_count": 22,
+      "sanitized_response_text": "Heute werde ich die Stadt abspähen und eventuelle Gefahren auskundschaften."
+    }
+  },
+  "stability": {
+    "required_process_identity_unchanged": true,
+    "listener_identity_unchanged": true,
+    "mangosd_before": {
+      "pid": 9628,
+      "cpu_sample_percent_one_core": 96.88,
+      "working_set_bytes": 1697124352,
+      "private_memory_bytes": 4305076224
+    },
+    "mangosd_after": {
+      "pid": 9628,
+      "cpu_sample_percent_one_core": 84.38,
+      "working_set_bytes": 1697341440,
+      "private_memory_bytes": 4305076224
+    },
+    "mangosd_working_set_delta_bytes": 217088,
+    "matching_windows_services": []
+  }
+}

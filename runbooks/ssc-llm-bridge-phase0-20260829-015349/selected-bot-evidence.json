@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "source_package": {
+    "path": "C:\\TW\\ComTW\\runbooks\\bot-personality-discovery-20260828-224032.zip",
+    "expected_size_bytes": 84494,
+    "actual_size_bytes": 84494,
+    "expected_sha256": "8287DAF2124B08863A43FE2A4C03EAB2FFA8FFD7DCC64A527ADA1D928BBEA290",
+    "actual_sha256": "8287DAF2124B08863A43FE2A4C03EAB2FFA8FFD7DCC64A527ADA1D928BBEA290",
+    "zip_entry_count": 26,
+    "manifested_payload_count": 25,
+    "zip_paths_safe": true,
+    "all_manifest_hashes_valid": true,
+    "all_extracted_hashes_valid": true
+  },
+  "mapping": {
+    "file": "bot-personality-mapping-v1.json",
+    "schema_version": 1,
+    "normalized_bot_count": 4500,
+    "unique_bot_guid_count": 4500,
+    "minimum_bot_guid": 17930,
+    "maximum_bot_guid": 22429,
+    "active_random_rotation_count": 100,
+    "inactive_random_reserve_count": 4400,
+    "bots_with_nonempty_professions": 0,
+    "mapped_race_variant_count": 0
+  },
+  "selection_rule": "Numerically smallest bot_guid in active_random_rotation whose race_key and class_key occur in the mapping dictionaries.",
+  "eligible_bot_count": 100,
+  "selected": {
+    "bot_guid": 18281,
+    "population_key": "active_random_rotation",
+    "race": {
+      "id": 5,
+      "key": "undead",
+      "mapping_name": "Undead",
+      "name_de": "Untoter"
+    },
+    "class": {
+      "id": 4,
+      "key": "rogue",
+      "mapping_name": "Rogue",
+      "name_de": "Schurke"
+    },
+    "gender_id": 0,
+    "gender_key": "male",
+    "race_variant_key": null,
+    "professions": [],
+    "traits": []
+  },
+  "reconciliation": {
+    "selected_guid_occurrences": 1,
+    "selected_race_active_count_from_bots": 9,
+    "selected_race_active_count_from_race_summary": 9,
+    "selected_class_active_count_from_bots": 22,
+    "selected_class_active_count_from_class_summary": 22,
+    "population_totals_match": true,
+    "race_summary_matches": true,
+    "class_summary_matches": true
+  },
+  "localization_note": "The discovery mapping proves race id/key/name and class id/key/name in English. name_de is a deterministic German presentation label for those verified identities, not an additional Bot attribute or personality inference.",
+  "runtime_claim": "This fixture is classified by the immutable discovery capture only. No claim is made that the selected Bot is currently spawned or online.",
+  "database_queried": false
+}

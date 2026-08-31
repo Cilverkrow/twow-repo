@@ -1,0 +1,14 @@
+rule,current_value,target_candidate,technical_owner,database_rows,source_or_config,client_change,operator_decision
+Player primary-profession limit,2,6,Config plus core separation,None,mangosd.conf MaxPrimaryTradeSkill and player/bot gating,No,No
+RNDBOT primary-profession limit,2,2,Core and Playerbot module,None,Player learning gate plus PlayerbotFactory direct SetSkill paths,No,No
+Secondary-profession accounting,Excluded,Remain excluded,Core classification,None,SpellMgr.h IsProfessionSkill,No,No
+Basic riding trainer level,40,5,World database,npc_trainer_template entry=1 spell=33389,None,No,No
+Basic riding training cost copper,900000,500,World database,npc_trainer_template entry=1 spell=33389,None,No,No
+Advanced riding trainer level,60,30 (variant A),World database,npc_trainer_template entry=1 spell=33392,None,No,Yes
+Advanced riding trainer level,60,20 (variant B),World database,npc_trainer_template entry=1 spell=33392,None,No,Yes
+Advanced riding training cost copper,9000000,10000,World database,npc_trainer_template entry=1 spell=33392,None,No,No
+Basic mount item level,40,Undecided,World database,item_template rows requiring skill 762 rank 75,None,No,Yes
+Advanced mount item level,60,Undecided,World database,item_template rows requiring skill 762 rank 150,None,No,Yes
+Mount item purchase prices,Various,Unchanged/undecided,World database,item_template and npc_vendor,None,No,Yes
+RNDBOT basic riding level,40,5,Playerbot source,None,PlayerbotFactory.cpp MountValues.cpp BudgetValues.cpp RandomPlayerbotMgr.cpp,No,No
+RNDBOT advanced riding level,60,30 or 20,Playerbot source,None,PlayerbotFactory.cpp MountValues.cpp BudgetValues.cpp,No,Yes

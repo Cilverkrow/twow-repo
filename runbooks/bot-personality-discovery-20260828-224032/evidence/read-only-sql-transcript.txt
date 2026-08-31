@@ -1,0 +1,95 @@
+READ-ONLY SQL TRANSCRIPT
+Generated UTC: 2026-08-28T20:41:20.2349755Z
+Statement count: 15
+Write-capable statement count: 0
+
+QUERY database-identity
+PURPOSE Prove the selected logical database and reviewed runtime identity.
+SQL SELECT DATABASE(),VERSION(),@@version_comment,REPLACE(@@datadir,'\\','/'),@@port,@@bind_address,@@character_set_server,@@collation_server,@@sql_mode
+RESULT_ROWS 1
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\database-identity.tsv
+
+QUERY relevant-table-presence
+PURPOSE Inventory relevant live tables without reading unrelated rows.
+SQL SELECT TABLE_SCHEMA,TABLE_NAME,ENGINE,TABLE_COLLATION,TABLE_ROWS FROM information_schema.TABLES WHERE (TABLE_SCHEMA='tw_char' AND TABLE_NAME IN ('characters','character_skills','ai_playerbot_random_bots')) OR (TABLE_SCHEMA='tw_world' AND TABLE_NAME='playercreateinfo') ORDER BY TABLE_SCHEMA,TABLE_NAME
+RESULT_ROWS 4
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\relevant-table-presence.tsv
+
+QUERY relevant-columns
+PURPOSE Capture authoritative relevant column semantics.
+SQL SELECT TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,IFNULL(COLUMN_DEFAULT,'<NULL>'),COLUMN_KEY FROM information_schema.COLUMNS WHERE (TABLE_SCHEMA='tw_char' AND TABLE_NAME IN ('characters','character_skills','ai_playerbot_random_bots')) OR (TABLE_SCHEMA='tw_world' AND TABLE_NAME='playercreateinfo') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION
+RESULT_ROWS 92
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\relevant-columns.tsv
+
+QUERY appearance-columns
+PURPOSE Find schema fields that could encode character or PlayerBot appearance.
+SQL SELECT TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION,COLUMN_NAME,COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA IN ('tw_char','tw_world') AND (LOWER(COLUMN_NAME) REGEXP 'appearance|display|model|skin|face|hair|playerbytes' OR LOWER(TABLE_NAME) REGEXP 'appearance|display|model|customization') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION
+RESULT_ROWS 224
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\appearance-columns.tsv
+
+QUERY show-create-characters
+PURPOSE Record the authoritative live characters definition.
+SQL SHOW CREATE TABLE `characters`
+RESULT_ROWS 79
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\show-create-characters.tsv
+
+QUERY show-create-character-skills
+PURPOSE Record the authoritative live character skill definition.
+SQL SHOW CREATE TABLE `character_skills`
+RESULT_ROWS 7
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\show-create-character-skills.tsv
+
+QUERY show-create-playerbot-events
+PURPOSE Record the authoritative PlayerBot event definition.
+SQL SHOW CREATE TABLE `ai_playerbot_random_bots`
+RESULT_ROWS 15
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\show-create-playerbot-events.tsv
+
+QUERY account-join-quality
+PURPOSE Prove that account-prefix classification covers authoritative characters without exporting account identity.
+SQL SELECT COUNT(*),SUM(CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END),SUM(CASE WHEN a.id IS NULL THEN 1 ELSE 0 END) FROM tw_char.characters c LEFT JOIN tw_logon.account a ON a.id=c.account
+RESULT_ROWS 1
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\account-join-quality.tsv
+
+QUERY population-aggregate
+PURPOSE Sanitized aggregate classification of character populations.
+SQL SELECT COUNT(*),SUM(CASE WHEN LOWER(a.username) LIKE 'rndbot%' THEN 1 ELSE 0 END),SUM(CASE WHEN LOWER(a.username) NOT LIKE 'rndbot%' THEN 1 ELSE 0 END),SUM(CASE WHEN EXISTS (SELECT 1 FROM tw_char.ai_playerbot_random_bots e WHERE e.owner=0 AND e.bot=c.guid AND e.event='add') THEN 1 ELSE 0 END),SUM(CASE WHEN LOWER(a.username) NOT LIKE 'rndbot%' AND EXISTS (SELECT 1 FROM tw_char.ai_playerbot_random_bots e WHERE e.owner=0 AND e.bot=c.guid AND e.event='always' AND e.value=1) THEN 1 ELSE 0 END),SUM(CASE WHEN LOWER(a.username) NOT LIKE 'rndbot%' AND NOT EXISTS (SELECT 1 FROM tw_char.ai_playerbot_random_bots e WHERE e.owner=0 AND e.bot=c.guid AND e.event='add') AND NOT EXISTS (SELECT 1 FROM tw_char.ai_playerbot_random_bots e WHERE e.owner=0 AND e.bot=c.guid AND e.event='always' AND e.value=1) THEN 1 ELSE 0 END) FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account
+RESULT_ROWS 1
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\population-aggregate.tsv
+
+QUERY bot-population-rows
+PURPOSE Export only GUIDs belonging to independently proven bot populations, with no character or account names.
+SQL SELECT p.population_key,p.bot_guid,c.race,c.class,c.gender,c.playerBytes,c.playerBytes2 FROM (SELECT DISTINCT 'random_account_stock' AS population_key,c.guid AS bot_guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account WHERE LOWER(a.username) LIKE 'rndbot%' UNION SELECT DISTINCT 'active_random_rotation',c.guid FROM tw_char.characters c JOIN tw_char.ai_playerbot_random_bots e ON e.owner=0 AND e.bot=c.guid AND e.event='add' WHERE e.bot<>0 UNION SELECT DISTINCT 'inactive_random_reserve',c.guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account WHERE LOWER(a.username) LIKE 'rndbot%' AND NOT EXISTS (SELECT 1 FROM tw_char.ai_playerbot_random_bots e WHERE e.owner=0 AND e.bot=c.guid AND e.event='add') UNION SELECT DISTINCT 'configured_player_owned_always_online',c.guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account JOIN tw_char.ai_playerbot_random_bots e ON e.owner=0 AND e.bot=c.guid AND e.event='always' AND e.value=1 WHERE LOWER(a.username) NOT LIKE 'rndbot%') p JOIN tw_char.characters c ON c.guid=p.bot_guid ORDER BY p.population_key,p.bot_guid
+RESULT_ROWS 9000
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\bot-population-rows.tsv
+
+QUERY bot-skill-rows
+PURPOSE Capture character skill records only for proven bot populations.
+SQL SELECT p.population_key,p.bot_guid,s.skill,s.value,s.max FROM (SELECT DISTINCT 'random_account_stock' AS population_key,c.guid AS bot_guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account WHERE LOWER(a.username) LIKE 'rndbot%' UNION SELECT DISTINCT 'active_random_rotation',c.guid FROM tw_char.characters c JOIN tw_char.ai_playerbot_random_bots e ON e.owner=0 AND e.bot=c.guid AND e.event='add' WHERE e.bot<>0 UNION SELECT DISTINCT 'inactive_random_reserve',c.guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account WHERE LOWER(a.username) LIKE 'rndbot%' AND NOT EXISTS (SELECT 1 FROM tw_char.ai_playerbot_random_bots e WHERE e.owner=0 AND e.bot=c.guid AND e.event='add') UNION SELECT DISTINCT 'configured_player_owned_always_online',c.guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account JOIN tw_char.ai_playerbot_random_bots e ON e.owner=0 AND e.bot=c.guid AND e.event='always' AND e.value=1 WHERE LOWER(a.username) NOT LIKE 'rndbot%') p JOIN tw_char.character_skills s ON s.guid=p.bot_guid ORDER BY p.population_key,p.bot_guid,s.skill
+RESULT_ROWS 102248
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\bot-skill-rows.tsv
+
+QUERY playerbot-event-summary
+PURPOSE Summarize PlayerBot event records without exporting event data or account identity.
+SQL SELECT IF(owner=0,1,0),IF(bot=0,1,0),event,COUNT(*),COUNT(DISTINCT bot),MIN(value),MAX(value) FROM tw_char.ai_playerbot_random_bots GROUP BY IF(owner=0,1,0),IF(bot=0,1,0),event ORDER BY 1 DESC,2 DESC,3
+RESULT_ROWS 8
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\playerbot-event-summary.tsv
+
+QUERY playerbot-event-integrity
+PURPOSE Count placeholder, orphan, duplicate, and non-prefix event conditions without exporting orphan GUIDs.
+SQL SELECT 'system_placeholder_rows',COUNT(*) FROM tw_char.ai_playerbot_random_bots WHERE bot=0 UNION ALL SELECT 'orphan_nonzero_bot_rows',COUNT(*) FROM tw_char.ai_playerbot_random_bots e LEFT JOIN tw_char.characters c ON c.guid=e.bot WHERE e.bot<>0 AND c.guid IS NULL UNION ALL SELECT 'duplicate_owner_bot_event_extra_rows',IFNULL(SUM(x.row_count-1),0) FROM (SELECT COUNT(*) AS row_count FROM tw_char.ai_playerbot_random_bots GROUP BY owner,bot,event HAVING COUNT(*)>1) x UNION ALL SELECT 'nonprefix_add_characters',COUNT(DISTINCT c.guid) FROM tw_char.ai_playerbot_random_bots e JOIN tw_char.characters c ON c.guid=e.bot JOIN tw_logon.account a ON a.id=c.account WHERE e.owner=0 AND e.event='add' AND LOWER(a.username) NOT LIKE 'rndbot%' UNION ALL SELECT 'login_marker_rows',COUNT(*) FROM tw_char.ai_playerbot_random_bots WHERE owner=0 AND event='login'
+RESULT_ROWS 5
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\playerbot-event-integrity.tsv
+
+QUERY bot-skill-integrity
+PURPOSE Prove skill-row uniqueness for proven bots and count zero-valued skill records.
+SQL SELECT 'duplicate_population_guid_skill_extra_rows',IFNULL(SUM(x.row_count-1),0) FROM (SELECT p.population_key,p.bot_guid,s.skill,COUNT(*) AS row_count FROM (SELECT DISTINCT 'random_account_stock' AS population_key,c.guid AS bot_guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account WHERE LOWER(a.username) LIKE 'rndbot%' UNION SELECT DISTINCT 'active_random_rotation',c.guid FROM tw_char.characters c JOIN tw_char.ai_playerbot_random_bots e ON e.owner=0 AND e.bot=c.guid AND e.event='add' WHERE e.bot<>0 UNION SELECT DISTINCT 'inactive_random_reserve',c.guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account WHERE LOWER(a.username) LIKE 'rndbot%' AND NOT EXISTS (SELECT 1 FROM tw_char.ai_playerbot_random_bots e WHERE e.owner=0 AND e.bot=c.guid AND e.event='add') UNION SELECT DISTINCT 'configured_player_owned_always_online',c.guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account JOIN tw_char.ai_playerbot_random_bots e ON e.owner=0 AND e.bot=c.guid AND e.event='always' AND e.value=1 WHERE LOWER(a.username) NOT LIKE 'rndbot%') p JOIN tw_char.character_skills s ON s.guid=p.bot_guid GROUP BY p.population_key,p.bot_guid,s.skill HAVING COUNT(*)>1) x UNION ALL SELECT 'zero_value_population_skill_rows',COUNT(*) FROM (SELECT DISTINCT c.guid AS bot_guid FROM tw_char.characters c JOIN tw_logon.account a ON a.id=c.account WHERE LOWER(a.username) LIKE 'rndbot%' UNION SELECT DISTINCT c.guid FROM tw_char.characters c JOIN tw_char.ai_playerbot_random_bots e ON e.owner=0 AND e.bot=c.guid AND e.event IN ('add','always') AND e.bot<>0) p JOIN tw_char.character_skills s ON s.guid=p.bot_guid WHERE s.value=0
+RESULT_ROWS 2
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\bot-skill-integrity.tsv
+
+QUERY world-race-class-combinations
+PURPOSE Capture locally configured character-creation combinations without names or gameplay rows.
+SQL SELECT race,class,COUNT(*) FROM tw_world.playercreateinfo GROUP BY race,class ORDER BY race,class
+RESULT_ROWS 59
+RESULT_FILE C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\world-race-class-combinations.tsv
+

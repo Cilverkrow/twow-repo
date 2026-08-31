@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "deliverable": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121-deliverables.zip",
+  "size": 8049818,
+  "entry_count": 57,
+  "sha256": "510C3E365C959DAD8ACCE30A5DA29D5C6F0B6D268D9AD5DCC8E7A82FF99BE365",
+  "manifest_sha256": "3F99D19E66BE9FAA09ED0410F113B5B654010A9D19DB073158A35E18093940C7",
+  "manifest_entries": 56,
+  "safe_paths": true,
+  "duplicate_entries": false,
+  "zip_manifest_verified": true,
+  "created_utc": "2026-08-30T16:27:56.2005301Z"
+}

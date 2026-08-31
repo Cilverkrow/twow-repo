@@ -1,0 +1,10 @@
+ M src/modules/PlayerBots/playerbot/PlayerbotAI.cpp
+ M src/modules/PlayerBots/playerbot/PlayerbotAI.h
+ M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp
+ M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h
+ M src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp
+ M src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in
+ M src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp
+?? bin/Release/mangosd.pdb
+?? src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.cpp
+?? src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.h

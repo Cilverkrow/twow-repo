@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C-R1",
+  "authorization": "02C_R1_PHASE_C_TO_E_AUTHORIZED=YES",
+  "captured_utc": "2026-08-29T22:45:51.2972941Z",
+  "captured_local": "2026-08-30T00:45:51.3025215+02:00",
+  "gates": {
+    "production_exe": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+      "expected_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "actual_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "match": true
+    },
+    "candidate_exe": {
+      "path": "C:\\TW\\b02b-20260829-222913\\src\\bin\\Release\\mangosd.exe",
+      "length": 20378624,
+      "expected_sha256": "2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE",
+      "actual_sha256": "2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE",
+      "match": true
+    },
+    "mangosd_conf": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.conf",
+      "expected_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "actual_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "match": true
+    },
+    "aiplayerbot_conf": {
+      "path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+      "expected_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "actual_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "match": true
+    },
+    "backup_path": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.pre-source-baseline-02c-20260829.exe",
+      "exists_before_phase_c": false,
+      "unused": true
+    }
+  },
+  "process_state": {
+    "mangosd": [],
+    "realmd": [],
+    "mysqld": [{"pid":31724,"session_id":1,"path":"C:\\TW\\ComTW\\DB\\bin\\mysqld.exe"}],
+    "ollama": [{"pid":5528,"session_id":1,"path":"C:\\Users\\djfav\\AppData\\Local\\Programs\\Ollama\\ollama.exe"}]
+  },
+  "listener_state": [
+    {"address":"127.0.0.1","port":3307,"pid":31724},
+    {"address":"127.0.0.1","port":11434,"pid":5528}
+  ],
+  "prior_blocked_package": {
+    "path": "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-BLOCKED-20260830-001200.zip",
+    "sha256": "78B02C8B3D614581BF842129541BE5C2AE249978783D7CFAB4B88C049549D280",
+    "metadata_path": "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-BLOCKED-20260830-001200.zip.metadata.json",
+    "metadata_sha256": "1D40B17EC829255BABFCF9CE701FD6FA2917520E482FA938671854CE361E4177"
+  },
+  "preflight_result": "PASS",
+  "copy_started_before_all_gates_passed": false
+}

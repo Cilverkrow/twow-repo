@@ -1,0 +1,220 @@
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19032'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19032' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19032'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 111
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19253'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19032', '0', '1', '-6240.319824', '331.032990', '382.757996')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19253' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19253', '1', '141', '10311.299805', '831.463013', '1326.410034')
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19253'
+2026-08-28 18:11:34 [1 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 98
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19035'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19035' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19035', '0', '5225', '3212.629883', '-2501.439941', '111.709999')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19035'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 98
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19030'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19030' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19030', '1', '141', '10311.299805', '831.463013', '1326.410034')
+2026-08-28 18:11:34 [1 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19030'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22168' AND event = 'login'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22166' AND event = 'login'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22163' AND event = 'login'
+2026-08-28 18:11:34 [2 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22162' AND event = 'login'
+2026-08-28 18:11:34 [4 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22164' AND event = 'login'
+2026-08-28 18:11:34 [3 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22167' AND event = 'login'
+2026-08-28 18:11:34 [3 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19036' AND event = 'login'
+2026-08-28 18:11:34 [3 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19031' AND event = 'login'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19032' AND event = 'login'
+2026-08-28 18:11:34 [3 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19034' AND event = 'login'
+2026-08-28 18:11:34 [2 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19030' AND event = 'login'
+2026-08-28 18:11:34 [2 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19033' AND event = 'login'
+2026-08-28 18:11:34 [2 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19029' AND event = 'login'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1
+2026-08-28 18:11:34 [3 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19035' AND event = 'login'
+2026-08-28 18:11:34 [3 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19253' AND event = 'login'
+2026-08-28 18:11:34 [4 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19261' AND event = 'login'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19030'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19034'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22162'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19029'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19033'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22163'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19035' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [2 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '22162', '1787933494', '110246', 'sellmultiplier', '184')
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22164' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [2 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '19035', '1787933494', '37982', 'sellmultiplier', '154')
+2026-08-28 18:11:34 [2 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22162' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [1 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '22164', '1787933494', '119716', 'sellmultiplier', '166')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 98
+2026-08-28 18:11:34 [1 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19028'
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19028' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [1 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19028'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 111
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19028', '0', '5225', '3212.629883', '-2501.439941', '111.709999')
+2026-08-28 18:11:34 [1 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19257'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19257', '0', '5225', '3212.629883', '-2501.439941', '111.709999')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19257' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19257'
+2026-08-28 18:11:34 [1 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 111
+2026-08-28 18:11:34 [1 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19255'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19255', '1', '215', '-2917.580078', '-257.980011', '52.996799')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19255' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19255'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 111
+2026-08-28 18:11:34 [1 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19258'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19258' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19258', '0', '1', '-6240.319824', '331.032990', '382.757996')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19258'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 111
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19256'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19256' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19256'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 328
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19256', '1', '141', '10311.299805', '831.463013', '1326.410034')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '22357'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('22357', '1', '14', '-618.518005', '-4251.669922', '38.717999')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '22357' order by idx
+2026-08-28 18:11:34 [2 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='22357'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 111
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19259'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19259', '1', '5536', '-233.000000', '-7177.000000', '16.520000')
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19259' order by idx
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19259'
+2026-08-28 18:11:34 [2 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 111
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19254'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19254', '0', '5225', '3212.629883', '-2501.439941', '111.709999')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19254' order by idx
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19254'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 111
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '19260'
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '19260' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('19260', '0', '5225', '3212.629883', '-2501.439941', '111.709999')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='19260'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 328
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '22349'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '22349' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='22349'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 328
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('22349', '0', '5225', '3212.629883', '-2501.439941', '111.709999')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '22350'
+2026-08-28 18:11:34 [1 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('22350', '0', '5225', '3212.629883', '-2501.439941', '111.709999')
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '22350' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [1 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='22350'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 328
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '22356'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('22356', '0', '12', '-8949.950195', '-132.492996', '83.531197')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '22356' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='22356'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 328
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '22354'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('22354', '1', '5536', '-233.000000', '-7177.000000', '16.520000')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '22354' order by idx
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='22354'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `target_guid`, `time` FROM `whisper_targets` WHERE `account` = 328
+2026-08-28 18:11:34 [0 ms] SQL: SELECT `title`, `active` FROM `character_titles` WHERE `guid` = '22352'
+2026-08-28 18:11:34 [1 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '22352' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = 'say' and owner = '0' order by idx
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1 FROM character_social WHERE flags='1' and friend='22352'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO character_homebind (guid,map,zone,position_x,position_y,position_z) VALUES ('22352', '0', '5225', '3212.629883', '-2501.439941', '111.709999')
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19131'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '18289'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19132'
+2026-08-28 18:11:34 [2 ms] SQL: SELECT id FROM character_pet WHERE owner = '18286'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19028' AND event = 'login'
+2026-08-28 18:11:34 [2 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19256' AND event = 'login'
+2026-08-28 18:11:34 [2 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19258' AND event = 'login'
+2026-08-28 18:11:34 [2 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19255' AND event = 'login'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19254' AND event = 'login'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19257' AND event = 'login'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19260' AND event = 'login'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19259' AND event = 'login'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22356' AND event = 'login'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22357' AND event = 'login'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22349' AND event = 'login'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22352' AND event = 'login'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22350' AND event = 'login'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT 1
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22354' AND event = 'login'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22354'
+2026-08-28 18:11:34 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '22356'
+2026-08-28 18:11:34 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '19258'
+2026-08-28 18:11:34 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '19131'
+2026-08-28 18:11:34 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '18289'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22352' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [1 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '22352', '1787933494', '92859', 'sellmultiplier', '160')
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '22354', '1787933494', '163675', 'sellmultiplier', '187')
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22354' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22350' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19259' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '22349' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [1 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19260' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [2 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '19259', '1787933494', '157955', 'sellmultiplier', '161')
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19254' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [3 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '22350', '1787933494', '127780', 'sellmultiplier', '182')
+2026-08-28 18:11:34 [2 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '19260', '1787933494', '51135', 'sellmultiplier', '227')
+2026-08-28 18:11:34 [3 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '22349', '1787933494', '83123', 'sellmultiplier', '191')
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19257' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [0 ms] SQL: DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '19028' AND event = 'sellmultiplier'
+2026-08-28 18:11:34 [0 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '19254', '1787933494', '126569', 'sellmultiplier', '126')
+2026-08-28 18:11:34 [1 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '19257', '1787933494', '91604', 'sellmultiplier', '218')
+2026-08-28 18:11:34 [1 ms] SQL: INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('0', '19028', '1787933494', '151354', 'sellmultiplier', '83')
+2026-08-28 18:11:35 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '19324'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19321'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19318'
+2026-08-28 18:11:35 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '19324'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT 1
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19030'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22162'
+2026-08-28 18:11:35 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '19034'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19033'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22163'
+2026-08-28 18:11:35 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '19029'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19030'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19033'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT 1
+2026-08-28 18:11:35 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '19132'
+2026-08-28 18:11:35 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '18286'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22354'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22356'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19258'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19131'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '18289'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22354'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22356'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19258'
+2026-08-28 18:11:35 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19131'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT 1
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19321'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19318'
+2026-08-28 18:11:36 [2 ms] SQL: SELECT id FROM character_pet WHERE owner = '19324'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19034'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19029'
+2026-08-28 18:11:36 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '22162'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22163'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19030'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '22162'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19033'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT 1
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19033'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19030'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '19132'
+2026-08-28 18:11:36 [1 ms] SQL: SELECT id FROM character_pet WHERE owner = '18286'
+2026-08-28 18:11:36 [0 ms] SQL: SELECT id FROM character_pet WHERE owner = '18289'

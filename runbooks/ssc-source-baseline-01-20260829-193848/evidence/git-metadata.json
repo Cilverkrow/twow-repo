@@ -1,0 +1,21 @@
+{
+  "repository_path": "C:\\TW\\ComTW\\source",
+  "branch": "playerbots-integration-gh",
+  "head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "upstream": "origin/playerbots-integration-gh",
+  "upstream_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "origin": "https://github.com/Shyalya/tortoise-wow.git",
+  "describe": "42b8a7f-dirty",
+  "head_commit": [
+    "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "58d7bec64779d7c5a0e629e6e58633f04346bf1a",
+    "2026-08-25T15:22:11+01:00",
+    "2026-08-25T15:22:11+01:00",
+    "dc: load recorded routes at runtime, and raise the instance gate"
+  ],
+  "tags": [],
+  "tags_pointing_at_head": [],
+  "gitmodules_present": false,
+  "gitlink_entries": [],
+  "submodules_present": false
+}

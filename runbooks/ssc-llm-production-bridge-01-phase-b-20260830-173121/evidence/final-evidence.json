@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "task": "SSC-LLM-PRODUCTION-BRIDGE-01-PHASE-B",
+  "generated_utc": "2026-08-30T16:23:22.8446339Z",
+  "baseline": {
+    "commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+    "detached": true,
+    "submodules": ""
+  },
+  "a_r2_zip": {
+    "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-r2-20260830-170407-deliverables.zip",
+    "size": 20488,
+    "sha256": "8D62769D838C1B359B590F3797EC9C17D809EAC1F1B907A49BF4A9644907625F",
+    "created_utc": "2026-08-30T15:14:59.8038017Z",
+    "last_write_utc": "2026-08-30T15:14:59.8654571Z",
+    "file_version": null,
+    "product_version": null
+  },
+  "planned_production_files": [
+    "src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.cpp",
+    "src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotAI.cpp",
+    "src/modules/PlayerBots/playerbot/PlayerbotAI.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+    "src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h",
+    "src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp",
+    "src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in",
+    "src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp"
+  ],
+  "unplanned_production_files": [],
+  "isolated_status": [
+    " M src/modules/PlayerBots/playerbot/PlayerbotAI.cpp",
+    " M src/modules/PlayerBots/playerbot/PlayerbotAI.h",
+    " M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp",
+    " M src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h",
+    " M src/modules/PlayerBots/playerbot/PlayerbotScripts.cpp",
+    " M src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in",
+    " M src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp",
+    "?? bin/Release/mangosd.pdb",
+    "?? src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.cpp",
+    "?? src/modules/PlayerBots/playerbot/ExternalLLMBridgeService.h"
+  ],
+  "build": {
+    "target": "Release/mangosd only",
+    "generator": "Visual Studio 17 2022 x64",
+    "cmake_version": "cmake version 4.4.2",
+    "msvc": "19.44.35228 / tools 14.44.35207",
+    "windows_sdk": "10.0.26100.0",
+    "parallel_projects": 2,
+    "cl_mp_count": 2,
+    "cmake_cache": {
+      "path": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\CMakeCache.txt",
+      "size": 33741,
+      "sha256": "AE0CC3023C0753CCE1FAB2050F26C15A7CB4FAF1E4F3A637D8B5DAE4AFA32A19",
+      "created_utc": "2026-08-30T16:16:03.5932040Z",
+      "last_write_utc": "2026-08-30T16:16:03.5942058Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "configure_log": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121\\logs\\configure-final-r2.stdout.log",
+      "size": 2468,
+      "sha256": "1C65BC9AA211EC31976FD3AF3FE9584D36F5338F65DE0C06C54FAD93411144D8",
+      "created_utc": "2026-08-30T16:15:57.8962906Z",
+      "last_write_utc": "2026-08-30T16:16:04.7170159Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "final_log": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121\\logs\\build-final-r2.combined.log",
+      "size": 32155,
+      "sha256": "DD928F199908D35B398F69342DEDC20D5A040A9574D49820A30151289110EA7A",
+      "created_utc": "2026-08-30T16:16:14.9706916Z",
+      "last_write_utc": "2026-08-30T16:22:47.1852188Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "diagnostics": [
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\dep\\src\\g3dlite\\System.cpp(1700,17): warning C4838: Konvertierung von \"G3D::uint32\" zu \"int\" erfordert eine einschränkende Konvertierung [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\dep\\src\\g3dlite\\g3dlite.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\dep\\src\\g3dlite\\System.cpp(1700,22): warning C4838: Konvertierung von \"G3D::uint32\" zu \"int\" erfordert eine einschränkende Konvertierung [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\dep\\src\\g3dlite\\g3dlite.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\dep\\src\\g3dlite\\System.cpp(1700,27): warning C4838: Konvertierung von \"G3D::uint32\" zu \"int\" erfordert eine einschränkende Konvertierung [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\dep\\src\\g3dlite\\g3dlite.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\dep\\src\\g3dlite\\System.cpp(1700,32): warning C4838: Konvertierung von \"G3D::uint32\" zu \"int\" erfordert eine einschränkende Konvertierung [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\dep\\src\\g3dlite\\g3dlite.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\src\\shared\\shared.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\src\\shared\\shared.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\src\\game\\game.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\src\\game\\game.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\src\\game\\game.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\src\\game\\game.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\src\\game\\game.vcxproj]",
+      "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\src\\shared\\httplib.h(2580,40): warning C4834: Rückgabewert der Funktion mit [[nodiscard]]-Attribut wird verworfen [C:\\TW\\ssc-llm-phase-b-20260830-173121\\build-final-r2\\src\\mangosd\\mangosd.vcxproj]"
+    ],
+    "error_count": 0
+  },
+  "artifacts": {
+    "executable": {
+      "path": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\bin\\Release\\mangosd.exe",
+      "size": 20504064,
+      "sha256": "6601A1961171CDE413DA387773054DE5B83C8A08E6DD01A22B32541F85C32C05",
+      "created_utc": "2026-08-30T16:22:41.9782203Z",
+      "last_write_utc": "2026-08-30T16:22:46.8221145Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "deliverable_executable": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121\\artifacts\\mangosd.exe",
+      "size": 20504064,
+      "sha256": "6601A1961171CDE413DA387773054DE5B83C8A08E6DD01A22B32541F85C32C05",
+      "created_utc": "2026-08-30T16:23:22.5720093Z",
+      "last_write_utc": "2026-08-30T16:22:46.8221145Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "pdb": {
+      "path": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\bin\\Release\\mangosd.pdb",
+      "size": 206655488,
+      "sha256": "17EC0D798C3250C0E867D71D7756B215DE8DBB5DD9EACEB6EE583532F8FC85B2",
+      "created_utc": "2026-08-30T16:22:42.0092777Z",
+      "last_write_utc": "2026-08-30T16:22:46.8351312Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "pe": {
+      "machine": "0x8664",
+      "linker_timestamp_unix": 1788106965,
+      "linker_timestamp_utc": "2026-08-30T16:22:45.0000000Z",
+      "pe32_plus": true,
+      "image_base": "0x0000000140000000",
+      "size_of_image": 20701184,
+      "codeview": [
+        {
+          "signature": "RSDS",
+          "guid": "810BDA8A-EE8A-420B-ABB2-D558569C5833",
+          "age": 1,
+          "pdb_path": "C:\\TW\\ssc-llm-phase-b-20260830-173121\\source\\bin\\Release\\mangosd.pdb",
+          "size": 93
+        }
+      ]
+    },
+    "embedded_revision_present": true,
+    "embedded_release_noop_present": true
+  },
+  "production": {
+    "source_status_before": [
+      " M src/modules/PlayerBots/CMakeLists.txt",
+      " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+      " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+      " M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+      "?? bin/Release/MoveMapGen.pdb",
+      "?? bin/Release/mangosd.pdb",
+      "?? bin/Release/mapextractor.pdb",
+      "?? bin/Release/realmd.pdb",
+      "?? bin/Release/vmap_assembler.pdb",
+      "?? bin/Release/vmapextractor.pdb"
+    ],
+    "source_status_after": [
+      " M src/modules/PlayerBots/CMakeLists.txt",
+      " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+      " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+      " M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+      "?? bin/Release/MoveMapGen.pdb",
+      "?? bin/Release/mangosd.pdb",
+      "?? bin/Release/mapextractor.pdb",
+      "?? bin/Release/realmd.pdb",
+      "?? bin/Release/vmap_assembler.pdb",
+      "?? bin/Release/vmapextractor.pdb"
+    ],
+    "source_status_unchanged": true,
+    "executable": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+      "size": 20376576,
+      "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "created_utc": "2026-08-25T16:54:55.7705743Z",
+      "last_write_utc": "2026-08-25T16:54:59.8378295Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "mangosd_config": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.conf",
+      "size": 69515,
+      "sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "created_utc": "2026-08-25T16:56:21.0361503Z",
+      "last_write_utc": "2026-08-29T15:38:43.2579727Z",
+      "file_version": null,
+      "product_version": null
+    },
+    "playerbot_config": {
+      "path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+      "size": 283717,
+      "sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "created_utc": "2026-08-25T16:56:21.0383696Z",
+      "last_write_utc": "2026-08-29T16:04:14.8193927Z",
+      "file_version": null,
+      "product_version": null
+    }
+  },
+  "prohibited_actions": {
+    "real_bridge_started": false,
+    "ollama_accessed": false,
+    "inference_performed": false,
+    "game_chat_sent": false,
+    "database_accessed": false,
+    "deployment_performed": false,
+    "phase_c_started": false,
+    "active_config_changed": false,
+    "production_exe_changed": false
+  }
+}

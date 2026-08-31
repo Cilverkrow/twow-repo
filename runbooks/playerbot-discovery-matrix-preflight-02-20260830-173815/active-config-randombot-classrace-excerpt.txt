@@ -1,0 +1,422 @@
+Source: C:\TW\ComTW\server\aiplayerbot.conf
+Bytes: 283717
+SHA-256: 490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF
+
+===== LINES 1-245 =====
+1:##########################################
+2:# MANGOS Ai Playerbot Configuration file #
+3:##########################################
+4:
+5:[AiPlayerbotConf]
+6:ConfVersion=2020072501
+7:
+8:# Enable or disable AI Playerbot
+9:# The bot subsystem is built into mangosd but inert
+10:# unless this is flipped to 1 + the user knows what they're doing. Flip when you
+11:# want to test/play with bots; flip back when you want guaranteed clean live play.
+12:AiPlayerbot.Enabled = 1
+13:
+14:# Enable random bot system
+15:# Single-bot manual-add (`.bot add <name>`) is the
+16:# recommended starting point. Random bots auto-spawn dozens of characters and
+17:# need DB schema + tuned class probabilities ??? defer this.
+18:AiPlayerbot.RandomBotAutologin = 1
+19:
+20:# Log on all random bots on start
+21:AiPlayerbot.RandomBotLoginAtStartup = 1
+22:
+23:# Disable automatic DBStore save
+24:AiPlayerbot.ExplicitDbStoreSave = 0
+25:
+26:# Log out random bots after BotInWorldTime interval
+27:# AiPlayerbot.RandomBotTimedLogout = 1
+28:
+29:# Keep random bots logged out for an BotInWorldTime interval
+30:# AiPlayerbot.RandomBotTimedOffline = 0
+31:
+32:# Login Bots when real players login
+33:# AiPlayerbot.RandomBotLoginWithPlayer = 0
+34:
+35:# Delete all random bot accounts (reset randombots)
+36:AiPlayerbot.DeleteRandomBotAccounts = 0
+37:
+38:# auto-login all player alts as bots on player login
+39:AiPlayerbot.BotAutologin = 0
+40:
+41:# Enable LFG for random bots
+42:AiPlayerbot.RandomBotJoinLfg = 1
+43:
+44:# Enable BG/Arena for random Bots
+45:AiPlayerbot.RandomBotJoinBG = 1
+46:
+47:# Enable Auto join BG - bots randomly join WSG and 2v2 Arena if server is not lagging
+48:AiPlayerbot.RandomBotAutoJoinBG = 0
+49:
+50:# Mark many quests <= Bot level as complete (slows down bot creation)
+51:AiPlayerbot.PreQuests = 0
+52:
+53:# Create random bot accounts and characters automaticallylly
+54:AiPlayerbot.RandomBotAutoCreate = 1
+55:
+56:# Random bot count
+57:AiPlayerbot.MinRandomBots = 50
+58:AiPlayerbot.MaxRandomBots = 50
+59:AiPlayerbot.RandomBotMinLevel = 1
+60:AiPlayerbot.RandomBotMaxLevel = 60
+61:
+62:# Accounts to create for random bots
+63:AiPlayerbot.RandomBotAccountPrefix = RNDBOT
+64:AiPlayerbot.RandomBotAccountCount = 500
+65:
+66:# Disable core mangos map/bot optimizations which hinders bot activity
+67:# Works best together with AiPlayerbot.DisableActivityPriorities = 1
+68:# (0-1), default 0
+69: AiPlayerbot.DisableBotOptimizations = 1
+70:
+71:# Disable bot activity priorities, to make all bots ACTUALLY active without player in the zones or server (unless AiPlayerbot.DisableBotOptimizations = 0)
+72:# This setting is added for the sake of having all bots always active regardless of anything
+73:# With this enabled, if you get lags - then you need to reduce amount of online bots, rather than relying on optimizations
+74:# This will ingore the AiPlayerbot.botActiveAlone setting, all bots will be active regardless
+75:# Works best together with AiPlayerbot.DisableBotOptimizations = 1
+76:# (0-1), default 0
+77:AiPlayerbot.DisableActivityPriorities = 1
+78:
+79:# Force bots to become active when a player is nearby
+80:#AiPlayerbot.ForceActiveWhenNearPlayer = 0
+81:
+82:# Force bots to become active when guild orders are enabled
+83:#AiPlayerbot.GuildOrderAlwaysActive = 1
+84:
+85:# Limit combat activity for slight performance boost.
+86:#AiPlayerbot.LimitCombatActivity = 0
+87:
+88:# Percentage of fully active bots. Default is 10, higher numbers may affect performance
+89:# AiPlayerbot.botActiveAlone = 10
+90:
+91:# Limit random bot max level to online players max level + 5 and uses reference level 1 without a player.
+92: AiPlayerbot.SyncLevelWithPlayers = 1
+93: AiPlayerbot.SyncLevelMaxAbove = 4
+94: AiPlayerbot.SyncLevelNoPlayer = 1
+95:
+96:# Sync non-random bot alt levels to master level automatically
+97:# When enabled, bot alts will level up one level at a time to match their master's level
+98:# AiPlayerbot.SyncAltLevelToMaster = 0
+99:
+100:# Random bot guild count
+101:AiPlayerbot.RandomBotGuildCount = 12
+102:
+103:# Delete all random bot guilds
+104:AiPlayerbot.DeleteRandomBotGuilds = 0
+105:
+106:# Random bot arena team count
+107:AiPlayerbot.RandomBotArenaTeamCount = 20
+108:
+109:# Delete all random bot arena teams
+110:AiPlayerbot.DeleteRandomBotArenaTeams = 0
+111:
+112:# Maps to teleport random bots
+113:AiPlayerbot.RandomBotMaps = 0,1,530,571
+114:
+115:# Min and max intervals for random teleports, in seconds (default: 2hrs and 48hrs)
+116:# The comment above was right and the values below were not: they had drifted to
+117:# 24hrs and 7 days, so a bot stayed put for up to a week. tbc and wotlk both ship
+118:# 2hrs/48hrs; vanilla now does too.
+119:AiPlayerbot.RandomBotTeleportTeleportMinInterval = 7200
+120:AiPlayerbot.RandomBotTeleportTeleportMaxInterval = 172800
+121:
+122:# Change random bot has lower gear
+123:AiPlayerbot.RandomGearLoweringChance = 0.15
+124:
+125:# Max item level of random equipment
+126:# Classic
+127:# Max iLVL Tier 1 = 66 | Tier 2 = 76 | Tier 2.5 = 81 | Tier 3 = 99
+128:# Max iLVL Phase 1 = 71(MC, ONY, ZG) | Phase 2(BWL) = 77 | Phase 2.5(AQ) = 88 | Phase 3(NAXX) = 100 (NOT RECOMMENDED SINCE ILVL OVERLAPS BETWEEN TIERS)
+129:AiPlayerbot.RandomGearMaxLevel = 500
+130:
+131:# Max difference between bot level and item's required level to be used in randomisation
+132:# Default = 9, means bots level 60 can use items that require (themselves or via quests) level 51 and above
+133:AiPlayerbot.RandomGearMaxDiff = 9
+134:
+135:# Regularly upgrade bots equipment for their level
+136:AiPlayerbot.RandomGearUpgradeEnabled = 1
+137:
+138:# Enable random tabards on randomisation
+139:AiPlayerbot.RandomGearTabards = 0
+140:
+141:# Chance to get a random tabard
+142:AiPlayerbot.RandomGearTabardsChance = 0.1
+143:
+144:# Replace guild tabard with random one
+145:AiPlayerbot.RandomGearTabardsReplaceGuild = 0
+146:
+147:# Allow use tabards that have no vendors, quests or loot related to it
+148:AiPlayerbot.RandomGearTabardsUnobtainable = 0
+149:
+150:# List of item IDs to exclude from random gear, separated by comma
+151:AiPlayerbot.RandomGearBlacklist = 0
+152:
+153:# Roll need on items if slot is empty or broken, even if not appropriate for bot's spec
+154:# Bots without real player master ignore this config and always roll need in that case
+155:# 1 - roll need on such items
+156:# 0 - roll greed on such items (Default)
+157:AiPlayerbot.RollBadItemsWithPlayer = 0
+158:
+159:# Chance random bot has max level on first randomize (default 0.15)
+160:AiPlayerbot.RandomBotMaxLevelChance = 0
+161:# Chance bot chooses RPG (Teleport to random camp for their level) instead of grinding
+162:AiPlayerbot.RandomBotRpgChance = 0.8
+163:
+164:# Random bots teleport to zones around real player if level is appropriate
+165:# AiPlayerbot.RandomBotTeleportNearPlayer = 0
+166:
+167:# Limit how many random bots teleport to points in zones around real player
+168:# AiPlayerbot.RandomBotTeleportNearPlayerMaxAmount = 0
+169:
+170:# Limit whithin what distance between other bots they teleport to points in zones around real player
+171:# AiPlayerbot.RandomBotTeleportNearPlayerMaxAmountRadius = 0
+172:
+173:# Bot transport use style: 0 = walk on transports (currently not available), 1 = teleport on transports and ride it, 2 = teleport from dock to dock bypassing transport.
+174:# AiPlayerbot.TransportTeleportType = 2
+175:
+176:# Chance for bot to use potions
+177:AiPlayerbot.UsePotionChance = 1.0
+178:
+179:# Bots will speed up when following to stay close.
+180: AiPlayerbot.BoostFollow = 1
+181:
+182:# Bots and npcs turn to eachother during an rpg interaction
+183:AiPlayerbot.TurnInRpg = 1
+184:
+185:# Bots will make sounds when repairing, selling items ect.
+186:AiPlayerbot.GlobalSoundEffects = 1
+187:
+188:# Show progress bars for random bots (disabled by default)
+189:AiPlayerbot.ShowProgressBars = 1
+190:
+191:# Set randombots movement speed to walking anywhere
+192:AiPlayerbot.RandombotsWalkingRPG = 0
+193:
+194:# Set randombots movement speed to walking only inside buildings
+195:AiPlayerbot.RandombotsWalkingRPG.InDoors = 0
+196:
+197:# Bots greet to the players
+198:AiPlayerbot.EnableGreet = 1
+199:
+200:# Show helmet and cloak on randombots (reset required)
+201:AiPlayerbot.RandomBotShowHelmet = 1
+202:AiPlayerbot.RandomBotShowCloak = 1
+203:
+204:# Disable random levels for randombots
+205:# Every bots started on the specified level and level up by killing mobs.
+206:#
+207:# This is a bet on uptime, so choose deliberately:
+208:#
+209:#   0  Every bot is rolled a level on creation, which spreads the population
+210:#      across the world immediately. What tbc and wotlk ship, and the right
+211:#      choice for a realm that is started and stopped rather than left running.
+212:#
+213:#   1  Bots all begin at randombotStartingLevel and have to work their way up,
+214:#      which only happens while the realm is actually running. On a realm that
+215:#      runs continuously this produces a genuine level curve over a few weeks.
+216:#      On one that does not, every bot stays at the starting level forever - and
+217:#      because RandomTeleportForLevel draws from the tele cache bucket for the
+218:#      bot's own level, and the level-1 bucket holds only 247 points, all of
+219:#      them in starting zones, the whole population ends up crowded into six
+220:#      zones. Raising randombotStartingLevel does not help: every bot then
+221:#      shares one level and therefore one set of zones. You get a different
+222:#      crowd, not a spread.
+223:#
+224:# Changing this on a running realm is not free either - Randomize() reassigns
+225:# levels, so a realm that already grew an organic curve would lose it.
+226:AiPlayerbot.DisableRandomLevels = 1
+227:
+228:# Set randombots starting level here if "AiPlayerbot.DisableRandomLevels" enabled
+229:# Recommended: 5+
+230:AiPlayerbot.randombotStartingLevel = 1
+231:
+232:# Set XP rate for bots (default: 1)
+233:# Server XP Rate * AiPlayerbot.XPRate
+234:AiPlayerbot.XPRate = 0.8
+235:
+236:# Set minimum level of randombots where gets enchants on items (Maxlevel + 1 to disable)
+237:# Default: 60
+238:AiPlayerbot.minEnchantingBotLevel = 81
+239:
+240:# Randombots checking players gear score level and deny the group invite if it's too low
+241:# Default: 0 (disabled)
+242:AiPlayerbot.GearScoreCheck = 0
+243:
+244:# Randombots checking players level difference and deny the group invite if it's too low
+245:# Default: 30
+
+===== LINES 450-545 =====
+450:# All other parameters are optional but can be changed by uncommenting them here #
+451:#                                                                                #
+452:##################################################################################
+453:
+454:##################################################################################
+455:#                                                                                #
+456:# Bot probabilities                                                              #
+457:#                                                                                #
+458:##################################################################################
+459:#
+460:# AiPlayerbot.ClassRaceProb.<class>.<race> = <number>         #Probability Randombots will be allowed to login with this class and race. (default 100)
+461:# All probabilities are relative setting all values to 200 is the same as setting all values to 5.
+462:# For logging in bots the amount a race/class combo allowed is (<race/class probability>*totalBots/<total probability of all race/classes>)+1 (if not 0)
+463:#
+464:# These are overrides. The order of reading is default -> race -> class -> race+class.
+465:# So if you set human to 50 and warrior to 75, human mage to 65 and orc warrior to 55:
+466:# All humans except mage and warrior will have a 50% lower chance to be generated.
+467:# All non-orc warriors will have a 75% lower chance to be generated.
+468:# Human mages have a 65% lower chance to generate. 
+469:# Orc warriors have a 55% lower chance to generate.
+470:#
+471:# Source https://web.archive.org/web/20050115034332/http://www.warcraftrealms.com/census.php
+472:
+473:# As an alternative to probability-based generation, you can enable:
+474:# AiPlayerbot.ClassRace.UseFixedClassRaceCounts
+475:# This will generate random bots based on a fixed total count per class/race combo as defined by:
+476:# AiPlayerbot.ClassRaceProb.<class>.<race> = <number>
+477:#
+478:# AiPlayerbot.ClassRace.UseFixedClassRaceCounts = 0
+479:
+480:# AiPlayerbot.ClassRaceProb.1.0 = 178    # Human chance
+481:# AiPlayerbot.ClassRaceProb.2.0 = 65     # Orc chance
+482:# AiPlayerbot.ClassRaceProb.3.0 = 82     # Dwarf chance
+483:# AiPlayerbot.ClassRaceProb.4.0 = 193    # NightElf chance
+484:# AiPlayerbot.ClassRaceProb.5.0 = 98     # Undead chance
+485:# AiPlayerbot.ClassRaceProb.6.0 = 79     # Tauren chance
+486:# AiPlayerbot.ClassRaceProb.7.0 = 52     # Gnome chance
+487:# AiPlayerbot.ClassRaceProb.8.0 = 60     # Troll chance
+488:
+489:# AiPlayerbot.ClassRaceProb.1 = 114    # Warrior chance
+490:AiPlayerbot.ClassRaceProb.1.1 = 40     # Human warrior chance
+491:AiPlayerbot.ClassRaceProb.1.2 = 30     # Orc warrior chance
+492:AiPlayerbot.ClassRaceProb.1.3 = 20     # Dwarf warrior chance
+493:AiPlayerbot.ClassRaceProb.1.4 = 28     # NightElf warrior chance
+494:AiPlayerbot.ClassRaceProb.1.5 = 19     # Undead warrior chance
+495:AiPlayerbot.ClassRaceProb.1.6 = 31     # Tauren warrior chance
+496:AiPlayerbot.ClassRaceProb.1.7 = 7      # Gnome warrior chance
+497:AiPlayerbot.ClassRaceProb.1.8 = 7      # Troll warrior chance
+498:
+499:# AiPlayerbot.ClassRaceProb.2.0 = 139  # Paladin chance
+500:AiPlayerbot.ClassRaceProb.2.1 = 102    # Human paladin chance
+501:AiPlayerbot.ClassRaceProb.2.3 = 37     # Dwarf paladin chance
+502:
+503:# AiPlayerbot.ClassRaceProb.3 = 231    # Hunter chance
+504:AiPlayerbot.ClassRaceProb.3.2 = 32     # Orc hunter chance
+505:AiPlayerbot.ClassRaceProb.3.3 = 52     # Dwarf hunter chance
+506:AiPlayerbot.ClassRaceProb.3.4 = 102    # NightElf hunter chance
+507:AiPlayerbot.ClassRaceProb.3.6 = 23     # Tauren hunter chance
+508:AiPlayerbot.ClassRaceProb.3.8 = 22     # Troll hunter chance
+509:
+510:# AiPlayerbot.ClassRaceProb.4 = 197    # Rogue chance
+511:AiPlayerbot.ClassRaceProb.4.1 = 32     # Human rogue chance
+512:AiPlayerbot.ClassRaceProb.4.2 = 9      # Orc rogue chance
+513:AiPlayerbot.ClassRaceProb.4.3 = 9      # Dwarf rogue chance
+514:AiPlayerbot.ClassRaceProb.4.4 = 65     # NightElf rogue chance
+515:AiPlayerbot.ClassRaceProb.4.5 = 39     # Undead rogue chance
+516:AiPlayerbot.ClassRaceProb.4.7 = 18     # Gnome rogue chance
+517:AiPlayerbot.ClassRaceProb.4.8 = 25     # Troll rogue chance
+518:
+519:# AiPlayerbot.ClassRaceProb.5 = 94     # Priest chance
+520:AiPlayerbot.ClassRaceProb.5.1 = 26     # Human priest chance
+521:AiPlayerbot.ClassRaceProb.5.3 = 9      # Dwarf priest chance
+522:AiPlayerbot.ClassRaceProb.5.4 = 23     # NightElf priest chance
+523:AiPlayerbot.ClassRaceProb.5.5 = 27     # Undead priest chance
+524:AiPlayerbot.ClassRaceProb.5.8 = 9      # Troll priest chance
+525:
+526:# AiPlayerbot.ClassRaceProb.7 = 81     # Shaman chance
+527:AiPlayerbot.ClassRaceProb.7.2 = 21     # Orc shaman chance
+528:AiPlayerbot.ClassRaceProb.7.6 = 39     # Tauren shaman chance
+529:AiPlayerbot.ClassRaceProb.7.8 = 21     # Troll shaman chance
+530:
+531:# AiPlayerbot.ClassRaceProb.8 = 131    # Mage chance
+532:AiPlayerbot.ClassRaceProb.8.1 = 49     # Human mage chance
+533:AiPlayerbot.ClassRaceProb.8.5 = 36     # Undead mage chance
+534:AiPlayerbot.ClassRaceProb.8.7 = 33     # Gnome mage chance
+535:AiPlayerbot.ClassRaceProb.8.8 = 13     # Troll mage chance
+536:
+537:# AiPlayerbot.ClassRaceProb.9 = 118    # Warlock chance
+538:AiPlayerbot.ClassRaceProb.9.1 = 37     # Human warlock chance
+539:AiPlayerbot.ClassRaceProb.9.2 = 12     # Orc warlock chance
+540:AiPlayerbot.ClassRaceProb.9.5 = 43     # Undead warlock chance
+541:AiPlayerbot.ClassRaceProb.9.7 = 26     # Gnome warlock chance
+542:
+543:# AiPlayerbot.ClassRaceProb.11 = 112   # Druid chance
+544:AiPlayerbot.ClassRaceProb.11.4 = 76    # NightElf druid chance
+545:AiPlayerbot.ClassRaceProb.11.6 = 34    # Tauren druid chance
+
+===== LINES 1069-1079 =====
+1069:# Intervals
+1070:AiPlayerbot.RandomBotUpdateInterval = 500
+1071:AiPlayerbot.RandomBotsMaxLoginsPerInterval = 30
+1072:AiPlayerbot.RandomBotCountChangeMinInterval = 1800
+1073:AiPlayerbot.RandomBotCountChangeMaxInterval = 7200
+1074:#AiPlayerbot.MinRandomBotInWorldTime = 3600
+1075:#AiPlayerbot.MaxRandomBotInWorldTime = 1209600
+1076:#AiPlayerbot.MinRandomBotRandomizeTime = 7200
+1077:#AiPlayerbot.MaxRandomRandomizeTime = 1209600
+1078:#AiPlayerbot.MinRandomBotsPriceChangeInterval = 7200
+1079:#AiPlayerbot.MaxRandomBotsPriceChangeInterval = 172800
+
+===== LINES 1143-1150 =====
+1143:# Debug switches
+1144:#AiPlayerbot.SpellDump = 0
+1145:#AiPlayerbot.LogInGroupOnly = 1
+1146:#AiPlayerbot.LogValuesPerTick = 0
+1147:#AiPlayerbot.RandomChangeMultiplier = 1
+1148:
+1149:# Command server port, 0 - disabled
+1150:#AiPlayerbot.CommandServerPort = 8888
+
+===== LINES 1280-1328 =====
+1280:# Enable the alternative asynchronous login system.
+1281:AiPlayerbot.AsyncBotLogin = 0
+1282:
+1283:# Dramatically speeds up initial and future bot logins but takes 2gb/1000 accounts and might prevent player login during the initial bot login period.
+1284:# !!warning heavy db usage at start!!
+1285:# AiPlayerbot.PreloadHolders = 0
+1286:
+1287:# The login criteria to apply when trying to log in/keep online bots. options: 
+1288:# maxbots: Keep the total number of bots below the maxium (between max/min).
+1289:# spareroom: Keep some spare room below the max to login better bots.
+1290:# bg: Bots online inside battlegrounds should not log off.
+1291:# arena: Bots online inside arenas should not log off.
+1292:# instance: Bots online inside instances should not log off.
+1293:# online: Bots currently online stay online.
+1294:# logoff: Bots slated to logoff should log off. (Needs RandomBotTimedLogout)
+1295:# offline: Bots slated to stay offline should stay offline. (Needs RandomBotTimedOffline)
+1296:# classrace: Match the online bots to the configured class/race probabilities.
+1297:# level: Match the online bots to the configured level probabilities.
+1298:# range: Prefer bots near an online player.
+1299:# map: Prefer bots on the same map of an online player.
+1300:# group: Prefer bots in the same group as an online player.
+1301:# guild: Prefer bots in the same guild as an online player.
+1302:# 
+1303:# How it works: All bots are evaluated based on configurd criteria wether they should be online of offline.
+1304:# The default criteria must all be true or the bot will be logged off and can not log in.
+1305:# Each line works as an AND construction where all criteria must be met. Note they are alphabetically sorted so use 01,02 for more than 9 lines.
+1306:# Example logoff,classrace,level,online means a bot needs to have room in available level and classrace brackets, be online and not be slated to log off.
+1307:# The multiple lines work as an OR construction where the top lines are used first and as more bots are needed it moves down.
+1308:# Example 1 = group, 2 = bg. First it tries to login all bots in player groups, then as more bots are needed it looks for bots that might be online inside battlegrounds.
+1309:# 
+1310:# AiPlayerbot.DefaultLoginCriteria1 = maxbots,spareroom,offline
+1311:# AiPlayerbot.LoginCriteria.1 = group
+1312:# AiPlayerbot.LoginCriteria.2 = bg
+1313:# AiPlayerbot.LoginCriteria.3 = arena
+1314:# AiPlayerbot.LoginCriteria.4 = guild
+1315:# AiPlayerbot.LoginCriteria.5 = logoff,classrace,level,online
+1316:# AiPlayerbot.LoginCriteria.6 = logoff,classrace,level
+1317:# AiPlayerbot.LoginCriteria.7 = logoff,classrace
+1318:
+1319:# When bots are logged in that do not fully match all criteria selected it will do so up to xxx spaces below the maximum. Bots that suddenly match all the criteria will then have room to use this to log in.
+1320:# AiPlayerbot.FreeRoomForNonSpareBots = 0
+1321:
+1322:# Only log in bots within this distance from a real player.
+1323:# AiPlayerbot.LoginBotsNearPlayerRange = 1000
+1324:
+1325:# AiPlayerbot.LevelProbability.<level> = <number>         #Probability Randombots will be allowed to login with this level. (default 100)
+1326:# AiPlayerbot.LevelProbability.1 = 100
+1327:# AiPlayerbot.LevelProbability.10 = 100
+1328:# AiPlayerbot.LevelProbability.60 = 100

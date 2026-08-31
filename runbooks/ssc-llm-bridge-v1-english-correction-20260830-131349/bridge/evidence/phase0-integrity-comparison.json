@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "result": "PHASE0_INTEGRITY=UNCHANGED",
+  "compared_utc": "2026-08-29T02:07:36.1259304Z",
+  "before_file_count": 48,
+  "after_file_count": 48,
+  "before_total_bytes": 1381525,
+  "after_total_bytes": 1381525,
+  "before_fingerprint_sha256": "1968C9B4B4C1874A7709EE1101ED7E2A8BDD8644D487E75C925359CD27E11009",
+  "after_fingerprint_sha256": "1968C9B4B4C1874A7709EE1101ED7E2A8BDD8644D487E75C925359CD27E11009",
+  "difference_count": 0,
+  "differences": []
+}

@@ -1,0 +1,18 @@
+Database=tw_logon
+Table=donation_point_progress
+BaselineSource=C:\TW\ComTW\runbooks\donation-point-migration-20260829-183829\migration-result.txt
+BaselineSourceManifestVerified=true
+BaselineInitialRowCount=0
+Schema=account_id INT UNSIGNED NOT NULL PRIMARY KEY; accumulated_ms INT UNSIGNED NOT NULL DEFAULT 0; ENGINE=InnoDB; CHARSET=utf8mb4
+LivePreLoginSelectStatus=verified
+LivePreLoginDatabase=tw_logon
+LivePreLoginRowCount=0
+LivePreLoginClientExitCode=0
+LivePreLoginClientTransport=TCP 127.0.0.1:3307 with ephemeral --skip-ssl due local Schannel SEC_E_NO_CREDENTIALS
+TestAccountIdStatus=observed_numeric_id_505
+FirstPersistedValue=298887
+FirstPersistedObservedAtUtc=2026-08-29T16:56:29.4470627Z
+SecondPersistedValue=598900
+SecondPersistedObservedAtUtc=2026-08-29T17:01:30.4844961Z
+PersistedIncrease=300013
+ExceededFlushInterval=true

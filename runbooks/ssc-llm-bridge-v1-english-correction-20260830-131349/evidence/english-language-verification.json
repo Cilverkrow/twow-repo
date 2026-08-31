@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "result": "ENGLISH_OUTPUT_VERIFICATION=PASS",
+  "input_language": "German",
+  "required_output_language": "English",
+  "input_text": "Was hast du heute vor?",
+  "output_text": "I plan to scout the outskirts for any signs of the undead creeping closer. Safety first, always.",
+  "codepoints": 96,
+  "utf8_bytes": 96,
+  "within_240_codepoints": true,
+  "within_240_utf8_bytes": true,
+  "first_person_english_marker": true,
+  "german_dialogue_marker_absent": true,
+  "action_emote_command_prefix_absent": true
+}

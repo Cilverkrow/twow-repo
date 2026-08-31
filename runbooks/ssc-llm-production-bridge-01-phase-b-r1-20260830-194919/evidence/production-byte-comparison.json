@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "before_captured_utc": "2026-08-30T17:56:23.5951165Z",
+  "after_captured_utc": "2026-08-30T18:16:40.1511856Z",
+  "live_inventories_used": true,
+  "status_identical": true,
+  "dirty_file_set_and_bytes_identical": true,
+  "dirty_files": [
+    {
+      "relative_path": "src/modules/PlayerBots/CMakeLists.txt",
+      "before_status": " M",
+      "after_status": " M",
+      "before_size": 11546,
+      "after_size": 11546,
+      "before_sha256": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE",
+      "after_sha256": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+      "before_status": " M",
+      "after_status": " M",
+      "before_size": 27227,
+      "after_size": 27227,
+      "before_sha256": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592",
+      "after_sha256": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+      "before_status": " M",
+      "after_status": " M",
+      "before_size": 2053,
+      "after_size": 2053,
+      "before_sha256": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71",
+      "after_sha256": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+      "before_status": " M",
+      "after_status": " M",
+      "before_size": 222917,
+      "after_size": 222917,
+      "before_sha256": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A",
+      "after_sha256": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "bin/Release/MoveMapGen.pdb",
+      "before_status": "??",
+      "after_status": "??",
+      "before_size": 8253440,
+      "after_size": 8253440,
+      "before_sha256": "D21D297D0905F3D4DD8F2F995BB55099C1E923603014FC63B54EC30175D233D0",
+      "after_sha256": "D21D297D0905F3D4DD8F2F995BB55099C1E923603014FC63B54EC30175D233D0",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "bin/Release/mangosd.pdb",
+      "before_status": "??",
+      "after_status": "??",
+      "before_size": 212389888,
+      "after_size": 212389888,
+      "before_sha256": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873",
+      "after_sha256": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "bin/Release/mapextractor.pdb",
+      "before_status": "??",
+      "after_status": "??",
+      "before_size": 1921024,
+      "after_size": 1921024,
+      "before_sha256": "560D6676BAE78AA1BE4DC0D5164C0176CCC6F211D845A3FF4E4DEB2C5FFDC690",
+      "after_sha256": "560D6676BAE78AA1BE4DC0D5164C0176CCC6F211D845A3FF4E4DEB2C5FFDC690",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "bin/Release/realmd.pdb",
+      "before_status": "??",
+      "after_status": "??",
+      "before_size": 6991872,
+      "after_size": 6991872,
+      "before_sha256": "5E8584A65B973651D90B5BC2F38F755F16C2EE14ED46CA4592C9EA2BCFC3CAAF",
+      "after_sha256": "5E8584A65B973651D90B5BC2F38F755F16C2EE14ED46CA4592C9EA2BCFC3CAAF",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "bin/Release/vmap_assembler.pdb",
+      "before_status": "??",
+      "after_status": "??",
+      "before_size": 6565888,
+      "after_size": 6565888,
+      "before_sha256": "496EF245672C828F4CD6868CB7BE1BF3D1BCDE370044042FFDB25E98B3543B69",
+      "after_sha256": "496EF245672C828F4CD6868CB7BE1BF3D1BCDE370044042FFDB25E98B3543B69",
+      "byte_identical": true
+    },
+    {
+      "relative_path": "bin/Release/vmapextractor.pdb",
+      "before_status": "??",
+      "after_status": "??",
+      "before_size": 2109440,
+      "after_size": 2109440,
+      "before_sha256": "F4C3B57484204E1A2038621D167055D66FB56BC677CCA5F7AA0AB7CAC61A9838",
+      "after_sha256": "F4C3B57484204E1A2038621D167055D66FB56BC677CCA5F7AA0AB7CAC61A9838",
+      "byte_identical": true
+    }
+  ],
+  "protected_artifacts": {
+    "production_exe": {
+      "before_size": 20376576,
+      "after_size": 20376576,
+      "before_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "after_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "byte_identical": true
+    },
+    "mangosd_config": {
+      "before_size": 69515,
+      "after_size": 69515,
+      "before_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "after_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "byte_identical": true
+    },
+    "playerbot_config": {
+      "before_size": 283717,
+      "after_size": 283717,
+      "before_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "after_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "byte_identical": true
+    },
+    "previous_phase_b_zip": {
+      "before_size": 8049818,
+      "after_size": 8049818,
+      "before_sha256": "510C3E365C959DAD8ACCE30A5DA29D5C6F0B6D268D9AD5DCC8E7A82FF99BE365",
+      "after_sha256": "510C3E365C959DAD8ACCE30A5DA29D5C6F0B6D268D9AD5DCC8E7A82FF99BE365",
+      "byte_identical": true
+    }
+  },
+  "production_source_byte_identical": true
+}

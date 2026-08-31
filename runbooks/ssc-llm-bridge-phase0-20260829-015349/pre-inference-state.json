@@ -1,0 +1,72 @@
+{
+  "captured_utc": "2026-08-29T00:03:47.2254307Z",
+  "phase": "immediately_before_single_real_inference",
+  "processes": [
+    {
+      "name": "mangosd",
+      "pid": 9628,
+      "start_time_utc": "2026-08-28T22:12:48.2884890Z",
+      "cpu_total_seconds": 4821.766,
+      "cpu_sample_percent_one_core": 96.88,
+      "working_set_bytes": 1697124352,
+      "private_memory_bytes": 4305076224
+    },
+    {
+      "name": "mysqld",
+      "pid": 14776,
+      "start_time_utc": "2026-08-28T22:12:37.9655841Z",
+      "cpu_total_seconds": 108.266,
+      "cpu_sample_percent_one_core": 3.12,
+      "working_set_bytes": 81985536,
+      "private_memory_bytes": 509083648
+    },
+    {
+      "name": "ollama",
+      "pid": 5528,
+      "start_time_utc": "2026-08-28T21:21:58.8358817Z",
+      "cpu_total_seconds": 0.797,
+      "cpu_sample_percent_one_core": 0.0,
+      "working_set_bytes": 46100480,
+      "private_memory_bytes": 101969920
+    },
+    {
+      "name": "realmd",
+      "pid": 24080,
+      "start_time_utc": "2026-08-28T22:12:45.2939531Z",
+      "cpu_total_seconds": 4.031,
+      "cpu_sample_percent_one_core": 0.0,
+      "working_set_bytes": 11964416,
+      "private_memory_bytes": 6451200
+    }
+  ],
+  "listeners": [
+    {
+      "protocol": "TCP",
+      "local_address": "0.0.0.0:3724",
+      "foreign_address": "0.0.0.0:0",
+      "state": "ABH�REN",
+      "pid": 24080
+    },
+    {
+      "protocol": "TCP",
+      "local_address": "0.0.0.0:8090",
+      "foreign_address": "0.0.0.0:0",
+      "state": "ABH�REN",
+      "pid": 9628
+    },
+    {
+      "protocol": "TCP",
+      "local_address": "127.0.0.1:3307",
+      "foreign_address": "0.0.0.0:0",
+      "state": "ABH�REN",
+      "pid": 14776
+    },
+    {
+      "protocol": "TCP",
+      "local_address": "127.0.0.1:11434",
+      "foreign_address": "0.0.0.0:0",
+      "state": "ABH�REN",
+      "pid": 5528
+    }
+  ]
+}

@@ -13,3 +13,7 @@
 *.json text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+
+# Historical evidence is stored byte-for-byte so its recorded hashes remain meaningful.
+docs/history/** -text
+runbooks/** -text

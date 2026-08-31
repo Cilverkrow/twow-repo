@@ -1,0 +1,12 @@
+HEAD:src/game/Commands/Commands.cpp:17236:    result.reset(CharacterDatabase.PQuery("SELECT `item`, `item_template` FROM `character_inventory_copy` WHERE `guid`=%u", targetGuid.GetCounter()));
+HEAD:src/game/ObjectMgr.cpp:10158:    CharacterDatabase.DirectPExecute("TRUNCATE `character_inventory_copy`");
+HEAD:src/game/ObjectMgr.cpp:10159:    CharacterDatabase.DirectPExecute("ALTER TABLE `character_inventory_copy` DISABLE KEYS");
+HEAD:src/game/ObjectMgr.cpp:10160:    CharacterDatabase.DirectPExecute("INSERT INTO `character_inventory_copy` SELECT * FROM `character_inventory`");
+HEAD:src/game/ObjectMgr.cpp:10161:    CharacterDatabase.DirectPExecute("ALTER TABLE `character_inventory_copy` ENABLE KEYS");
+HEAD:src/game/World.cpp:2897:    // Progress is persisted in `donation_point_progress` in the login
+HEAD:src/game/World.cpp:2965:                    "SELECT `accumulated_ms` FROM `donation_point_progress` WHERE `account_id` = %u", dpAccountId));
+HEAD:src/game/World.cpp:2984:                    "INSERT INTO `donation_point_progress` (`account_id`, `accumulated_ms`) VALUES (%u, %u) "
+HEAD:src/game/World.cpp:2992:                    "INSERT INTO `donation_point_progress` (`account_id`, `accumulated_ms`) VALUES (%u, %u) "
+HEAD:src/game/World.h:1371:        // `donation_point_progress` in the login database - see World.cpp.
+HEAD:src/mangosd/mangosd.conf.dist.in:2085:# donation_point_progress table in the LOGIN database - see
+HEAD:src/mangosd/mangosd.conf.dist.in:2086:# sql/logon/donation_point_progress.sql. Without it the feature still runs but

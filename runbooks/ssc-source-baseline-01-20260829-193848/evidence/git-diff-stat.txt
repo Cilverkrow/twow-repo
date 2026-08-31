@@ -1,0 +1,9 @@
+warning: in the working copy of 'src/modules/PlayerBots/CMakeLists.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp', LF will be replaced by CRLF the next time Git touches it
+ src/modules/PlayerBots/CMakeLists.txt              |   1 +
+ .../PlayerBots/playerbot/PlayerbotLLMInterface.cpp | 362 +++++++++++++++++++++
+ .../PlayerBots/playerbot/PlayerbotLLMInterface.h   |  40 ++-
+ .../playerbot/strategy/actions/DebugAction.cpp     | 108 +++++-
+ 4 files changed, 495 insertions(+), 16 deletions(-)

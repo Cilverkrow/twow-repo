@@ -1,0 +1,6 @@
+"state","count","current_status","evidence"
+"rndbot_stock","4500","PROVEN","characters and character_skills MyISAM files unchanged since accepted capture"
+"stored_add_event_rows","53","PROVEN","ai_playerbot_random_bots.ibd unchanged since accepted capture"
+"effective_unexpired_add_events","0","PROVEN_AT_PACKAGE_CAPTURE","all accepted time plus validIn deadlines expired"
+"online_rndbot_guids","0","PROVEN_IN_MEMORY","no mangosd process exists"
+"group_login_candidates","","UNPROVEN","group table files changed after the last accepted group query"

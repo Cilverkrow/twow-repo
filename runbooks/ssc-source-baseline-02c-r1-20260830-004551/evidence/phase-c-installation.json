@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C-R1",
+  "phase": "C",
+  "completed_utc": "2026-08-29T22:48:57.2749037Z",
+  "initial_attempt": {
+    "result": "NO_CHANGE_ACCESS_DENIED",
+    "detail": "Initial sandboxed Move-Item was denied before moving the production executable; read-only recovery check confirmed the original remained at its original path with its expected hash and both backup/error paths remained unused."
+  },
+  "process_gate": {
+    "mangosd_running": false,
+    "realmd_running": false,
+    "listener_8090_present": false,
+    "listener_3724_present": false
+  },
+  "backup": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.pre-source-baseline-02c-20260829.exe",
+    "preexisting": false,
+    "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "expected_match": true
+  },
+  "temporary_installation": {
+    "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+    "source": "C:\\TW\\b02b-20260829-222913\\src\\bin\\Release\\mangosd.exe",
+    "sha256": "2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE",
+    "expected_match": true
+  },
+  "configs": {
+    "mangosd_conf_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+    "aiplayerbot_conf_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+    "unchanged": true
+  },
+  "result": "PASS"
+}

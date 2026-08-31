@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C",
+  "result": "BLOCKED",
+  "zip_path": "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-BLOCKED-20260830-001200.zip",
+  "zip_size_bytes": 85984,
+  "zip_entry_count": 23,
+  "zip_sha256": "78B02C8B3D614581BF842129541BE5C2AE249978783D7CFAB4B88C049549D280",
+  "generated_utc": "2026-08-29T22:13:15.0824740Z",
+  "production_exe_final_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+  "mangosd_final_state": "RUNNING",
+  "realmd_final_state": "RUNNING"
+}

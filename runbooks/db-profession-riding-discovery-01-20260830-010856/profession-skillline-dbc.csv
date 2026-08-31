@@ -1,0 +1,16 @@
+skill_id,english_name,german_name,dbc_category,core_classification,notes
+129,First Aid,Erste Hilfe,9,SECONDARY,Explicitly included by IsProfessionSkill
+142,Survival,Überlebenskunst,9,SECONDARY,Custom profession skill SKILL_SURVIVAL2; distinct from Hunter class skill 51
+164,Blacksmithing,Schmiedekunst,11,PRIMARY,Counts against the primary-profession limit
+165,Leatherworking,Lederverarbeitung,11,PRIMARY,Counts against the primary-profession limit
+171,Alchemy,Alchimie,11,PRIMARY,Counts against the primary-profession limit
+182,Herbalism,Kräuterkunde,11,PRIMARY,Counts against the primary-profession limit
+185,Cooking,Kochkunst,9,SECONDARY,Explicitly included by IsProfessionSkill
+186,Mining,Bergbau,11,PRIMARY,Counts against the primary-profession limit
+197,Tailoring,Schneiderei,11,PRIMARY,Counts against the primary-profession limit
+202,Engineering,Ingenieurskunst,11,PRIMARY,Counts against the primary-profession limit
+333,Enchanting,Verzauberkunst,11,PRIMARY,Counts against the primary-profession limit
+356,Fishing,Angeln,9,SECONDARY,Explicitly included by IsProfessionSkill
+393,Skinning,Kürschnerei,11,PRIMARY,Counts against the primary-profession limit
+755,Jewelcrafting,Juwelenschleifen,11,PRIMARY,Available locally; excluded from the MANGOSBOT_ZERO factory branch
+762,Riding,Reiten,9,SPECIAL,Riding is recognized separately and is not a profession

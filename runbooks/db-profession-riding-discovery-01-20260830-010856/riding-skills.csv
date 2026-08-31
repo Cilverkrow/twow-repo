@@ -1,0 +1,5 @@
+"spell_id","spell_name_en","spellLevel","baseLevel","effect1","effect2","skill_id","effectBasePoints2","effectTriggerSpell1","effectTriggerSpell2"
+"33388","Riding","1","0","3","118","762","0","0","0"
+"33389","Apprentice Riding","0","0","36","44","762","0","33388","0"
+"33391","Riding","1","0","3","118","762","1","0","0"
+"33392","Journeyman Riding","0","0","36","44","762","1","33391","0"

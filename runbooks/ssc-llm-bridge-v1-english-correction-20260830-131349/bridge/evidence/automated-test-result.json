@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "result": "V1_ENGLISH_SERVER_FREE_TESTS=PASS",
+  "node_path": "C:\\Users\\djfav\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+  "node_version": "v24.19.0",
+  "package_installation_performed": false,
+  "live_ollama_inference_performed": false,
+  "external_network_used": false,
+  "database_access_performed": false,
+  "game_chat_performed": false,
+  "game_source_modified_or_compiled": false,
+  "local_mock_http_only": true,
+  "wire_utc_preserved_as_evidence": true,
+  "admission_monotonic_deadline_tested": true,
+  "forward_and_backward_wall_clock_jumps_tested": true,
+  "sentence_terminator_runs_tested": [
+    ".",
+    "!",
+    "?",
+    "…"
+  ],
+  "english_only_system_and_personality_rules_tested": true,
+  "output_codepoint_limit": 240,
+  "output_utf8_byte_limit": 240,
+  "multibyte_boundary_without_codepoint_splitting_tested": true,
+  "actions_emotes_commands_or_channels_added": false,
+  "config_validation_exit_code": 0,
+  "test_exit_code": 0,
+  "tests": 75,
+  "passed": 75,
+  "failed": 0,
+  "test_duration_ms": 987,
+  "test_files": [
+    "test/bridge.test.mjs",
+    "test/transport.test.mjs",
+    "test/validation.test.mjs"
+  ]
+}

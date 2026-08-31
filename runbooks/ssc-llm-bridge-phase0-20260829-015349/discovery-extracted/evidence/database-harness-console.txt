@@ -1,0 +1,21 @@
+2026-08-28T20:41:20.2384791Z|Preflight passed: Windows PowerShell 5.1, Administrator=True, clean process/service/port state, runtime hashes verified.
+2026-08-28T20:41:22.2401595Z|Recorded pre-start active-data manifest in memory: files=1376.
+2026-08-28T20:41:23.9708821Z|Started and adopted reviewed MariaDB process: pid=12408.
+2026-08-28T20:41:24.4047443Z|Read-only query completed: id=database-identity, rows=1.
+2026-08-28T20:41:24.4979809Z|Read-only query completed: id=relevant-table-presence, rows=4.
+2026-08-28T20:41:24.5918376Z|Read-only query completed: id=relevant-columns, rows=92.
+2026-08-28T20:41:24.7385525Z|Read-only query completed: id=appearance-columns, rows=224.
+2026-08-28T20:41:24.8177524Z|Read-only query completed: id=show-create-characters, rows=79.
+2026-08-28T20:41:24.8968867Z|Read-only query completed: id=show-create-character-skills, rows=7.
+2026-08-28T20:41:24.9711296Z|Read-only query completed: id=show-create-playerbot-events, rows=15.
+2026-08-28T20:41:25.0529716Z|Read-only query completed: id=account-join-quality, rows=1.
+2026-08-28T20:41:25.1406400Z|Read-only query completed: id=population-aggregate, rows=1.
+2026-08-28T20:41:25.3021113Z|Read-only query completed: id=bot-population-rows, rows=9000.
+2026-08-28T20:41:25.7409766Z|Read-only query completed: id=bot-skill-rows, rows=102248.
+2026-08-28T20:41:25.8251147Z|Read-only query completed: id=playerbot-event-summary, rows=8.
+2026-08-28T20:41:25.9041874Z|Read-only query completed: id=playerbot-event-integrity, rows=5.
+2026-08-28T20:41:26.3684973Z|Read-only query completed: id=bot-skill-integrity, rows=2.
+2026-08-28T20:41:26.4500449Z|Read-only query completed: id=world-race-class-combinations, rows=59.
+2026-08-28T20:41:27.0079151Z|Controlled MariaDB shutdown completed for owned pid=12408.
+2026-08-28T20:41:27.6281392Z|Final state: database_processes=0, mangosd=0, realmd=0, services=0, port3307=0, port8090=0.
+2026-08-28T20:41:29.8818028Z|Recorded expected engine-runtime file changes separately: changed_paths=3.

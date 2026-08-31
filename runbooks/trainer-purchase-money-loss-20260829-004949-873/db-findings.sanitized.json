@@ -1,0 +1,918 @@
+{
+  "capturedAtUtc": "2026-08-28T23:14:07.6187298Z",
+  "sanitizedCharacterGuid": "CHAR-2DD856EFD1A1",
+  "characterPersisted": {
+    "raceId": 1,
+    "classId": 2,
+    "level": 5,
+    "moneyCopper": 393,
+    "playerFlags": 1,
+    "extraFlags": 54,
+    "gmOnBitSet": false,
+    "atLoginFlags": 0,
+    "online": 1,
+    "isGMCharacter": 0,
+    "map": 0,
+    "zone": 12,
+    "area": 59,
+    "limitation": "Persisted snapshot only. The online in-memory state was not queried and may differ."
+  },
+  "accountSecurity": {
+    "securityRank": 3,
+    "online": 1,
+    "flags": 0,
+    "accountIdExported": false
+  },
+  "trainer": {
+    "template": {
+      "entry": "925",
+      "name": "Brother Sammuel",
+      "subname": "Paladin Trainer",
+      "npcFlags": "19",
+      "trainerType": "0",
+      "trainerSpell": "0",
+      "trainerClass": "2",
+      "trainerRace": "0",
+      "trainerId": "0",
+      "faction": "12"
+    },
+    "spawns": [
+      {
+        "spawnGuid": "79967",
+        "entry": "925",
+        "map": "0",
+        "positionX": "-8914.57",
+        "positionY": "-215.016",
+        "positionZ": "82.2996"
+      }
+    ],
+    "rows": [
+      {
+        "entry": "925",
+        "trainerSpellId": "1873",
+        "baseCostCopper": "100",
+        "requiredSkill": "0",
+        "requiredSkillValue": "0",
+        "requiredLevel": "6"
+      },
+      {
+        "entry": "925",
+        "trainerSpellId": "1875",
+        "baseCostCopper": "10",
+        "requiredSkill": "0",
+        "requiredSkillValue": "0",
+        "requiredLevel": "1"
+      },
+      {
+        "entry": "925",
+        "trainerSpellId": "1888",
+        "baseCostCopper": "100",
+        "requiredSkill": "0",
+        "requiredSkillValue": "0",
+        "requiredLevel": "6"
+      },
+      {
+        "entry": "925",
+        "trainerSpellId": "1937",
+        "baseCostCopper": "100",
+        "requiredSkill": "0",
+        "requiredSkillValue": "0",
+        "requiredLevel": "8"
+      },
+      {
+        "entry": "925",
+        "trainerSpellId": "10321",
+        "baseCostCopper": "100",
+        "requiredSkill": "0",
+        "requiredSkillValue": "0",
+        "requiredLevel": "4"
+      },
+      {
+        "entry": "925",
+        "trainerSpellId": "19741",
+        "baseCostCopper": "100",
+        "requiredSkill": "0",
+        "requiredSkillValue": "0",
+        "requiredLevel": "4"
+      },
+      {
+        "entry": "925",
+        "trainerSpellId": "21083",
+        "baseCostCopper": "100",
+        "requiredSkill": "0",
+        "requiredSkillValue": "0",
+        "requiredLevel": "6"
+      }
+    ],
+    "exactTenCopperRow": [
+      {
+        "entry": "925",
+        "trainerSpellId": "1875",
+        "baseCostCopper": "10",
+        "requiredSkill": "0",
+        "requiredSkillValue": "0",
+        "requiredLevel": "1"
+      }
+    ],
+    "duplicateRows": [],
+    "mismatchedRows": [],
+    "otherTrainerExposure": {
+      "direct": [
+        {
+          "directRowCount": "13",
+          "distinctDirectTrainerCount": "13"
+        }
+      ],
+      "templates": [
+        {
+          "templateRowCount": "0",
+          "distinctTemplateCount": "0"
+        }
+      ]
+    }
+  },
+  "trainerSpell": [
+    {
+      "spellId": "1875",
+      "name": "Devotion Aura",
+      "rankText": "Rank 1",
+      "castingTimeIndex": "1",
+      "spellVisual": "107",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "implicitTargetA1": "0",
+      "trigger1": "465",
+      "trigger2": "0",
+      "trigger3": "0"
+    }
+  ],
+  "trainerSpellCastTime": [],
+  "devotionAuraRanks": [
+    {
+      "spellId": "465",
+      "name": "Devotion Aura",
+      "rankText": "Rank 1",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "643",
+      "name": "Devotion Aura",
+      "rankText": "Rank 3",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "1032",
+      "name": "Devotion Aura",
+      "rankText": "Rank 5",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "1875",
+      "name": "Devotion Aura",
+      "rankText": "Rank 1",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "465",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "1876",
+      "name": "Devotion Aura",
+      "rankText": "Rank 3",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "643",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "1877",
+      "name": "Devotion Aura",
+      "rankText": "Rank 5",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "1032",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "8258",
+      "name": "Devotion Aura",
+      "rankText": "",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "10290",
+      "name": "Devotion Aura",
+      "rankText": "Rank 2",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "10291",
+      "name": "Devotion Aura",
+      "rankText": "Rank 4",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "10292",
+      "name": "Devotion Aura",
+      "rankText": "Rank 6",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "10293",
+      "name": "Devotion Aura",
+      "rankText": "Rank 7",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "10294",
+      "name": "Devotion Aura",
+      "rankText": "Rank 2",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "10290",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "10295",
+      "name": "Devotion Aura",
+      "rankText": "Rank 4",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "10291",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "10296",
+      "name": "Devotion Aura",
+      "rankText": "Rank 6",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "10292",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "10297",
+      "name": "Devotion Aura",
+      "rankText": "Rank 7",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "10293",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "17232",
+      "name": "Devotion Aura",
+      "rankText": "",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "spellId": "45073",
+      "name": "Devotion Aura Dmg Reduction",
+      "rankText": "",
+      "effect1": "6",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    }
+  ],
+  "spellChainOverrides": [],
+  "spellLearnSpellRows": [],
+  "spellTemplateOverrides": [
+    {
+      "entry": "465",
+      "name": "Devotion Aura",
+      "rankText": "Rank 1",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "643",
+      "name": "Devotion Aura",
+      "rankText": "Rank 3",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "1032",
+      "name": "Devotion Aura",
+      "rankText": "Rank 5",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "1875",
+      "name": "Devotion Aura",
+      "rankText": "Rank 1",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "465",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "1876",
+      "name": "Devotion Aura",
+      "rankText": "Rank 3",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "643",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "1877",
+      "name": "Devotion Aura",
+      "rankText": "Rank 5",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "1032",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "8258",
+      "name": "Devotion Aura",
+      "rankText": "",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "10290",
+      "name": "Devotion Aura",
+      "rankText": "Rank 2",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "10291",
+      "name": "Devotion Aura",
+      "rankText": "Rank 4",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "10292",
+      "name": "Devotion Aura",
+      "rankText": "Rank 6",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "10293",
+      "name": "Devotion Aura",
+      "rankText": "Rank 7",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "10294",
+      "name": "Devotion Aura",
+      "rankText": "Rank 2",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "10290",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "10295",
+      "name": "Devotion Aura",
+      "rankText": "Rank 4",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "10291",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "10296",
+      "name": "Devotion Aura",
+      "rankText": "Rank 6",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "10292",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "10297",
+      "name": "Devotion Aura",
+      "rankText": "Rank 7",
+      "effect1": "36",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "10293",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "17232",
+      "name": "Devotion Aura",
+      "rankText": "",
+      "effect1": "35",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    },
+    {
+      "entry": "45073",
+      "name": "Devotion Aura Dmg Reduction",
+      "rankText": "",
+      "effect1": "6",
+      "effect2": "0",
+      "effect3": "0",
+      "trigger1": "0",
+      "trigger2": "0",
+      "trigger3": "0"
+    }
+  ],
+  "persistedKnownDevotionRanks": [],
+  "persistedDualSpecDevotionRanks": [],
+  "talentDiscovery": {
+    "tables": [
+      "talent",
+      "talenttab"
+    ],
+    "columns": [
+      {
+        "table": "talent",
+        "column": "id"
+      },
+      {
+        "table": "talent",
+        "column": "talentTabId"
+      },
+      {
+        "table": "talent",
+        "column": "tierId"
+      },
+      {
+        "table": "talent",
+        "column": "columnIndex"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank1"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank2"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank3"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank4"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank5"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank6"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank7"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank8"
+      },
+      {
+        "table": "talent",
+        "column": "spellRank9"
+      },
+      {
+        "table": "talent",
+        "column": "prereqTalent1"
+      },
+      {
+        "table": "talent",
+        "column": "prereqTalent2"
+      },
+      {
+        "table": "talent",
+        "column": "prereqTalent3"
+      },
+      {
+        "table": "talent",
+        "column": "prereqRank1"
+      },
+      {
+        "table": "talent",
+        "column": "prereqRank2"
+      },
+      {
+        "table": "talent",
+        "column": "prereqRank3"
+      },
+      {
+        "table": "talent",
+        "column": "flags"
+      },
+      {
+        "table": "talent",
+        "column": "requiredSpellId"
+      },
+      {
+        "table": "talent",
+        "column": "allowForPetFlags1"
+      },
+      {
+        "table": "talent",
+        "column": "allowForPetFlags2"
+      },
+      {
+        "table": "talenttab",
+        "column": "id"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name1"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name2"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name3"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name4"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name5"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name6"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name7"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name8"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name9"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name10"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name11"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name12"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name13"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name14"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name15"
+      },
+      {
+        "table": "talenttab",
+        "column": "Name16"
+      },
+      {
+        "table": "talenttab",
+        "column": "Flags"
+      },
+      {
+        "table": "talenttab",
+        "column": "iconId"
+      },
+      {
+        "table": "talenttab",
+        "column": "raceMask"
+      },
+      {
+        "table": "talenttab",
+        "column": "classMask"
+      },
+      {
+        "table": "talenttab",
+        "column": "creatureFamilyCategory"
+      },
+      {
+        "table": "talenttab",
+        "column": "orderIndex"
+      },
+      {
+        "table": "talenttab",
+        "column": "backgroundFileName"
+      }
+    ],
+    "matches": [],
+    "matchCount": 0
+  },
+  "skillLineAbilityDiscovery": {
+    "tables": [
+      "skilllineability",
+      "skill_line_ability"
+    ],
+    "columns": [
+      {
+        "table": "skilllineability",
+        "column": "id"
+      },
+      {
+        "table": "skilllineability",
+        "column": "skillId"
+      },
+      {
+        "table": "skilllineability",
+        "column": "spellId"
+      },
+      {
+        "table": "skilllineability",
+        "column": "chrRaces"
+      },
+      {
+        "table": "skilllineability",
+        "column": "chrClasses"
+      },
+      {
+        "table": "skilllineability",
+        "column": "unk1"
+      },
+      {
+        "table": "skilllineability",
+        "column": "unk2"
+      },
+      {
+        "table": "skilllineability",
+        "column": "requiredSkillValue"
+      },
+      {
+        "table": "skilllineability",
+        "column": "spellIdParent"
+      },
+      {
+        "table": "skilllineability",
+        "column": "acquireMethod"
+      },
+      {
+        "table": "skilllineability",
+        "column": "skillGreyLevel"
+      },
+      {
+        "table": "skilllineability",
+        "column": "skillGreenLevel"
+      },
+      {
+        "table": "skilllineability",
+        "column": "characterPoints1"
+      },
+      {
+        "table": "skilllineability",
+        "column": "characterPoints2"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "id"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "skill_id"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "spell_id"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "race_mask"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "class_mask"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "req_skill_value"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "superseded_by_spell"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "learn_on_get_skill"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "max_value"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "min_value"
+      },
+      {
+        "table": "skill_line_ability",
+        "column": "req_train_points"
+      }
+    ],
+    "dbcMirrorRows": [],
+    "overrideRows": [
+      {
+        "id": "438",
+        "skillId": "267",
+        "spellId": "465",
+        "raceMask": "0",
+        "classMask": "2",
+        "requiredSkillValue": "1",
+        "supersededBySpell": "10290",
+        "learnOnGetSkill": "0"
+      },
+      {
+        "id": "439",
+        "skillId": "267",
+        "spellId": "643",
+        "raceMask": "0",
+        "classMask": "2",
+        "requiredSkillValue": "1",
+        "supersededBySpell": "10291",
+        "learnOnGetSkill": "0"
+      },
+      {
+        "id": "440",
+        "skillId": "267",
+        "spellId": "1032",
+        "raceMask": "0",
+        "classMask": "2",
+        "requiredSkillValue": "1",
+        "supersededBySpell": "10292",
+        "learnOnGetSkill": "0"
+      },
+      {
+        "id": "1022",
+        "skillId": "267",
+        "spellId": "10290",
+        "raceMask": "0",
+        "classMask": "2",
+        "requiredSkillValue": "1",
+        "supersededBySpell": "643",
+        "learnOnGetSkill": "0"
+      },
+      {
+        "id": "1023",
+        "skillId": "267",
+        "spellId": "10291",
+        "raceMask": "0",
+        "classMask": "2",
+        "requiredSkillValue": "1",
+        "supersededBySpell": "1032",
+        "learnOnGetSkill": "0"
+      },
+      {
+        "id": "1024",
+        "skillId": "267",
+        "spellId": "10292",
+        "raceMask": "0",
+        "classMask": "2",
+        "requiredSkillValue": "1",
+        "supersededBySpell": "10293",
+        "learnOnGetSkill": "0"
+      },
+      {
+        "id": "1025",
+        "skillId": "267",
+        "spellId": "10293",
+        "raceMask": "0",
+        "classMask": "2",
+        "requiredSkillValue": "1",
+        "supersededBySpell": "0",
+        "learnOnGetSkill": "0"
+      }
+    ]
+  },
+  "identifiers": {
+    "characterNameExported": false,
+    "internalGuidExported": false,
+    "accountIdExported": false
+  },
+  "sqlPolicy": "SELECT/SHOW/DESCRIBE/information_schema only"
+}

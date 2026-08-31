@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "observed_utc": "2026-08-30T11:24:20.732Z",
+  "lock_present": true,
+  "lock_path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-v1-english-correction-20260830-131349\\bridge\\evidence\\.phase1a-instance.lock",
+  "bridge_pid": 32284,
+  "lock_pid": 32284,
+  "pid_matches": true,
+  "lock_sha256": "582CFE775609D2685FF40FD4B1CD70B534B68B95ADF914A1CF96D88963F13356"
+}

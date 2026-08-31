@@ -1,0 +1,1 @@
+[FEHLER] mangosd.exe wurde mit dem unerwarteten Exitcode 7 beendet.                                                     ☐

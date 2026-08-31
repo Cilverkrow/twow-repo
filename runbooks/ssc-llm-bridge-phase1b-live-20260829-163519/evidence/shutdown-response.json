@@ -1,0 +1,15 @@
+{
+  "code": "shutdown",
+  "metrics": {
+    "lifecycle": "stopped",
+    "accepting": false,
+    "waiting": 0,
+    "ledger_entries": 1,
+    "active": 0,
+    "max_active_observed": 1,
+    "inference_attempts": 1,
+    "stale_results_discarded": 0,
+    "worker_owned": true,
+    "worker_settled": true
+  }
+}

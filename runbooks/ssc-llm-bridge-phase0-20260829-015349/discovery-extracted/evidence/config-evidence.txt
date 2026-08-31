@@ -1,0 +1,11 @@
+12:AiPlayerbot.Enabled = 1
+18:AiPlayerbot.RandomBotAutologin = 1
+21:AiPlayerbot.RandomBotLoginAtStartup = 1
+39:AiPlayerbot.BotAutologin = 0
+54:AiPlayerbot.RandomBotAutoCreate = 1
+57:AiPlayerbot.MinRandomBots = 50
+58:AiPlayerbot.MaxRandomBots = 50
+63:AiPlayerbot.RandomBotAccountPrefix = RNDBOT
+64:AiPlayerbot.RandomBotAccountCount = 500
+ToggleAlwaysOnlineAccounts: no active assignment; source default is empty.
+ToggleAlwaysOnlineChars: no active assignment; source default is empty.

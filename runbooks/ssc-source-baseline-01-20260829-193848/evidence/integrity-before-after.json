@@ -1,0 +1,52 @@
+{
+  "initial_sources": [
+    "git-status-short.txt",
+    "exe-evidence.json",
+    "config-evidence.json",
+    "offline-schema-evidence.json"
+  ],
+  "final_captured_utc": "2026-08-29T17:52:17.2617243Z",
+  "initial_git_status_short": " M src/modules/PlayerBots/CMakeLists.txt\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h\n M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp\n?? bin/Release/MoveMapGen.pdb\n?? bin/Release/mangosd.pdb\n?? bin/Release/mapextractor.pdb\n?? bin/Release/realmd.pdb\n?? bin/Release/vmap_assembler.pdb\n?? bin/Release/vmapextractor.pdb",
+  "final_git_status_short": " M src/modules/PlayerBots/CMakeLists.txt\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp\n M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h\n M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp\n?? bin/Release/MoveMapGen.pdb\n?? bin/Release/mangosd.pdb\n?? bin/Release/mapextractor.pdb\n?? bin/Release/realmd.pdb\n?? bin/Release/vmap_assembler.pdb\n?? bin/Release/vmapextractor.pdb",
+  "git_status_unchanged": true,
+  "initial_sha256_by_path": {
+    "C:\\TW\\ComTW\\server\\mangosd.exe": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "C:\\TW\\ComTW\\server\\mangosd.conf": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+    "C:\\TW\\ComTW\\server\\aiplayerbot.conf": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+    "C:\\TW\\ComTW\\DB\\data\\tw_logon\\donation_point_progress.frm": "A215835BABDFC4EF55AECF5BB8613B3663752AB30881B29F456AAC3854C19FAB",
+    "C:\\TW\\ComTW\\DB\\data\\tw_logon\\donation_point_progress.ibd": "3CF1B777150822CB17D0ED4C7092B66091004F88FCE8EFBF8282910B95FC43CC",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory.frm": "5322676D73A928EFE45E66CB9D8DFBFAF9F277C98AA3485A10663497A4642BA0",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory.MYD": "AC5206D6A958D89EBD610232B9FD13976EE1652520B28F00367D2A1E5E2F4C37",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory.MYI": "8AC03BEC40AA6BC6CA0D07BCF398AE0D120407938CF0DD55D299A32BB24B80F1",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory_copy.frm": "8150627922F85E5D3CF56C87A6FBDC7EDDF377B9622D2EEBC37C7DB5FCCDD623",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory_copy.MYD": "584F3FF82B9367678E7192D2723ACF605133F93760319C3CF4BC14FA6A789042",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory_copy.MYI": "90F136BA88896A0E70D13EA744707CE5E3C4E4FE919E66859FF5FF1F745E6E09",
+    "C:\\TW\\ComTW\\DB\\data\\tw_logon\\migrations.frm": "ABD17613AAB98BC0343B426194F792623C7BC3FC62F8A54FD652FC6FE19F7634",
+    "C:\\TW\\ComTW\\DB\\data\\tw_logon\\migrations.ibd": "0CAC507FA454EBE0BE65532F9DEBAB0AFCD6C95256BAC8235F74A3CF477CE57C",
+    "C:\\TW\\ComTW\\DB\\data\\tw_world\\migrations.frm": "9C059A982EC24E7DA141BB08D7A6126D6C9B21E175148BED0E8BA7EB07CDA5B0",
+    "C:\\TW\\ComTW\\DB\\data\\tw_world\\migrations.ibd": "5FA491C6322711BFE93FA49D31A57B1B348A1C977E51ECD29E6944019A055D90",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\migrations.frm": "5D3704D03CC2EF725043A287C54143ED2F497E68EEF91FF0CE381C98F20408F1",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\migrations.ibd": "45D340BD284F146C63080780F665447056FAA4C06389C5B5B1307B424960E6FD"
+  },
+  "final_sha256_by_path": {
+    "C:\\TW\\ComTW\\server\\mangosd.exe": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+    "C:\\TW\\ComTW\\server\\mangosd.conf": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+    "C:\\TW\\ComTW\\server\\aiplayerbot.conf": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+    "C:\\TW\\ComTW\\DB\\data\\tw_logon\\donation_point_progress.frm": "A215835BABDFC4EF55AECF5BB8613B3663752AB30881B29F456AAC3854C19FAB",
+    "C:\\TW\\ComTW\\DB\\data\\tw_logon\\donation_point_progress.ibd": "3CF1B777150822CB17D0ED4C7092B66091004F88FCE8EFBF8282910B95FC43CC",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory.frm": "5322676D73A928EFE45E66CB9D8DFBFAF9F277C98AA3485A10663497A4642BA0",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory.MYD": "AC5206D6A958D89EBD610232B9FD13976EE1652520B28F00367D2A1E5E2F4C37",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory.MYI": "8AC03BEC40AA6BC6CA0D07BCF398AE0D120407938CF0DD55D299A32BB24B80F1",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory_copy.frm": "8150627922F85E5D3CF56C87A6FBDC7EDDF377B9622D2EEBC37C7DB5FCCDD623",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory_copy.MYD": "584F3FF82B9367678E7192D2723ACF605133F93760319C3CF4BC14FA6A789042",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\character_inventory_copy.MYI": "90F136BA88896A0E70D13EA744707CE5E3C4E4FE919E66859FF5FF1F745E6E09",
+    "C:\\TW\\ComTW\\DB\\data\\tw_logon\\migrations.frm": "ABD17613AAB98BC0343B426194F792623C7BC3FC62F8A54FD652FC6FE19F7634",
+    "C:\\TW\\ComTW\\DB\\data\\tw_logon\\migrations.ibd": "0CAC507FA454EBE0BE65532F9DEBAB0AFCD6C95256BAC8235F74A3CF477CE57C",
+    "C:\\TW\\ComTW\\DB\\data\\tw_world\\migrations.frm": "9C059A982EC24E7DA141BB08D7A6126D6C9B21E175148BED0E8BA7EB07CDA5B0",
+    "C:\\TW\\ComTW\\DB\\data\\tw_world\\migrations.ibd": "5FA491C6322711BFE93FA49D31A57B1B348A1C977E51ECD29E6944019A055D90",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\migrations.frm": "5D3704D03CC2EF725043A287C54143ED2F497E68EEF91FF0CE381C98F20408F1",
+    "C:\\TW\\ComTW\\DB\\data\\tw_char\\migrations.ibd": "45D340BD284F146C63080780F665447056FAA4C06389C5B5B1307B424960E6FD"
+  },
+  "existing_monitored_file_hashes_unchanged": true,
+  "changed_existing_monitored_files": []
+}

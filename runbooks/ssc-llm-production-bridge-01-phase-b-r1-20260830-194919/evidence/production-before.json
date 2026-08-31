@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "task": "SSC-LLM-PRODUCTION-BRIDGE-01-PHASE-B-R1",
+  "captured_utc": "2026-08-30T17:56:23.5951165Z",
+  "method": "live git status plus direct SHA-256 of every dirty path; no hard-coded status inventory",
+  "repository": {
+    "path": "C:\\TW\\ComTW\\source",
+    "head": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "tree": "b2cf4e38fd288a53f61b9f2350f74caa85d606ab",
+    "status_lines": [
+      " M src/modules/PlayerBots/CMakeLists.txt",
+      " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+      " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+      " M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+      "?? bin/Release/MoveMapGen.pdb",
+      "?? bin/Release/mangosd.pdb",
+      "?? bin/Release/mapextractor.pdb",
+      "?? bin/Release/realmd.pdb",
+      "?? bin/Release/vmap_assembler.pdb",
+      "?? bin/Release/vmapextractor.pdb"
+    ],
+    "dirty_files": [
+      {
+        "status": " M",
+        "relative_path": "src/modules/PlayerBots/CMakeLists.txt",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\src\\modules\\PlayerBots\\CMakeLists.txt",
+          "exists": true,
+          "size": 11546,
+          "sha256": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE",
+          "created_utc": "2026-08-25T16:49:59.5797043Z",
+          "last_write_utc": "2026-08-26T18:00:44.5277038Z"
+        }
+      },
+      {
+        "status": " M",
+        "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\src\\modules\\PlayerBots\\playerbot\\PlayerbotLLMInterface.cpp",
+          "exists": true,
+          "size": 27227,
+          "sha256": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592",
+          "created_utc": "2026-08-25T16:49:59.6179918Z",
+          "last_write_utc": "2026-08-26T17:56:24.6480662Z"
+        }
+      },
+      {
+        "status": " M",
+        "relative_path": "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\src\\modules\\PlayerBots\\playerbot\\PlayerbotLLMInterface.h",
+          "exists": true,
+          "size": 2053,
+          "sha256": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71",
+          "created_utc": "2026-08-25T16:49:59.6191707Z",
+          "last_write_utc": "2026-08-26T17:53:15.8650840Z"
+        }
+      },
+      {
+        "status": " M",
+        "relative_path": "src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\src\\modules\\PlayerBots\\playerbot\\strategy\\actions\\DebugAction.cpp",
+          "exists": true,
+          "size": 222917,
+          "sha256": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A",
+          "created_utc": "2026-08-25T16:49:59.6841088Z",
+          "last_write_utc": "2026-08-26T18:40:05.5105613Z"
+        }
+      },
+      {
+        "status": "??",
+        "relative_path": "bin/Release/MoveMapGen.pdb",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\bin\\Release\\MoveMapGen.pdb",
+          "exists": true,
+          "size": 8253440,
+          "sha256": "D21D297D0905F3D4DD8F2F995BB55099C1E923603014FC63B54EC30175D233D0",
+          "created_utc": "2026-08-25T16:50:46.6779266Z",
+          "last_write_utc": "2026-08-25T16:50:46.8791351Z"
+        }
+      },
+      {
+        "status": "??",
+        "relative_path": "bin/Release/mangosd.pdb",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\bin\\Release\\mangosd.pdb",
+          "exists": true,
+          "size": 212389888,
+          "sha256": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873",
+          "created_utc": "2026-08-25T16:54:55.7725823Z",
+          "last_write_utc": "2026-08-26T18:41:28.4000019Z"
+        }
+      },
+      {
+        "status": "??",
+        "relative_path": "bin/Release/mapextractor.pdb",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\bin\\Release\\mapextractor.pdb",
+          "exists": true,
+          "size": 1921024,
+          "sha256": "560D6676BAE78AA1BE4DC0D5164C0176CCC6F211D845A3FF4E4DEB2C5FFDC690",
+          "created_utc": "2026-08-25T16:55:01.5561269Z",
+          "last_write_utc": "2026-08-25T16:55:01.6281821Z"
+        }
+      },
+      {
+        "status": "??",
+        "relative_path": "bin/Release/realmd.pdb",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\bin\\Release\\realmd.pdb",
+          "exists": true,
+          "size": 6991872,
+          "sha256": "5E8584A65B973651D90B5BC2F38F755F16C2EE14ED46CA4592C9EA2BCFC3CAAF",
+          "created_utc": "2026-08-25T16:55:04.2969562Z",
+          "last_write_utc": "2026-08-25T16:55:04.4500397Z"
+        }
+      },
+      {
+        "status": "??",
+        "relative_path": "bin/Release/vmap_assembler.pdb",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\bin\\Release\\vmap_assembler.pdb",
+          "exists": true,
+          "size": 6565888,
+          "sha256": "496EF245672C828F4CD6868CB7BE1BF3D1BCDE370044042FFDB25E98B3543B69",
+          "created_utc": "2026-08-25T16:55:05.6027711Z",
+          "last_write_utc": "2026-08-25T16:55:05.7721528Z"
+        }
+      },
+      {
+        "status": "??",
+        "relative_path": "bin/Release/vmapextractor.pdb",
+        "file": {
+          "path": "C:\\TW\\ComTW\\source\\bin\\Release\\vmapextractor.pdb",
+          "exists": true,
+          "size": 2109440,
+          "sha256": "F4C3B57484204E1A2038621D167055D66FB56BC677CCA5F7AA0AB7CAC61A9838",
+          "created_utc": "2026-08-25T16:55:07.3491174Z",
+          "last_write_utc": "2026-08-25T16:55:07.4275406Z"
+        }
+      }
+    ]
+  },
+  "protected_artifacts": {
+    "production_exe": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+      "exists": true,
+      "size": 20376576,
+      "sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "created_utc": "2026-08-25T16:54:55.7705743Z",
+      "last_write_utc": "2026-08-25T16:54:59.8378295Z"
+    },
+    "mangosd_config": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.conf",
+      "exists": true,
+      "size": 69515,
+      "sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "created_utc": "2026-08-25T16:56:21.0361503Z",
+      "last_write_utc": "2026-08-29T15:38:43.2579727Z"
+    },
+    "playerbot_config": {
+      "path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+      "exists": true,
+      "size": 283717,
+      "sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "created_utc": "2026-08-25T16:56:21.0383696Z",
+      "last_write_utc": "2026-08-29T16:04:14.8193927Z"
+    },
+    "previous_phase_b_zip": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-20260830-173121-deliverables.zip",
+      "exists": true,
+      "size": 8049818,
+      "sha256": "510C3E365C959DAD8ACCE30A5DA29D5C6F0B6D268D9AD5DCC8E7A82FF99BE365",
+      "created_utc": "2026-08-30T16:27:56.2005301Z",
+      "last_write_utc": "2026-08-30T16:27:56.5406213Z"
+    }
+  },
+  "review_inputs": [
+    {
+      "path": "C:\\Users\\djfav\\Downloads\\ExternalLLMBridgeService.cpp",
+      "exists": true,
+      "size": 61331,
+      "sha256": "87B5AD498B0543B58476D804B1AE233EB561222471D6910A9D095425C12409A7",
+      "created_utc": "2026-08-30T17:15:09.7653671Z",
+      "last_write_utc": "2026-08-30T17:15:10.0984816Z"
+    },
+    {
+      "path": "C:\\Users\\djfav\\Downloads\\collect-final-evidence.ps1",
+      "exists": true,
+      "size": 12340,
+      "sha256": "786BDC300BDBEDF4AF912C72C5BDDA8DC89FEB29F0B0FE82652B74B87A6EC62B",
+      "created_utc": "2026-08-30T17:15:21.7242731Z",
+      "last_write_utc": "2026-08-30T17:15:21.8981289Z"
+    },
+    {
+      "path": "C:\\Users\\djfav\\Downloads\\external_llm_bridge_tests.cpp",
+      "exists": true,
+      "size": 22455,
+      "sha256": "37646D0A857A99694C06AE767096A1CBD8D256EBB09041000970BBF603D5C2FD",
+      "created_utc": "2026-08-30T17:15:16.6634607Z",
+      "last_write_utc": "2026-08-30T17:15:16.8242085Z"
+    }
+  ]
+}

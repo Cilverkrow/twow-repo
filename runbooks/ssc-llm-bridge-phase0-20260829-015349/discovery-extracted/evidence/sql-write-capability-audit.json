@@ -1,0 +1,14 @@
+{
+    "generated_utc":  "2026-08-28T20:41:20.2018964Z",
+    "statement_count":  15,
+    "read_only_statement_count":  15,
+    "write_capable_statement_count":  0,
+    "allowed_leading_statements":  [
+                                       "SELECT",
+                                       "SHOW",
+                                       "DESCRIBE"
+                                   ],
+    "findings":  [
+
+                 ]
+}

@@ -1,0 +1,4 @@
+proposal	fixed_count_per_combination	total_bots	target	exact_target
+A	1	52	52	YES
+B	2	104	104	YES
+C	1	52	50	NO

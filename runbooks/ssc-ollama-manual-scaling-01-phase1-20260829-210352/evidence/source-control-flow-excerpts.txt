@@ -1,0 +1,641 @@
+===== src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 =====
+--- 246-250 ---
+   246:     botAutologin = BotAutoLogin(config.GetIntDefault("AiPlayerbot.BotAutologin", 0));
+   247:     randomBotAutologin = config.GetBoolDefault("AiPlayerbot.RandomBotAutologin", true);
+   248:     randomBotAutoCreate = config.GetBoolDefault("AiPlayerbot.RandomBotAutoCreate", true);
+   249:     minRandomBots = config.GetIntDefault("AiPlayerbot.MinRandomBots", 50);
+   250:     maxRandomBots = config.GetIntDefault("AiPlayerbot.MaxRandomBots", 200);
+--- 294-310 ---
+   294:     // Comma separated character names. A pinned bot is kept logged in and is
+   295:     // exempt from the random relocation the manager applies to everyone else,
+   296:     // so its run can be followed from one level to the next.
+   297:     {
+   298:         std::string names = config.GetStringDefault("AiPlayerbot.PinnedBots", "");
+   299:         std::stringstream ss(names);
+   300:         std::string name;
+   301:         while (std::getline(ss, name, ','))
+   302:         {
+   303:             size_t b = name.find_first_not_of(" 	");
+   304:             size_t e = name.find_last_not_of(" 	");
+   305:             if (b != std::string::npos)
+   306:                 pinnedBotNames.push_back(name.substr(b, e - b + 1));
+   307:         }
+   308:     }
+   309:     enableMinimalMove = config.GetBoolDefault("AiPlayerbot.EnableMinimalMove", true);
+   310:     
+--- 340-340 ---
+   340:     randomBotLoginAtStartup = config.GetBoolDefault("AiPlayerbot.RandomBotLoginAtStartup", true);
+--- 362-363 ---
+   362:     randomBotLoginWithPlayer = config.GetBoolDefault("AiPlayerbot.RandomBotLoginWithPlayer", false);
+   363:     asyncBotLogin = config.GetBoolDefault("AiPlayerbot.AsyncBotLogin", false);
+--- 705-718 ---
+   705:     //LLM START
+   706:     llmEnabled = config.GetIntDefault("AiPlayerbot.LLMEnabled", 1);
+   707:     llmApiEndpoint = config.GetStringDefault("AiPlayerbot.LLMApiEndpoint", "http://127.0.0.1:5001/api/v1/generate");
+   708:     try {
+   709:         llmEndPointUrl = parseUrl(llmApiEndpoint);
+   710:     }
+   711:     catch (const std::invalid_argument& e) {
+   712:         sLog.outError("Unable to parse LLMApiEndpoint url: %s", e.what());
+   713:     }
+   714:     llmApiKey = config.GetStringDefault("AiPlayerbot.LLMApiKey", "");    
+   715:     llmApiJson = config.GetStringDefault("AiPlayerbot.LLMApiJson", "{ \"max_length\": 100, \"prompt\": \"[<pre prompt>]<context> <prompt> <post prompt>\"}");
+   716:     llmContextLength = config.GetIntDefault("AiPlayerbot.LLMContextLength", 4096);
+   717:     llmGenerationTimeout = config.GetIntDefault("AiPlayerbot.LLMGenerationTimeout", 600);
+   718:     llmMaxSimultaniousGenerations = config.GetIntDefault("AiPlayerbot.LLMMaxSimultaniousGenerations", 100);
+--- 772-800 ---
+   772:     llmGlobalContext = config.GetBoolDefault("AiPlayerbot.LLMGlobalContext", false);
+   773:     llmBotToBotChatChance = config.GetIntDefault("AiPlayerbot.LLMBotToBotChatChance", 0);
+   774:     llmRpgAIChatChance = config.GetIntDefault("AiPlayerbot.LLMRpgAIChatChance", 100);
+   775: 
+   776:     std::list<std::string> blockedChannels;
+   777:     LoadListString<std::list<std::string>>(config.GetStringDefault("AiPlayerbot.LLMBlockedReplyChannels", ""), blockedChannels);
+   778:     std::map<std::string, ChatChannelSource> sourceName;
+   779:     sourceName["guild"] = ChatChannelSource::SRC_GUILD;
+   780:     sourceName["world"] = ChatChannelSource::SRC_WORLD;
+   781:     sourceName["general"] = ChatChannelSource::SRC_GENERAL;
+   782:     sourceName["trade"] = ChatChannelSource::SRC_TRADE;
+   783:     sourceName["lfg"] = ChatChannelSource::SRC_LOOKING_FOR_GROUP;
+   784:     sourceName["ldefence"] = ChatChannelSource::SRC_LOCAL_DEFENSE;
+   785:     sourceName["wdefence"] = ChatChannelSource::SRC_WORLD_DEFENSE;
+   786:     sourceName["grecruitement"] = ChatChannelSource::SRC_GUILD_RECRUITMENT;
+   787:     sourceName["say"] = ChatChannelSource::SRC_SAY;
+   788:     sourceName["whisper"] = ChatChannelSource::SRC_WHISPER;
+   789:     sourceName["emote"] = ChatChannelSource::SRC_EMOTE;
+   790:     sourceName["temote"] = ChatChannelSource::SRC_TEXT_EMOTE;
+   791:     sourceName["yell"] = ChatChannelSource::SRC_YELL;
+   792:     sourceName["party"] = ChatChannelSource::SRC_PARTY;
+   793:     sourceName["raid"] = ChatChannelSource::SRC_RAID;
+   794: 
+   795:     for (auto& channelName : blockedChannels)
+   796:         llmBlockedReplyChannels.insert(sourceName[channelName]);
+   797: 
+   798:     {
+   799:         std::string promptsFile = config.GetStringDefault("AiPlayerbot.LLMDefaultPromptsFile", "llm_character_card");
+   800:         LoadLLMDefaultPrompts(promptsFile);
+--- 1365-1372 ---
+  1365: void PlayerbotAIConfig::LoadLLMDefaultPrompts(const std::string& fileName)
+  1366: {
+  1367:     std::ifstream file(fileName);
+  1368:     if (!file.is_open())
+  1369:     {
+  1370:         sLog.outString("LLM default prompts file '%s' not found or unreadable.", fileName.c_str());
+  1371:         return;
+  1372:     }
+===== src/modules/PlayerBots/playerbot/RandomPlayerbotMgr.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 =====
+--- 644-704 ---
+   644: void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
+   645: {
+   646: #ifdef MEMORY_MONITOR
+   647:     sMemoryMonitor.Print();
+   648:     sMemoryMonitor.LogCount(sConfig.GetStringDefault("LogsDir") + "/" + "memory.csv");
+   649: #endif
+   650: 
+   651:     // tick random bots' sessions so
+   652:     // teleport ACKs (HandleTeleportAck) and queued packets get processed.
+   653:     // See PlayerbotMgr::UpdateAIInternal for the rationale — same call,
+   654:     // same purpose, applied to the random-bot pool.
+   655:     UpdateSessions(elapsed);
+   656: 
+   657:     if (!sPlayerbotAIConfig.randomBotAutologin || !sPlayerbotAIConfig.enabled)
+   658:         return;
+   659: 
+   660:     if (!playersLevel)
+   661:         playersLevel = sPlayerbotAIConfig.syncLevelNoPlayer;
+   662: 
+   663:     ScaleBotActivity();
+   664:     if (sPlayerbotAIConfig.asyncBotLogin)
+   665:     {
+   666:         auto pmo = sPerformanceMonitor.start(PERF_MON_RNDBOT, "AsyncBotLogin");
+   667:         sPlayerBotLoginMgr.Update(players);
+   668:         pmo.reset();
+   669:     }
+   670: 
+   671:     uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
+   672:     if (!maxAllowedBotCount || ((uint32)maxAllowedBotCount < sPlayerbotAIConfig.minRandomBots || (uint32)maxAllowedBotCount > sPlayerbotAIConfig.maxRandomBots))
+   673:     {
+   674:         maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
+   675:         SetEventValue(0, "bot_count", maxAllowedBotCount,
+   676:             urand(sPlayerbotAIConfig.randomBotCountChangeMinInterval, sPlayerbotAIConfig.randomBotCountChangeMaxInterval));
+   677:     }
+   678: 
+   679:     std::list<uint32> availableBots = GetBots();    
+   680:     uint32 availableBotCount = availableBots.size();
+   681:     uint32 onlineBotCount = GetPlayerbotsAmount();
+   682:     
+   683:     SetAIInternalUpdateDelay(sPlayerbotAIConfig.randomBotUpdateInterval);
+   684: 
+   685:     auto pmo = sPerformanceMonitor.start(PERF_MON_RNDBOT,
+   686:         onlineBotCount < maxAllowedBotCount ? "RandomPlayerbotMgr::Login" : "RandomPlayerbotMgr::UpdateAIInternal");
+   687: 
+   688:     if (time(nullptr) > (EventTimeSyncTimer + 30))
+   689:         SaveCurTime();
+   690: 
+   691:     if (availableBotCount < maxAllowedBotCount && !sWorld.IsShutdowning())
+   692:     {
+   693:         bool logInAllowed = true;
+   694:         if (sPlayerbotAIConfig.randomBotLoginWithPlayer)
+   695:         {
+   696:             logInAllowed = !players.empty();
+   697:         }
+   698: 
+   699:         if (logInAllowed)
+   700:         {
+   701:             AddRandomBots();
+   702:             EnsurePinnedBotsOnline();
+   703:         }
+   704:     }
+--- 724-773 ---
+   724:     if (time(nullptr) > (OfflineGroupBotsTimer + 5) && players.size())
+   725:         AddOfflineGroupBots();
+   726: 
+   727:     uint32 updateBots = sPlayerbotAIConfig.randomBotsPerInterval == 0 ? UINT32_MAX : sPlayerbotAIConfig.randomBotsPerInterval;
+   728: 
+   729:     //Update bots
+   730:     for (auto bot : availableBots)
+   731:     {
+   732:         if (GetPlayerBot(bot))
+   733:         {
+   734:             if (ProcessBot(bot))
+   735:                 updateBots--;
+   736: 
+   737:             if (!updateBots)
+   738:                 break;
+   739:         }
+   740:     }
+   741: 
+   742:     uint32 maxLogins = sPlayerbotAIConfig.randomBotsMaxLoginsPerInterval;
+   743: 
+   744:     //Log in bots
+   745:     if (sRandomPlayerbotMgr.GetDatabaseDelay("CharacterDatabase") < 10 * IN_MILLISECONDS && !sPlayerbotAIConfig.asyncBotLogin && onlineBotCount < maxAllowedBotCount && maxLogins > 0)
+   746:     {
+   747:         for (auto bot : availableBots)
+   748:         {
+   749:             if (GetPlayerBot(bot))
+   750:                 continue;   
+   751: 
+   752:             if (!eventCache[bot].empty() && GetEventValue(bot, "login"))
+   753:             {
+   754:                 onlineBotCount++;
+   755:                 continue;
+   756:             }
+   757: 
+   758:             if (GetEventValue(bot, "login"))
+   759:                 onlineBotCount++;
+   760: 
+   761:             if (onlineBotCount >= maxAllowedBotCount)
+   762:                 break;
+   763: 
+   764:             if (ProcessBot(bot)) {
+   765:                 --maxLogins;
+   766:             }
+   767: 
+   768:             if (maxLogins == 0)
+   769:                 break;
+   770:         }
+   771:     }
+   772: 
+   773:     LoginFreeBots();
+--- 1121-1133 ---
+  1121: uint32 RandomPlayerbotMgr::AddRandomBots()
+  1122: {
+  1123:     uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");    
+  1124:     uint32 currentAllowedBotCount = maxAllowedBotCount;
+  1125: 
+  1126:     uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+  1127:     float currentAvgLevel = 0, wantedAvgLevel = 0, randomAvgLevel = 0;
+  1128: 
+  1129:     if(sPlayerbotAIConfig.asyncBotLogin)
+  1130:         return 0;
+  1131:   
+  1132:     if (currentBots.size() < currentAllowedBotCount)
+  1133:     {
+--- 1261-1300 ---
+  1261:                     if (GetEventValue(guid, "add"))
+  1262:                     {
+  1263:                         BOTPROBE(band, 1);
+  1264:                         if (!noCriteria)
+  1265:                             classRaceAllowed[cls][race]--;
+  1266:                         continue;
+  1267:                     }
+  1268: 
+  1269:                     if (GetEventValue(guid, "logout"))
+  1270:                     {
+  1271:                         BOTPROBE(band, 2);
+  1272:                         continue;
+  1273:                     }
+  1274: 
+  1275:                     if (GetPlayerBot(guid))
+  1276:                     {
+  1277:                         BOTPROBE(band, 3);
+  1278:                         if (!noCriteria)
+  1279:                             classRaceAllowed[cls][race]--;
+  1280:                         continue;
+  1281:                     }
+  1282: 
+  1283:                     if (std::find(currentBots.begin(), currentBots.end(), guid) != currentBots.end())
+  1284:                     {
+  1285:                         BOTPROBE(band, 4);
+  1286:                         if (!noCriteria)
+  1287:                             classRaceAllowed[cls][race]--;
+  1288:                         continue;
+  1289:                     }
+  1290: 
+  1291:                     if (classRaceAllowed[cls][race] <= 0)
+  1292:                     {
+  1293:                         BOTPROBE(band, 5);
+  1294:                         continue;
+  1295:                     }
+  1296: 
+  1297:                     BOTPROBE(band, 6);
+  1298:                     SetEventValue(guid, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
+  1299:                     SetEventValue(guid, "logout", 0, 0);
+  1300:                     currentBots.push_back(guid);
+--- 1992-2055 ---
+  1992: void RandomPlayerbotMgr::AddOfflineGroupBots()
+  1993: {
+  1994:     if (!OfflineGroupBotsTimer || time(NULL) > (OfflineGroupBotsTimer + 5))
+  1995:         OfflineGroupBotsTimer = time(NULL);
+  1996: 
+  1997:     uint32 totalCounter = 0;
+  1998:     for (const auto& i : players)
+  1999:     {
+  2000:         Player* player = i.second;
+  2001: 
+  2002:         if (!player || !player->IsInWorld() || !player->GetGroup())
+  2003:             continue;
+  2004: 
+  2005:         Group* group = player->GetGroup();
+  2006:         if (group && group->IsLeader(player->GetObjectGuid()))
+  2007:         {
+  2008:             std::vector<uint32> botsToAdd;
+  2009:             Group::MemberSlotList const& slots = group->GetMemberSlots();
+  2010:             for (Group::MemberSlotList::const_iterator i = slots.begin(); i != slots.end(); ++i)
+  2011:             {
+  2012:                 ObjectGuid member = i->guid;
+  2013:                 if (member == player->GetObjectGuid())
+  2014:                     continue;
+  2015: 
+  2016:                 if (!IsFreeBot(member.GetCounter()))
+  2017:                     continue;
+  2018: 
+  2019:                 if (sObjectMgr.GetPlayer(member))
+  2020:                     continue;
+  2021: 
+  2022:                 if (GetPlayerBot(member))
+  2023:                     continue;
+  2024: 
+  2025:                 botsToAdd.push_back(member.GetCounter());
+  2026:             }
+  2027: 
+  2028:             if (botsToAdd.empty())
+  2029:                 return;
+  2030: 
+  2031:             uint32 maxToAdd = urand(1, 5);
+  2032:             uint32 counter = 0;
+  2033:             for (auto& guid : botsToAdd)
+  2034:             {
+  2035:                 if (counter >= maxToAdd)
+  2036:                     break;
+  2037: 
+  2038:                 if (sPlayerbotAIConfig.IsFreeAltBot(guid))
+  2039:                 {
+  2040:                     for (auto& bot : sPlayerbotAIConfig.freeAltBots)
+  2041:                     {
+  2042:                         if (bot.second == guid)
+  2043:                         {
+  2044:                             Player* player = GetPlayerBot(bot.second);
+  2045:                             if (!player)
+  2046:                             {
+  2047:                                 AddPlayerBot(bot.second, bot.first);
+  2048:                             }
+  2049:                         }
+  2050:                     }
+  2051:                 }
+  2052:                 else
+  2053:                     AddRandomBot(guid);
+  2054: 
+  2055:                 counter++;
+--- 2232-2283 ---
+  2232: bool RandomPlayerbotMgr::AddRandomBot(uint32 bot)
+  2233: {
+  2234:     SC_LOG("AddRandomBot entry guid=%u", bot);
+  2235:     Player* player = GetPlayerBot(bot);
+  2236:     if (player)
+  2237:     {
+  2238:         SC_LOG("AddRandomBot guid=%u already online — returning true", bot);
+  2239:         return true;
+  2240:     }
+  2241: 
+  2242:     uint32 accountId = sObjectMgr.GetPlayerAccountIdByGUID(ObjectGuid(HIGHGUID_PLAYER, bot));
+  2243:     SC_LOG("AddRandomBot guid=%u accountId=%u — checking IsInRandomAccountList", bot, accountId);
+  2244: 
+  2245:     if (!sPlayerbotAIConfig.IsInRandomAccountList(accountId))
+  2246:     {
+  2247:         SC_LOG("AddRandomBot guid=%u — NOT in random account list, FAIL", bot);
+  2248:         sLog.outError("Bot #%d login fail: Not random bot!", bot);
+  2249:         return false;
+  2250:     }
+  2251: 
+  2252:     uint32 loginEv = GetEventValue(bot, "login");
+  2253:     SC_LOG("AddRandomBot guid=%u — IsInRandomAccountList OK, login event=%u", bot, loginEv);
+  2254: 
+  2255:     // stale-event recovery: if login=1 is set but
+  2256:     // we already proved (line ~2124, GetPlayerBot returned null) that no
+  2257:     // actual session exists for this bot, the marker is stale — typically
+  2258:     // because the previous mangosd crashed mid-tick before the bot's
+  2259:     // logout cleanup could clear the event. Without this fix, the bot is
+  2260:     // permanently un-summonable until someone manually `DELETE FROM
+  2261:     // ai_playerbot_random_bots` and bounces mangosd to clear the in-memory
+  2262:     // eventCache. We force-reset the event in both DB and cache, then
+  2263:     // proceed with a fresh login.
+  2264:     if (loginEv)
+  2265:     {
+  2266:         SC_LOG("AddRandomBot guid=%u — login=1 but no live session; treating as stale, force-resetting event", bot);
+  2267:         SetEventValue(bot, "login", 0, 0);  // updates DB row + eventCache in one call
+  2268:         loginEv = 0;
+  2269:     }
+  2270: 
+  2271:     if (!loginEv)
+  2272:     {
+  2273:         SC_LOG("AddRandomBot guid=%u — calling AddPlayerBot", bot);
+  2274:         AddPlayerBot(bot, 0);
+  2275:         SC_LOG("AddRandomBot guid=%u — AddPlayerBot returned, setting event values", bot);
+  2276:         SetEventValue(bot, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
+  2277:         SetEventValue(bot, "logout", 0, 0);
+  2278:         SetEventValue(bot, "login", 1, -1);
+  2279:         uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
+  2280:         SetEventValue(bot, "update", 1, randomTime);
+  2281:         currentBots.push_back(bot);
+  2282:         SC_LOG("AddRandomBot guid=%u — DONE, added to currentBots", bot);
+  2283:         sLog.outDetail("Random bot added #%d", bot);
+--- 3456-3473 ---
+  3456: std::list<uint32> RandomPlayerbotMgr::GetBots()
+  3457: {
+  3458:     if (!currentBots.empty()) return currentBots;
+  3459: 
+  3460:     auto results = CharacterDatabase.Query(
+  3461:             "SELECT bot FROM ai_playerbot_random_bots WHERE owner = 0 AND event = 'add'");
+  3462: 
+  3463:     if (results)
+  3464:     {
+  3465:         do
+  3466:         {
+  3467:             Field* fields = results->Fetch();
+  3468:             uint32 bot = fields[0].GetUInt32();
+  3469:             currentBots.push_back(bot);
+  3470:         } while (results->NextRow());
+  3471:     }
+  3472: 
+  3473:     return currentBots;
+===== src/modules/PlayerBots/playerbot/PlayerbotMgr.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 =====
+--- 823-866 ---
+   823: std::string PlayerbotHolder::ProcessBotCommand(std::string cmd, ObjectGuid guid, ObjectGuid masterguid, bool admin, uint32 masterAccountId, uint32 masterGuildId, const std::string param)
+   824: {
+   825:     Player* bot = sObjectMgr.GetPlayer(guid);
+   826:     Player* master = masterguid ? sObjectMgr.GetPlayer(masterguid) : nullptr;
+   827: 
+   828:     if (!sPlayerbotAIConfig.enabled || guid.IsEmpty())
+   829:         return "Bot system is disabled";
+   830: 
+   831:     uint32 botAccount = sObjectMgr.GetPlayerAccountIdByGUID(guid);
+   832:     bool isRandomAccount = sPlayerbotAIConfig.IsInRandomAccountList(botAccount);
+   833:     bool isMasterAccount = (masterAccountId == botAccount);
+   834: 
+   835:     if (!isRandomAccount && (!isMasterAccount && !admin && masterguid))
+   836:     {
+   837:         if (master && (!sPlayerbotAIConfig.allowGuildBots || !masterGuildId || (masterGuildId && master->GetGuildIdFromDB(guid) != masterGuildId)))
+   838:             return "Not in your guild or account";
+   839:     }
+   840: 
+   841:     if (!isRandomAccount && this == &sRandomPlayerbotMgr && !admin)
+   842:     {
+   843:         return "Can not control alt-bots with this command.";
+   844:     }
+   845: 
+   846:     std::string subType;
+   847:     size_t eqPos = cmd.find('=');
+   848:     if (eqPos != std::string::npos)
+   849:     {
+   850:         subType = cmd.substr(eqPos + 1);
+   851:         cmd = cmd.substr(0, eqPos);
+   852:     }
+   853: 
+   854:     auto it = m_botCommandHandlers.find(cmd);
+   855:     if (it != m_botCommandHandlers.end())
+   856:     {
+   857:         std::string realParam;
+   858:         
+   859:         if (!subType.empty())
+   860:             realParam = subType;
+   861:         else if (it->second == &PlayerbotHolder::HandleBotAddLogin || it->second == &PlayerbotHolder::HandleBotAlways || it->second == &PlayerbotHolder::HandleBotDelete)
+   862:             realParam = std::to_string(guid.GetRawValue());        
+   863:         else
+   864:             realParam = param;            
+   865: 
+   866:         return (this->*it->second)(bot, master, realParam);
+--- 908-942 ---
+   908: std::list<std::string> PlayerbotHolder::HandlePlayerbotCommand(const std::string args, Player* master, AccountTypes security)
+   909: {
+   910:     AccountTypes useSecurity = master ? master->GetSession()->GetSecurity() : security;
+   911: 
+   912:     if (!master && m_spoofGuid)
+   913:         master = sObjectMgr.GetPlayer(m_spoofGuid);
+   914: 
+   915:     std::vector<std::string> params = Qualified::getMultiQualifiers(args, " ");
+   916: 
+   917:     std::list<std::string> messages;
+   918: 
+   919:     if (params.empty())
+   920:     {
+   921:         std::string helpText = GetCommandTexts("");
+   922:         messages.push_back(helpText);
+   923:         return messages;
+   924:     }
+   925: 
+   926:     std::string command = params[0];
+   927:     std::string param, charname;
+   928: 
+   929:     if (params.size() > 1)
+   930:     {
+   931:         param = args.substr(params[0].size() + 1);
+   932:         charname = params[1];
+   933:     }
+   934:     
+   935:     for (auto& [prefix, handler] : m_holderHandlers)
+   936:     {
+   937:         if (command != prefix)
+   938:             continue;
+   939: 
+   940:         messages = (this->*handler)(master, param, useSecurity);
+   941:         return messages;
+   942:     }
+--- 1022-1074 ---
+  1022:     if (bots.empty())
+  1023:     {
+  1024:         std::vector<std::string> chars = split(charname, ',');
+  1025:         for (auto name : chars)
+  1026:         {
+  1027:             uint32 accountId = GetAccountId(name);
+  1028:             if (!accountId)
+  1029:             {
+  1030:                 bots.insert(name);
+  1031:                 continue;
+  1032:             }
+  1033: 
+  1034:             auto results = CharacterDatabase.PQuery(
+  1035:                 "SELECT name FROM characters WHERE account = '%u'",
+  1036:                 accountId);
+  1037:             if (results)
+  1038:             {
+  1039:                 do
+  1040:                 {
+  1041:                     Field* fields = results->Fetch();
+  1042:                     std::string charName = fields[0].GetString();
+  1043:                     bots.insert(charName);
+  1044:                 } while (results->NextRow());
+  1045:             }
+  1046:         }
+  1047:     }
+  1048: 
+  1049:     if (bots.size())
+  1050:     {
+  1051:         if (params.size() > 2)
+  1052:             param = args.substr(params[0].size() + params[1].size() + 2);
+  1053:         else
+  1054:             param = "";
+  1055:     }
+  1056: 
+  1057:     for (auto bot :  bots)
+  1058:     {
+  1059:         std::ostringstream out;
+  1060:         out << command << ": " << bot << " - ";
+  1061: 
+  1062:         ObjectGuid member = sObjectMgr.GetPlayerGuidByName(bot);
+  1063:         if (!member)
+  1064:         {
+  1065:             out << "character not found";
+  1066:         }
+  1067:         else if (master)
+  1068:         {
+  1069:             out << ProcessBotCommand(command, member, master->GetObjectGuid(), useSecurity >= SEC_GAMEMASTER, master->GetSession()->GetAccountId(), master->GetGuildId(), param);
+  1070:         }
+  1071:         else
+  1072:         {
+  1073:             out << ProcessBotCommand(command, member, ObjectGuid(), useSecurity >= SEC_GAMEMASTER, -1, -1, param);
+  1074:         }
+--- 2105-2151 ---
+  2105: std::string PlayerbotHolder::HandleBotAddLogin(Player* bot, Player* master, const std::string param)
+  2106: {
+  2107:     SC_LOG("HandleBotAddLogin entry bot=%s master=%s param=%s",
+  2108:            bot ? bot->GetName() : "(null)",
+  2109:            master ? master->GetName() : "(null)",
+  2110:            param.c_str());
+  2111: 
+  2112:     if (bot)
+  2113:     {
+  2114:         SC_LOG("HandleBotAddLogin bot already online — returning early");
+  2115:         return "Player already logged in";
+  2116:     }
+  2117: 
+  2118:     if (!Qualified::isValidNumberString(param))
+  2119:         return "Add: Error parsing " + param;
+  2120: 
+  2121:     ObjectGuid guid = ObjectGuid(uint64(std::stoull(param)));
+  2122: 
+  2123:     uint32 guildId = Player::GetGuildIdFromDB(guid);
+  2124:     uint32 masterAccountId = master ? master->GetSession()->GetAccountId() : 0;
+  2125:     uint32 masterGuildId = master ? master->GetGuildId() : 0;
+  2126:     uint32 botAccount = sObjectMgr.GetPlayerAccountIdByGUID(guid);
+  2127:     bool isMasterAccount = (masterAccountId == botAccount);
+  2128:     bool isRandomAccount = sPlayerbotAIConfig.IsInRandomAccountList(botAccount);
+  2129: 
+  2130:     SC_LOG("HandleBotAddLogin guid=%u botAccount=%u masterAccount=%u isMaster=%d isRandom=%d",
+  2131:            guid.GetCounter(), botAccount, masterAccountId,
+  2132:            (int)isMasterAccount, (int)isRandomAccount);
+  2133: 
+  2134:     if (isRandomAccount)
+  2135:     {
+  2136:         SC_LOG("HandleBotAddLogin -> RandomPlayerbotMgr.AddRandomBot");
+  2137:         sRandomPlayerbotMgr.AddRandomBot(guid);
+  2138:     }
+  2139:     else if (isMasterAccount || sPlayerbotAIConfig.allowMultiAccountAltBots)
+  2140:     {
+  2141:         SC_LOG("HandleBotAddLogin -> AddPlayerBot (master-account path)");
+  2142:         AddPlayerBot(guid, masterAccountId);
+  2143:     }
+  2144:     else
+  2145:     {
+  2146:         SC_LOG("HandleBotAddLogin -> rejected: not in account");
+  2147:         return "Not in your account";
+  2148:     }
+  2149: 
+  2150:     SC_LOG("HandleBotAddLogin returning ok bot=%u", guid.GetCounter());
+  2151:     return "ok";
+===== src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 =====
+--- 512-515 ---
+   512:     if (GetBotAI(bot) && sPlayerbotAIConfig.llmEnabled > 0 && (GetBotAI(bot)->HasStrategy("ai chat", BotState::BOT_STATE_NON_COMBAT) || sPlayerbotAIConfig.llmEnabled == 3) && chatChannelSource != ChatChannelSource::SRC_UNDEFINED && sPlayerbotAIConfig.llmBlockedReplyChannels.find(chatChannelSource) == sPlayerbotAIConfig.llmBlockedReplyChannels.end()
+   513:         )
+   514:     {
+   515:         Player* player = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, guid1));
+--- 602-655 ---
+   602:                 uint32 type = CHAT_MSG_WHISPER;
+   603:                 std::string channelName;
+   604: 
+   605:                 switch (chatChannelSource)
+   606:                 {
+   607:                 case ChatChannelSource::SRC_WHISPER:
+   608:                 {
+   609:                     type = CHAT_MSG_WHISPER;
+   610:                     break;
+   611:                 }
+   612:                 case ChatChannelSource::SRC_SAY:
+   613:                 {
+   614:                     type = CHAT_MSG_SAY;
+   615:                     break;
+   616:                 }
+   617:                 case ChatChannelSource::SRC_YELL:
+   618:                 {
+   619:                     type = CHAT_MSG_YELL;
+   620:                     break;
+   621:                 }
+   622:                 case ChatChannelSource::SRC_PARTY:
+   623:                 {
+   624:                     type = CHAT_MSG_PARTY;
+   625:                     break;
+   626:                 }
+   627:                 case ChatChannelSource::SRC_GUILD:
+   628:                 {
+   629:                     type = CHAT_MSG_GUILD;
+   630:                     break;
+   631:                 }
+   632:                 case ChatChannelSource::SRC_WORLD:
+   633:                 case ChatChannelSource::SRC_GENERAL:
+   634:                 case ChatChannelSource::SRC_TRADE:
+   635:                 case ChatChannelSource::SRC_LOCAL_DEFENSE:
+   636:                 case ChatChannelSource::SRC_WORLD_DEFENSE:
+   637:                 case ChatChannelSource::SRC_LOOKING_FOR_GROUP:
+   638:                 case ChatChannelSource::SRC_GUILD_RECRUITMENT:
+   639:                 {
+   640:                     type = CHAT_MSG_CHANNEL;
+   641:                     channelName = chanName;
+   642:                 }
+   643:                 }
+   644: 
+   645:                 bool debug = GetBotAI(bot)->HasStrategy("debug llm", BotState::BOT_STATE_NON_COMBAT);
+   646: 
+   647:                 WorldSession* session = bot->GetSession();
+   648: 
+   649:                 WorldPacket chatTemplate = GetPacketTemplate(CMSG_MESSAGECHAT, type, bot, player, channelName);
+   650:                 WorldPacket emoteTemplate = (type == CHAT_MSG_SAY || type == CHAT_MSG_WHISPER) ? GetPacketTemplate(CMSG_MESSAGECHAT, CHAT_MSG_EMOTE, bot, player) : WorldPacket();
+   651:                 WorldPacket systemTemplate = GetPacketTemplate(CMSG_MESSAGECHAT, CHAT_MSG_WHISPER, bot, player);
+   652: 
+   653:                 futurePackets futPackets = std::async(std::launch::async, ChatReplyAction::GenerateResponsePackets, json, chatTemplate, emoteTemplate, systemTemplate, startPattern, endPattern, deletePattern, splitPattern, debug);
+   654: 
+   655:                 ai->SendDelayedPacket(session, std::move(futPackets));
+===== src/modules/PlayerBots/playerbot/strategy/triggers/RpgTriggers.cpp @ 42b8a7f742548793910fe8880463aeeb71627fb9 =====
+--- 627- ---
+--- 639- ---
+===== src/game/SharedDefines.h @ 42b8a7f742548793910fe8880463aeeb71627fb9 =====
+--- 1168- ---
+--- 1172- ---

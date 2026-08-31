@@ -1,0 +1,27 @@
+FirstWorldLog=C:\TW\ComTW\logs\server_2026-08-29_18-45-43.log
+FirstWorldLog.Size=3151767
+FirstWorldLog.SHA256=985B8E3C591D254F8412BE39A7565A524E8326E49E4C4928F2DC5513EF91F94B
+SecondWorldLog=C:\TW\ComTW\logs\server_2026-08-29_19-19-30.log
+SecondWorldLog.Size=1089248
+SecondWorldLog.SHA256=4721E34F09E2AD4989CA45B73EBD238F2BC0F1C4401A8DA7E1CCB4CA8E10E318
+FinalErrorsLog.Size=1899067
+FinalErrorsLog.SHA256=9CE12DCD0C4657D2154B87B4BBCF1FC5AEE33EACA97C7DF5802DE9C61E61E5EB
+FinalInfoLog.Size=18393
+FinalInfoLog.SHA256=F2B6338042AF31C3D5D83EC542A9CD2B1777529C5848EC5895EF6740BD857836
+DonationLoad=2026-08-29 18:51:23|SELECT accumulated_ms FROM donation_point_progress WHERE account_id=505
+DonationFlush1=2026-08-29 18:56:22|account_id=505|accumulated_ms=298887
+DonationFlush2=2026-08-29 19:01:22|account_id=505|accumulated_ms=598900
+DonationFlush3=2026-08-29 19:06:22|account_id=505|accumulated_ms=898929
+DonationSqlErrorCount=0
+DonationSchemaErrorCount=0
+AutoDonationPointsErrorCount=0
+ShopCoinsWriteCountForAccount505=0
+UnexpectedDdlCount=0
+UnrelatedSqlError=2026-08-29 19:09:19|1213|Deadlock found when trying to get lock; try restarting transaction
+UnrelatedSqlStatement=DELETE FROM ai_playerbot_random_bots WHERE owner=0 AND bot=23293 AND event=trade_discount_23292
+UnrelatedSqlErrorCount=1
+FirstShutdownMarker=2026-08-29 19:11:15|Shutting down world...
+FirstHaltMarker=2026-08-29 19:11:16|Halting process...
+SecondShutdownMarker=2026-08-29 19:25:26|Shutting down world...
+SecondHaltMarker=2026-08-29 19:25:28|Halting process...
+

@@ -1,0 +1,16 @@
+query_id	result_rows	bytes	sha256	local_path
+account-join-quality		82	495B332D60A677DE32C25373BBA0D0DC2F672E051296A9E1FDE89FEC102E3C90	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\account-join-quality.tsv
+appearance-columns		12375	CD3461EEEEA3D829087906B322E19264EEF6270A4FE34714B91923A5B89022C0	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\appearance-columns.tsv
+bot-population-rows		476155	6F211EC15C6B21982A4FA07FB0C9A1621A33AC677E7CDB7B22C9DA94BAE5B0D6	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\bot-population-rows.tsv
+bot-skill-integrity		94	CC6CF1F96E8839C0D707985F4646FCA75906F20CB6857D6FB315464DFEE2712F	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\bot-skill-integrity.tsv
+bot-skill-rows		3756301	99C21E026D804438C4A8EF64EEC17AAF250D07820B5AC4AFF3FCCA8DBAE9AC44	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\bot-skill-rows.tsv
+database-identity		316	D452EF5414C1057C0E521C9C56DE70C60AA815023482670138B3DC5361863687	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\database-identity.tsv
+playerbot-event-integrity		152	B58A8AE4ED7C06C98AC224016E20ED15F3A27E563F3A04E6D839C71D068A9BF1	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\playerbot-event-integrity.tsv
+playerbot-event-summary		294	7FB551EC12F71D60F53D7E8D2812DCE23F1A64F6B886AE768FF01A8CFECA0DF9	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\playerbot-event-summary.tsv
+population-aggregate		174	77DE97D4DFFA701A339B459B7F2586C4F830AF8C74EF93C5440D1F7905F24052	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\population-aggregate.tsv
+relevant-columns		5225	37BE042566B626A229A5FB7A23908A7611FFBB0C6E211F831819ECDE16E77A6C	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\relevant-columns.tsv
+relevant-table-presence		296	2357C105368458AA424C7D0526CA311B6CFDBE19F948888579CA9B0810C4BDCB	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\relevant-table-presence.tsv
+show-create-character-skills		429	80F3B560510BAF7DB76BB7909DA15C63B71C7D859B1F2F83EB2C0A8FDBD2CCAF	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\show-create-character-skills.tsv
+show-create-characters		3997	94414D0373D7C9C27E4B541A29A2AF0E6E673318FD29DE758499FCCBBA138A2B	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\show-create-characters.tsv
+show-create-playerbot-events		607	D72B9B41867A42F19632FD13A090B0214CD8C43504846EC01266D4549851FFE7	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\show-create-playerbot-events.tsv
+world-race-class-combinations		398	B343AB94D3BC29C037464894E12F4470D5B19BF0D0660A03AC3D0E316B194369	C:\TW\ComTW\runbooks\bot-personality-discovery-20260828-224032\evidence\query-results\world-race-class-combinations.tsv

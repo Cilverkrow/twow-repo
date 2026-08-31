@@ -1,0 +1,140 @@
+===== src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp =====
+   376: std::string PlayerbotLLMInterface::Generate(const std::string& prompt, int timeOutSeconds, int maxGenerations, std::vector<std::string> & debugLines) {
+   381:         debugLines.push_back("LLM generation disabled in this build");
+===== src/modules/PlayerBots/playerbot/strategy/actions/SayAction.cpp =====
+   421: delayedPackets ChatReplyAction::GenerateResponsePackets(const std::string json
+   653:                 futurePackets futPackets = std::async(std::launch::async, ChatReplyAction::GenerateResponsePackets, json, chatTemplate, emoteTemplate, systemTemplate, startPattern, endPattern, deletePattern, splitPattern, debug);
+   655:                 ai->SendDelayedPacket(session, std::move(futPackets));
+===== src/modules/PlayerBots/playerbot/PlayerbotAI.cpp =====
+   260: void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
+   303:             TellPlayer(GetMaster(), BOT_TEXT("logout_cancel"));
+   635:             TellPlayer(GetMaster(), "Jumping off " + std::string(bot->GetTransport()->GetName()));
+   654:         e->OnUpdateAI(this, bot->GetName());
+   659:     if(!UpdateAIReaction(elapsed, doMinimalReaction, bot->IsTaxiFlying()) && CanUpdateAIInternal())
+   668:             if (!CanUpdateAIInternal())
+   674:         SC_PHASE("UpdateAI.UpdateAIInternal", bot ? bot->GetName() : "(null)");
+   675:         UpdateAIInternal(elapsed, minimal);
+  1209:             //TellPlayer(out);
+  1222: void PlayerbotAI::UpdateAIInternal(uint32 elapsed, bool minimal)
+  1224:     SC_PHASE("UpdateAIInternal.entry", bot ? bot->GetName() : "(null)");
+  1229:     auto pmo = sPerformanceMonitor.start(PERF_MON_TOTAL, "PlayerbotAI::UpdateAIInternal " + mapString, nullptr, bot->GetMapId(), bot->GetInstanceId());
+  1293:     SC_PHASE("UpdateAIInternal.botOutgoingPackets", bot ? bot->GetName() : "(null)");
+  1295:     SC_PHASE("UpdateAIInternal.masterIncomingPackets", bot ? bot->GetName() : "(null)");
+  1297:     SC_PHASE("UpdateAIInternal.masterOutgoingPackets", bot ? bot->GetName() : "(null)");
+  1300:     SC_PHASE("UpdateAIInternal.DoNextAction", bot ? bot->GetName() : "(null)");
+  1302:     SC_PHASE("UpdateAIInternal.exit", bot ? bot->GetName() : "(null)");
+  1417:             TellPlayer(GetMaster(), BOT_TEXT("logout_cancel"));
+  1592:                 TellPlayer(&fromPlayer, BOT_TEXT("logout_start"));
+  1603:                 TellPlayer(&fromPlayer, BOT_TEXT("logout_cancel"));
+  1616:             TellPlayer(&fromPlayer, "Max wait time is 20 seconds!");
+  1622:         TellPlayer(&fromPlayer, "Waiting for " + remaining + " seconds!");
+  2311:                 TellPlayer(master, BOT_TEXT("hello_follow"));
+  2315:                 TellPlayer(master, BOT_TEXT("hello"));
+  3619: bool PlayerbotAI::TellPlayerNoFacing(Player* player, std::string text, PlayerbotSecurityLevel securityLevel, bool isPrivate, bool noRepeat, bool ignoreSilent)
+  3777: bool PlayerbotAI::TellPlayer(Player* player, std::string text, PlayerbotSecurityLevel securityLevel, bool isPrivate, bool ignoreSilent)
+  3779:     if (!TellPlayerNoFacing(player, text, securityLevel, isPrivate, ignoreSilent))
+  4927:         TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);
+  5074:         TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);
+  5226:         TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);
+  5516:         TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);
+  6646:         TellPlayerNoFacing(
+  7512:                 TellPlayer(player, "--- consumable ---");
+  7515:                 TellPlayer(player, "--- container ---");
+  7518:                 TellPlayer(player, "--- weapon ---");
+  7521:                 TellPlayer(player, "--- armor ---");
+  7524:                 TellPlayer(player, "--- reagent ---");
+  7527:                 TellPlayer(player, "--- projectile ---");
+  7530:                 TellPlayer(player, "--- trade goods ---");
+  7533:                 TellPlayer(player, "--- recipe ---");
+  7536:                 TellPlayer(player, "--- quiver ---");
+  7539:                 TellPlayer(player, "--- quest items ---");
+  7542:                 TellPlayer(player, "--- keys ---");
+  7545:                 TellPlayer(player, "--- other ---");
+  7560:     TellPlayer(player, out.str());
+  7978: void PlayerbotAI::SendDelayedPacket(WorldSession* session, futurePackets futPackets)
+  7991:     t.detach();
+  7994: void PlayerbotAI::ReceiveDelayedPacket(futurePackets futPackets)
+  8006:     t.detach();
+===== src/modules/PlayerBots/playerbot/strategy/actions/RpgSubActions.cpp =====
+   427:     if (futPackets.wait_for(std::chrono::seconds(0)) == std::future_status::timeout)
+   430:     for (auto delayedReply : futPackets.get())
+===== src/modules/PlayerBots/playerbot/PlayerbotMgr.cpp =====
+    82:     // the worldport ACK never fires (e.g. UpdateSessions wasn't ticking, or
+   205:     // showing UpdateSessions calling HandleTeleportAck thousands of times with no worldport-ack
+   326: void PlayerbotHolder::UpdateAIInternal(uint32 elapsed, bool minimal)
+   333: void PlayerbotHolder::UpdateSessions(uint32 elapsed)
+   352:             SC_LOG("UpdateSessions iter bot=%s guid=%u midTeleport=%d inWorld=%d "
+   384:                 SC_LOG("UpdateSessions GHOST RECOVERY bot=%s guid=%u — driving "
+  1229: void PlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
+  1244:     UpdateSessions(elapsed);
+===== src/modules/PlayerBots/playerbot/PlayerbotAIConfig.cpp =====
+   706:     llmEnabled = config.GetIntDefault("AiPlayerbot.LLMEnabled", 1);
+   717:     llmGenerationTimeout = config.GetIntDefault("AiPlayerbot.LLMGenerationTimeout", 600);
+   718:     llmMaxSimultaniousGenerations = config.GetIntDefault("AiPlayerbot.LLMMaxSimultaniousGenerations", 100);
+===== src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp =====
+    15: #include "playerbot/PlayerbotLLMInterface.h"
+    61:     else if (text.find("llm ") == 0 && isMod)
+    62:         return HandleLLM(event, requester, text);
+   179:     else if (text.find("tspellmap") == 0 && isMod)
+   180:         return HandleTSpellMap(event, requester, text);
+   181:     else if (text.find("uspellmap") == 0 && isMod)
+   182:         return HandleUSpellMap(event, requester, text);
+   183:     else if (text.find("dspellmap") == 0 && isMod)
+   184:         return HandleDSpellMap(event, requester, text);
+   185:     else if (text.find("vspellmap") == 0 && isMod)
+   186:         return HandleVSpellMap(event, requester, text);
+   187:     else if (text.find("ispellmap") == 0 && isMod)
+   188:         return HandleISpellMap(event, requester, text);
+   189:     else if (text.find("cspellmap") == 0 && isMod)
+   190:         return HandleCSpellMap(event, requester, text);
+   191:     else if (text.find("aspellmap") == 0 && isMod)
+   192:         return HandleASpellMap(event, requester, text);
+   193:     else if (text.find("gspellmap") == 0 && isMod)
+   194:         return HandleGSpellMap(event, requester, text);
+   195:     else if (text.find("mspellmap") == 0 && isMod)
+   196:         return HandleMSpellMap(event, requester, text);
+   253:             ai->TellPlayer(requester, "Mod Only: llm, area, avoid, motion, transport, nc, gps");
+   501:     else if (cmd == "llm" && isMod)
+   503:         ai->TellPlayer(requester, "=== debug llm ===");
+   504:         ai->TellPlayer(requester, "LLM interaction (mod only).");
+   506:         ai->TellPlayer(requester, "Usage: debug llm <prompt>");
+   865:     else if (cmd == "tspellmap" && isMod)
+   867:         ai->TellPlayer(requester, "=== debug tspellmap ===");
+   870:         ai->TellPlayer(requester, "Usage: debug tspellmap");
+   872:     else if (cmd == "uspellmap" && isMod)
+   874:         ai->TellPlayer(requester, "=== debug uspellmap ===");
+   877:         ai->TellPlayer(requester, "Usage: debug uspellmap");
+   879:     else if (cmd == "dspellmap" && isMod)
+   881:         ai->TellPlayer(requester, "=== debug dspellmap ===");
+   884:         ai->TellPlayer(requester, "Usage: debug dspellmap");
+   886:     else if (cmd == "vspellmap" && isMod)
+   888:         ai->TellPlayer(requester, "=== debug vspellmap ===");
+   891:         ai->TellPlayer(requester, "Usage: debug vspellmap");
+   893:     else if (cmd == "ispellmap" && isMod)
+   895:         ai->TellPlayer(requester, "=== debug ispellmap ===");
+   898:         ai->TellPlayer(requester, "Usage: debug ispellmap");
+   900:     else if (cmd == "cspellmap" && isMod)
+   902:         ai->TellPlayer(requester, "=== debug cspellmap ===");
+   905:         ai->TellPlayer(requester, "Usage: debug cspellmap");
+   907:     else if (cmd == "aspellmap" && isMod)
+   909:         ai->TellPlayer(requester, "=== debug aspellmap ===");
+   912:         ai->TellPlayer(requester, "Usage: debug aspellmap");
+   914:     else if (cmd == "gspellmap" && isMod)
+   916:         ai->TellPlayer(requester, "=== debug gspellmap ===");
+   919:         ai->TellPlayer(requester, "Usage: debug gspellmap");
+   921:     else if (cmd == "mspellmap" && isMod)
+   923:         ai->TellPlayer(requester, "=== debug mspellmap ===");
+   926:         ai->TellPlayer(requester, "Usage: debug mspellmap");
+  1233: bool DebugAction::HandleLLM(Event& event, Player* requester, const std::string& text)
+  1241:     std::string json = BOT_TEXT2(sPlayerbotAIConfig.llmApiJson, jsonFill);
+  1243:     std::string response = PlayerbotLLMInterface::Generate(json, sPlayerbotAIConfig.llmGenerationTimeout, sPlayerbotAIConfig.llmMaxSimultaniousGenerations, debugLines);
+  4094:         out << " Sell to AH: " << ChatHelper::formatMoney(ItemUsageValue::GetBotAHSellMinPrice(proto)) << " to " << ChatHelper::formatMoney(ItemUsageValue::GetBotAHSellMaxPrice(proto));
+  4484: bool DebugAction::HandleTSpellMap(Event& event, Player* requester, const std::string& text)
+  4515: bool DebugAction::HandleUSpellMap(Event& event, Player* requester, const std::string& text)
+  4535: bool DebugAction::HandleDSpellMap(Event& event, Player* requester, const std::string& text)
+  4555: bool DebugAction::HandleVSpellMap(Event& event, Player* requester, const std::string& text)
+  4601: bool DebugAction::HandleISpellMap(Event& event, Player* requester, const std::string& text)
+  4645: bool DebugAction::HandleCSpellMap(Event& event, Player* requester, const std::string& text)
+  4674: bool DebugAction::HandleASpellMap(Event& event, Player* requester, const std::string& text)
+  4701: bool DebugAction::HandleGSpellMap(Event& event, Player* requester, const std::string& text)
+  4788: bool DebugAction::HandleMSpellMap(Event& event, Player* requester, const std::string& text)

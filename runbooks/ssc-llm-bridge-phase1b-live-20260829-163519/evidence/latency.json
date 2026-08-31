@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "measurement": "submit write to first observed terminal ready status",
+  "clock": "Node performance.now monotonic elapsed wall-clock measurement",
+  "submit_sent_utc": "2026-08-29T14:50:19.295Z",
+  "terminal_ready_observed_utc": "2026-08-29T14:50:27.400Z",
+  "latency_ms": 8104.44,
+  "request_lifetime_ms": 45000,
+  "status_poll_interval_ms": 100,
+  "status_poll_count": 74,
+  "no_second_inference": true
+}

@@ -1,0 +1,31 @@
+population_key	race_id	race_key	race_name	bot_count	playable	turtle_custom_race
+random_account_stock	1	human	Human	728	True	False
+random_account_stock	2	orc	Orc	209	True	False
+random_account_stock	3	dwarf	Dwarf	230	True	False
+random_account_stock	4	night_elf	Night Elf	498	True	False
+random_account_stock	5	undead	Undead	295	True	False
+random_account_stock	6	tauren	Tauren	202	True	False
+random_account_stock	7	gnome	Gnome	139	True	False
+random_account_stock	8	troll	Troll	183	True	False
+random_account_stock	9	goblin	Goblin	928	True	True
+random_account_stock	10	high_elf	High Elf	1088	True	True
+active_random_rotation	1	human	Human	13	True	False
+active_random_rotation	2	orc	Orc	5	True	False
+active_random_rotation	3	dwarf	Dwarf	3	True	False
+active_random_rotation	4	night_elf	Night Elf	9	True	False
+active_random_rotation	5	undead	Undead	9	True	False
+active_random_rotation	6	tauren	Tauren	7	True	False
+active_random_rotation	7	gnome	Gnome	7	True	False
+active_random_rotation	8	troll	Troll	3	True	False
+active_random_rotation	9	goblin	Goblin	17	True	True
+active_random_rotation	10	high_elf	High Elf	27	True	True
+inactive_random_reserve	1	human	Human	715	True	False
+inactive_random_reserve	2	orc	Orc	204	True	False
+inactive_random_reserve	3	dwarf	Dwarf	227	True	False
+inactive_random_reserve	4	night_elf	Night Elf	489	True	False
+inactive_random_reserve	5	undead	Undead	286	True	False
+inactive_random_reserve	6	tauren	Tauren	195	True	False
+inactive_random_reserve	7	gnome	Gnome	132	True	False
+inactive_random_reserve	8	troll	Troll	180	True	False
+inactive_random_reserve	9	goblin	Goblin	911	True	True
+inactive_random_reserve	10	high_elf	High Elf	1061	True	True

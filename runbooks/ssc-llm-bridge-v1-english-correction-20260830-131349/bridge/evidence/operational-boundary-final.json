@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-29T02:07:36.0094854Z",
+  "processes": [
+    {
+      "name": "ollama",
+      "pid": 5528,
+      "responding": true,
+      "working_set_bytes": 48107520
+    }
+  ],
+  "listeners": [
+    {
+      "process": "ollama",
+      "pid": 5528,
+      "local_address": "127.0.0.1",
+      "local_port": 11434,
+      "state": "LISTEN"
+    }
+  ],
+  "phase1a_boundary": {
+    "mangosd_modified_or_compiled": false,
+    "mariadb_accessed": false,
+    "game_chat_sent": false,
+    "existing_llm_path_enabled": false,
+    "live_ollama_inference_performed": false,
+    "model_management_performed": false,
+    "temporary_loopback_mock_listeners_closed": true
+  }
+}

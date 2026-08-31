@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "result": "PHASE1B_ACTION_AUDIT=PASS",
+  "scope": "one isolated live Ollama inference through the verified external bridge",
+  "bridge_actions": {
+    "cli_start_count": 1,
+    "required_inventory_get_tags_count": 1,
+    "required_inventory_count_basis": "verified retry-free startup source plus one successful ready event",
+    "submit_command_count": 1,
+    "inference_attempts": 1,
+    "inference_post_chat_count": 1,
+    "inference_count_basis": "one accepted submit, one ready completion with attempt_count=1, metrics inference_attempts=1, and verified retry-free transport source",
+    "status_poll_count": 74,
+    "consume_command_count": 2,
+    "metrics_command_count": 1,
+    "drain_shutdown_count": 1,
+    "automatic_retry_count": 0,
+    "resubmission_count": 0,
+    "second_inference_count": 0
+  },
+  "read_only_observations": {
+    "ollama_ps_before_get_count": 1,
+    "ollama_ps_after_get_count": 1,
+    "game_database_presence_listener_snapshots": 2,
+    "ollama_binding_snapshots": 2
+  },
+  "prohibited_actions": {
+    "mangosd_start_stop_or_control": 0,
+    "realmd_start_stop_or_control": 0,
+    "mariadb_start_stop_or_control": 0,
+    "ollama_process_start_stop_or_control": 0,
+    "database_connections_queries_or_schema_actions": 0,
+    "game_source_reads_modifications_or_compilation": 0,
+    "game_chat_actions": 0,
+    "existing_game_llm_path_actions": 0,
+    "model_pull_actions": 0,
+    "model_update_actions": 0,
+    "model_copy_actions": 0,
+    "model_delete_actions": 0,
+    "model_explicit_load_actions": 0,
+    "model_explicit_unload_actions": 0,
+    "manual_tags_requests": 0
+  },
+  "model_state_note": "The pinned model changed from cold to warm solely as a consequence of the one approved inference; no explicit model load or management action was issued.",
+  "process_control_note": "Only the required external bridge child was started and shut down with drain=true. No process-control action targeted a game, database, Ollama, or model process.",
+  "evidence": [
+    "bridge-transcript.json",
+    "live-run-result.json",
+    "metrics-before-shutdown.json",
+    "shutdown-response.json",
+    "boundary-observation-before.json",
+    "boundary-observation-after.json",
+    "offline-verification.json"
+  ]
+}

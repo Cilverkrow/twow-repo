@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-29T22:09:36.7138798Z",
+  "source_path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_21-57-24.log",
+  "source_length_at_open": 11547399,
+  "tail_start_offset": 10498823,
+  "captured_bytes": 1048576,
+  "output_path": "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02c-20260829-233607\\evidence\\active-production-log-tail-after-phase-b-block.txt",
+  "output_sha256": "2EBF305BE37CD2848FF1277BAD27BA46C3AAE4CF938A63FA5CE0828D6D46D8C9",
+  "purpose": "bounded read-only tail after controlled shutdown helper failed; production process remained running"
+}

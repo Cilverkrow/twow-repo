@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "result": "PHASE1B_SOURCE_PACKAGE_VERIFICATION=PASS",
+  "verified_utc": "2026-08-29T14:36:37.2873845Z",
+  "live_execution_started": false,
+  "phase1a_directory": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-hardening-20260829-035317",
+  "phase1a_directory_file_count": 52,
+  "phase1a_directory_total_bytes": 297947,
+  "phase1a_directory_fingerprint_sha256": "D458FA595A776DF36A586BB240D3B3F0271853DF8CAAD431620ABCBEA59710FA",
+  "source_zip_path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-hardening-20260829-035317\\ssc-llm-bridge-phase1a-hardening-20260829-035317-deliverables.zip",
+  "copied_zip_path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1b-live-20260829-163519\\source-package\\ssc-llm-bridge-phase1a-hardening-20260829-035317-deliverables.zip",
+  "zip_size_bytes": 71689,
+  "zip_sha256": "BADE583E726F5177D2BA9AF753962D6DC74BC3297B6C610A3CB91FF5251DDF11",
+  "zip_entry_count": 50,
+  "zip_unique_entry_count": 50,
+  "unsafe_entry_count": 0,
+  "manifest_entry_count": 49,
+  "manifest_hash_failures": 0,
+  "entry_list_matches": true,
+  "extracted_file_count": 50
+}

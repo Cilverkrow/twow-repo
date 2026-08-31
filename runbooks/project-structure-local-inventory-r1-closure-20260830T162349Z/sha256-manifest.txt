@@ -1,0 +1,22 @@
+# SHA-256 manifest
+# Task: PROJECT-STRUCTURE-LOCAL-INVENTORY-01-R1-CLOSURE
+# Captured UTC: 2026-08-30T16:23:49Z
+# Encoding: UTF-8 without BOM
+# Line endings: LF
+# Deliverable count: 4
+
+# R1 payload deliverables
+CCFF07188E86534A7FE4F790B48738106FD531B83BAD18097F5160A14A19FA24  local-project-structure-inventory-v1-r1.md
+77E97BB469D98453830D4F925C89700EB04A28F1DB1F02BAA10681A18F09F433  local-project-structure-inventory-v1-r1.json
+49B14A69D1EB7EB907F31229982A24D2424112C487B067F3E96A5EE565B2122F  local-project-structure-handoff-v1-r1.md
+
+# The manifest is the fourth deliverable. Its byte count and SHA-256 are
+# reported externally in the task return because a file cannot contain its
+# own final byte-level SHA-256 without changing that hash.
+SELF_HASH_REPORTED_EXTERNALLY  sha256-manifest.txt
+
+# Immutable V1 source identities, verified unchanged
+6FC8AFACF3A2BECCA1C9B345BD404C49E89A42B3BFC56219CC24DCA2DF9244EA  15306  ..\project-structure-local-inventory-20260830T161124Z\local-project-structure-inventory-v1.md
+6016EDD91223B9B2508F7E2CC17846FEFCDF42EC6914A78656796E1C1D4AA340  13790  ..\project-structure-local-inventory-20260830T161124Z\local-project-structure-inventory-v1.json
+C3F123C54A1FCA54DF053158E9D080E2A941C11455F05F414F184DF8F18E4C60  4175  ..\project-structure-local-inventory-20260830T161124Z\local-project-structure-handoff-v1.md
+67BEE8F1ADFCBD7564800E4A09333F693D02F64C4DDA5D6FA66DA3D515F7047B  1327  ..\project-structure-local-inventory-20260830T161124Z\sha256-manifest.txt

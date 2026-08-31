@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C-R1",
+  "phase": "D",
+  "start": {
+    "method": "C:\\TW\\ComTW\\server\\start-mangosd.bat",
+    "started_local": "2026-08-30T00:49:41.1128827+02:00",
+    "started_utc": "2026-08-29T22:49:41.1128827Z",
+    "launcher_pid": 33080,
+    "mangosd_pid": 25492,
+    "realmd_started": false
+  },
+  "candidate": {
+    "installed_sha256": "2C24707C587279B8E110D9B92248FFA61278005757A8A6287F9D11985CAD10AE",
+    "expected_revision": "42b8a7f742548793910fe8880463aeeb71627fb9",
+    "observed_embedded_revision_short": "42b8a7f742548793910f",
+    "revision_evidence": "Candidate inserted revision 42b8a7f742548793910f into the normal uptime start record at log line 2107."
+  },
+  "runtime_gates": {
+    "database_connections_accepted": true,
+    "world_initialization_completed": true,
+    "listener": "0.0.0.0:8090",
+    "listener_pid": 25492,
+    "character_inventory_copy_match_count": 0,
+    "schema_or_database_failure_match_count": 0,
+    "fatal_or_unhandled_failure_match_count": 0,
+    "process_responding": true,
+    "crash_observed": false
+  },
+  "observation": {
+    "anchor_utc": "2026-08-29T22:50:40.1846581Z",
+    "verified_utc": "2026-08-29T22:54:28.0398819Z",
+    "elapsed_seconds": 227.855,
+    "required_seconds": 180,
+    "requirement_met": true,
+    "samples": [
+      {"utc":"2026-08-29T22:51:21.0851857Z","pid":25492,"responding":true,"listener":"0.0.0.0:8090","fatal_matches":0},
+      {"utc":"2026-08-29T22:52:22.0121558Z","pid":25492,"responding":true,"listener":"0.0.0.0:8090","fatal_matches":0},
+      {"utc":"2026-08-29T22:53:16.9887862Z","pid":25492,"responding":true,"listener":"0.0.0.0:8090","fatal_matches":0},
+      {"utc":"2026-08-29T22:54:28.0398819Z","pid":25492,"responding":true,"listener":"0.0.0.0:8090","fatal_matches":0}
+    ]
+  },
+  "log_path": "C:\\TW\\ComTW\\logs\\server_2026-08-30_00-49-41.log",
+  "activity_constraints": {
+    "login_performed": false,
+    "bot_command_performed": false,
+    "bridge_started": false,
+    "ollama_contacted": false,
+    "llm_inference_performed": false,
+    "manual_sql_performed": false,
+    "migration_performed": false,
+    "normal_automatic_server_start_activity_observed": true
+  },
+  "result": "PASS"
+}

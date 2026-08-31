@@ -1,0 +1,695 @@
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.26200.
+-- Configuring done (0.0s)
+-- Generating done (0.1s)
+-- Build files have been written to: C:/TW/ssc-llm-phase-b-20260830-173121/r1-tests/build-final
+MSBuild-Version 17.14.51+25f168cee für .NET Framework
+
+  external_llm_bridge_tests.vcxproj -> C:\TW\ssc-llm-phase-b-20260830-173121\r1-tests\build-final\Release\external_llm_bridge_tests.exe
+TAP version 13
+ok 1 - CORE_READY_TIMEOUT_MS pin
+ok 2 - CORE_STATUS_POLL_INTERVAL_MS pin
+ok 3 - CORE_SHUTDOWN_OVERALL_TIMEOUT_MS pin
+ok 4 - CORE_STDERR_DIAGNOSTIC_CAP_BYTES pin
+ok 5 - CORE_STDOUT_NDJSON_LINE_CAP_BYTES pin
+ok 6 - exact Ready accepted
+ok 7 - Ready missing code
+ok 8 - Ready missing mode
+ok 9 - Ready missing active_limit
+ok 10 - Ready missing waiting_capacity
+ok 11 - Ready missing ledger_capacity
+ok 12 - Ready missing bot_guid
+ok 13 - Ready missing model
+ok 14 - Ready extra field rejected
+ok 15 - Ready null rejected
+ok 16 - Ready wrong type rejected
+ok 17 - Ready wrong pin rejected
+ok 18 - strict JSON valid
+ok 19 - duplicate key rejected
+ok 20 - UTF-8 BOM rejected
+ok 21 - malformed UTF-8 rejected
+ok 22 - trailing JSON rejected
+ok 23 - empty NDJSON line rejected
+ok 24 - NDJSON line cap enforced
+ok 25 - submit queued variant
+ok 26 - submit duplicate variant
+ok 27 - submit mismatch variant
+ok 28 - submit queue-full variant
+ok 29 - submit expired variant
+ok 30 - submit ledger-full variant
+ok 31 - submit extra field rejected
+ok 32 - submit null rejected
+ok 33 - wrong-context code rejected
+ok 34 - unknown code rejected
+ok 35 - exact CLI error closes rather than becoming normal result
+ok 36 - status ok variant
+ok 37 - status invalid_uuid
+ok 38 - status invalid_bot_guid
+ok 39 - status not_found
+ok 40 - status identity_mismatch
+ok 41 - consume consumed ready variant
+ok 42 - consume not-ready variant
+ok 43 - consume already-consumed no text
+ok 44 - consume invalid_uuid
+ok 45 - consume invalid_bot_guid
+ok 46 - consume not_found
+ok 47 - consume identity_mismatch
+ok 48 - metrics exact envelope
+ok 49 - shutdown exact envelope
+ok 50 - shutdown running metrics rejected
+ok 51 - nonready attempt-zero invariants
+ok 52 - nonready text rejected
+ok 53 - exact two sentences accepted
+ok 54 - three sentences without spaces rejected
+ok 55 - Unicode ellipsis counted as terminator run
+ok 56 - three Unicode/ASCII terminator runs rejected
+ok 57 - 240-byte limit enforced without truncation
+ok 58 - non-ASCII sanitizer whitespace rejected
+ok 59 - Ready envelope missing active_limit
+ok 60 - Ready envelope wrong type active_limit
+ok 61 - Ready envelope wrong null active_limit
+ok 62 - Ready envelope missing bot_guid
+ok 63 - Ready envelope wrong type bot_guid
+ok 64 - Ready envelope wrong null bot_guid
+ok 65 - Ready envelope missing code
+ok 66 - Ready envelope wrong type code
+ok 67 - Ready envelope wrong null code
+ok 68 - Ready envelope missing ledger_capacity
+ok 69 - Ready envelope wrong type ledger_capacity
+ok 70 - Ready envelope wrong null ledger_capacity
+ok 71 - Ready envelope missing mode
+ok 72 - Ready envelope wrong type mode
+ok 73 - Ready envelope wrong null mode
+ok 74 - Ready envelope missing model
+ok 75 - Ready envelope wrong type model
+ok 76 - Ready envelope wrong null model
+ok 77 - Ready envelope missing waiting_capacity
+ok 78 - Ready envelope wrong type waiting_capacity
+ok 79 - Ready envelope wrong null waiting_capacity
+ok 80 - Ready envelope additional field
+ok 81 - Status envelope missing attempt_count
+ok 82 - Status envelope wrong type attempt_count
+ok 83 - Status envelope wrong null attempt_count
+ok 84 - Status envelope missing bot_guid
+ok 85 - Status envelope wrong type bot_guid
+ok 86 - Status envelope wrong null bot_guid
+ok 87 - Status envelope missing error_code
+ok 88 - Status envelope wrong type error_code
+ok 89 - Status envelope wrong null error_code
+ok 90 - Status envelope missing queued_utc
+ok 91 - Status envelope wrong type queued_utc
+ok 92 - Status envelope wrong null queued_utc
+ok 93 - Status envelope missing request_id
+ok 94 - Status envelope wrong type request_id
+ok 95 - Status envelope wrong null request_id
+ok 96 - Status envelope missing schema_version
+ok 97 - Status envelope wrong type schema_version
+ok 98 - Status envelope wrong null schema_version
+ok 99 - Status envelope missing state
+ok 100 - Status envelope wrong type state
+ok 101 - Status envelope wrong null state
+ok 102 - Status envelope missing updated_utc
+ok 103 - Status envelope wrong type updated_utc
+ok 104 - Status envelope wrong null updated_utc
+ok 105 - Status envelope additional field
+ok 106 - Completion envelope missing attempt_count
+ok 107 - Completion envelope wrong type attempt_count
+ok 108 - Completion envelope wrong null attempt_count
+ok 109 - Completion envelope missing bot_guid
+ok 110 - Completion envelope wrong type bot_guid
+ok 111 - Completion envelope wrong null bot_guid
+ok 112 - Completion envelope missing completed_utc
+ok 113 - Completion envelope wrong type completed_utc
+ok 114 - Completion envelope wrong null completed_utc
+ok 115 - Completion envelope missing error_code
+ok 116 - Completion envelope wrong type error_code
+ok 117 - Completion envelope wrong null error_code
+ok 118 - Completion envelope missing model
+ok 119 - Completion envelope wrong type model
+ok 120 - Completion envelope wrong null model
+ok 121 - Completion envelope missing outcome
+ok 122 - Completion envelope wrong type outcome
+ok 123 - Completion envelope wrong null outcome
+ok 124 - Completion envelope missing raw_response_bytes
+ok 125 - Completion envelope wrong type raw_response_bytes
+ok 126 - Completion envelope wrong null raw_response_bytes
+ok 127 - Completion envelope missing request_id
+ok 128 - Completion envelope wrong type request_id
+ok 129 - Completion envelope wrong null request_id
+ok 130 - Completion envelope missing schema_version
+ok 131 - Completion envelope wrong type schema_version
+ok 132 - Completion envelope wrong null schema_version
+ok 133 - Completion envelope missing started_utc
+ok 134 - Completion envelope wrong type started_utc
+ok 135 - Completion envelope wrong null started_utc
+ok 136 - Completion envelope missing text
+ok 137 - Completion envelope wrong type text
+ok 138 - Completion envelope wrong null text
+ok 139 - Completion envelope additional field
+ok 140 - Submit response envelope missing accepted
+ok 141 - Submit response envelope wrong type accepted
+ok 142 - Submit response envelope wrong null accepted
+ok 143 - Submit response envelope missing code
+ok 144 - Submit response envelope wrong type code
+ok 145 - Submit response envelope wrong null code
+ok 146 - Submit response envelope missing status
+ok 147 - Submit response envelope wrong type status
+ok 148 - Submit response envelope wrong null status
+ok 149 - Submit response envelope additional field
+ok 150 - Status response envelope missing code
+ok 151 - Status response envelope wrong type code
+ok 152 - Status response envelope wrong null code
+ok 153 - Status response envelope missing status
+ok 154 - Status response envelope wrong type status
+ok 155 - Status response envelope wrong null status
+ok 156 - Status response envelope additional field
+ok 157 - Consume response envelope missing code
+ok 158 - Consume response envelope wrong type code
+ok 159 - Consume response envelope wrong null code
+ok 160 - Consume response envelope missing completion
+ok 161 - Consume response envelope wrong type completion
+ok 162 - Consume response envelope wrong null completion
+ok 163 - Consume response envelope missing status
+ok 164 - Consume response envelope wrong type status
+ok 165 - Consume response envelope wrong null status
+ok 166 - Consume response envelope additional field
+ok 167 - Metrics response envelope missing code
+ok 168 - Metrics response envelope wrong type code
+ok 169 - Metrics response envelope wrong null code
+ok 170 - Metrics response envelope missing metrics
+ok 171 - Metrics response envelope wrong type metrics
+ok 172 - Metrics response envelope wrong null metrics
+ok 173 - Metrics response envelope additional field
+ok 174 - Metrics envelope missing accepting
+ok 175 - Metrics envelope wrong type accepting
+ok 176 - Metrics envelope wrong null accepting
+ok 177 - Metrics envelope missing active
+ok 178 - Metrics envelope wrong type active
+ok 179 - Metrics envelope wrong null active
+ok 180 - Metrics envelope missing inference_attempts
+ok 181 - Metrics envelope wrong type inference_attempts
+ok 182 - Metrics envelope wrong null inference_attempts
+ok 183 - Metrics envelope missing ledger_entries
+ok 184 - Metrics envelope wrong type ledger_entries
+ok 185 - Metrics envelope wrong null ledger_entries
+ok 186 - Metrics envelope missing lifecycle
+ok 187 - Metrics envelope wrong type lifecycle
+ok 188 - Metrics envelope wrong null lifecycle
+ok 189 - Metrics envelope missing max_active_observed
+ok 190 - Metrics envelope wrong type max_active_observed
+ok 191 - Metrics envelope wrong null max_active_observed
+ok 192 - Metrics envelope missing stale_results_discarded
+ok 193 - Metrics envelope wrong type stale_results_discarded
+ok 194 - Metrics envelope wrong null stale_results_discarded
+ok 195 - Metrics envelope missing waiting
+ok 196 - Metrics envelope wrong type waiting
+ok 197 - Metrics envelope wrong null waiting
+ok 198 - Metrics envelope missing worker_owned
+ok 199 - Metrics envelope wrong type worker_owned
+ok 200 - Metrics envelope wrong null worker_owned
+ok 201 - Metrics envelope missing worker_settled
+ok 202 - Metrics envelope wrong type worker_settled
+ok 203 - Metrics envelope wrong null worker_settled
+ok 204 - Metrics envelope additional field
+ok 205 - Shutdown response envelope missing code
+ok 206 - Shutdown response envelope wrong type code
+ok 207 - Shutdown response envelope wrong null code
+ok 208 - Shutdown response envelope missing metrics
+ok 209 - Shutdown response envelope wrong type metrics
+ok 210 - Shutdown response envelope wrong null metrics
+ok 211 - Shutdown response envelope additional field
+ok 212 - exact fatal startup envelope recognized
+ok 213 - Fatal startup envelope missing code
+ok 214 - Fatal startup envelope wrong type code
+ok 215 - Fatal startup envelope wrong null code
+ok 216 - Fatal startup envelope missing message
+ok 217 - Fatal startup envelope wrong type message
+ok 218 - Fatal startup envelope wrong null message
+ok 219 - Fatal startup envelope missing result
+ok 220 - Fatal startup envelope wrong type result
+ok 221 - Fatal startup envelope wrong null result
+ok 222 - Fatal startup envelope additional field
+ok 223 - exact CLI error envelope recognized
+ok 224 - CLI error envelope missing code
+ok 225 - CLI error envelope wrong type code
+ok 226 - CLI error envelope wrong null code
+ok 227 - CLI error envelope missing message
+ok 228 - CLI error envelope wrong type message
+ok 229 - CLI error envelope wrong null message
+ok 230 - CLI error envelope additional field
+ok 231 - Submit command envelope missing command
+ok 232 - Submit command envelope wrong type command
+ok 233 - Submit command envelope wrong null command
+ok 234 - Submit command envelope missing request
+ok 235 - Submit command envelope wrong type request
+ok 236 - Submit command envelope wrong null request
+ok 237 - Submit command envelope additional field
+ok 238 - Request envelope missing bot_guid
+ok 239 - Request envelope wrong type bot_guid
+ok 240 - Request envelope wrong null bot_guid
+ok 241 - Request envelope missing created_utc
+ok 242 - Request envelope wrong type created_utc
+ok 243 - Request envelope wrong null created_utc
+ok 244 - Request envelope missing expires_utc
+ok 245 - Request envelope wrong type expires_utc
+ok 246 - Request envelope wrong null expires_utc
+ok 247 - Request envelope missing message
+ok 248 - Request envelope wrong type message
+ok 249 - Request envelope wrong null message
+ok 250 - Request envelope missing request_id
+ok 251 - Request envelope wrong type request_id
+ok 252 - Request envelope wrong null request_id
+ok 253 - Request envelope missing schema_version
+ok 254 - Request envelope wrong type schema_version
+ok 255 - Request envelope wrong null schema_version
+ok 256 - Request envelope additional field
+ok 257 - Status command envelope missing bot_guid
+ok 258 - Status command envelope wrong type bot_guid
+ok 259 - Status command envelope wrong null bot_guid
+ok 260 - Status command envelope missing command
+ok 261 - Status command envelope wrong type command
+ok 262 - Status command envelope wrong null command
+ok 263 - Status command envelope missing request_id
+ok 264 - Status command envelope wrong type request_id
+ok 265 - Status command envelope wrong null request_id
+ok 266 - Status command envelope additional field
+ok 267 - Consume command envelope missing bot_guid
+ok 268 - Consume command envelope wrong type bot_guid
+ok 269 - Consume command envelope wrong null bot_guid
+ok 270 - Consume command envelope missing command
+ok 271 - Consume command envelope wrong type command
+ok 272 - Consume command envelope wrong null command
+ok 273 - Consume command envelope missing request_id
+ok 274 - Consume command envelope wrong type request_id
+ok 275 - Consume command envelope wrong null request_id
+ok 276 - Consume command envelope additional field
+ok 277 - Metrics command envelope missing command
+ok 278 - Metrics command envelope wrong type command
+ok 279 - Metrics command envelope wrong null command
+ok 280 - Metrics command envelope additional field
+ok 281 - Shutdown command envelope missing command
+ok 282 - Shutdown command envelope wrong type command
+ok 283 - Shutdown command envelope wrong null command
+ok 284 - Shutdown command envelope missing drain
+ok 285 - Shutdown command envelope wrong type drain
+ok 286 - Shutdown command envelope wrong null drain
+ok 287 - Shutdown command envelope additional field
+ok 288 - status ok state queued
+ok 289 - status ok state running
+ok 290 - status ok state ready
+ok 291 - status ok state failed
+ok 292 - status ok state expired
+ok 293 - status ok state consumed
+ok 294 - consume not-ready queued variant
+ok 295 - consume not-ready running variant
+ok 296 - consume terminal failed variant
+ok 297 - consume terminal expired variant
+ok 298 - already-consumed failed status variant
+ok 299 - completion matrix assistant_text_too_long attempt 0
+ok 300 - completion outcome bound assistant_text_too_long attempt 0
+ok 301 - status error matrix assistant_text_too_long attempt 0
+ok 302 - completion matrix assistant_text_too_long attempt 1
+ok 303 - completion outcome bound assistant_text_too_long attempt 1
+ok 304 - status error matrix assistant_text_too_long attempt 1
+ok 305 - completion matrix assistant_text_too_many_bytes attempt 0
+ok 306 - completion outcome bound assistant_text_too_many_bytes attempt 0
+ok 307 - status error matrix assistant_text_too_many_bytes attempt 0
+ok 308 - completion matrix assistant_text_too_many_bytes attempt 1
+ok 309 - completion outcome bound assistant_text_too_many_bytes attempt 1
+ok 310 - status error matrix assistant_text_too_many_bytes attempt 1
+ok 311 - completion matrix completion_mismatch attempt 0
+ok 312 - completion outcome bound completion_mismatch attempt 0
+ok 313 - status error matrix completion_mismatch attempt 0
+ok 314 - completion matrix completion_mismatch attempt 1
+ok 315 - completion outcome bound completion_mismatch attempt 1
+ok 316 - status error matrix completion_mismatch attempt 1
+ok 317 - completion matrix connect_deadline attempt 0
+ok 318 - completion outcome bound connect_deadline attempt 0
+ok 319 - status error matrix connect_deadline attempt 0
+ok 320 - completion matrix connect_deadline attempt 1
+ok 321 - completion outcome bound connect_deadline attempt 1
+ok 322 - status error matrix connect_deadline attempt 1
+ok 323 - completion matrix connect_failed attempt 0
+ok 324 - completion outcome bound connect_failed attempt 0
+ok 325 - status error matrix connect_failed attempt 0
+ok 326 - completion matrix connect_failed attempt 1
+ok 327 - completion outcome bound connect_failed attempt 1
+ok 328 - status error matrix connect_failed attempt 1
+ok 329 - completion matrix duplicate_json_key attempt 0
+ok 330 - completion outcome bound duplicate_json_key attempt 0
+ok 331 - status error matrix duplicate_json_key attempt 0
+ok 332 - completion matrix duplicate_json_key attempt 1
+ok 333 - completion outcome bound duplicate_json_key attempt 1
+ok 334 - status error matrix duplicate_json_key attempt 1
+ok 335 - completion matrix empty_assistant_text attempt 0
+ok 336 - completion outcome bound empty_assistant_text attempt 0
+ok 337 - status error matrix empty_assistant_text attempt 0
+ok 338 - completion matrix empty_assistant_text attempt 1
+ok 339 - completion outcome bound empty_assistant_text attempt 1
+ok 340 - status error matrix empty_assistant_text attempt 1
+ok 341 - completion matrix expired_before_consume attempt 0
+ok 342 - completion outcome bound expired_before_consume attempt 0
+ok 343 - status error matrix expired_before_consume attempt 0
+ok 344 - completion matrix expired_before_consume attempt 1
+ok 345 - completion outcome bound expired_before_consume attempt 1
+ok 346 - status error matrix expired_before_consume attempt 1
+ok 347 - completion matrix expired_before_run attempt 0
+ok 348 - completion outcome bound expired_before_run attempt 0
+ok 349 - status error matrix expired_before_run attempt 0
+ok 350 - completion matrix expired_before_run attempt 1
+ok 351 - completion outcome bound expired_before_run attempt 1
+ok 352 - status error matrix expired_before_run attempt 1
+ok 353 - completion matrix http_request_too_large attempt 0
+ok 354 - completion outcome bound http_request_too_large attempt 0
+ok 355 - status error matrix http_request_too_large attempt 0
+ok 356 - completion matrix http_request_too_large attempt 1
+ok 357 - completion outcome bound http_request_too_large attempt 1
+ok 358 - status error matrix http_request_too_large attempt 1
+ok 359 - completion matrix http_response_error attempt 0
+ok 360 - completion outcome bound http_response_error attempt 0
+ok 361 - status error matrix http_response_error attempt 0
+ok 362 - completion matrix http_response_error attempt 1
+ok 363 - completion outcome bound http_response_error attempt 1
+ok 364 - status error matrix http_response_error attempt 1
+ok 365 - completion matrix http_transport_error attempt 0
+ok 366 - completion outcome bound http_transport_error attempt 0
+ok 367 - status error matrix http_transport_error attempt 0
+ok 368 - completion matrix http_transport_error attempt 1
+ok 369 - completion outcome bound http_transport_error attempt 1
+ok 370 - status error matrix http_transport_error attempt 1
+ok 371 - completion matrix incomplete_inference_response attempt 0
+ok 372 - completion outcome bound incomplete_inference_response attempt 0
+ok 373 - status error matrix incomplete_inference_response attempt 0
+ok 374 - completion matrix incomplete_inference_response attempt 1
+ok 375 - completion outcome bound incomplete_inference_response attempt 1
+ok 376 - status error matrix incomplete_inference_response attempt 1
+ok 377 - completion matrix inference_failed attempt 0
+ok 378 - completion outcome bound inference_failed attempt 0
+ok 379 - status error matrix inference_failed attempt 0
+ok 380 - completion matrix inference_failed attempt 1
+ok 381 - completion outcome bound inference_failed attempt 1
+ok 382 - status error matrix inference_failed attempt 1
+ok 383 - completion matrix inference_http_error attempt 0
+ok 384 - completion outcome bound inference_http_error attempt 0
+ok 385 - status error matrix inference_http_error attempt 0
+ok 386 - completion matrix inference_http_error attempt 1
+ok 387 - completion outcome bound inference_http_error attempt 1
+ok 388 - status error matrix inference_http_error attempt 1
+ok 389 - completion matrix input_too_large attempt 0
+ok 390 - completion outcome bound input_too_large attempt 0
+ok 391 - status error matrix input_too_large attempt 0
+ok 392 - completion matrix input_too_large attempt 1
+ok 393 - completion outcome bound input_too_large attempt 1
+ok 394 - status error matrix input_too_large attempt 1
+ok 395 - completion matrix invalid_assistant_role attempt 0
+ok 396 - completion outcome bound invalid_assistant_role attempt 0
+ok 397 - status error matrix invalid_assistant_role attempt 0
+ok 398 - completion matrix invalid_assistant_role attempt 1
+ok 399 - completion outcome bound invalid_assistant_role attempt 1
+ok 400 - status error matrix invalid_assistant_role attempt 1
+ok 401 - completion matrix invalid_assistant_text attempt 0
+ok 402 - completion outcome bound invalid_assistant_text attempt 0
+ok 403 - status error matrix invalid_assistant_text attempt 0
+ok 404 - completion matrix invalid_assistant_text attempt 1
+ok 405 - completion outcome bound invalid_assistant_text attempt 1
+ok 406 - status error matrix invalid_assistant_text attempt 1
+ok 407 - completion matrix invalid_content_length attempt 0
+ok 408 - completion outcome bound invalid_content_length attempt 0
+ok 409 - status error matrix invalid_content_length attempt 0
+ok 410 - completion matrix invalid_content_length attempt 1
+ok 411 - completion outcome bound invalid_content_length attempt 1
+ok 412 - status error matrix invalid_content_length attempt 1
+ok 413 - completion matrix invalid_inference_schema attempt 0
+ok 414 - completion outcome bound invalid_inference_schema attempt 0
+ok 415 - status error matrix invalid_inference_schema attempt 0
+ok 416 - completion matrix invalid_inference_schema attempt 1
+ok 417 - completion outcome bound invalid_inference_schema attempt 1
+ok 418 - status error matrix invalid_inference_schema attempt 1
+ok 419 - completion matrix invalid_json attempt 0
+ok 420 - completion outcome bound invalid_json attempt 0
+ok 421 - status error matrix invalid_json attempt 0
+ok 422 - completion matrix invalid_json attempt 1
+ok 423 - completion outcome bound invalid_json attempt 1
+ok 424 - status error matrix invalid_json attempt 1
+ok 425 - completion matrix invalid_json_number attempt 0
+ok 426 - completion outcome bound invalid_json_number attempt 0
+ok 427 - status error matrix invalid_json_number attempt 0
+ok 428 - completion matrix invalid_json_number attempt 1
+ok 429 - completion outcome bound invalid_json_number attempt 1
+ok 430 - status error matrix invalid_json_number attempt 1
+ok 431 - completion matrix invalid_json_string attempt 0
+ok 432 - completion outcome bound invalid_json_string attempt 0
+ok 433 - status error matrix invalid_json_string attempt 0
+ok 434 - completion matrix invalid_json_string attempt 1
+ok 435 - completion outcome bound invalid_json_string attempt 1
+ok 436 - status error matrix invalid_json_string attempt 1
+ok 437 - completion matrix invalid_monotonic_deadline attempt 0
+ok 438 - completion outcome bound invalid_monotonic_deadline attempt 0
+ok 439 - status error matrix invalid_monotonic_deadline attempt 0
+ok 440 - completion matrix invalid_monotonic_deadline attempt 1
+ok 441 - completion outcome bound invalid_monotonic_deadline attempt 1
+ok 442 - status error matrix invalid_monotonic_deadline attempt 1
+ok 443 - completion matrix invalid_raw_response_bytes attempt 0
+ok 444 - completion outcome bound invalid_raw_response_bytes attempt 0
+ok 445 - status error matrix invalid_raw_response_bytes attempt 0
+ok 446 - completion matrix invalid_raw_response_bytes attempt 1
+ok 447 - completion outcome bound invalid_raw_response_bytes attempt 1
+ok 448 - status error matrix invalid_raw_response_bytes attempt 1
+ok 449 - completion matrix invalid_unicode_scalar attempt 0
+ok 450 - completion outcome bound invalid_unicode_scalar attempt 0
+ok 451 - status error matrix invalid_unicode_scalar attempt 0
+ok 452 - completion matrix invalid_unicode_scalar attempt 1
+ok 453 - completion outcome bound invalid_unicode_scalar attempt 1
+ok 454 - status error matrix invalid_unicode_scalar attempt 1
+ok 455 - completion matrix invalid_utf8 attempt 0
+ok 456 - completion outcome bound invalid_utf8 attempt 0
+ok 457 - status error matrix invalid_utf8 attempt 0
+ok 458 - completion matrix invalid_utf8 attempt 1
+ok 459 - completion outcome bound invalid_utf8 attempt 1
+ok 460 - status error matrix invalid_utf8 attempt 1
+ok 461 - completion matrix json_depth_exceeded attempt 0
+ok 462 - completion outcome bound json_depth_exceeded attempt 0
+ok 463 - status error matrix json_depth_exceeded attempt 0
+ok 464 - completion matrix json_depth_exceeded attempt 1
+ok 465 - completion outcome bound json_depth_exceeded attempt 1
+ok 466 - status error matrix json_depth_exceeded attempt 1
+ok 467 - completion matrix json_trailing_content attempt 0
+ok 468 - completion outcome bound json_trailing_content attempt 0
+ok 469 - status error matrix json_trailing_content attempt 0
+ok 470 - completion matrix json_trailing_content attempt 1
+ok 471 - completion outcome bound json_trailing_content attempt 1
+ok 472 - status error matrix json_trailing_content attempt 1
+ok 473 - completion matrix queue_full attempt 0
+ok 474 - completion outcome bound queue_full attempt 0
+ok 475 - status error matrix queue_full attempt 0
+ok 476 - completion matrix queue_full attempt 1
+ok 477 - completion outcome bound queue_full attempt 1
+ok 478 - status error matrix queue_full attempt 1
+ok 479 - completion matrix raw_response_too_large attempt 0
+ok 480 - completion outcome bound raw_response_too_large attempt 0
+ok 481 - status error matrix raw_response_too_large attempt 0
+ok 482 - completion matrix raw_response_too_large attempt 1
+ok 483 - completion outcome bound raw_response_too_large attempt 1
+ok 484 - status error matrix raw_response_too_large attempt 1
+ok 485 - completion matrix request_cancelled attempt 0
+ok 486 - completion outcome bound request_cancelled attempt 0
+ok 487 - status error matrix request_cancelled attempt 0
+ok 488 - completion matrix request_cancelled attempt 1
+ok 489 - completion outcome bound request_cancelled attempt 1
+ok 490 - status error matrix request_cancelled attempt 1
+ok 491 - completion matrix request_expired attempt 0
+ok 492 - completion outcome bound request_expired attempt 0
+ok 493 - status error matrix request_expired attempt 0
+ok 494 - completion matrix request_expired attempt 1
+ok 495 - completion outcome bound request_expired attempt 1
+ok 496 - status error matrix request_expired attempt 1
+ok 497 - completion matrix response_aborted attempt 0
+ok 498 - completion outcome bound response_aborted attempt 0
+ok 499 - status error matrix response_aborted attempt 0
+ok 500 - completion matrix response_aborted attempt 1
+ok 501 - completion outcome bound response_aborted attempt 1
+ok 502 - status error matrix response_aborted attempt 1
+ok 503 - completion matrix response_deadline attempt 0
+ok 504 - completion outcome bound response_deadline attempt 0
+ok 505 - status error matrix response_deadline attempt 0
+ok 506 - completion matrix response_deadline attempt 1
+ok 507 - completion outcome bound response_deadline attempt 1
+ok 508 - status error matrix response_deadline attempt 1
+ok 509 - completion matrix response_model_mismatch attempt 0
+ok 510 - completion outcome bound response_model_mismatch attempt 0
+ok 511 - status error matrix response_model_mismatch attempt 0
+ok 512 - completion matrix response_model_mismatch attempt 1
+ok 513 - completion outcome bound response_model_mismatch attempt 1
+ok 514 - status error matrix response_model_mismatch attempt 1
+ok 515 - completion matrix schema_missing_field attempt 0
+ok 516 - completion outcome bound schema_missing_field attempt 0
+ok 517 - status error matrix schema_missing_field attempt 0
+ok 518 - completion matrix schema_missing_field attempt 1
+ok 519 - completion outcome bound schema_missing_field attempt 1
+ok 520 - status error matrix schema_missing_field attempt 1
+ok 521 - completion matrix schema_type_mismatch attempt 0
+ok 522 - completion outcome bound schema_type_mismatch attempt 0
+ok 523 - status error matrix schema_type_mismatch attempt 0
+ok 524 - completion matrix schema_type_mismatch attempt 1
+ok 525 - completion outcome bound schema_type_mismatch attempt 1
+ok 526 - status error matrix schema_type_mismatch attempt 1
+ok 527 - completion matrix schema_unknown_field attempt 0
+ok 528 - completion outcome bound schema_unknown_field attempt 0
+ok 529 - status error matrix schema_unknown_field attempt 0
+ok 530 - completion matrix schema_unknown_field attempt 1
+ok 531 - completion outcome bound schema_unknown_field attempt 1
+ok 532 - status error matrix schema_unknown_field attempt 1
+ok 533 - completion matrix shutdown_cancelled attempt 0
+ok 534 - completion outcome bound shutdown_cancelled attempt 0
+ok 535 - status error matrix shutdown_cancelled attempt 0
+ok 536 - completion matrix shutdown_cancelled attempt 1
+ok 537 - completion outcome bound shutdown_cancelled attempt 1
+ok 538 - status error matrix shutdown_cancelled attempt 1
+ok 539 - completion matrix shutdown_timeout attempt 0
+ok 540 - completion outcome bound shutdown_timeout attempt 0
+ok 541 - status error matrix shutdown_timeout attempt 0
+ok 542 - completion matrix shutdown_timeout attempt 1
+ok 543 - completion outcome bound shutdown_timeout attempt 1
+ok 544 - status error matrix shutdown_timeout attempt 1
+ok 545 - completion matrix stale_result attempt 0
+ok 546 - completion outcome bound stale_result attempt 0
+ok 547 - status error matrix stale_result attempt 0
+ok 548 - completion matrix stale_result attempt 1
+ok 549 - completion outcome bound stale_result attempt 1
+ok 550 - status error matrix stale_result attempt 1
+ok 551 - completion matrix too_many_sentences attempt 0
+ok 552 - completion outcome bound too_many_sentences attempt 0
+ok 553 - status error matrix too_many_sentences attempt 0
+ok 554 - completion matrix too_many_sentences attempt 1
+ok 555 - completion outcome bound too_many_sentences attempt 1
+ok 556 - status error matrix too_many_sentences attempt 1
+ok 557 - completion matrix utf8_bom_forbidden attempt 0
+ok 558 - completion outcome bound utf8_bom_forbidden attempt 0
+ok 559 - status error matrix utf8_bom_forbidden attempt 0
+ok 560 - completion matrix utf8_bom_forbidden attempt 1
+ok 561 - completion outcome bound utf8_bom_forbidden attempt 1
+ok 562 - status error matrix utf8_bom_forbidden attempt 1
+ok 563 - attempt zero requires null model
+ok 564 - attempt zero requires null started_utc
+ok 565 - attempt zero requires null raw_response_bytes
+ok 566 - attempt one permits null model
+ok 567 - attempt one permits null raw bytes
+ok 568 - attempt one requires started UTC
+ok 569 - attempt one rejects wrong model
+ok 570 - attempt one rejects raw byte overflow
+ok 571 - invalid real UTC rejected 2026-02-29T12:00:00.000Z
+ok 572 - invalid real UTC rejected 2024-02-30T12:00:00.000Z
+ok 573 - invalid real UTC rejected 2026-04-31T12:00:00.000Z
+ok 574 - invalid real UTC rejected 2026-13-01T12:00:00.000Z
+ok 575 - invalid real UTC rejected 2026-01-01T24:00:00.000Z
+ok 576 - invalid real UTC rejected 2026-01-01T12:60:00.000Z
+ok 577 - invalid real UTC rejected 2026-01-01T12:00:60.000Z
+ok 578 - invalid real UTC rejected 0000-01-01T00:00:00.000Z
+ok 579 - valid leap-day UTC accepted
+ok 580 - status timestamp order enforced
+ok 581 - completion timestamp order enforced
+ok 582 - completion request context enforced
+ok 583 - completion bot context enforced
+ok 584 - known submit code rejected in consume context
+ok 585 - known status code rejected in submit context
+ok 586 - world fixture completion parses
+ok 587 - value-only world completion evidence accepted
+ok 588 - world revalidator request ID
+ok 589 - world revalidator Bot GUID
+ok 590 - world revalidator ready outcome
+ok 591 - world revalidator model pin
+ok 592 - world revalidator attempt one
+ok 593 - world revalidator null error
+ok 594 - world revalidator raw byte bound
+ok 595 - world revalidator canonical text
+ok 596 - world revalidator steady deadline
+ok 597 - world fixture contains values only and no raw pointers
+ok 598 - package fixture environment present
+ok 599 - fake manifest hash readable
+ok 600 - fake config hash readable
+ok 601 - fake personality hash readable
+ok 602 - fake CLI hash readable
+ok 603 - safe fake payload verifies
+ok 604 - CLI fixed under verified PackageRoot
+ok 605 - manifest pin mismatch fails closed
+ok 606 - original PackageRoot junction rejected before canonicalization
+ok 607 - manifest path through reparse component rejected
+ok 608 - manifest-listed payload path through junction rejected
+ok 609 - manifest exclusive-read fixture acquired
+ok 610 - manifest stream/open failure detected
+ok 611 - truncated manifest EOF content fails closed
+ok 612 - safe payload verifies after fixture restoration
+ok 613 - admission parity child Ready
+ok 614 - wrong Bot GUID rejected before route creation
+ok 615 - ASCII trim-empty message rejected
+ok 616 - ECMAScript NBSP trim-empty message rejected
+ok 617 - ECMAScript BOM trim-empty message rejected
+ok 618 - invalid admission creates no UUID or route
+ok 619 - invalid admission emits no child bytes
+ok 620 - fake child exact Ready
+ok 621 - one request admitted
+ok 622 - completion consumed once
+ok 623 - valid snapshot yields exactly one whisper token
+ok 624 - delivery retired before second whisper
+ok 625 - exactly one consume sent
+ok 626 - wire evidence uses exact 45-second lifetime
+ok 627 - revalidation child Ready
+ok 628 - revalidation request admitted
+ok 629 - revalidation completion ready
+ok 630 - logout removes inactive session fingerprint
+ok 631 - logout/relog generation mismatch discards completion
+ok 632 - ledger child Ready
+ok 633 - pre-latch route one admitted
+ok 634 - latch-triggering route admitted locally
+ok 635 - third local route admitted before latch
+ok 636 - ledger_full permanent latch set
+ok 637 - unsubmitted local route retired by latch
+ok 638 - post-latch request rejected before wire
+ok 639 - pre-latch accepted route still polled and consumed
+ok 640 - pre-latch completion remains deliverable
+ok 641 - no post-latch submit bytes
+ok 642 - queue child Ready
+ok 643 - queue slot 1
+ok 644 - queue slot 2
+ok 645 - queue slot 3
+ok 646 - fourth route rejected by bound
+ok 647 - deadline child Ready
+ok 648 - steady deadline expires route
+ok 649 - wire TTL and internal steady TTL derive from one admission
+ok 650 - large stderr child Ready without deadlock
+ok 651 - stderr fully drained asynchronously
+ok 652 - stderr ring exactly bounded
+ok 653 - stderr ring retains newest bytes
+ok 654 - handle test child Ready
+ok 655 - non-allowlisted inheritable handle not inherited
+ok 656 - Ready timeout closes admission
+ok 657 - Ready timeout classified protocol failure
+ok 658 - timeout fixture child actually started
+ok 659 - Ready timeout leaves no child before Start returns
+ok 660 - Ready timeout leaves no worker or owned handle before return
+ok 661 - EOF before Ready rejected
+ok 662 - EOF failure cleaned before Start returns
+ok 663 - invalid NDJSON rejected
+ok 664 - invalid NDJSON cleaned before Start returns
+ok 665 - Ready extra field rejected by process path
+ok 666 - Ready mismatch child and handles cleaned before Start returns
+ok 667 - fatal startup envelope rejects start
+ok 668 - fatal startup cleanup completes before return
+ok 669 - CreateProcess failure rejects start
+ok 670 - CreateProcess failure owns no worker child or handles
+ok 671 - unsolicited duplicate is observed whether coalesced with Ready or immediately after it
+ok 672 - unsolicited duplicate response closes admission
+ok 673 - coalesced unsolicited startup failure cleaned before return
+ok 674 - poll child Ready
+ok 675 - round-robin poll reaches completion
+# observed_poll_delta_ms=108
+ok 676 - global poll interval is at least 100 ms
+ok 677 - sentinel fake process started
+ok 678 - hung-shutdown child Ready
+ok 679 - shutdown timeout leaves sentinel process untouched
+ok 680 - sentinel exits only after explicit test event
+ok 681 - stdin-nonreader child reaches Ready
+# nonreader_shutdown_ms=261
+ok 682 - stdin nonreader shutdown remains time bounded
+ok 683 - stdin nonreader worker child and handles closed
+1..683
+# failures=0

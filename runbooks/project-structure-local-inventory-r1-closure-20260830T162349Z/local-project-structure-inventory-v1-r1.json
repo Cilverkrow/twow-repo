@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "revision": "r1",
+  "task_id": "PROJECT-STRUCTURE-LOCAL-INVENTORY-01-R1-CLOSURE",
+  "project_side": "LOCAL",
+  "captured_utc": "2026-08-30T16:23:49Z",
+  "result": "PASS",
+  "structure_inventory_complete": true,
+  "content_snapshot_status": "PARTIAL",
+  "counts": {
+    "local_chat_count": 6,
+    "canonical_title_match_count": 5,
+    "rename_proposal_count": 1,
+    "missing_canonical_workstream_count": 3,
+    "runbook_directory_count": 41,
+    "runbook_top_level_file_count": 43,
+    "filesystem_mapping_count": 9,
+    "overlap_rule_count": 6,
+    "unresolved_structure_count": 0,
+    "content_freshness_limitation_count": 4,
+    "next_phase_decision_count": 3,
+    "chat_mutations_performed": 0,
+    "project_file_mutations_performed": 0
+  },
+  "immutable_source_directory": "C:\\TW\\ComTW\\runbooks\\project-structure-local-inventory-20260830T161124Z",
+  "immutable_source_deliverables": [
+    {
+      "filename": "local-project-structure-inventory-v1.md",
+      "bytes": 15306,
+      "sha256": "6FC8AFACF3A2BECCA1C9B345BD404C49E89A42B3BFC56219CC24DCA2DF9244EA",
+      "verified": true,
+      "modified": false
+    },
+    {
+      "filename": "local-project-structure-inventory-v1.json",
+      "bytes": 13790,
+      "sha256": "6016EDD91223B9B2508F7E2CC17846FEFCDF42EC6914A78656796E1C1D4AA340",
+      "verified": true,
+      "modified": false
+    },
+    {
+      "filename": "local-project-structure-handoff-v1.md",
+      "bytes": 4175,
+      "sha256": "C3F123C54A1FCA54DF053158E9D080E2A941C11455F05F414F184DF8F18E4C60",
+      "verified": true,
+      "modified": false
+    },
+    {
+      "filename": "sha256-manifest.txt",
+      "bytes": 1327,
+      "sha256": "67BEE8F1ADFCBD7564800E4A09333F693D02F64C4DDA5D6FA66DA3D515F7047B",
+      "verified": true,
+      "modified": false
+    }
+  ],
+  "preserved_chat_mappings": [
+    {
+      "current_title": "Analysiere TWoW-Projektstruktur",
+      "canonical_workstream_id": "WS-00",
+      "canonical_title": "Projektsteuerung und Workspace",
+      "classification": "rename_proposed"
+    },
+    {
+      "current_title": "SSC – Analyse und Entwicklung",
+      "canonical_workstream_id": "WS-10",
+      "canonical_title": "SSC – Analyse und Entwicklung",
+      "classification": "canonical_match"
+    },
+    {
+      "current_title": "Datenbank und Migrationen",
+      "canonical_workstream_id": "WS-20",
+      "canonical_title": "Datenbank und Migrationen",
+      "classification": "canonical_match"
+    },
+    {
+      "current_title": "Deployment und Skripte",
+      "canonical_workstream_id": "WS-40",
+      "canonical_title": "Deployment und Skripte",
+      "classification": "canonical_match"
+    },
+    {
+      "current_title": "Build und Serverbetrieb",
+      "canonical_workstream_id": "WS-50",
+      "canonical_title": "Build und Serverbetrieb",
+      "classification": "canonical_match"
+    },
+    {
+      "current_title": "Referenzserver und Backups",
+      "canonical_workstream_id": "WS-60",
+      "canonical_title": "Referenzserver und Backups",
+      "classification": "canonical_match"
+    }
+  ],
+  "missing_canonical_workstreams": [
+    {
+      "canonical_workstream_id": "WS-30",
+      "canonical_title": "Serverkonfiguration"
+    },
+    {
+      "canonical_workstream_id": "WS-70",
+      "canonical_title": "Bot-Persönlichkeiten"
+    },
+    {
+      "canonical_workstream_id": "WS-80",
+      "canonical_title": "Dokumentation und Entscheidungen"
+    }
+  ],
+  "preserved_runbook_ownership": [
+    {
+      "canonical_workstream_id": "WS-00",
+      "directory_count": 0,
+      "top_level_file_count": 0,
+      "owner_rule": "Projektkarte, Routing, Governance und Übergaben."
+    },
+    {
+      "canonical_workstream_id": "WS-10",
+      "directory_count": 19,
+      "top_level_file_count": 13,
+      "owner_rule": "SSC, PlayerBot, Source-Baselines und technische LLM-Brücke."
+    },
+    {
+      "canonical_workstream_id": "WS-20",
+      "directory_count": 14,
+      "top_level_file_count": 19,
+      "owner_rule": "Datenbank, Migrationen und direkt zugehörige Rücksicherung."
+    },
+    {
+      "canonical_workstream_id": "WS-30",
+      "directory_count": 0,
+      "top_level_file_count": 0,
+      "owner_rule": "Künftige sanitisierte Konfigurations-, Port- und Pfadevidenz."
+    },
+    {
+      "canonical_workstream_id": "WS-40",
+      "directory_count": 4,
+      "top_level_file_count": 3,
+      "owner_rule": "Skripte, Launcher, Archive und Hilfsprogramme."
+    },
+    {
+      "canonical_workstream_id": "WS-50",
+      "directory_count": 2,
+      "top_level_file_count": 3,
+      "owner_rule": "Buildausführung, Dienste und Live-Smoke-Evidenz."
+    },
+    {
+      "canonical_workstream_id": "WS-60",
+      "directory_count": 0,
+      "top_level_file_count": 0,
+      "owner_rule": "Künftige langfristige, historische und Referenzserver-Sicherungen."
+    },
+    {
+      "canonical_workstream_id": "WS-70",
+      "directory_count": 2,
+      "top_level_file_count": 5,
+      "owner_rule": "Bot-Persönlichkeiten und Kontextvertrag."
+    },
+    {
+      "canonical_workstream_id": "WS-80",
+      "directory_count": 0,
+      "top_level_file_count": 0,
+      "owner_rule": "Künftige projektweite Entscheidungen, ADRs und Indizes."
+    }
+  ],
+  "preserved_filesystem_mapping_candidates": [
+    {
+      "canonical_workstream_id": "WS-00",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-00-projectsteuerung-workspace"
+    },
+    {
+      "canonical_workstream_id": "WS-10",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-10-ssc-analyse-entwicklung"
+    },
+    {
+      "canonical_workstream_id": "WS-20",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-20-datenbank-migrationen"
+    },
+    {
+      "canonical_workstream_id": "WS-30",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-30-serverkonfiguration"
+    },
+    {
+      "canonical_workstream_id": "WS-40",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-40-deployment-skripte"
+    },
+    {
+      "canonical_workstream_id": "WS-50",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-50-build-serverbetrieb"
+    },
+    {
+      "canonical_workstream_id": "WS-60",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-60-referenzserver-backups"
+    },
+    {
+      "canonical_workstream_id": "WS-70",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-70-bot-persoenlichkeiten"
+    },
+    {
+      "canonical_workstream_id": "WS-80",
+      "target_path": "C:\\TW\\ComTW\\runbooks\\workstreams\\WS-80-dokumentation-entscheidungen"
+    }
+  ],
+  "preserved_overlap_rules": [
+    "WS-40 entwickelt und versioniert Skripte; WS-50 besitzt Ausführungs-, Dienst- und Live-Smoke-Evidenz.",
+    "WS-20 besitzt migrationslokale Rücksicherung; WS-60 besitzt langfristige, historische und referenzserverbezogene Backups.",
+    "WS-10 besitzt technische LLM-/PlayerBot-Brücke und Kontexttransport; WS-70 besitzt Persona-Inhalt, Verhalten und Dialogregeln.",
+    "Fachdokumentation bleibt beim jeweiligen Fachbereich; WS-80 besitzt nur projektweite Entscheidungen, ADRs und Indizes.",
+    "WS-30 besitzt Konfigurationswerte, Ports und Pfade; WS-40 besitzt Verteilungs-/Steuerskripte; WS-50 besitzt die beobachtete Laufzeitwirkung.",
+    "Historische Fehlzuordnungen werden nicht umgeschrieben; neue Arbeit folgt der kanonischen Workstream-ID."
+  ],
+  "unresolved_structure": [],
+  "content_freshness_limitations": [
+    "Der WS-10-Turn war beim V1-Snapshot aktiv; sein endgültiges Ergebnis war nicht verfügbar.",
+    "Der jüngste abgeschlossene WS-20-Turn war in der App-Ansicht kompaktiert.",
+    "Der jüngste abgeschlossene WS-40-Turn war kompaktiert; verfügbar waren nur Vorschau und Zusammenfassung.",
+    "Der letzte sichtbare WS-50-Trainer-Control-Übergabepunkt gehört fachlich zu WS-20; sein endgültiger Ergebnisstand war nicht sichtbar."
+  ],
+  "next_phase_decisions": [
+    {
+      "decision": "Ob WS-00 später in Projektsteuerung und Workspace umbenannt werden darf.",
+      "authorized": false
+    },
+    {
+      "decision": "Ob WS-30, WS-70 und WS-80 später als lokale Chats angelegt werden dürfen.",
+      "authorized": false
+    },
+    {
+      "decision": "Ob historisch fehlplatziertes Material am bisherigen Ort verbleibt und nur durch Querverweise verbunden wird.",
+      "authorized": false,
+      "recommendation": "cross_references_only"
+    }
+  ],
+  "historical_content_policy": {
+    "recommendation": "cross_references_only",
+    "copy_historical_chat_content": false,
+    "rewrite_historical_chat_content": false
+  },
+  "mutations": {
+    "chat_mutations_performed": 0,
+    "existing_project_files_modified": 0,
+    "immutable_source_files_modified": 0,
+    "server_operations": 0,
+    "database_operations": 0
+  },
+  "next_task_authorized": false
+}

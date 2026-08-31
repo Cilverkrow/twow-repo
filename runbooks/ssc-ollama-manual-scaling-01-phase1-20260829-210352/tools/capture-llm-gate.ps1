@@ -1,0 +1,11 @@
+[CmdletBinding()]
+param()
+$ErrorActionPreference='Stop';$PSNativeCommandUseErrorActionPreference=$false;$Root='C:\TW\ComTW\runbooks\ssc-ollama-manual-scaling-01-phase1-20260829-210352';$Ev=Join-Path $Root 'evidence';$Repo='C:\TW\ComTW\source';$Exe='C:\TW\ComTW\server\mangosd.exe';$Out=Join-Path $Ev 'llm-path-gate.json';if(Test-Path $Out){throw 'Refusing overwrite'}
+function Invoke-GitRead([string[]]$a){$o=& git -c safe.directory=C:/TW/ComTW/source -C $Repo --no-pager @a 2>&1;if($LASTEXITCODE-ne 0){throw($o-join"`n")};$o-join"`n"}
+$path='src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp';$head=(Invoke-GitRead @('rev-parse','HEAD')).Trim();$lines=(Invoke-GitRead @('show',"HEAD:$path"))-split"`n";$excerpt=@();for($i=374;$i-lt[Math]::Min(386,$lines.Count);$i++){$excerpt+=('{0,6}: {1}'-f($i+1),$lines[$i])}
+& git -c safe.directory=C:/TW/ComTW/source -C $Repo diff --quiet HEAD -- $path;$workingDiffers=($LASTEXITCODE-ne 0)
+$binaryMatch=& rg -a -l -F 'LLM generation disabled in this build' $Exe 2>$null;$binaryContains=($LASTEXITCODE-eq 0)
+$baselineExe=Get-Content -Raw -LiteralPath 'C:\TW\ComTW\runbooks\ssc-source-baseline-01-20260829-193848\evidence\exe-evidence.json'|ConvertFrom-Json
+$cfg=Get-Content -Raw -LiteralPath (Join-Path $Ev 'active-aiplayerbot-config-evidence.json')|ConvertFrom-Json
+$obj=[ordered]@{head=$head;source_path=$path;head_blob=(Invoke-GitRead @('rev-parse',"HEAD:$path")).Trim();head_excerpt=$excerpt;working_file_differs_from_head=$workingDiffers;working_tree_not_used_for_production_assessment=$true;production_exe=[ordered]@{path=$Exe;sha256=(Get-FileHash $Exe -Algorithm SHA256).Hash;embedded_revision_strings=$baselineExe.embedded_revision_strings;contains_disabled_llm_literal=$binaryContains};active_llm_config=[ordered]@{enabled=$cfg.selected_explicit_values.'AiPlayerbot.LLMEnabled';endpoint=$cfg.llm_endpoint;points_to_verified_external_bridge=$false};assessment='Production path returns an empty response without network I/O. The later dirty debug implementation is neither deployed nor an approved bridge integration.'}
+[IO.File]::WriteAllText($Out,($obj|ConvertTo-Json -Depth 7)+"`n",[Text.UTF8Encoding]::new($false));$obj|ConvertTo-Json -Depth 5

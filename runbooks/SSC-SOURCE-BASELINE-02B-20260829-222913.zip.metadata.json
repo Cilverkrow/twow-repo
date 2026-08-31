@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02B",
+  "generated_utc": "2026-08-29T20:55:29.2857986Z",
+  "zip_path": "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02B-20260829-222913.zip",
+  "zip_size_bytes": 62908697,
+  "zip_entry_count": 59,
+  "zip_sha256": "FD937CF7993CE633F7A63FAB1AF7FB1DB7E3BC9AF9C7E4909A59B73D7DE28480",
+  "source_runbook": "C:\\TW\\b02b-20260829-222913\\runbook",
+  "candidate_commit": "42b8a7f742548793910fe8880463aeeb71627fb9",
+  "result": "PASS",
+  "production_exe_unchanged": true,
+  "deployment_started": false
+}

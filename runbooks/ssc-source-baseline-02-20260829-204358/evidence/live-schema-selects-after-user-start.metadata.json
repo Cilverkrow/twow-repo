@@ -1,0 +1,24 @@
+{
+  "task": "SSC-SOURCE-BASELINE-02",
+  "continuation": "after explicit user confirmation that MariaDB is running",
+  "statement_count": 7,
+  "statement_class": "SELECT only",
+  "prepared_sql_path": "C:\\TW\\ComTW\\runbooks\\ssc-source-baseline-02-20260829-204358\\evidence\\prepared-selects.sql",
+  "prepared_sql_sha256": "9FF730CF6B8EBE7CB5041C630732CA8CEDE6FE2823E121B0D7FB6418A29BD89A",
+  "prepared_sql_matches_initial_attempt": true,
+  "target": {
+    "host": "127.0.0.1",
+    "port": "3307",
+    "login_schema": "tw_logon",
+    "username": "<redacted>",
+    "password": "<redacted>"
+  },
+  "started_utc": "2026-08-29T18:57:32.6315737Z",
+  "finished_utc": "2026-08-29T18:57:32.7013277Z",
+  "exit_code": 1,
+  "stdout_size_bytes": 0,
+  "stdout_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+  "stderr_size_bytes": 187,
+  "credentials_emitted": false,
+  "database_writes": []
+}

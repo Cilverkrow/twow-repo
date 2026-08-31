@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "task": "SSC-LLM-PRODUCTION-BRIDGE-01-PHASE-B-R1",
+  "verified_utc": "2026-08-30T18:22:26.8409095Z",
+  "zip_path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-b-r1-20260830-194919-deliverables.zip",
+  "zip_size": 8058611,
+  "zip_entry_count": 43,
+  "zip_sha256": "A0154CE342A8BB3B6DB03D2AFF97BD818E2F0ECFDB4B83ACD568EA0292212DEE",
+  "manifest_entry_count": 42,
+  "manifest_sha256": "20E491FBE27E37F7B12960CBCEBA5C80F3033923847DBA4123D35B377507A706",
+  "safe_paths": true,
+  "duplicate_entries": false,
+  "all_declared_entries_present": true,
+  "all_declared_stream_hashes_match": true,
+  "verified_stream_count": 42,
+  "candidate_entry_sha256": "1231B38B3EA8C241742B3735C13515DA0A0A98158F3ADE96FDBB7EA0AFB3718C",
+  "previous_phase_b_zip_sha256": "510C3E365C959DAD8ACCE30A5DA29D5C6F0B6D268D9AD5DCC8E7A82FF99BE365",
+  "previous_phase_b_zip_unchanged": true
+}

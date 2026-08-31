@@ -1,0 +1,19 @@
+{
+    "status":  "completed",
+    "completed_utc":  "2026-08-28T20:41:29.9058288Z",
+    "powershell_version":  "5.1.26100.9168",
+    "powershell_edition":  "Desktop",
+    "administrator":  true,
+    "reviewed_runbook_path":  "C:\\TW\\ComTW\\runbooks\\tw-char-migration-F92F86D6.ps1",
+    "reviewed_runbook_sha256":  "F92F86D66FEB4C1743F1E09B1CA14101B8249E858CB5B18DC2894AA27E06F881",
+    "harness_sha256":  "C92999BD6C19E6043563387D30E5FE8318FF9305C3D2C2C45BB43A8B5ADF4AE4",
+    "database_owned_pid":  12408,
+    "sql_statement_count":  15,
+    "sql_write_capable_statement_count":  0,
+    "logical_database_writes":  0,
+    "database_engine_runtime_changed_path_count":  3,
+    "primary_error":  null,
+    "cleanup_errors":  [
+
+                       ]
+}

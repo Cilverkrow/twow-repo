@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "result": "PHASE1B_BOUNDARY_AFTER=PASS",
+  "label": "after",
+  "captured_utc": "2026-08-29T14:50:35.0824436Z",
+  "observation_scope": "process-name/PID presence and associated TCP listeners only",
+  "ollama_binding_requirement": "127.0.0.1:11434 only",
+  "ollama_binding_verified": true,
+  "ollama_processes": [
+    {
+      "name": "ollama",
+      "pid": 5528
+    }
+  ],
+  "ollama_listeners": [
+    {
+      "name": "ollama",
+      "pid": 5528,
+      "local_address": "127.0.0.1",
+      "local_port": 11434,
+      "state": "LISTEN"
+    }
+  ],
+  "game_database_processes": [
+    {
+      "name": "realmd",
+      "pid": 7316
+    },
+    {
+      "name": "mysqld",
+      "pid": 30480
+    }
+  ],
+  "game_database_listeners": [
+    {
+      "local_address": "0.0.0.0",
+      "local_port": 3724,
+      "state": "LISTEN",
+      "pid": 7316
+    },
+    {
+      "local_address": "127.0.0.1",
+      "local_port": 3307,
+      "state": "LISTEN",
+      "pid": 30480
+    }
+  ],
+  "ollama_running_model_observation": {
+    "schema_version": 1,
+    "label": "after",
+    "endpoint": "http://127.0.0.1:11434/api/ps",
+    "method": "GET",
+    "started_utc": "2026-08-29T14:50:35.274Z",
+    "completed_utc": "2026-08-29T14:50:35.284Z",
+    "elapsed_ms": 8.616,
+    "http_status": 200,
+    "raw_response_bytes": 381,
+    "raw_response_sha256": "0FE40CDE73B6E7CD27F8E05DF157E5637D9BBD285DA364C299050BC48131E763",
+    "running_model_count": 1,
+    "pinned_model_state": "warm",
+    "pinned_model_match_count": 1,
+    "pinned_model": {
+      "name": "qwen2.5:7b",
+      "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+      "observed_name": "qwen2.5:7b",
+      "observed_model": "qwen2.5:7b",
+      "observed_digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+      "observed_expires_at": "2026-08-29T16:55:27.3152886+02:00",
+      "observed_size_vram": 4748056984
+    }
+  },
+  "actions": {
+    "process_control_actions": 0,
+    "game_process_start_stop_actions": 0,
+    "database_connections_or_queries": 0,
+    "game_source_reads_or_writes": 0,
+    "game_chat_actions": 0,
+    "model_pull_update_copy_delete_actions": 0,
+    "model_explicit_load_unload_actions": 0,
+    "manual_tags_requests": 0,
+    "live_inference_requests": 0,
+    "ps_observation_requests": 1
+  }
+}

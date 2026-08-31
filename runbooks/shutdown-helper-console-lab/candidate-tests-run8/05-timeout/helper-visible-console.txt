@@ -1,0 +1,1 @@
+[FEHLER] mangosd.exe laeuft nach 10 Sekunden noch. Es wird kein erzwungener Shutdown ausgefuehrt.                       ☐

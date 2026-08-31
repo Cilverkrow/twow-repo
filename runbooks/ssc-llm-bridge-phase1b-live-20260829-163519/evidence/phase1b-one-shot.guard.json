@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "purpose": "prevents any restart, resubmit, or retry of the approved Phase-1B live run",
+  "created_utc": "2026-08-29T14:50:19.182Z",
+  "controller_pid": 31564
+}

@@ -1,0 +1,22 @@
+﻿**********************
+nStart der Windows PowerShell-Aufzeichnung
+Startzeit: 20260828165930
+Benutzername: DESKTOP-VPB2I2O\djfav
+RunAs-Benutzer: DESKTOP-VPB2I2O\djfav
+Konfigurationsname: 
+Computer: DESKTOP-VPB2I2O (Microsoft Windows NT 10.0.26200.0)
+Hostanwendung: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File C:\TW\ComTW\runbooks\shutdown-helper-console-lab\realm-candidate-tests-run2\run-realm-candidate-tests.ps1
+Prozess-ID: 31572
+PSVersion: 5.1.26100.9168
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9168
+BuildVersion: 10.0.26100.9168
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+**********************
+Ende der Windows PowerShell-Aufzeichnung
+Endzeit: 20260828165931
+**********************

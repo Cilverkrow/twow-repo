@@ -1,0 +1,10 @@
+# project-collab-hub-local-enforcement evidence manifest
+# task_id=PROJECT-COLLAB-HUB-LOCAL-ENFORCEMENT-01
+# generated_utc=20260830T175518Z
+# encoding=utf-8-no-bom
+# line_endings=lf
+# payload_count=3
+
+C:\TW\ComTW\AGENTS.md|3588|264B80E6362F321F78A7ED1473282B1B51F9341D7616FE088AEC2960389F09E0
+C:\TW\ComTW\runbooks\project-collab-hub-local-enforcement-20260830T175518Z\project-collab-hub-local-enforcement-report-v1.md|2608|C39EE7FDF915B6CBC5097654F23FC37580301C270AD221837B06FBFAE1FA1B44
+C:\TW\ComTW\runbooks\project-collab-hub-local-enforcement-20260830T175518Z\project-collab-hub-local-enforcement-handoff-v1.md|645|C9E6B3A33D1A4DE24EE9495C0E825F36C3185C18225C610F4F0236E29ABF1B50

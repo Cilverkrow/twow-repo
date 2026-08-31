@@ -1,0 +1,105 @@
+{
+  "git_ignored_entry_count": 1820,
+  "build": {
+    "path": "C:\\TW\\ComTW\\source\\build",
+    "file_count": 1813,
+    "bytes": 4417952166.0,
+    "latest_write_utc": "2026-08-26T18:41:28.7741721Z"
+  },
+  "bin": {
+    "path": "C:\\TW\\ComTW\\source\\bin",
+    "file_count": 12,
+    "bytes": 260059648.0,
+    "files": [
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\mangosd.exe",
+        "size_bytes": 20421632,
+        "creation_utc": "2026-08-25T16:54:55.7705743Z",
+        "last_write_utc": "2026-08-26T18:41:28.3633571Z",
+        "sha256": "43EEB340FE4F4FD8122E96FE464181EDF45A1374C890D4C2540577A274252961"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\mangosd.pdb",
+        "size_bytes": 212389888,
+        "creation_utc": "2026-08-25T16:54:55.7725823Z",
+        "last_write_utc": "2026-08-26T18:41:28.4000019Z",
+        "sha256": "A1BC1F491D503681FDAF7A900C2D436154BCD94AACAD05B5EE7B640D0A85F873"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\mapextractor.exe",
+        "size_bytes": 127488,
+        "creation_utc": "2026-08-25T16:55:01.5549739Z",
+        "last_write_utc": "2026-08-25T16:55:01.6271685Z",
+        "sha256": "36F3FE10548BC92DB4A6E2DD776F720936456DC6AE292F90E724C6B15FD20BEA"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\mapextractor.pdb",
+        "size_bytes": 1921024,
+        "creation_utc": "2026-08-25T16:55:01.5561269Z",
+        "last_write_utc": "2026-08-25T16:55:01.6281821Z",
+        "sha256": "560D6676BAE78AA1BE4DC0D5164C0176CCC6F211D845A3FF4E4DEB2C5FFDC690"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\MoveMapGen.exe",
+        "size_bytes": 427520,
+        "creation_utc": "2026-08-25T16:50:46.6769165Z",
+        "last_write_utc": "2026-08-25T16:50:46.8770990Z",
+        "sha256": "3EF059270EDA52B051E503114B9E537949A1D778ED5C20A0ED69BE0927A3F6B1"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\MoveMapGen.pdb",
+        "size_bytes": 8253440,
+        "creation_utc": "2026-08-25T16:50:46.6779266Z",
+        "last_write_utc": "2026-08-25T16:50:46.8791351Z",
+        "sha256": "D21D297D0905F3D4DD8F2F995BB55099C1E923603014FC63B54EC30175D233D0"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\realmd.exe",
+        "size_bytes": 501760,
+        "creation_utc": "2026-08-25T16:55:04.2949379Z",
+        "last_write_utc": "2026-08-25T16:55:04.4480079Z",
+        "sha256": "A36A3B611229D2A68FEAA4BD92D4283888CA64CD45FBD7C5E6F28050AB0B676B"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\realmd.pdb",
+        "size_bytes": 6991872,
+        "creation_utc": "2026-08-25T16:55:04.2969562Z",
+        "last_write_utc": "2026-08-25T16:55:04.4500397Z",
+        "sha256": "5E8584A65B973651D90B5BC2F38F755F16C2EE14ED46CA4592C9EA2BCFC3CAAF"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\vmap_assembler.exe",
+        "size_bytes": 198144,
+        "creation_utc": "2026-08-25T16:55:05.6007694Z",
+        "last_write_utc": "2026-08-25T16:55:05.7711466Z",
+        "sha256": "94A5F2A1D1AA6B2566EEEAA34FE610FC5C9B3B2D52F8EC9DED1DB62BCFB78643"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\vmap_assembler.pdb",
+        "size_bytes": 6565888,
+        "creation_utc": "2026-08-25T16:55:05.6027711Z",
+        "last_write_utc": "2026-08-25T16:55:05.7721528Z",
+        "sha256": "496EF245672C828F4CD6868CB7BE1BF3D1BCDE370044042FFDB25E98B3543B69"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\vmapextractor.exe",
+        "size_bytes": 151552,
+        "creation_utc": "2026-08-25T16:55:07.3479274Z",
+        "last_write_utc": "2026-08-25T16:55:07.4255649Z",
+        "sha256": "FCD02122EA2F8C3F4B0DBD68DBAD6585D054C67B11A4110ADF6FCEC1888F118E"
+      },
+      {
+        "path": "C:\\TW\\ComTW\\source\\bin\\Release\\vmapextractor.pdb",
+        "size_bytes": 2109440,
+        "creation_utc": "2026-08-25T16:55:07.3491174Z",
+        "last_write_utc": "2026-08-25T16:55:07.4275406Z",
+        "sha256": "F4C3B57484204E1A2038621D167055D66FB56BC677CCA5F7AA0AB7CAC61A9838"
+      }
+    ]
+  },
+  "ignore_rules": [
+    "/build/",
+    "*.exe",
+    "/src/shared/revision.h"
+  ]
+}

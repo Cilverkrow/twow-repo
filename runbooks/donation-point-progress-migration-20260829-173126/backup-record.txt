@@ -1,0 +1,10 @@
+BACKUP_REQUIRED_IF_TABLE_ABSENT=true
+TABLE_ABSENCE_LIVE_PROVEN=false
+BACKUP_CREATED=false
+BACKUP_PATH=E:\TWoW-Migration-Backups\tw_logon-before-donation-point-progress-20260829-173126.sql
+BACKUP_EXISTS=false
+BACKUP_BYTES=NOT_AVAILABLE
+BACKUP_SHA256=NOT_AVAILABLE
+DUMP_EXIT_CODE=NOT_INVOKED
+
+Reason: the administrator gate failed before MariaDB startup and pre-migration inspection.

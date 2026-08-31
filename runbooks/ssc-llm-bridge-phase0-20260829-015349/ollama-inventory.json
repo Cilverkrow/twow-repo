@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-29T00:03:15.1303613Z",
+  "endpoint": "http://127.0.0.1:11434",
+  "ollama_version": "0.33.2",
+  "queries": {
+    "version": {
+      "http_method": "GET",
+      "path": "/api/version",
+      "latency_ms": 112,
+      "response": {
+        "version": "0.33.2"
+      }
+    },
+    "tags": {
+      "http_method": "GET",
+      "path": "/api/tags",
+      "latency_ms": 11,
+      "response": {
+        "models": [
+          {
+            "name": "qwen2.5:7b",
+            "model": "qwen2.5:7b",
+            "modified_at": "2026-08-26T18:56:23.829009+02:00",
+            "size": 4683087332,
+            "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+            "details": {
+              "parent_model": "",
+              "format": "gguf",
+              "family": "qwen2",
+              "families": [
+                "qwen2"
+              ],
+              "parameter_size": "7.6B",
+              "quantization_level": "Q4_K_M",
+              "context_length": 32768,
+              "embedding_length": 3584
+            },
+            "capabilities": [
+              "completion",
+              "tools"
+            ]
+          }
+        ]
+      }
+    },
+    "ps": {
+      "http_method": "GET",
+      "path": "/api/ps",
+      "latency_ms": 2,
+      "response": {
+        "models": []
+      }
+    }
+  },
+  "sanitized_models": [
+    {
+      "name": "qwen2.5:7b",
+      "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+      "parameter_size": "7.6B",
+      "quantization": "Q4_K_M",
+      "installed_size_bytes": 4683087332,
+      "format": "gguf",
+      "family": "qwen2",
+      "capabilities": [
+        "completion",
+        "tools"
+      ],
+      "context_length": 32768,
+      "loaded": false
+    }
+  ],
+  "selection": {
+    "result": "selected",
+    "model": "qwen2.5:7b",
+    "reason": "Exactly one installed suitable local text/chat model was present; no model was already loaded.",
+    "download_performed": false
+  }
+}

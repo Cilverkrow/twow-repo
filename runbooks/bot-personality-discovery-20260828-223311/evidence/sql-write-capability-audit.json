@@ -1,0 +1,14 @@
+{
+    "generated_utc":  "2026-08-28T20:39:44.4341426Z",
+    "statement_count":  15,
+    "read_only_statement_count":  14,
+    "write_capable_statement_count":  1,
+    "allowed_leading_statements":  [
+                                       "SELECT",
+                                       "SHOW",
+                                       "DESCRIBE"
+                                   ],
+    "findings":  [
+                     "database-identity: contains a forbidden SQL token"
+                 ]
+}

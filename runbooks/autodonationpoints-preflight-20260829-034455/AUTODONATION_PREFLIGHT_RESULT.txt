@@ -1,0 +1,19 @@
+AUTODONATION_PREFLIGHT_RESULT=NOT_READY_FOR_START
+BINARY_SUPPORT=PROVEN
+CONFIG_CURRENTLY_ENABLES_FEATURE=true
+CONFIG_CURRENT_AMOUNT_PER_INTERVAL=100
+LOGIN_DATABASE=tw_logon
+LIVE_SCHEMA_CHECK=NOT_PERFORMED_DATABASE_STOPPED
+PROGRESS_TABLE_PHYSICAL_FILES_PRESENT=false
+PROGRESS_TABLE_LIVE_EXISTENCE=NOT_PROVEN
+SHOP_COINS_LIVE_SCHEMA=NOT_PROVEN
+RECOMMENDED_POLICY=CONSERVATIVE
+ACTIVATION_PERFORMED=false
+SQL_EXECUTED=false
+PROCESS_CHANGED=false
+
+Blocking reason: MariaDB was stopped and port 3307 was closed. The authorized
+read-only SQL checks therefore could not be performed without violating the
+explicit prohibition on starting a process. Physical table-file inspection found
+account and shop_coins files but no donation_point_progress file. This is useful
+offline evidence, not an authoritative live schema result.

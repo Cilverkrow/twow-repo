@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "result": "V1_ENGLISH_POSTFLIGHT=PASS",
+  "captured_utc": "2026-08-30T11:26:09.3714975Z",
+  "preserved_packages": {
+    "phase1a": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-20260829-023418\\ssc-llm-bridge-phase1a-20260829-023418-deliverables.zip",
+      "sha256": "2A39C09AACDC5CDEAD1CAC5EE78143D634A3FE006311DD1C67EC253115C1DE51",
+      "actual_sha256": "2A39C09AACDC5CDEAD1CAC5EE78143D634A3FE006311DD1C67EC253115C1DE51",
+      "match": true
+    },
+    "phase1a_hardening": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1a-hardening-20260829-035317\\ssc-llm-bridge-phase1a-hardening-20260829-035317-deliverables.zip",
+      "sha256": "BADE583E726F5177D2BA9AF753962D6DC74BC3297B6C610A3CB91FF5251DDF11",
+      "actual_sha256": "BADE583E726F5177D2BA9AF753962D6DC74BC3297B6C610A3CB91FF5251DDF11",
+      "match": true
+    },
+    "phase1b": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-phase1b-live-20260829-163519\\ssc-llm-bridge-phase1b-live-20260829-163519-deliverables.zip",
+      "sha256": "020BDBA7BDE016FEACD2E484818E02BFAD8BE792AD84735BDEA845C2A2D9A5C8",
+      "actual_sha256": "020BDBA7BDE016FEACD2E484818E02BFAD8BE792AD84735BDEA845C2A2D9A5C8",
+      "match": true
+    },
+    "production_phase_a": {
+      "path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-production-bridge-01-phase-a-20260830-012815-deliverables.zip",
+      "sha256": "A4EB4552EF029C41F61D9BF4F247332F0239A5058FC32EE7ECCF1961EAF79A9D",
+      "actual_sha256": "A4EB4552EF029C41F61D9BF4F247332F0239A5058FC32EE7ECCF1961EAF79A9D",
+      "match": true
+    }
+  },
+  "payload_manifest_sha256": "814A8988ACF7F9651735A5AC111BA5A13ECD227C837665C0F8F9BA518B07171B",
+  "payload_manifest_entries": 49,
+  "payload_manifest_failures": 0,
+  "live_result": "V1_ENGLISH_LIVE_INFERENCE=PASS",
+  "request_id": "a3fb954c-ca57-42a4-948a-b646dbb05b15",
+  "bot_guid": 18281,
+  "model": "qwen2.5:7b",
+  "sanitized_text": "I plan to scout the outskirts for any signs of the undead creeping closer. Safety first, always.",
+  "sanitized_text_codepoints": 96,
+  "sanitized_text_utf8_bytes": 96,
+  "language_verification": "ENGLISH_OUTPUT_VERIFICATION=PASS",
+  "command_counts": {
+    "submit": 1,
+    "status": 71,
+    "consume": 2,
+    "metrics": 1,
+    "shutdown": 1
+  },
+  "inference_attempts": 1,
+  "max_active_observed": 1,
+  "active_after_completion": 0,
+  "second_consume": "already_consumed",
+  "second_consume_completion_is_null": true,
+  "worker_joined": true,
+  "instance_lock_removed": true,
+  "one_shot_guard_sha256": "1A2C89CC81DAB5120B6C00AEA4D87C863E3E2E3912429A36A15EA1E4EF942744",
+  "ollama_listeners": [
+    {
+      "local_address": "127.0.0.1",
+      "local_port": 11434,
+      "owning_process": 5528
+    }
+  ],
+  "core_source_hashes": {
+    "src/modules/PlayerBots/CMakeLists.txt": {
+      "expected_sha256": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE",
+      "actual_sha256": "D590DA061544BBF07D43B78264FBC630E8114F0312F12E8E038518E70F4AA6DE",
+      "match": true
+    },
+    "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp": {
+      "expected_sha256": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592",
+      "actual_sha256": "24FB6B7475265436DBC0C191DA0B084E6DE622424556A8ED8751893AD3ABF592",
+      "match": true
+    },
+    "src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h": {
+      "expected_sha256": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71",
+      "actual_sha256": "8C21805363EA2D68077810AD56E85C8D74948E4DC18CA322A2847DF38E182D71",
+      "match": true
+    },
+    "src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp": {
+      "expected_sha256": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A",
+      "actual_sha256": "9052A1B0D9A8748C2E1D3F46F388A31031E2B43CAFCF665521C9A0B46A19DA0A",
+      "match": true
+    }
+  },
+  "core_git_status_short_all": [
+    " M src/modules/PlayerBots/CMakeLists.txt",
+    " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.cpp",
+    " M src/modules/PlayerBots/playerbot/PlayerbotLLMInterface.h",
+    " M src/modules/PlayerBots/playerbot/strategy/actions/DebugAction.cpp",
+    "?? bin/Release/MoveMapGen.pdb",
+    "?? bin/Release/mangosd.pdb",
+    "?? bin/Release/mapextractor.pdb",
+    "?? bin/Release/realmd.pdb",
+    "?? bin/Release/vmap_assembler.pdb",
+    "?? bin/Release/vmapextractor.pdb"
+  ],
+  "production_artifacts": {
+    "mangosd_exe": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+      "expected_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "actual_sha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC",
+      "match": true
+    },
+    "mangosd_conf": {
+      "path": "C:\\TW\\ComTW\\server\\mangosd.conf",
+      "expected_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "actual_sha256": "C552BA61CD6C4246198A041F7A5E3FB77931E2A23817FCF20B359751D219297D",
+      "match": true
+    },
+    "aiplayerbot_conf": {
+      "path": "C:\\TW\\ComTW\\server\\aiplayerbot.conf",
+      "expected_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "actual_sha256": "490957B3D3AF762E8A8FB07F151419E4375F6E38E4C208736A6CA12D38C561FF",
+      "match": true
+    }
+  },
+  "core_source_modified": false,
+  "core_config_modified": false,
+  "build_or_compile_performed": false,
+  "database_access_performed": false,
+  "game_chat_performed": false,
+  "actions_emotes_commands_or_channels_added": false,
+  "phase_b_started": false,
+  "ollama_process_control_performed": false,
+  "game_process_control_performed": false
+}

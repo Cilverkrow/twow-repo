@@ -1,0 +1,11 @@
+# project-collab-hub-source-metadata-correction evidence manifest
+# task_id=PROJECT-COLLAB-HUB-SOURCE-METADATA-CORRECTION-01
+# generated_utc=2026-08-30T19:06:37Z
+# encoding=utf-8-no-bom
+# line_endings=lf
+# payload_count=4
+
+5AA7D744FBF862F10A8E5C469346B6FBC9A010102C9BF6A981759C4F30CEAE2E	18470	C:\TW\ComTW\runbooks\workstreams\canonical-workstream-registry-v1.json
+EEFB0EF80F2078CC853F96434533CE09984C14D3B14C6072AA94B27567221B1D	1879	C:\TW\ComTW\runbooks\workstreams\sha256-manifest.txt
+260C58F61DFEF6E4B38D8D57B5DD9F18DA216B63D2871028C4D23574F39D103C	1860	C:\TW\ComTW\runbooks\project-collab-hub-source-metadata-correction-20260830T190536Z\project-collab-hub-source-metadata-correction-report-v1.md
+938A095A46D6B70682B8460C38598FAE82E1117B77FBFA51FB03B8A665972E9E	603	C:\TW\ComTW\runbooks\project-collab-hub-source-metadata-correction-20260830T190536Z\project-collab-hub-source-metadata-correction-handoff-v1.md

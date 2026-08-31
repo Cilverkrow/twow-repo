@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "request_id": "a3fb954c-ca57-42a4-948a-b646dbb05b15",
+  "bot_guid": 18281,
+  "outcome": "ready",
+  "model": "qwen2.5:7b",
+  "attempt_count": 1,
+  "started_utc": "2026-08-30T11:24:20.735Z",
+  "completed_utc": "2026-08-30T11:24:28.452Z",
+  "text": "I plan to scout the outskirts for any signs of the undead creeping closer. Safety first, always.",
+  "error_code": null,
+  "raw_response_bytes": 393
+}

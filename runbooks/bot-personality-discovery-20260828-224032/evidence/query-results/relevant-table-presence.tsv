@@ -1,0 +1,5 @@
+table_schema\ttable_name\tengine\ttable_collation\ttable_rows_estimate
+tw_char	ai_playerbot_random_bots	InnoDB	utf8mb3_general_ci	207
+tw_char	characters	MyISAM	utf8mb3_general_ci	4501
+tw_char	character_skills	MyISAM	utf8mb3_general_ci	51136
+tw_world	playercreateinfo	MyISAM	utf8mb3_general_ci	59

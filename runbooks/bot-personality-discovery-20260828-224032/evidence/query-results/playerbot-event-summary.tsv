@@ -1,0 +1,9 @@
+owner_is_zero\tbot_is_zero\tevent\trow_count\tdistinct_bot_count\tminimum_value\tmaximum_value
+1	1	bot_count	1	1	50	50
+1	0	add	100	100	1	1
+1	0	buymultiplier	14	14	51	119
+1	0	change_strategy	17	17	1	1
+1	0	login	1	1	1	1
+1	0	sellmultiplier	34	34	82	250
+1	0	teleport	12	12	1	1
+1	0	update	26	26	1	1

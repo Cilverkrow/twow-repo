@@ -1,0 +1,2 @@
+database_name\tserver_version\tversion_comment\tdatadir\tport\tbind_address\tcharacter_set_server\tcollation_server\tsql_mode
+tw_char	11.4.10-MariaDB	MariaDB Server	C:/TW/ComTW/DB/data/	3307	127.0.0.1	latin1	latin1_swedish_ci	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "observed_utc": "2026-08-30T11:24:28.551Z",
+  "lock_path": "C:\\TW\\ComTW\\runbooks\\ssc-llm-bridge-v1-english-correction-20260830-131349\\bridge\\evidence\\.phase1a-instance.lock",
+  "bridge_pid": 32284,
+  "bridge_exit_code": 0,
+  "bridge_exit_signal": null,
+  "lock_present": false,
+  "result": "INSTANCE_LOCK_REMOVED=PASS"
+}

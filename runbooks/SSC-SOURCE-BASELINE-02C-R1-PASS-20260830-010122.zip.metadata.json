@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "task": "SSC-SOURCE-BASELINE-02C-R1",
+  "result": "PASS",
+  "zip_path": "C:\\TW\\ComTW\\runbooks\\SSC-SOURCE-BASELINE-02C-R1-PASS-20260830-010122.zip",
+  "zip_length": 7806779,
+  "zip_entry_count": 9,
+  "zip_sha256": "BCACFFB731B9D3C6B5446993B0DC80DA4FC50E15B2034795A990CEA60FDCB6AB",
+  "created_utc": "2026-08-29T23:01:22.4494667Z",
+  "internal_manifest": "SHA256SUMS.txt",
+  "internal_manifest_entries": 8,
+  "internal_manifest_verification": "PASS"
+}

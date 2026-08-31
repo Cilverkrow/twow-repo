@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ssc://phase1a/completion-envelope-v1",
+  "title": "SSC Phase 1A immutable completion envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "bot_guid",
+    "outcome",
+    "model",
+    "attempt_count",
+    "started_utc",
+    "completed_utc",
+    "text",
+    "error_code",
+    "raw_response_bytes"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "request_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "bot_guid": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+    "outcome": { "enum": ["ready", "failed", "expired"] },
+    "model": { "enum": ["qwen2.5:7b", null] },
+    "attempt_count": { "type": "integer", "minimum": 0, "maximum": 1 },
+    "started_utc": {
+      "oneOf": [
+        { "$ref": "#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "completed_utc": { "$ref": "#/$defs/timestamp" },
+    "text": { "type": ["string", "null"], "maxLength": 240 },
+    "error_code": { "type": ["string", "null"], "minLength": 1 },
+    "raw_response_bytes": { "type": ["integer", "null"], "minimum": 0, "maximum": 65536 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "outcome": { "const": "ready" } }, "required": ["outcome"] },
+      "then": {
+        "properties": {
+          "model": { "const": "qwen2.5:7b" },
+          "attempt_count": { "const": 1 },
+          "started_utc": { "$ref": "#/$defs/timestamp" },
+          "text": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "error_code": { "type": "null" },
+          "raw_response_bytes": { "type": "integer", "minimum": 0, "maximum": 65536 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "outcome": { "enum": ["failed", "expired"] } }, "required": ["outcome"] },
+      "then": {
+        "properties": {
+          "text": { "type": "null" },
+          "error_code": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    }
+  }
+}

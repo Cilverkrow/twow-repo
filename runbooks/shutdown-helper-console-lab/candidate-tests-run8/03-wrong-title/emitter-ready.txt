@@ -1,0 +1,7 @@
+PID=37104
+EXE=C:\TW\ComTW\runbooks\shutdown-helper-console-lab\candidate-tests-run8\03-wrong-title\mangosd.exe
+TITLE_BEFORE=wrong-title
+TITLE=wrong-title
+SHUTDOWN_EXIT_CODE=0
+IGNORE_SHUTDOWN=false
+READY_UTC=2026-08-28T14:33:46.041Z

@@ -1,0 +1,466 @@
+TAP version 13
+# Subtest: valid request follows queued-running-ready-consumed and delivers exactly once
+ok 1 - valid request follows queued-running-ready-consumed and delivers exactly once
+  ---
+  duration_ms: 6.2087
+  type: 'test'
+  ...
+# Subtest: single worker preserves FIFO and exact waiting capacity; queue-full is a keyed terminal tombstone
+ok 2 - single worker preserves FIFO and exact waiting capacity; queue-full is a keyed terminal tombstone
+  ---
+  duration_ms: 65.5977
+  type: 'test'
+  ...
+# Subtest: duplicate and request-id/GUID mismatch never enqueue another inference
+ok 3 - duplicate and request-id/GUID mismatch never enqueue another inference
+  ---
+  duration_ms: 30.2624
+  type: 'test'
+  ...
+# Subtest: transport failure is terminal with one attempt and no retry
+ok 4 - transport failure is terminal with one attempt and no retry
+  ---
+  duration_ms: 15.6867
+  type: 'test'
+  ...
+# Subtest: completion key mismatch and response-model mismatch fail closed
+    # Subtest: key mismatch
+    ok 1 - key mismatch
+      ---
+      duration_ms: 15.729
+      type: 'test'
+      ...
+    # Subtest: model mismatch
+    ok 2 - model mismatch
+      ---
+      duration_ms: 15.9758
+      type: 'test'
+      ...
+    1..2
+ok 5 - completion key mismatch and response-model mismatch fail closed
+  ---
+  duration_ms: 32.2707
+  type: 'test'
+  ...
+# Subtest: expired queued work makes zero attempts and stale running text is discarded
+    # Subtest: queued expiry
+    ok 1 - queued expiry
+      ---
+      duration_ms: 15.1595
+      type: 'test'
+      ...
+    # Subtest: stale running result
+    ok 2 - stale running result
+      ---
+      duration_ms: 14.896
+      type: 'test'
+      ...
+    1..2
+ok 6 - expired queued work makes zero attempts and stale running text is discarded
+  ---
+  duration_ms: 30.6588
+  type: 'test'
+  ...
+# Subtest: already-expired admission becomes expired without inference
+ok 7 - already-expired admission becomes expired without inference
+  ---
+  duration_ms: 0.3138
+  type: 'test'
+  ...
+# Subtest: ready result that expires before consumption discards dialogue text
+ok 8 - ready result that expires before consumption discards dialogue text
+  ---
+  duration_ms: 15.2034
+  type: 'test'
+  ...
+# Subtest: accepted lifetime is fixed to one admission-derived monotonic deadline
+    # Subtest: forward wall jump cannot prematurely expire queued or running work
+    ok 1 - forward wall jump cannot prematurely expire queued or running work
+      ---
+      duration_ms: 31.5478
+      type: 'test'
+      ...
+    # Subtest: backward wall jump cannot extend queued work or replace its deadline on duplicate
+    ok 2 - backward wall jump cannot extend queued work or replace its deadline on duplicate
+      ---
+      duration_ms: 29.9859
+      type: 'test'
+      ...
+    # Subtest: backward wall jump cannot extend running work
+    ok 3 - backward wall jump cannot extend running work
+      ---
+      duration_ms: 16.0663
+      type: 'test'
+      ...
+    # Subtest: forward wall jump cannot prematurely expire ready-before-consume work
+    ok 4 - forward wall jump cannot prematurely expire ready-before-consume work
+      ---
+      duration_ms: 15.2044
+      type: 'test'
+      ...
+    # Subtest: backward wall jump cannot extend ready-before-consume work
+    ok 5 - backward wall jump cannot extend ready-before-consume work
+      ---
+      duration_ms: 15.9808
+      type: 'test'
+      ...
+    1..5
+ok 9 - accepted lifetime is fixed to one admission-derived monotonic deadline
+  ---
+  duration_ms: 109.5681
+  type: 'test'
+  ...
+# Subtest: consume race has one winner and never redelivers dialogue
+ok 10 - consume race has one winner and never redelivers dialogue
+  ---
+  duration_ms: 15.6374
+  type: 'test'
+  ...
+# Subtest: bounded ledger fails closed without transport attempts
+ok 11 - bounded ledger fails closed without transport attempts
+  ---
+  duration_ms: 31.851
+  type: 'test'
+  ...
+# Subtest: controlled immediate shutdown closes admission, cancels active, fails queued and joins worker
+ok 12 - controlled immediate shutdown closes admission, cancels active, fails queued and joins worker
+  ---
+  duration_ms: 15.5135
+  type: 'test'
+  ...
+# Subtest: invalid shutdown options do not poison a later controlled shutdown
+ok 13 - invalid shutdown options do not poison a later controlled shutdown
+  ---
+  duration_ms: 0.2657
+  type: 'test'
+  ...
+# Subtest: shutdown during model verification cancels and joins startup without opening admission
+ok 14 - shutdown during model verification cancels and joins startup without opening admission
+  ---
+  duration_ms: 0.3567
+  type: 'test'
+  ...
+# Subtest: controlled drain shutdown completes queued work before joining
+ok 15 - controlled drain shutdown completes queued work before joining
+  ---
+  duration_ms: 0.2823
+  type: 'test'
+  ...
+# Subtest: drain deadline cancels active work, fails queued work and still joins the owned worker
+ok 16 - drain deadline cancels active work, fails queued work and still joins the owned worker
+  ---
+  duration_ms: 46.3361
+  type: 'test'
+  ...
+# Subtest: expired queued tombstones do not consume waiting capacity
+ok 17 - expired queued tombstones do not consume waiting capacity
+  ---
+  duration_ms: 31.1832
+  type: 'test'
+  ...
+# Subtest: startup fails closed when pinned inventory verification fails
+ok 18 - startup fails closed when pinned inventory verification fails
+  ---
+  duration_ms: 0.2974
+  type: 'test'
+  ...
+# Subtest: malformed request bytes and schema errors make zero attempts
+ok 19 - malformed request bytes and schema errors make zero attempts
+  ---
+  duration_ms: 0.3157
+  type: 'test'
+  ...
+# Subtest: raw response accepts exact byte limit and rejects declared limit plus one
+    # Subtest: exact limit
+    ok 1 - exact limit
+      ---
+      duration_ms: 21.4904
+      type: 'test'
+      ...
+    # Subtest: declared over limit
+    ok 2 - declared over limit
+      ---
+      duration_ms: 4.5146
+      type: 'test'
+      ...
+    1..2
+ok 20 - raw response accepts exact byte limit and rejects declared limit plus one
+  ---
+  duration_ms: 26.8863
+  type: 'test'
+  ...
+# Subtest: chunked response aborts at byte limit plus one
+ok 21 - chunked response aborts at byte limit plus one
+  ---
+  duration_ms: 2.9344
+  type: 'test'
+  ...
+# Subtest: response deadline is finite and aborts a silent loopback peer
+ok 22 - response deadline is finite and aborts a silent loopback peer
+  ---
+  duration_ms: 46.5681
+  type: 'test'
+  ...
+# Subtest: connect deadline is deterministic and finite with a never-connected socket fixture
+ok 23 - connect deadline is deterministic and finite with a never-connected socket fixture
+  ---
+  duration_ms: 31.5271
+  type: 'test'
+  ...
+# Subtest: transport does not send when request construction consumes the monotonic lifetime
+ok 24 - transport does not send when request construction consumes the monotonic lifetime
+  ---
+  duration_ms: 0.3106
+  type: 'test'
+  ...
+# Subtest: transport cannot resolve a response ending at the monotonic deadline
+ok 25 - transport cannot resolve a response ending at the monotonic deadline
+  ---
+  duration_ms: 0.3107
+  type: 'test'
+  ...
+# Subtest: model inventory requires exact pinned name and digest
+    # Subtest: exact pin
+    ok 1 - exact pin
+      ---
+      duration_ms: 3.6985
+      type: 'test'
+      ...
+    # Subtest: digest mismatch
+    ok 2 - digest mismatch
+      ---
+      duration_ms: 2.6459
+      type: 'test'
+      ...
+    # Subtest: name/model inconsistency
+    ok 3 - name/model inconsistency
+      ---
+      duration_ms: 2.2445
+      type: 'test'
+      ...
+    # Subtest: wrong optional member type
+    ok 4 - wrong optional member type
+      ---
+      duration_ms: 2.3836
+      type: 'test'
+      ...
+    1..4
+ok 26 - model inventory requires exact pinned name and digest
+  ---
+  duration_ms: 11.574
+  type: 'test'
+  ...
+# Subtest: Ollama request is pinned, server-free, tool-free and keeps user text separate
+ok 27 - Ollama request is pinned, server-free, tool-free and keeps user text separate
+  ---
+  duration_ms: 3.5996
+  type: 'test'
+  ...
+# Subtest: malformed UTF-8, invalid schema, tool calls, wrong role and wrong model fail closed with one POST
+    # Subtest: malformed UTF-8
+    ok 1 - malformed UTF-8
+      ---
+      duration_ms: 2.5213
+      type: 'test'
+      ...
+    # Subtest: invalid JSON
+    ok 2 - invalid JSON
+      ---
+      duration_ms: 2.1455
+      type: 'test'
+      ...
+    # Subtest: tool call
+    ok 3 - tool call
+      ---
+      duration_ms: 2.0837
+      type: 'test'
+      ...
+    # Subtest: wrong role
+    ok 4 - wrong role
+      ---
+      duration_ms: 2.38
+      type: 'test'
+      ...
+    # Subtest: wrong model
+    ok 5 - wrong model
+      ---
+      duration_ms: 2.0747
+      type: 'test'
+      ...
+    # Subtest: wrong optional member type
+    ok 6 - wrong optional member type
+      ---
+      duration_ms: 1.867
+      type: 'test'
+      ...
+    # Subtest: empty assistant output
+    ok 7 - empty assistant output
+      ---
+      duration_ms: 1.9205
+      type: 'test'
+      ...
+    # Subtest: assistant output over character limit
+    ok 8 - assistant output over character limit
+      ---
+      duration_ms: 1.9138
+      type: 'test'
+      ...
+    1..8
+ok 28 - malformed UTF-8, invalid schema, tool calls, wrong role and wrong model fail closed with one POST
+  ---
+  duration_ms: 18.5447
+  type: 'test'
+  ...
+# Subtest: oversized raw inference response is rejected before JSON parsing
+ok 29 - oversized raw inference response is rejected before JSON parsing
+  ---
+  duration_ms: 2.1505
+  type: 'test'
+  ...
+# Subtest: transport expiry uses only the passed monotonic deadline, not wire UTC
+ok 30 - transport expiry uses only the passed monotonic deadline, not wire UTC
+  ---
+  duration_ms: 0.2277
+  type: 'test'
+  ...
+# Subtest: one monotonic lifetime deadline bounds the complete HTTP attempt
+ok 31 - one monotonic lifetime deadline bounds the complete HTTP attempt
+  ---
+  duration_ms: 56.9515
+  type: 'test'
+  ...
+# Subtest: connection failure is terminal and never retried
+ok 32 - connection failure is terminal and never retried
+  ---
+  duration_ms: 1.777
+  type: 'test'
+  ...
+# Subtest: pinned runtime config and versioned file context validate and freeze
+ok 33 - pinned runtime config and versioned file context validate and freeze
+  ---
+  duration_ms: 0.9362
+  type: 'test'
+  ...
+# Subtest: strict UTF-8 rejects malformed bytes and BOM
+ok 34 - strict UTF-8 rejects malformed bytes and BOM
+  ---
+  duration_ms: 0.7025
+  type: 'test'
+  ...
+# Subtest: strict JSON rejects duplicate keys, trailing data, depth and lone surrogates
+ok 35 - strict JSON rejects duplicate keys, trailing data, depth and lone surrogates
+  ---
+  duration_ms: 0.6322
+  type: 'test'
+  ...
+# Subtest: request schema rejects missing, unknown, wrong-version and unsafe integer fields
+ok 36 - request schema rejects missing, unknown, wrong-version and unsafe integer fields
+  ---
+  duration_ms: 1.5622
+  type: 'test'
+  ...
+# Subtest: UUID accepts only canonical lowercase RFC 4122 UUIDv4
+ok 37 - UUID accepts only canonical lowercase RFC 4122 UUIDv4
+  ---
+  duration_ms: 0.8756
+  type: 'test'
+  ...
+# Subtest: timestamps, clock skew and TTL are finite and canonical
+ok 38 - timestamps, clock skew and TTL are finite and canonical
+  ---
+  duration_ms: 0.373
+  type: 'test'
+  ...
+# Subtest: user-message limit is measured in UTF-8 bytes at exact boundary and limit plus one
+ok 39 - user-message limit is measured in UTF-8 bytes at exact boundary and limit plus one
+  ---
+  duration_ms: 0.2459
+  type: 'test'
+  ...
+# Subtest: assembled prompt is byte-bounded after system, context and user expansion
+ok 40 - assembled prompt is byte-bounded after system, context and user expansion
+  ---
+  duration_ms: 0.3762
+  type: 'test'
+  ...
+# Subtest: exactly two sentence-terminator runs are accepted without whitespace
+ok 41 - exactly two sentence-terminator runs are accepted without whitespace
+  ---
+  duration_ms: 0.2242
+  type: 'test'
+  ...
+# Subtest: three sentence-terminator runs without spaces are rejected
+ok 42 - three sentence-terminator runs without spaces are rejected
+  ---
+  duration_ms: 0.2638
+  type: 'test'
+  ...
+# Subtest: Unicode ellipsis is enforced as a sentence terminator run
+ok 43 - Unicode ellipsis is enforced as a sentence terminator run
+  ---
+  duration_ms: 0.2353
+  type: 'test'
+  ...
+# Subtest: assistant output permits at most 240 UTF-8 bytes without splitting a codepoint
+ok 44 - assistant output permits at most 240 UTF-8 bytes without splitting a codepoint
+  ---
+  duration_ms: 0.3007
+  type: 'test'
+  ...
+# Subtest: English-only system rule and output limits are immutable pins
+ok 45 - English-only system rule and output limits are immutable pins
+  ---
+  duration_ms: 0.3803
+  type: 'test'
+  ...
+# Subtest: model allowlist, digest and loopback endpoint fail closed
+ok 46 - model allowlist, digest and loopback endpoint fail closed
+  ---
+  duration_ms: 0.3718
+  type: 'test'
+  ...
+# Subtest: context schema and filename profile version must match
+ok 47 - context schema and filename profile version must match
+  ---
+  duration_ms: 0.2095
+  type: 'test'
+  ...
+# Subtest: immutable request envelope cannot be altered
+ok 48 - immutable request envelope cannot be altered
+  ---
+  duration_ms: 0.1633
+  type: 'test'
+  ...
+# Subtest: personality context byte tampering is detected by its pinned SHA-256
+ok 49 - personality context byte tampering is detected by its pinned SHA-256
+  ---
+  duration_ms: 7.3286
+  type: 'test'
+  ...
+# Subtest: exclusive instance lock prevents two bridge processes from owning the inference slot
+ok 50 - exclusive instance lock prevents two bridge processes from owning the inference slot
+  ---
+  duration_ms: 15.4106
+  type: 'test'
+  ...
+# Subtest: published JSON Schema documents are strict UTF-8 JSON
+ok 51 - published JSON Schema documents are strict UTF-8 JSON
+  ---
+  duration_ms: 1.6236
+  type: 'test'
+  ...
+# Subtest: NDJSON wire command is bounded at the exact request byte cap
+ok 52 - NDJSON wire command is bounded at the exact request byte cap
+  ---
+  duration_ms: 2.3821
+  type: 'test'
+  ...
+1..52
+# tests 75
+# suites 0
+# pass 75
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 923.7977

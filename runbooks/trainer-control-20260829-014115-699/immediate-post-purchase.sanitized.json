@@ -1,0 +1,204 @@
+{
+  "phase": "immediate-post-purchase",
+  "capturedAtUtc": "2026-08-28T23:49:20.2214985Z",
+  "sanitizedCharacter": "CONTROL-FA3F04D11843",
+  "account": {
+    "securityRank": 0,
+    "online": 1,
+    "identifierExported": false
+  },
+  "characterPersisted": {
+    "raceId": 1,
+    "classId": 2,
+    "level": 2,
+    "moneyCopper": 12,
+    "moneyDeltaFromPersistedPre": -10,
+    "online": 1,
+    "extraFlags": 4,
+    "gmOnBitSet": false,
+    "isGMCharacter": 0,
+    "limitation": "Database-persisted immediate snapshot; online memory and client UI may differ."
+  },
+  "spellState": {
+    "chainIds": [
+      465,
+      10290,
+      643,
+      10291,
+      1032,
+      10292,
+      10293
+    ],
+    "persistedCharacterSpellRows": [
+      "465\t1\t0"
+    ],
+    "persistedCharacterSpellCount": 1,
+    "persistedDualSpecRows": [],
+    "persistedDualSpecCount": 0,
+    "spell465Persisted": true
+  },
+  "logAppends": [
+    {
+      "path": "C:\\TW\\ComTW\\logs\\server_2026-08-29_00-12-48.log",
+      "startOffset": 25505085,
+      "endOffset": 25955462,
+      "truncated": false,
+      "rawAppendLength": 450377,
+      "rawAppendSha256": "D816F25206273CEBA3C49B6FD2A4EE00A7104C6B4DFA710A5C5F2BBC767AB9F2",
+      "relevantLineCount": 0,
+      "sanitizedEvidenceFile": "immediate-append-server_2026-08-29_00-12-48.log.sanitized.txt",
+      "sanitizedEvidenceSha256": "EABDEC2CC07E8E2792F9F20A019F198EBAD09002FA509CD3B6AC88D185ED18EA"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\char.log",
+      "startOffset": 25494,
+      "endOffset": 25494,
+      "truncated": false,
+      "rawAppendLength": 0,
+      "rawAppendSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "relevantLineCount": 0,
+      "sanitizedEvidenceFile": "immediate-append-char.log.sanitized.txt",
+      "sanitizedEvidenceSha256": "D182B15B5DDBD352D4E0ACE8866D534F722EA56BEA73629BF16E3A8BED3A6D24"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\trades.log",
+      "startOffset": 13529,
+      "endOffset": 13529,
+      "truncated": false,
+      "rawAppendLength": 0,
+      "rawAppendSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "relevantLineCount": 0,
+      "sanitizedEvidenceFile": "immediate-append-trades.log.sanitized.txt",
+      "sanitizedEvidenceSha256": "C95393C4C0FF068316604EA1DE8D900D81AEA43C897454ABAF36A8C7A36C3F30"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\errors.log",
+      "startOffset": 1329604,
+      "endOffset": 1329604,
+      "truncated": false,
+      "rawAppendLength": 0,
+      "rawAppendSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "relevantLineCount": 0,
+      "sanitizedEvidenceFile": "immediate-append-errors.log.sanitized.txt",
+      "sanitizedEvidenceSha256": "C15E7D502777AF94E303F9266F6D41C5D90FC2ADC15B0A82A05689C1C6A5EF1A"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\gm.log",
+      "startOffset": 2359,
+      "endOffset": 2359,
+      "truncated": false,
+      "rawAppendLength": 0,
+      "rawAppendSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "relevantLineCount": 0,
+      "sanitizedEvidenceFile": "immediate-append-gm.log.sanitized.txt",
+      "sanitizedEvidenceSha256": "702311021828B0D9182307AAC724094712C48A68BB68B27920F1C0C45658B230"
+    },
+    {
+      "path": "C:\\TW\\ComTW\\logs\\Realmd.log",
+      "startOffset": 13804,
+      "endOffset": 14222,
+      "truncated": false,
+      "rawAppendLength": 418,
+      "rawAppendSha256": "ACFCED28ADFD8BE7820A641EA90F779A79E9C7DD225298E1A5A6FB5DFB2D7E3E",
+      "relevantLineCount": 0,
+      "sanitizedEvidenceFile": "immediate-append-Realmd.log.sanitized.txt",
+      "sanitizedEvidenceSha256": "D4E3A1D53F98382138D800C2E6637B34CA3F335D084B7CE5664E555B476DB680"
+    }
+  ],
+  "runtimeSample1": {
+    "capturedAtUtc": "2026-08-28T23:49:19.1333856Z",
+    "processes": [
+      {
+        "name": "mangosd",
+        "pid": 9628,
+        "startTimeUtc": "2026-08-28T22:12:48.2884890Z",
+        "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+        "exeSha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC"
+      },
+      {
+        "name": "mysqld",
+        "pid": 14776,
+        "startTimeUtc": "2026-08-28T22:12:37.9655841Z",
+        "path": "C:\\TW\\ComTW\\DB\\bin\\mysqld.exe",
+        "exeSha256": "FF99D2F64CC6E236BAA4257A905F27B15683DC2F4B52C003E4859D56558DFDC7"
+      },
+      {
+        "name": "realmd",
+        "pid": 24080,
+        "startTimeUtc": "2026-08-28T22:12:45.2939531Z",
+        "path": "C:\\TW\\ComTW\\server\\realmd.exe",
+        "exeSha256": "A36A3B611229D2A68FEAA4BD92D4283888CA64CD45FBD7C5E6F28050AB0B676B"
+      }
+    ],
+    "listeners": [
+      {
+        "pid": 24080,
+        "localEndpoint": "0.0.0.0:3724",
+        "transport": "TCP",
+        "state": "LISTEN"
+      },
+      {
+        "pid": 9628,
+        "localEndpoint": "0.0.0.0:8090",
+        "transport": "TCP",
+        "state": "LISTEN"
+      },
+      {
+        "pid": 14776,
+        "localEndpoint": "127.0.0.1:3307",
+        "transport": "TCP",
+        "state": "LISTEN"
+      }
+    ]
+  },
+  "runtimeSample2": {
+    "capturedAtUtc": "2026-08-28T23:49:20.2051205Z",
+    "processes": [
+      {
+        "name": "mangosd",
+        "pid": 9628,
+        "startTimeUtc": "2026-08-28T22:12:48.2884890Z",
+        "path": "C:\\TW\\ComTW\\server\\mangosd.exe",
+        "exeSha256": "FB722BAAD894F2567A1535EF7A64AD9AEB31BCEA833012D9EC96DE53285E45FC"
+      },
+      {
+        "name": "mysqld",
+        "pid": 14776,
+        "startTimeUtc": "2026-08-28T22:12:37.9655841Z",
+        "path": "C:\\TW\\ComTW\\DB\\bin\\mysqld.exe",
+        "exeSha256": "FF99D2F64CC6E236BAA4257A905F27B15683DC2F4B52C003E4859D56558DFDC7"
+      },
+      {
+        "name": "realmd",
+        "pid": 24080,
+        "startTimeUtc": "2026-08-28T22:12:45.2939531Z",
+        "path": "C:\\TW\\ComTW\\server\\realmd.exe",
+        "exeSha256": "A36A3B611229D2A68FEAA4BD92D4283888CA64CD45FBD7C5E6F28050AB0B676B"
+      }
+    ],
+    "listeners": [
+      {
+        "pid": 24080,
+        "localEndpoint": "0.0.0.0:3724",
+        "transport": "TCP",
+        "state": "LISTEN"
+      },
+      {
+        "pid": 9628,
+        "localEndpoint": "0.0.0.0:8090",
+        "transport": "TCP",
+        "state": "LISTEN"
+      },
+      {
+        "pid": 14776,
+        "localEndpoint": "127.0.0.1:3307",
+        "transport": "TCP",
+        "state": "LISTEN"
+      }
+    ]
+  },
+  "characterNameExported": false,
+  "internalGuidExported": false,
+  "accountIdExported": false,
+  "sqlPolicy": "SELECT/SHOW/DESCRIBE only"
+}
