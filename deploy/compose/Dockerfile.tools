@@ -1,0 +1,66 @@
+# syntax=docker/dockerfile:1.7
+#
+# Client-data extractors (mapextractor, vmapextractor, vmap_assembler,
+# MoveMapGen). Separate from Dockerfile.core because USE_EXTRACTORS defaults to
+# OFF there and should stay off: the server image has no use for them, and they
+# only run against a game client the image must never contain.
+#
+# Build context is the repo root, same as Dockerfile.core.
+
+ARG DEBIAN_VERSION=trixie
+ARG PREFIX=/opt/turtle
+
+FROM debian:${DEBIAN_VERSION}-slim AS builder
+ARG PREFIX
+ARG TW_ARCH=x86-64-v2
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+      build-essential cmake ninja-build git ccache \
+      libace-dev default-libmysqlclient-dev \
+      libssl-dev zlib1g-dev libbz2-dev \
+      libboost-dev libboost-thread-dev libboost-filesystem-dev \
+      libboost-system-dev libboost-stacktrace-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . /src
+
+# Same install prefix as the server image, for the SYSCONFDIR reason documented
+# in Dockerfile.core -- these tools do not read configs, but keeping one prefix
+# means one mental model. Playerbots off: not needed to build extractors.
+RUN --mount=type=cache,target=/ccache \
+    CCACHE_DIR=/ccache cmake -S /src -B /build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+      -DTW_ARCH=${TW_ARCH} \
+      -DUSE_EXTRACTORS=ON \
+      -DBUILD_PLAYERBOTS=OFF \
+      -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+RUN --mount=type=cache,target=/ccache \
+    CCACHE_DIR=/ccache cmake --build /build --parallel "$(nproc)" \
+    && cmake --install /build
+
+FROM debian:${DEBIAN_VERSION}-slim AS runtime
+ARG PREFIX
+ENV PREFIX=${PREFIX}
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+      libace-8.0.2 libmariadb3 libssl3 zlib1g libbz2-1.0 \
+      libboost-system1.83.0 libboost-thread1.83.0 libboost-filesystem1.83.0 \
+      tini \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder ${PREFIX}/bin ${PREFIX}/bin
+ENV PATH="${PREFIX}/bin:${PATH}"
+
+# The extractors write next to their working directory, so they run in a scratch
+# dir and the result is copied to the mounted output. Running as root here is
+# deliberate and narrow: the container writes to a bind mount the host owns.
+WORKDIR /work
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["bash"]

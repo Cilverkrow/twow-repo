@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "twow.fullname" . }}-config
+  labels: {{- include "twow.labels" . | nindent 4 }}
+data:
+  # The server reads flat .conf files and does no environment substitution, so a
+  # ConfigMap alone cannot carry a password. This script runs as an init
+  # container: it starts from the .dist templates shipped in the image (so no key
+  # is silently lost when upstream adds one), then appends an override block with
+  # the credentials taken from the Secret at runtime. ACE's ini importer lets a
+  # later key overwrite an earlier one, which is what makes appending work.
+  #
+  # The rendered files land in an emptyDir mounted at /opt/turtle/etc, because
+  # SYSCONFDIR is compiled into the binary and the directory cannot move.
+  render-config.sh: |
+    #!/bin/sh
+    set -eu
+    # Read the image's own templates in place; the emptyDir is mounted over
+    # /opt/turtle/etc in the *main* container only, not here.
+    SRC=/opt/turtle/etc
+    OUT=/etc-out
+    ORDINAL="${POD_NAME##*-}"
+    case "$ORDINAL" in ''|*[!0-9]*) ORDINAL=0 ;; esac
+    REALM_ID=$((ORDINAL + 1))
+
+    conn() { printf '%s;%s;%s;%s;%s' "$DB_HOST" "$DB_PORT" "$DB_USER" "$DB_PASSWORD" "$1"; }
+
+    cp "$SRC/mangosd.conf.dist" "$OUT/mangosd.conf"
+    cat >> "$OUT/mangosd.conf" <<EOF
+
+    ########## rendered by the {{ include "twow.fullname" . }} chart ##########
+    LoginDatabase.Info = "$(conn {{ .Values.database.names.logon }})"
+    WorldDatabase.Info = "$(conn {{ .Values.database.names.world }})"
+    CharacterDatabase.Info = "$(conn {{ .Values.database.names.characters }})"
+    LogsDatabase.Info = "$(conn {{ .Values.database.names.logs }})"
+
+    # One worldserver per realm: the RealmID follows the StatefulSet ordinal, and
+    # each needs its own row in tw_logon.realmlist.
+    RealmID = ${REALM_ID}
+
+    DataDir = "/opt/turtle/data"
+    LogsDir = "/var/log/turtle"
+    HonorDir = "/var/log/turtle"
+    PDumpDir = "/var/log/turtle"
+    WorldServerPort = {{ .Values.mangosd.service.port }}
+    BindIP = "0.0.0.0"
+    AiPlayerbot.ConfigFile = "/opt/turtle/etc/aiplayerbot.conf"
+
+    # Off, and it must stay off on a database bootstrapped by the migrations job.
+    # The updater keys on Module + ":" + SHA1(file bytes) while those rows carry
+    # the literal Hash 'manual', which matches nothing on disk: it would replay
+    # every migration, hit the first duplicate key, and refuse to start.
+    Database.AutoUpdate.Enabled = {{ ternary 1 0 .Values.autoUpdate.enabled }}
+
+    # Writes every SQL statement to disk; the first start with bots is tens of
+    # thousands of inserts building the gear cache.
+    LogSQL = 0
+    {{- with .Values.mangosd.extraConfig }}
+    {{ . | nindent 4 }}
+    {{- end }}
+    EOF
+
+    cp "$SRC/realmd.conf.dist" "$OUT/realmd.conf"
+    cat >> "$OUT/realmd.conf" <<EOF
+
+    LoginDatabaseInfo = "$(conn {{ .Values.database.names.logon }})"
+    LogsDir = "/var/log/turtle/"
+    RealmServerPort = {{ .Values.realmd.service.port }}
+    BindIP = "0.0.0.0"
+    # /opt/turtle/bin is not writable by the runtime user.
+    PidFile = "/tmp/twrealmd.pid"
+    EOF
+
+    if [ -f "$SRC/aiplayerbot.conf.dist" ]; then
+      cp "$SRC/aiplayerbot.conf.dist" "$OUT/aiplayerbot.conf"
+      cat >> "$OUT/aiplayerbot.conf" <<EOF
+
+    # Not a mangosd.conf key, which is easy to trip over since every other one is.
+    AiPlayerbot.Enabled = {{ ternary 1 0 .Values.playerbots.enabled }}
+    # The template asks for a thousand bots, all created and geared before the
+    # world finishes coming up.
+    AiPlayerbot.MinRandomBots = {{ .Values.playerbots.minRandomBots }}
+    AiPlayerbot.MaxRandomBots = {{ .Values.playerbots.maxRandomBots }}
+    EOF
+    fi
+
+    chmod 600 "$OUT"/*.conf
+    echo "[config-init] rendered $(ls "$OUT")"

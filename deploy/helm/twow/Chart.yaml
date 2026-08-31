@@ -1,0 +1,26 @@
+apiVersion: v2
+name: twow
+description: Tortoise-WoW server (mangosd worldserver + realmd login server) on MariaDB
+type: application
+version: 0.1.0
+# The server has no release versioning of its own yet; this tracks the branch.
+appVersion: "dev"
+keywords:
+  - mangos
+  - gameserver
+home: https://github.com/Shyalya/tortoise-wow
+maintainers:
+  - name: Tortoise-WoW operators
+
+# MariaDB is intentionally NOT a chart dependency by default. The database holds
+# every character on the realm, 11.8 is pinned for a reason (ADR-0027), and a
+# subchart's StatefulSet is the wrong place to learn about backups. Point
+# .Values.database at a managed or operator-run MariaDB instead.
+#
+# If you do want one in-cluster, add it back explicitly and run `helm dep update`:
+#
+# dependencies:
+#   - name: mariadb
+#     version: "20.x.x"
+#     repository: https://charts.bitnami.com/bitnami
+#     condition: mariadb.enabled

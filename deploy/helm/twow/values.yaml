@@ -1,0 +1,194 @@
+# Tortoise-WoW chart values.
+#
+# There are no passwords in this file and there must never be: every credential
+# comes from an existing Secret you create out of band (see database.existingSecret).
+# A values.yaml ends up in git, in `helm get values`, and in CI logs.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  # Built from deploy/docker/Dockerfile.core with the repo root as context.
+  repository: twow/core
+  tag: dev
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# --------------------------------------------------------------------- database
+database:
+  # External endpoint by default; see the note in Chart.yaml about why MariaDB is
+  # not a subchart here. MariaDB 11.8 or newer (ADR-0027).
+  host: mariadb
+  port: 3306
+  user: turtle
+  names:
+    world: tw_world
+    characters: tw_char
+    logon: tw_logon
+    logs: tw_logs
+  # Required. Create it yourself:
+  #   kubectl create secret generic twow-db \
+  #     --from-literal=password=... --from-literal=root-password=...
+  # root-password is only read by the migrations job.
+  existingSecret: ""
+  secretKeys:
+    password: password
+    rootPassword: root-password
+
+# ----------------------------------------------------------------------- realm
+realm:
+  name: TurtleWoW
+  # The address clients dial, i.e. what goes into their realmlist.wtf. A Service
+  # name is wrong here: the client resolves this itself, outside the cluster.
+  address: ""
+  # Must equal mangosd.service.port. The realmlist column default (8085)
+  # disagrees with the config default (8090); login then succeeds and the client
+  # hangs before character select.
+  worldPort: 8090
+
+# --------------------------------------------------------------------- mangosd
+mangosd:
+  # One worldserver per realm. Each StatefulSet ordinal takes RealmID = ordinal+1
+  # and needs its own row in tw_logon.realmlist; two pods sharing a RealmID will
+  # fight over the same characters.
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 8090
+    annotations: {}
+  # The entrypoint turns SIGTERM into `saveall` + `server shutdown 0`; it never
+  # SIGKILLs. terminationGracePeriodSeconds must exceed shutdownGraceSeconds or
+  # the kubelet kills the pod mid-save.
+  shutdownGraceSeconds: 120
+  terminationGracePeriodSeconds: 180
+  resources:
+    requests:
+      cpu: "2"
+      memory: 8Gi
+    limits:
+      # No CPU limit on purpose: throttling a world server produces lag spikes
+      # that look like network problems. Memory is capped because glibc arenas
+      # make RSS drift upward under bot load (see Malloc.ArenaMax in the config).
+      memory: 16Gi
+  probes:
+    # The first start loads the world and builds the bot travel graph: minutes,
+    # not seconds. startupProbe carries that so liveness can stay tight.
+    startup:
+      failureThreshold: 90
+      periodSeconds: 10
+    liveness:
+      periodSeconds: 30
+      failureThreshold: 5
+    readiness:
+      periodSeconds: 15
+      failureThreshold: 3
+  # Client data: dbc/maps/vmaps/mmaps, extracted from a game client and never
+  # baked into an image. Populate the volume before first start (a Job copying
+  # from object storage, or a pre-populated ReadOnlyMany volume).
+  clientData:
+    # Set to reuse one shared read-only volume across replicas; otherwise each
+    # ordinal gets its own PVC from the volumeClaimTemplate below.
+    existingClaim: ""
+    size: 40Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+  logs:
+    size: 10Gi
+    storageClass: ""
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  extraConfig: |
+    # Appended verbatim to mangosd.conf. Fork switches ship off by default:
+    # LFT.BotFill.Enable = 1
+    # SoloDungeonRepopAlive.Enable = 1
+
+# ---------------------------------------------------------------------- realmd
+realmd:
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 3724
+    annotations: {}
+  terminationGracePeriodSeconds: 30
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  probes:
+    liveness:
+      periodSeconds: 20
+      failureThreshold: 3
+    readiness:
+      periodSeconds: 10
+      failureThreshold: 3
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+
+# ------------------------------------------------------------------ playerbots
+playerbots:
+  enabled: true
+  # A thousand bots are created and geared before the world finishes coming up.
+  minRandomBots: 10
+  maxRandomBots: 10
+
+# ------------------------------------------------------------------ migrations
+migrations:
+  # Runs as a pre-install/pre-upgrade hook, so the schema is current before any
+  # worldserver connects.
+  enabled: true
+  # The SQL is not in the server image (.dockerignore strips sql/ from the build
+  # context, and sql/base is ~130 MB). This image must carry sql/ at /sql, or
+  # mount it from a volume via extraVolumes. sql/base moves upstream later
+  # (ADR-0020), which is why the path is a value rather than a constant.
+  image:
+    repository: twow/sql
+    tag: dev
+    pullPolicy: IfNotPresent
+  sqlPath: /sql
+  baseSqlPath: /sql/base
+  # Import the ~130 MB world content. Only needed on an empty database; leave it
+  # off for upgrades, which is why it defaults off and is set once by hand.
+  importBase: false
+  backoffLimit: 0
+  activeDeadlineSeconds: 7200
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+  extraVolumes: []
+  extraVolumeMounts: []
+
+# The auto-updater keys migrations on Module + ":" + SHA1(file bytes). The 146
+# world rows carry the literal Hash 'manual', which matches nothing on disk, so
+# enabling this replays every migration, collides on the first duplicate key and
+# the server refuses to start. Only turn it on for a database that was built
+# through the updater from empty.
+autoUpdate:
+  enabled: false
+
+podSecurityContext:
+  runAsNonRoot: true
+  # No runAsUser here on purpose. The image creates its `turtle` account with
+  # `useradd --system`, so the uid is assigned at build time and owns
+  # /opt/turtle/run -- where the console FIFO is created. Pinning a different uid
+  # makes mkfifo fail and the container exits before mangosd ever starts. Pin one
+  # only alongside a matching Dockerfile change.
+  fsGroup: 1000
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop: ["ALL"]

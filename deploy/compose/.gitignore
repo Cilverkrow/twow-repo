@@ -1,0 +1,5 @@
+# Credentials, client data and rendered configs never belong in git.
+.env
+data/
+client/
+config/

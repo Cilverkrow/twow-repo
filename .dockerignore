@@ -1,0 +1,13 @@
+# Build context trimming. The core build needs source, cmake, deps and .git
+# (for the revision header); it does not need 189MB of SQL, 24MB of runbook
+# evidence, or any local build tree.
+runbooks/
+sql/
+docs/
+patches/
+ops/
+**/build/
+**/.vs/
+**/CMakeCache.txt
+**/CMakeFiles/
+*.log

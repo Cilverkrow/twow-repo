@@ -1,0 +1,150 @@
+{{- $fullName := include "twow.fullname" . -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fullName }}-mangosd
+  labels: {{- include "twow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mangosd
+spec:
+  # A StatefulSet, not a Deployment: each pod is one realm. The ordinal picks the
+  # RealmID, the identity is stable across restarts, and the client-data volume
+  # follows the pod. Rolling two of these as interchangeable replicas would have
+  # two worldservers writing the same characters.
+  serviceName: {{ $fullName }}-mangosd
+  replicas: {{ .Values.mangosd.replicaCount }}
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "twow.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: mangosd
+  template:
+    metadata:
+      labels: {{- include "twow.labels" . | nindent 8 }}
+        app.kubernetes.io/component: mangosd
+      annotations:
+        # Restart pods when the rendering script changes, not silently later.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.mangosd.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "twow.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      # Must exceed mangosd.shutdownGraceSeconds: the entrypoint runs `saveall`
+      # and `server shutdown 0` on SIGTERM and never SIGKILLs, so a short grace
+      # period here is the kubelet truncating character state mid-save.
+      terminationGracePeriodSeconds: {{ .Values.mangosd.terminationGracePeriodSeconds }}
+      initContainers:
+        - name: config-init
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "/scripts/render-config.sh"]
+          env:
+            {{- include "twow.dbEnv" . | nindent 12 }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: etc
+              mountPath: /etc-out
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+      containers:
+        - name: mangosd
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # The image entrypoint creates the console FIFO and holds it open;
+          # without it mangosd sees EOF on stdin and exits. Do not override it,
+          # and do not try to solve this with a tty.
+          env:
+            - name: MANGOSD_SHUTDOWN_GRACE
+              value: {{ .Values.mangosd.shutdownGraceSeconds | quote }}
+          ports:
+            - name: world
+              containerPort: {{ .Values.mangosd.service.port }}
+              protocol: TCP
+          startupProbe:
+            # Loading the world and building the bot travel graph takes minutes.
+            # This is why liveness can be aggressive without killing a cold start.
+            tcpSocket:
+              port: world
+            periodSeconds: {{ .Values.mangosd.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.mangosd.probes.startup.failureThreshold }}
+          livenessProbe:
+            tcpSocket:
+              port: world
+            periodSeconds: {{ .Values.mangosd.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.mangosd.probes.liveness.failureThreshold }}
+          readinessProbe:
+            tcpSocket:
+              port: world
+            periodSeconds: {{ .Values.mangosd.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.mangosd.probes.readiness.failureThreshold }}
+          resources: {{- toYaml .Values.mangosd.resources | nindent 12 }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: etc
+              mountPath: /opt/turtle/etc
+            # Client data, read-only: extracted from a game client, never in an
+            # image. Populate this volume before the first start.
+            - name: client-data
+              mountPath: /opt/turtle/data
+              readOnly: true
+            - name: logs
+              mountPath: /var/log/turtle
+      {{- with .Values.mangosd.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mangosd.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mangosd.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ $fullName }}-config
+            defaultMode: 0555
+        - name: etc
+          emptyDir: {}
+        {{- if .Values.mangosd.clientData.existingClaim }}
+        - name: client-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.mangosd.clientData.existingClaim }}
+            readOnly: true
+        {{- end }}
+  volumeClaimTemplates:
+    {{- if not .Values.mangosd.clientData.existingClaim }}
+    - metadata:
+        name: client-data
+      spec:
+        accessModes: [{{ .Values.mangosd.clientData.accessMode }}]
+        {{- if .Values.mangosd.clientData.storageClass }}
+        storageClassName: {{ .Values.mangosd.clientData.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.mangosd.clientData.size }}
+    {{- end }}
+    - metadata:
+        name: logs
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- if .Values.mangosd.logs.storageClass }}
+        storageClassName: {{ .Values.mangosd.logs.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.mangosd.logs.size }}

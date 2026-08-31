@@ -1,0 +1,101 @@
+{{- $fullName := include "twow.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-realmd
+  labels: {{- include "twow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: realmd
+spec:
+  # A Deployment, not a StatefulSet: realmd is stateless. All of its state is in
+  # tw_logon, so replicas are interchangeable and it can be restarted freely.
+  replicas: {{ .Values.realmd.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "twow.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: realmd
+  template:
+    metadata:
+      labels: {{- include "twow.labels" . | nindent 8 }}
+        app.kubernetes.io/component: realmd
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.realmd.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "twow.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.realmd.terminationGracePeriodSeconds }}
+      initContainers:
+        - name: config-init
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "/scripts/render-config.sh"]
+          env:
+            {{- include "twow.dbEnv" . | nindent 12 }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: etc
+              mountPath: /etc-out
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+      containers:
+        - name: realmd
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # The image ENTRYPOINT is the mangosd console-FIFO wrapper; realmd has
+          # no console and must bypass it. tini still reaps and forwards signals.
+          command: ["/usr/bin/tini", "--", "/opt/turtle/bin/realmd", "-c", "/opt/turtle/etc/realmd.conf"]
+          ports:
+            - name: auth
+              containerPort: {{ .Values.realmd.service.port }}
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: auth
+            periodSeconds: {{ .Values.realmd.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.realmd.probes.liveness.failureThreshold }}
+            initialDelaySeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: auth
+            periodSeconds: {{ .Values.realmd.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.realmd.probes.readiness.failureThreshold }}
+            initialDelaySeconds: 5
+          resources: {{- toYaml .Values.realmd.resources | nindent 12 }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: etc
+              mountPath: /opt/turtle/etc
+            - name: logs
+              mountPath: /var/log/turtle
+      {{- with .Values.realmd.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.realmd.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.realmd.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ $fullName }}-config
+            defaultMode: 0555
+        - name: etc
+          emptyDir: {}
+        # realmd logs are diagnostic only; losing them with the pod is fine.
+        - name: logs
+          emptyDir: {}
