@@ -27,15 +27,13 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
 {{/*
-Fail early rather than deploying a server that cannot authenticate. Secrets are
-accepted only by reference: a password in values.yaml lands in git, in
-`helm get values` and in CI logs.
+Credentials are accepted only by reference. This chart never creates a Secret and
+has no value that holds a password: one in values.yaml lands in git, in
+`helm get values` and in CI logs. If existingSecret is unset the release-named
+Secret is assumed, which you must create yourself before installing.
 */}}
 {{- define "twow.dbSecretName" -}}
-{{- if not .Values.database.existingSecret -}}
-{{- fail "database.existingSecret is required: create the Secret out of band, this chart never takes a plaintext password" -}}
-{{- end -}}
-{{- .Values.database.existingSecret -}}
+{{- default (printf "%s-db" (include "twow.fullname" .)) .Values.database.existingSecret -}}
 {{- end -}}
 
 {{/*

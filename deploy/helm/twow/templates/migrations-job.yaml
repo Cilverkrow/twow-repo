@@ -1,0 +1,119 @@
+{{- if .Values.migrations.enabled }}
+{{- $fullName := include "twow.fullname" . -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $fullName }}-migrations
+  labels: {{- include "twow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrations
+  annotations:
+    # pre-install and pre-upgrade: the schema must be current before any
+    # worldserver connects, because the server aborts rather than adapts.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    # Kept on failure on purpose: this job's log is the only record of which
+    # migration broke, and --force means failures are not always obvious.
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels: {{- include "twow.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migrations
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrations
+          # Not the server image: .dockerignore strips sql/ from the core build
+          # context, so the SQL has to come from an image (or volume) that has it.
+          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag }}"
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy }}
+          env:
+            {{- include "twow.dbEnv" . | nindent 12 }}
+            - name: DB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "twow.dbSecretName" . }}
+                  key: {{ .Values.database.secretKeys.rootPassword }}
+            - name: SQL_PATH
+              value: {{ .Values.migrations.sqlPath | quote }}
+            - name: SQL_BASE_PATH
+              value: {{ .Values.migrations.baseSqlPath | quote }}
+            - name: IMPORT_BASE
+              value: {{ .Values.migrations.importBase | quote }}
+            - name: WORLD_DB
+              value: {{ .Values.database.names.world | quote }}
+            - name: CHAR_DB
+              value: {{ .Values.database.names.characters | quote }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              m() { mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -p"$DB_ROOT_PASSWORD" "$@"; }
+
+              # sql/base is the world *content* (~130 MB, 190 files), not a
+              # migration baseline. It is imported once, into an empty database,
+              # and never on an upgrade -- hence the explicit opt-in.
+              if [ "$IMPORT_BASE" = "true" ]; then
+                for f in "$SQL_BASE_PATH"/*.sql; do
+                  echo "base: $(basename "$f")"; m "$WORLD_DB" < "$f"
+                done
+              fi
+
+              # --force, because sql/base is a mixed snapshot rather than "the
+              # first N migrations applied": some migration files are already
+              # fully present in it, some partly. A clean replay is impossible;
+              # duplicate-key errors are skipped so the ALTERs land. It does also
+              # swallow real errors, which the probe at the end is there to catch.
+              apply() {  # apply <dir> <db>
+                [ -d "$1" ] || return 0
+                for f in $(ls "$1"/*.sql 2>/dev/null | sort); do
+                  echo "update ($2): $(basename "$f")"
+                  mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -p"$DB_ROOT_PASSWORD" \
+                    --force "$2" < "$f" || true
+                done
+              }
+              apply "$SQL_PATH/database_updates"           "$WORLD_DB"
+              # setup_databases.sh does not recurse into these; they are real
+              # migrations all the same (120 world, 25 character files).
+              apply "$SQL_PATH/database_updates/world"     "$WORLD_DB"
+              apply "$SQL_PATH/database_updates/character" "$CHAR_DB"
+
+              # Record them so a future auto-updater run does not replay them.
+              # Hash is the literal 'manual': the updater keys on
+              # Module + ":" + SHA1(file bytes), so this matches nothing on disk.
+              # It is a tombstone, and it only holds while the updater is off.
+              # migrations.Name has no unique index, so the insert is guarded by a
+              # SELECT rather than INSERT IGNORE, which would duplicate every row.
+              record() {
+                [ -d "$1" ] || return 0
+                for f in $(ls "$1"/*.sql 2>/dev/null | sort); do
+                  n=$(basename "$f" .sql)
+                  m "$2" -e "INSERT INTO migrations (Name, Hash, AppliedAt)
+                             SELECT '$n','manual',NOW() FROM DUAL
+                             WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE Name='$n');"
+                done
+              }
+              record "$SQL_PATH/database_updates"           "$WORLD_DB"
+              record "$SQL_PATH/database_updates/world"     "$WORLD_DB"
+              record "$SQL_PATH/database_updates/character" "$CHAR_DB"
+
+              # This column comes from a migration and is absent from sql/base,
+              # so a 1 proves the schema changes actually landed despite --force.
+              probe=$(m -N -B -e "SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA='$WORLD_DB' AND TABLE_NAME='spell_template'
+                  AND COLUMN_NAME='script_name';")
+              [ "$probe" = "1" ] || { echo "FAILED: migrations did not land"; exit 1; }
+              echo "migrations complete"
+          resources: {{- toYaml .Values.migrations.resources | nindent 12 }}
+          {{- with .Values.migrations.extraVolumeMounts }}
+          volumeMounts: {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.migrations.extraVolumes }}
+      volumes: {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

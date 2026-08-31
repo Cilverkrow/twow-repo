@@ -1,0 +1,79 @@
+# Development values: mirrors deploy/compose/docker-compose.yml as closely as
+# Kubernetes allows, so the two do not quietly drift apart. If you change one,
+# change the other -- the compose stack is what most people run, and a chart that
+# only works with different settings is a chart nobody trusts.
+#
+#   helm install twow deploy/helm/twow -f deploy/helm/twow/values-dev.yaml \
+#     --set database.existingSecret=twow-db
+#
+# Still no passwords here. Create the Secret first:
+#   kubectl create secret generic twow-db \
+#     --from-literal=password=... --from-literal=root-password=...
+
+image:
+  repository: twow/core       # == IMAGE_REPO in .env.example
+  tag: dev                    # == IMAGE_TAG
+  pullPolicy: IfNotPresent
+
+database:
+  host: mariadb               # compose service name is `db`; same role
+  port: 3306
+  user: turtle                # == DB_USER default
+  existingSecret: ""          # must be supplied; there is no dev default
+
+realm:
+  name: TurtleWoW             # == REALM_NAME
+  address: "127.0.0.1"        # == REALM_ADDRESS
+  worldPort: 8090
+
+mangosd:
+  replicaCount: 1             # one realm, as in compose
+  service:
+    type: ClusterIP
+    port: 8090                # == WORLD_PORT
+  shutdownGraceSeconds: 120   # == MANGOSD_SHUTDOWN_GRACE
+  terminationGracePeriodSeconds: 180  # == stop_grace_period
+  resources:
+    # A dev box is not a realm server; small enough to schedule on a laptop
+    # cluster, and the bot count below is turned down to match.
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      memory: 6Gi
+  clientData:
+    size: 20Gi
+  logs:
+    size: 2Gi
+
+realmd:
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 3724                # == REALM_PORT
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+playerbots:
+  enabled: true               # == BUILD_PLAYERBOTS=ON
+  minRandomBots: 10           # == AIPLAYERBOT_MIN_BOTS
+  maxRandomBots: 10           # == AIPLAYERBOT_MAX_BOTS
+
+migrations:
+  enabled: true
+  image:
+    repository: twow/sql
+    tag: dev
+  # The compose db-init imports sql/base on a fresh volume; the dev chart does
+  # the same on a fresh database. Set to false once the database is populated,
+  # or every upgrade re-imports 130 MB.
+  importBase: true
+
+# Same reasoning as compose: the recorded migration hashes are the literal
+# 'manual' and match nothing on disk.
+autoUpdate:
+  enabled: false

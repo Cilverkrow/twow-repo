@@ -53,6 +53,7 @@ if ! keep "$OUT/mangosd.conf"; then
         -e 's|^Database.AutoUpdate.Enabled.*|Database.AutoUpdate.Enabled = 0|' \
         -e 's|^WorldServerPort.*|WorldServerPort = '"$WORLD_PORT"'|' \
         -e 's|^LogSQL.*|LogSQL = 0|' \
+        -e 's|^PidFile.*|PidFile = "/tmp/twlive.pid"|' \
         "$EXAMPLES/mangosd.local.example.conf" > "$OUT/mangosd.conf"
 
     # Appended rather than edited in place: these are the settings whose defaults

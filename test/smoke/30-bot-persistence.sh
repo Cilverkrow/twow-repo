@@ -20,6 +20,7 @@
 # means this invariant went unproven, and reporting that as a pass is the exact
 # failure this file is written to prevent.
 set -eu
+# shellcheck source=test/smoke/lib.sh
 . "$(dirname "$0")/lib.sh"
 
 require_stack

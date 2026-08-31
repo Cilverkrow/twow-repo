@@ -12,6 +12,7 @@
 # This is the only check that needs nothing but the database, which is why it is
 # also the one that still runs in CI where there is no client data.
 set -eu
+# shellcheck source=test/smoke/lib.sh
 . "$(dirname "$0")/lib.sh"
 
 require_stack

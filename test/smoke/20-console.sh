@@ -10,6 +10,7 @@
 # write just blocks or vanishes. So this does not check for the file: it sends
 # `server info` and requires the answer in the log.
 set -eu
+# shellcheck source=test/smoke/lib.sh
 . "$(dirname "$0")/lib.sh"
 
 require_stack

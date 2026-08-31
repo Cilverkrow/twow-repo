@@ -1,0 +1,35 @@
+{{ include "twow.fullname" . }} installed.
+
+Realm:    {{ .Values.realm.name }} (RealmID 1..{{ .Values.mangosd.replicaCount }}, one per mangosd pod)
+Database: {{ .Values.database.host }}:{{ .Values.database.port }} as {{ .Values.database.user }}
+Secret:   {{ .Values.database.existingSecret }}
+
+Two things this chart cannot do for you:
+
+1. Client data. dbc/maps/vmaps/mmaps are extracted from your own game client and
+   are never in an image. Populate the client-data volume before the pods can
+   serve anything:
+
+     kubectl exec -it {{ include "twow.fullname" . }}-mangosd-0 -- ls /opt/turtle/data
+
+   Locally, `make extract` in the repo root produces the same tree.
+
+2. The realmlist row. tw_logon.realmlist is created empty. Without a row the
+   realm never appears; with the wrong port the client hangs before character
+   select. port must equal {{ .Values.mangosd.service.port }} and realmflags must be 0:
+
+     INSERT INTO {{ .Values.database.names.logon }}.realmlist
+       (name, address, port, icon, realmflags, timezone, allowedSecurityLevel)
+     VALUES ('{{ .Values.realm.name }}', '{{ .Values.realm.address | default "<client-reachable address>" }}', {{ .Values.mangosd.service.port }}, 0, 0, 1, 0);
+
+Console access (the FIFO the entrypoint holds open, which is also what stops
+mangosd exiting on EOF):
+
+  kubectl exec {{ include "twow.fullname" . }}-mangosd-0 -- \
+    sh -c 'echo "server info" > /opt/turtle/run/mangosd.in'
+  kubectl logs {{ include "twow.fullname" . }}-mangosd-0
+
+The auto-updater is {{ if .Values.autoUpdate.enabled }}ENABLED -- only correct on a database built through
+the updater from empty; on one bootstrapped by the migrations job it will replay
+everything and the server will refuse to start{{ else }}disabled, which is correct for a database
+bootstrapped by the migrations job{{ end }}.

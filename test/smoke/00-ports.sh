@@ -5,6 +5,7 @@
 # requirement here. The world server on 8090 cannot start without maps, so it is
 # checked only when client data is present - and skipped loudly when it is not.
 set -eu
+# shellcheck source=test/smoke/lib.sh
 . "$(dirname "$0")/lib.sh"
 
 require_stack

@@ -13,6 +13,7 @@
 # The stack is put back the way it was found, so this can be re-run and so it
 # can sit last in run-all.sh without wrecking a developer's running stack.
 set -eu
+# shellcheck source=test/smoke/lib.sh
 . "$(dirname "$0")/lib.sh"
 
 require_stack
