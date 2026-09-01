@@ -1,14 +1,13 @@
-TWoW SERVER STOP TOOLS
-======================
+TWoW WINDOWS SERVER TOOLS - HISTORICAL / UNSUPPORTED
+====================================================
 
-Installation
-------------
-Extract this folder to:
+This directory is retained as historical evidence for the former live Windows
+server. Linux with Docker is the supported runtime. None of these files authorizes
+process or database control, and the repository does not provide Windows runtime
+support.
 
-  C:\TW\ComTW\server\tools\stop
-
-The BAT files do not depend on their installation directory. Shortcuts may be
-placed on the desktop.
+Do not install or deploy these files from this repository. Follow the container
+lifecycle in the root Makefile and ADR-0028 instead.
 
 Files
 -----
@@ -30,8 +29,16 @@ stop-mariadb.bat
   MariaDB is never force-stopped by this package.
 
 stop-all.bat
-  Runs stop-mangosd.bat first, stop-realmd.bat second, and stop-mariadb.bat last.
-  It aborts before MariaDB if a preceding server could not be stopped.
+  Historical name-based stop sequence. It is not the supported graceful path.
+
+shutdown_all.bat
+  Retired fail-closed tombstone. It performs no process or database action and
+  returns exit code 1.
+
+shutdown-tortoise-servers-gracefully.ps1
+  Historical implementation. The same recorded bytes passed an earlier interactive
+  evidence run and later failed before delivering saveall under headless execution.
+  It is not a supported runtime helper and must not be deployed or invoked.
 
 stop-mangosd-force.bat / stop-realmd-force.bat
   Emergency tools for a hung process. They ask once, then use taskkill /F.
@@ -39,14 +46,11 @@ stop-mangosd-force.bat / stop-realmd-force.bat
 Important
 ---------
 
-* These are external emergency/operations tools. If the mangosd console is still
-  responsive, use its normal server shutdown command for the cleanest shutdown.
+* These files are retained for provenance, not as an operations package.
 * A forced stop may lose runtime state that has not yet been written to the DB.
 * The scripts target exact process names only: mangosd.exe and realmd.exe.
 * Ollama, the LLM bridge, and Windows are never stopped by these files.
 * MariaDB is stopped only by stop-mariadb.bat or stop-all.bat through its own
   mysqladmin shutdown mechanism. Never close the mysqld console with X.
-* After mangosd crashes and the prompt C:\TW\ComTW\server> appears, typing
-  "shutdown" invokes the Windows shutdown utility. Use these BAT files instead.
-* If Windows reports "Access denied", right-click the BAT and choose
-  "Run as administrator".
+* The supported Docker entrypoint translates SIGTERM into saveall and
+  server shutdown 0 through its console FIFO.

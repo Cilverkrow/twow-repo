@@ -1,6 +1,6 @@
 # ADR-0028: Linux and Docker are the deployment platform; Windows is compile-only
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-31
 - Primary: WS-40 / WS-50
 - Relates to: ADR-0019 (external Windows build inputs), ADR-0023 (containerization)
