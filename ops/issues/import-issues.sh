@@ -98,21 +98,67 @@ ensure_milestones() {
 # The manifest is a sequence of YAML-ish blocks delimited by '---'. Parsing it
 # with awk keeps this script dependency-free; the format is deliberately simple
 # enough that this is safe (no nested structures, one 'body: |' block last).
+# ---------------------------------------------------------------------------
+# THE SINGLE POINT OF TRUTH FOR "WHAT ISSUES EXIST".
+#
+# Everything that asks GitHub what exists goes through fetch_all_issues. There
+# is exactly ONE `gh issue list` in this file, and
+# ops/audit/issue-tooling-guard.sh fails the build if a second one appears.
+#
+# That guard exists because this bug has now shipped four times, and the last
+# two were the same mistake living in two copies of the same query:
+#
+#   * matching on the full TITLE, which changes   -> 27 duplicates created
+#   * `--state open` in existing_titles()         -> REF-001 and REF-002 were
+#                                                    recreated as #85 and #86,
+#                                                    hours after #79 and #80
+#                                                    were closed as done
+#   * `--state open` in the --update resolver     -> `--update --only <ID>`
+#                                                    silently no-opped on every
+#                                                    closed issue, so #82 and
+#                                                    #89 kept mangled quotes the
+#                                                    documented re-sync could
+#                                                    never reach
+#
+# The comment explaining the second one sat directly above the third and did
+# not prevent it. Prose does not stop this. One query and a guard do.
+# ---------------------------------------------------------------------------
+ISSUE_CACHE=""
+ISSUE_LIMIT=1000
+
+fetch_all_issues() {
+    if [ -n "$ISSUE_CACHE" ]; then
+        printf '%s' "$ISSUE_CACHE"
+        return 0
+    fi
+    ISSUE_CACHE="$(gh issue list --repo "$REPO" --state all \
+                    --limit "$ISSUE_LIMIT" --json number,title,state)"
+    n="$(printf '%s' "$ISSUE_CACHE" | jq 'length')"
+    # A truncated list makes an existing issue look missing, which is exactly
+    # how duplicates get created. Refuse to guess.
+    if [ "$n" -ge "$ISSUE_LIMIT" ]; then
+        echo "FATAL: issue list hit the $ISSUE_LIMIT limit ($n returned)." >&2
+        echo "       A truncated list makes existing issues look missing, and" >&2
+        echo "       this script would recreate them. Paginate or raise the" >&2
+        echo "       limit before running again." >&2
+        exit 1
+    fi
+    printf '%s' "$ISSUE_CACHE"
+}
+
 existing_titles() {
-    # Every state, open and closed.
-    #
-    # This read "--state open" for a while, from the incident where 27
-    # duplicates were created and then closed: the reasoning was that a closed
-    # duplicate must not make the importer think the item exists. That reasoning
-    # was aimed at the wrong cause. The duplicates came from matching on the
-    # full TITLE, which changes; the fix was to match on the id prefix, which
-    # does not.
-    #
-    # With the id as the key, ignoring closed issues is actively wrong: it means
-    # finishing a task and closing its issue makes the next importer run create
-    # it again. REF-001 and REF-002 were recreated as #85 and #86 that way,
-    # hours after #79 and #80 were closed as done.
-    gh issue list --repo "$REPO" --state all --limit 500 --json title --jq '.[].title'
+    fetch_all_issues | jq -r '.[].title'
+}
+
+# Resolve a manifest id to an issue number. Prefers an OPEN issue, then the
+# lowest number: the original, never an accidental duplicate. Matches on the id
+# prefix, which is stable -- not on the title, which is not.
+resolve_issue_number() {
+    fetch_all_issues | jq -r --arg id "$1" '
+        .[]
+        | select(.title | startswith($id + ": "))
+        | "\(if .state == "OPEN" then 0 else 1 end) \(.number)"' \
+      | sort -k1,1n -k2,2n | head -1 | awk '{print $2}'
 }
 
 import_file() {
@@ -187,13 +233,17 @@ import_file() {
         if [ "$exists" -eq 1 ]; then
             say "  ~ $full_title (update body)"
             if [ "$APPLY" -eq 1 ]; then
-                # Resolve by id prefix and take the lowest number: the original,
-                # not any accidental duplicate. Only open issues, so a closed
-                # duplicate is never revived by an update.
-                num="$(gh issue list --repo "$REPO" --state open --limit 500 \
-                        --json number,title \
-                        --jq ".[] | select(.title | startswith(\"${id}: \")) | .number" \
-                        | sort -n | head -1)"
+                # Prefer an OPEN issue, then the lowest number: the original, not any
+                # accidental duplicate.
+                #
+                # This read "--state open", which meant `--update --only <ID>` silently
+                # no-opped on a CLOSED issue and printed only "could not resolve issue
+                # number". That is how two bodies kept their mangled apostrophes long
+                # after the importer bug that wrote them was fixed: both issues were
+                # closed, so the documented re-sync could never reach them.
+                #
+                # Editing a closed issue does not reopen it, so --state all is safe.
+                num="$(resolve_issue_number "$id")"
                 if [ -n "$num" ]; then
                     gh issue edit "$num" --repo "$REPO" \
                         --title "$full_title" --body "$full_body" >/dev/null
