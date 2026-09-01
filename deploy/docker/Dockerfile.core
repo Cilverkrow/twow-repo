@@ -44,10 +44,17 @@ ARG PREFIX=/opt/turtle
 # self-containment audit runs off this build's compile_commands.json. It costs
 # nothing that ships: this stage is discarded, only ${PREFIX} is copied out.
 FROM debian:${DEBIAN_VERSION}-slim AS builder-base
+# ca-certificates is in that list deliberately, and is not optional even though
+# the from-source builder never needed it. That path does COPY . /src and clones
+# nothing; a BUILD_TESTING=ON configure FetchContent-clones googletest over
+# https, and without the CA bundle git fails three times with "Problem with the
+# SSL CA cert (path? access rights?)" and cmake gives up. This has now cost two
+# separate debugging sessions, in a container and in CI.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
       build-essential cmake ninja-build git ccache python3 \
+      ca-certificates \
       libace-dev default-libmysqlclient-dev \
       libssl-dev zlib1g-dev libbz2-dev \
       libboost-dev libboost-thread-dev libboost-filesystem-dev \
