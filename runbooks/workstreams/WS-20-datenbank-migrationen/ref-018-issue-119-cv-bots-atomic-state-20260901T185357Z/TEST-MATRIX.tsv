@@ -1,0 +1,35 @@
+gate	run	result	evidence
+Fresh schema migration	1	PASS	Target table created and exact column/index contract verified
+Fresh schema migration	2	PASS	Target table created and exact column/index contract verified
+Migration replay	1	PASS	Second application succeeded with unchanged verified state
+Migration replay	2	PASS	Second application succeeded with unchanged verified state
+Dated snapshot copy	1	PASS	178 rows copied from verified dated fixture
+Dated snapshot copy	2	PASS	178 rows copied from verified dated fixture
+Source/target count	1	PASS	178 equals 178
+Source/target count	2	PASS	178 equals 178
+Logical rowset hash	1	PASS	Both sides 9501380861D30849F034CF8910F79580601FE5DFFDCB938C50ED0BB69CE094B3
+Logical rowset hash	2	PASS	Both sides 9501380861D30849F034CF8910F79580601FE5DFFDCB938C50ED0BB69CE094B3
+Bidirectional anti-join	1	PASS	0 missing and 0 additional rows
+Bidirectional anti-join	2	PASS	0 missing and 0 additional rows
+NULL event negative	1	PASS	Migration returned nonzero and copied nothing
+Empty event negative	1	PASS	Migration returned nonzero and copied nothing
+Duplicate key negative	1	PASS	Migration returned nonzero and copied nothing
+Conflicting target payload negative	1	PASS	Migration returned nonzero and preserved state
+Same-key contention	1	PASS	4000 writes; 0 failures; 0 duplicate errors
+Same-key contention	2	PASS	4000 writes; 0 failures; 0 duplicate errors
+Different-key contention	1	PASS	6400 writes; 0 failures; 0 deadlocks
+Different-key contention	2	PASS	6400 writes; 0 failures; 0 deadlocks
+Precise delete	1	PASS	Only addressed owner/bot/event key removed
+Precise delete	2	PASS	Only addressed owner/bot/event key removed
+Contract unit test	1	PASS	playerbot_event_store_contract
+Contract unit test	2	PASS	playerbot_event_store_contract
+Legacy write guard	1	PASS	No maintained source/helper write targets legacy event table
+Legacy write guard	2	PASS	No maintained source/helper write targets legacy event table
+Release build	1	PASS	mod_mod_playerbots and both test targets built
+PowerShell 5.1 parser	1	PASS	Zero parser errors in run-ref018-event-store-tests.ps1
+Compose bash syntax	1	PASS	bash -n deploy/compose/db-init.sh
+Helm embedded bash syntax	1	PASS	Extracted command block passed bash -n
+Disposable shutdown	1	PASS	Owned MariaDB stopped and port 33319 closed
+Credential cleanup	1	PASS	Private disposable data directory removed
+Production port isolation	1	PASS	No connection to port 3307
+World/realm isolation	1	PASS	mangosd and realmd were not started
