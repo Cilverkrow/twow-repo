@@ -47,8 +47,8 @@ for file in "$PROVENANCE" "$OUT/mangosd.conf" "$OUT/realmd.conf" "$OUT/aiplayerb
     fi
 done
 
-[[ "$(manifest_value FORMAT_VERSION)" == 1 ]] || { echo "ERROR: unsupported provenance format" >&2; exit 1; }
-[[ "$(manifest_value TASK_ID)" == OPS-009-CONFIG-AS-CODE-IMPLEMENTATION-01 ]] || { echo "ERROR: provenance task mismatch" >&2; exit 1; }
+[[ "$(manifest_value FORMAT_VERSION)" == 2 ]] || { echo "ERROR: unsupported provenance format" >&2; exit 1; }
+[[ "$(manifest_value TASK_ID)" == OPS-009-R1-SEMANTIC-BASELINE-RECONCILIATION-01 ]] || { echo "ERROR: provenance task mismatch" >&2; exit 1; }
 [[ "$(manifest_value DECISION)" == ADR-0038 ]] || { echo "ERROR: provenance decision mismatch" >&2; exit 1; }
 
 current_commit=$(git -C "$ROOT" rev-parse --verify HEAD)
@@ -65,6 +65,8 @@ fi
 
 require_hash RENDERER_SHA256 "$HERE/render-config.sh"
 require_hash VERIFIER_SHA256 "$HERE/verify-config.sh"
+require_bytes SEMANTIC_MATRIX_BYTES "$CANONICAL/semantic-baseline.tsv"
+require_hash SEMANTIC_MATRIX_SHA256 "$CANONICAL/semantic-baseline.tsv"
 require_bytes MANGOSD_TEMPLATE_BYTES "$ROOT/src/mangosd/mangosd.conf.dist.in"
 require_hash MANGOSD_TEMPLATE_SHA256 "$ROOT/src/mangosd/mangosd.conf.dist.in"
 require_bytes MANGOSD_OVERLAY_BYTES "$CANONICAL/mangosd.overlay.conf"

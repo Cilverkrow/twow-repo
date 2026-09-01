@@ -49,9 +49,9 @@ upstream of record or the merge rules. They link to it.
 - Binary Windows resource and library inputs remain external, pinned prerequisites under ADR-0019.
 - The legacy local MariaDB endpoint has an explicit loopback-plaintext client profile
   under ADR-0030. It changes no server setting and grants no query or process authority.
-- ADR-0038 has a repository-only Compose renderer, verifier, canonical overlay
-  contract, and synthetic drift-detection test. No live configuration adoption
-  or deployment was performed.
+- ADR-0038 has a repository-only Compose renderer, verifier, complete sanitized
+  semantic-baseline matrix, unique-key contract, and synthetic drift-detection
+  test. No live configuration adoption or deployment was performed.
 
 ## Explicitly open or separately gated
 

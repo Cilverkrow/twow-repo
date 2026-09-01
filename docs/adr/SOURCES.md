@@ -84,3 +84,8 @@ acceptance. Its source identity was 3,257 bytes with SHA-256
 The repository implementation and formal drift-recovery closure are recorded in
 `runbooks/ops-009-config-as-code-20260901/`; neither source copies nor approves
 the active runtime configuration.
+
+The semantic-baseline reconciliation for GitHub issue 31 is recorded separately
+in `runbooks/ops-009-r1-semantic-baseline-reconciliation-20260901/`. It preserves
+the first package as point-in-time evidence while superseding its configuration-
+completeness claim with a classified 115-row repository contract.

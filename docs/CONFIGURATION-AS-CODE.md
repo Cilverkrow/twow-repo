@@ -14,16 +14,24 @@ The complete source for the Compose configuration is:
 | Realmserver | `src/realmd/realmd.conf.dist.in` | `config/canonical/compose/realmd.overlay.conf` |
 | PlayerBots | `modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in` | `config/canonical/compose/aiplayerbot.overlay.conf` |
 
-The renderer refuses an overlay key that is absent or duplicated in its base
-template. This catches template/config skew before a generated file can be
-used. Published host ports and PlayerBot bounds come from the protected `.env`
-input; Compose maps the host ports to fixed container ports 8090/3724. Database
-credentials are appended only to the generated files and never to Git or the
-provenance record.
+[`semantic-baseline.tsv`](../config/canonical/compose/semantic-baseline.tsv)
+classifies all 115 original service-key differences: 95 preserve verified
+behaviour, 14 are reviewed Compose or disabled-source changes, no value is
+removed without evidence, and 6 are protected machine secrets.
 
-`config/examples/` contains historical sanitized snapshots only. It is not a
-deployment source, and no live configuration was copied into the canonical
-contract.
+The renderer rejects duplicate overlay definitions, replaces existing keys in
+place, appends only source-supported keys absent from the complete template, and
+collapses a template duplicate when that key has one reviewed overlay value.
+Every active key must occur exactly once in its final file.
+Published host ports and PlayerBot bounds come from the protected `.env` input;
+Compose maps the host ports to fixed container ports 8090/3724. Database and
+optional PlayerBot LLM credentials enter only the private staged output and
+never Git, the semantic matrix, or the provenance record.
+
+`config/examples/` remains historical sanitized evidence, not deployment input.
+For OPS-009-R1 its non-secret semantics were verified against the selected
+project configuration with zero mismatches and then classified into the tracked
+overlay contract. No live configuration or secret was copied into Git.
 
 ## Render and verify
 
@@ -36,11 +44,13 @@ make config
 make config-verify
 ```
 
-`make config` replaces all three generated files under
-`deploy/compose/config/`, writes a secret-free `config-provenance.txt`, and
-immediately verifies it. By default it refuses a dirty checkout. The record
-binds the output to the full Git commit and tree plus the byte count and SHA-256
-of every template, overlay, renderer, verifier, and rendered file.
+`make config` stages all three generated files, publishes them file by file,
+publishes a secret-free `config-provenance.txt` last, and immediately verifies
+the set. This is explicitly not a set-atomic rename. A partial or mixed publish
+has missing or mismatched provenance and fails closed before `make up`. By
+default rendering refuses a dirty checkout. The record binds the output to the
+full Git commit and tree plus the byte count and SHA-256 of the semantic matrix,
+every template and overlay, the renderer/verifier, and every rendered file.
 
 The verifier fails closed when source identity, dirty state, hashes, file set,
 or Linux permissions differ. Git Bash on Windows can still run the repository
@@ -49,9 +59,11 @@ mode bits through this interface; Windows is compile-only under ADR-0028 and is
 not an approved deployment target.
 
 Run `bash ops/config/test-config-provenance.sh` for a repository-only test. It
-uses synthetic credentials in a temporary directory, proves that credentials
-do not enter provenance, proves that a one-file edit is rejected, rerenders,
-and removes the temporary files. It does not contact a server or database.
+uses synthetic credentials in a temporary directory; checks bot bounds 3/7,
+matrix completeness, unique keys, KEEP semantics, Core-owned LFT Bot Fill,
+token resolution, and credential exclusion; rejects drift, incomplete sets, and
+mixed generations; and proves repeatability apart from `RENDERED_UTC`. It then
+removes the temporary files without contacting a server or database.
 
 ## Deployment evidence
 
