@@ -498,3 +498,66 @@ make test        # unit + integration
 ```
 
 with client data the only manual prerequisite, and the same three commands working on Windows via `ops\*.ps1`.
+
+---
+
+# Status — updated 2026-09-01
+
+Work landed on `refactor/modular-platform`. Measured results, not estimates.
+
+## Done
+
+**Phase A — foundations.** `ctest` runs real tests for the first time: 2 suites,
+565 gtest assertions plus 142 roster checks, 34s to build cold and 0.09s to run,
+verified in a Debian 13 container. CI went from 19 job entries and ~5 full
+compiles per push to 5 entries and 1 compile, in one `ci.yml` with a job DAG.
+All five first-run CI failures fixed, including a `.gitignore` `*.core` pattern
+that had silently kept `deploy/docker/Dockerfile.core` out of the repository
+entirely.
+
+**Phase B — module framework.** Module slots are claimed by name at runtime, so
+adding a module no longer edits a header that rebuilds 82% of the tree. CI
+rejects a module that mutates the shared `modules` target. A new module
+directory no longer needs a manual cmake re-run. Two stale references fixed: an
+include path to a directory the fork deleted, and a dynamic target name that
+could never match.
+
+**Phase C — feature extraction.** Four features left the core:
+`mod-donation`, `mod-worldbuff`, `mod-leech`, `mod-solo-dungeon`. They were
+inline in `World::Update()`, `Unit::DealDamage()` and
+`Player::RepopAtGraveyard()` with no file of their own. Two core seams were
+added for them, each justified: `ShopMgr::AwardCoins` so a module credits the
+shop without owning its table, and `UNITHOOK_ON_DAMAGE_APPLIED` because the
+existing damage hook fires before modifiers that leech must see.
+`PLAYERHOOK_ON_REPOP_AT_GRAVEYARD` is a veto hook, since solo-dungeon repop has
+to pre-empt the core rather than react to it.
+
+**Phase F — handover rules.** `AGENTS.md` carries the issue workflow and the
+parallel-agent ownership rules.
+
+## Corrections to this plan, found by doing it
+
+**"48 of 54 tests are hermetic" was wrong.** That measured the *test files'*
+include closure, but a test binary also compiles the module sources it links,
+and ten of those reach `Player.h`/`Map.h`/`PlayerbotAI.h`. The real core-free
+set is 30 test TUs, found empirically rather than guessed.
+
+**"Extracting features shrinks the core delta" was wrong.** Only 6 of 125
+changed files are feature-only. The delta is dominated by a compatibility shim —
+1,074 added lines across the main headers — and it **cannot move module-side**,
+because it is member functions on core classes and a module cannot add members
+to a core class. Recorded in ADR-0020. This does not undermine the split: the
+shim is *additive* and merges cleanly, whereas the interleaved feature code was
+the thing that actually hurt, and that is now gone.
+
+## Not done, specified as issues
+
+- **REF-009** promote playerbots to a module. Large (989 files) and carries a
+  design correction: promote it *static-only* rather than removing the link-time
+  stubs first, because six of those symbols are diagnostic probes not worth six
+  core hooks, and dynamic linkage was never viable for it anyway.
+- **REF-003** the upstream split. Size it by the 33 upstream-worthy fixes, not
+  by file count — see the ADR-0020 spike.
+- **REF-007** LFT bot fill: deliberately not extracted, with reasons.
+- **REF-008** four unexplained fork changes needing a decision, one of them a
+  2FA setting.
