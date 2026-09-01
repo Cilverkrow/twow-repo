@@ -127,8 +127,11 @@ func TestLoad(t *testing.T) {
 			env:     map[string]string{"BOT_BRAIN_LISTEN": " "},
 			wantErr: "",
 			check: func(t *testing.T, c config.Config) {
-				if c.ListenAddr != ":8085" {
-					t.Errorf("blank listen fell back to %q, want the default", c.ListenAddr)
+				// Loopback, not ":8085". The default must not put an
+				// unauthenticated planning endpoint on every interface; a
+				// container overrides BOT_BRAIN_LISTEN to ":8085" on purpose.
+				if c.ListenAddr != "127.0.0.1:8085" {
+					t.Errorf("blank listen fell back to %q, want the loopback default", c.ListenAddr)
 				}
 			},
 		},

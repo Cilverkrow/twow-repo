@@ -171,7 +171,10 @@ func run() error {
 func healthcheck() int {
 	addr := os.Getenv("BOT_BRAIN_LISTEN")
 	if addr == "" {
-		addr = ":8085"
+		// Mirror config.Load's default. This probe runs inside the container,
+		// where BOT_BRAIN_LISTEN is set explicitly, so this branch is for a bare
+		// binary -- which now listens on loopback.
+		addr = "127.0.0.1:8085"
 	}
 	if strings.HasPrefix(addr, ":") {
 		addr = "127.0.0.1" + addr

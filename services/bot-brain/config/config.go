@@ -23,7 +23,20 @@ import (
 
 // Config is the whole service configuration.
 type Config struct {
-	// ListenAddr is the HTTP bind address.
+	// ListenAddr is the HTTP bind address. Defaults to LOOPBACK, not to every
+	// interface.
+	//
+	// ":8085" in Go means 0.0.0.0:8085, so the previous default put an
+	// unauthenticated planning endpoint -- one that also holds an LLM API key in
+	// its config -- on whatever network the machine happens to be attached to.
+	// The symptom is mild and the cause is not: running the binary on Windows
+	// raises a firewall prompt, which is the operating system correctly asking
+	// why a game AI service wants to accept connections from the LAN.
+	//
+	// Containers override this to ":8085" deliberately: there the network
+	// namespace is the isolation boundary, the process must accept from sibling
+	// containers, and deploy/compose/bot-brain.yml publishes it to the host as
+	// 127.0.0.1:8085 anyway. See BOT_BRAIN_LISTEN in that file.
 	ListenAddr string
 	// MaxBatch caps snapshots per request.
 	MaxBatch int
@@ -52,7 +65,7 @@ func Load(getenv func(string) string) (Config, error) {
 		getenv = os.Getenv
 	}
 	c := Config{
-		ListenAddr:      str(getenv, "BOT_BRAIN_LISTEN", ":8085"),
+		ListenAddr:      str(getenv, "BOT_BRAIN_LISTEN", "127.0.0.1:8085"),
 		MaxBatch:        num(getenv, "BOT_BRAIN_MAX_BATCH", contract.DefaultMaxBatch),
 		DefaultDeadline: dur(getenv, "BOT_BRAIN_DEFAULT_DEADLINE", 2*time.Second),
 		IntentTTL:       dur(getenv, "BOT_BRAIN_INTENT_TTL", 30*time.Second),
