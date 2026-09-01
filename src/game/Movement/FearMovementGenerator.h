@@ -7,6 +7,10 @@
 
 #include "MovementGenerator.h"
 #include "ObjectGuid.h"
+// TimeTracker / ShortTimeTracker members.
+#include "Timer.h"
+
+class Creature;
 
 #define DEFAULT_INIT_FLEE_TIME      2000
 #define DEFAULT_INIT_FLEE_DIST      28.0f

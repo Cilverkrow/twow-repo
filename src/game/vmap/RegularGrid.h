@@ -25,6 +25,10 @@
 #include <G3D/Table.h>
 #include <G3D/PositionTrait.h>
 
+// Errors.h expands sLog inside its assert macros without including Log.h,
+// so a header that uses MANGOS_ASSERT has to pair them. VMapDefinitions.h
+// next door does the same.
+#include "Log.h"
 #include "Errors.h"
 
 using G3D::Vector2;

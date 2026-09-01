@@ -4,6 +4,7 @@
 #include "ObjectGuid.h"
 #include "Utilities/readerwriterqueue.h"
 #include <atomic>
+#include <thread>
 
 
 struct ChannelMessage

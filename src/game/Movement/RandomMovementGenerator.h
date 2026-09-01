@@ -20,6 +20,11 @@
 #define MANGOS_RANDOMMOTIONGENERATOR_H
 
 #include "MovementGenerator.h"
+// ShortTimeTracker member.
+#include "Timer.h"
+// The constructor below calls creature.GetPosition() inline, so this needs the
+// complete type, not a forward declaration.
+#include "Objects/Creature.h"
 
 class RandomMovementGenerator : public MovementGeneratorMedium< Creature, RandomMovementGenerator >
 {

@@ -5,6 +5,10 @@
 #ifndef HONORMGR_H
 #define HONORMGR_H
 
+#include "Common.h"
+// QueryResult, in the load signatures below.
+#include "Database/DatabaseEnv.h"
+
 #include <unordered_map>
 
 struct WeeklyScore

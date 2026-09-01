@@ -1,6 +1,8 @@
 #ifndef EXTRACTOR_DEFINES_H
 #define EXTRACTOR_DEFINES_H
 
+#include "Platform/Define.h"
+
 struct GridMapFileHeader
 {
     uint32 mapMagic;

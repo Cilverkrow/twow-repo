@@ -19,6 +19,8 @@
 
 #include "Common.h"
 #include "SharedDefines.h"
+// MaNGOS::NormalizeMapCoord, used below.
+#include "Maps/GridDefines.h"
 
 namespace Geometry
 {

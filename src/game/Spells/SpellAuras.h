@@ -26,6 +26,10 @@
 #include "SpellAuraDefines.h"
 #include "DBCEnums.h"
 #include "ObjectGuid.h"
+// DiminishingGroup and DiminishingLevels.
+#include "SharedDefines.h"
+// AuraRemoveMode.
+#include "Objects/UnitDefines.h"
 #include <vector>
 
 /**

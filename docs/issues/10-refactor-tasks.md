@@ -516,3 +516,113 @@ body: |
   **Measure first:** how much of the 2.0 GB is symbols? `strip -s` a copy and
   compare. That number decides whether option 1 is worth the machinery.
 ---
+id: REF-014
+title: WardenActions is used as a type but declared nowhere in the tree
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: src/game/Anticheat/WardenAnticheat/WardenMgr.h
+superseded_by: none
+body: |
+  `WardenMgr.h:41` declares a struct member as `enum WardenActions Action;`, and
+  **`WardenActions` is defined nowhere in the repository.** It appears in exactly
+  four places, every one of them a use:
+
+  - `WardenMgr.h:41` — the member
+  - `Warden.cpp:252` — `WardenActions action;`
+  - `Warden.cpp:257` — `action = WardenActions(sWorld.getConfig(CONFIG_UINT32_AC_WARDEN_DEFAULT_PENALTY))`
+  - `WardenMgr.cpp:83` — `wardenCheck->Action = WardenActions(penalty)`
+
+  Found by `ops/audit/header-self-containment.sh`, which reports "use of enum
+  'WardenActions' without previous declaration" for `Warden.h`, `WardenMac.h`,
+  `WardenMgr.h` and `WardenWin.h`. Those four are the only entries in the audit
+  baseline that are a real defect rather than a deliberate fragment.
+
+  **The values matter.** They are anticheat penalties, cast directly from a
+  config integer (`Warden.Default.Penalty`), so whatever the enum was meant to
+  contain decides what happens to a flagged account. Inventing plausible values
+  would be worse than leaving it broken.
+
+  **To do:**
+  1. Find the original definition — check the mangos-zero / Nostalrius / Elysium
+     ancestry this Warden implementation came from, and the config file's own
+     documentation of `Warden.Default.Penalty` for the value range.
+  2. Restore it, or replace the type with the `uint32` it is actually being used
+     as and document the accepted values at the config key.
+  3. Remove the four Warden entries from
+     `ops/audit/header-self-containment-baseline.txt`.
+
+  **Why the build tolerates it today** is itself worth establishing — the audit
+  says it should not compile standalone, yet the full build succeeds. Understand
+  that before changing anything, because it may mean these headers are reached
+  only through a path that declares it, or that the compiler is accepting an
+  extension.
+---
+id: REF-015
+title: Make dynamic modules actually possible (currently blocked by our own choices)
+workstream: WS-10
+priority: p2
+existing_ot: none
+source: modules/mod-playerbots/mod-playerbots.cmake
+superseded_by: none
+body: |
+  `mod-playerbots` is static-only, and the reasons given for that were stated as
+  constraints when two of the three are work we have not done. Recorded honestly
+  so nobody treats them as settled:
+
+  1. **The core's seam is resolved by the linker.** `game.a` calls eleven free
+     functions and `PlayerbotStubs.cpp` supplies no-ops when the module is off,
+     so a `.so` leaves the core calling the stubs — no bots, no error. **We wrote
+     that seam.** Converting the bootstrap and the four chat commands to a
+     `WorldScript` and a `CommandScript` removes most of it; the six
+     `BotActionLog_*` probes are the part genuinely not worth hooking.
+  2. **The framework cannot express that one module depends on another.**
+     `mod-dungeon-clear` subclasses `mod-playerbots` classes. `DynamicModules.cpp`
+     dlopens with `RTLD_GLOBAL`, so on Linux this resolves — but only if
+     `mod-playerbots` loads first, and load order is a config list with no
+     dependency resolution behind it. A failure that depends on alphabetical
+     order is not a design. **This is roughly 30 lines of CMake plus a load-order
+     sort.**
+  3. **Windows DLLs export only what is marked `__declspec(dllexport)`**, and the
+     vendored tree marks nothing. This one is real — and irrelevant, because
+     Windows is a compile target only. A Linux-only dynamic mode does not care.
+
+  **Why it is worth doing:** measured, changing one bot AI file costs **326
+  seconds** of rebuild and relink (30 cores, warm tree). A no-op rebuild costs 46
+  seconds. Dynamic linkage removes the `mangosd` relink from that loop.
+
+  **Do not confuse this with ARCH-001.** Pulling bot decision-making out of
+  process is the larger win — 413 of the bot tree's 462 `.cpp` files are
+  `strategy/action/trigger/value`, so an out-of-process brain removes ~90% of
+  that compile cost and takes bot iteration out of C++ entirely. Dynamic
+  linkage is the cheap intermediate step, not a substitute.
+---
+id: REF-016
+title: Upstream now carries its own copy of the bot tree at src/modules/PlayerBots
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: docs/adr/ADR-0020-two-repo-upstream-split.md
+superseded_by: none
+body: |
+  Found while building `twow-core`. At our fork point (upstream `61a8269`)
+  upstream had no `src/modules` at all. Upstream's tip has **1,022 files** under
+  it: `src/modules/Eluna` and `src/modules/PlayerBots`, added by "Integrate Eluna
+  Lua engine with Turtle WoW".
+
+  So upstream vendored ike3's playerbots at the very path we just vacated by
+  promoting it to `modules/mod-playerbots`. When `twow-core` merges upstream it
+  acquires upstream's copy, and we would carry two divergent copies of the same
+  vendored tree — ours has 255 modified files.
+
+  **Decide before the first upstream merge:**
+  - **(a)** `twow-core` deletes `src/modules/PlayerBots`; ours stays authoritative.
+    Costs a delete-vs-modify conflict on every upstream merge that touches it.
+  - **(b)** Adopt upstream's copy and re-apply our 255 file modifications on top.
+    Most work now, least friction later, and it puts us on upstream's bot tree.
+  - **(c)** Keep both and never merge that path.
+
+  Related: upstream has moved **379 commits** since our fork point — 1,178 files,
+  +851,023 lines, most of it the Eluna vendoring. That is the merge the split
+  exists to make possible, and it is not small.
+---

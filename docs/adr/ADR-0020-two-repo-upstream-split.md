@@ -8,7 +8,7 @@
 ## Context
 
 Upstream code and project code are currently indistinguishable in one tree. Measured
-against the upstream tip `db5fb2a`, 114 core files differ (+5,246 / −1,809), and the
+against the fork point, 114 core files differ (+5,246 / −1,809), and the
 differences are concentrated in the highest-traffic upstream files: `Player.h/.cpp`,
 `World.h/.cpp`, `Unit.h/.cpp`, `WorldSession.cpp`, `CharacterHandler.cpp`.
 
@@ -122,3 +122,27 @@ ike3, and 255 vendor files are already modified — a separate decision, not a p
 - `docs/adr/ADR-0005-preserve-upstream-history-and-modularize-incrementally.md`
 - `docs/adr/ADR-0008-source-baseline-and-build-provenance.md`
 - `docs/issues/00-refactor-plan.md`
+
+## Correction 2026-09-01: the fork point, correctly identified
+
+This ADR called `db5fb2a` "the upstream tip". **It is not an upstream hash.** It is a
+commit in *this* repository — a post-`git-filter-repo` hash — so `git fetch upstream
+db5fb2a` fails, and so does every other attempt to reach it from upstream. It is
+absent from all eleven branches of `Shyalya/tortoise-wow`.
+
+The real upstream commit is **`61a8269`**, "Merge pull request #404 from
+Penqle/1181dev", with an identical author date. The mapping is confirmed by content,
+not by hash: every file under `src/game` is byte-identical between the two. The only
+difference is the 146 warden `.cr`/`.key` binaries that `git-filter-repo` stripped
+from this repository — which `twow-core`, as a genuine fork, gets back.
+
+`twow-core` is branched from `61a8269`.
+
+Two facts measured at the same time, both of which enlarge the job:
+
+- Upstream has moved **379 commits** since the fork point: 1,178 files,
+  +851,023 lines, most of it vendoring the Eluna Lua engine.
+- Upstream now carries **its own copy of the bot tree** at `src/modules/PlayerBots`,
+  the path this project vacated by promoting it to `modules/mod-playerbots`. Two
+  divergent copies of ike3's tree is a collision that needs deciding before the
+  first upstream merge — see REF-016.

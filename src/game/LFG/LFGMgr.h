@@ -30,6 +30,12 @@
 
 #include "Policies/Singleton.h"
 #include "Common.h"
+// Classes (the enum), and ObjectGuid by value in the queue structures.
+#include "SharedDefines.h"
+#include "ObjectGuid.h"
+
+class Player;
+class WorldPacket;
 
 enum ClassRoles
 {

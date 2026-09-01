@@ -50,20 +50,59 @@ trap 'rm -rf "$TMP"' EXIT
 failed="$TMP/failed.txt"
 : > "$failed"
 : > "$TMP/detail.txt"
-total=0
+
+# One probe per header, run in parallel.
+#
+# 216 headers compiled one after another was four minutes of the build job, and
+# the only reason it was serial is that a single probe.cpp and a single append
+# to the failure list cannot survive concurrency: two workers would overwrite
+# each other's probe and interleave each other's lines. So every worker writes
+# its own files, named after a hash of the header path, and the results are
+# collated afterwards in `find | sort` order. The report is therefore identical
+# whatever order the compilers happen to finish in - same baseline comparison,
+# same ::error annotations, same exit codes.
+jobs="$(nproc 2>/dev/null || echo 4)"
+
+headers="$TMP/headers.txt"
+find "$REPO_ROOT/src/game" -name '*.h' | sort > "$headers"
+total=$(wc -l < "$headers")
+mkdir -p "$TMP/probes"
+
+# A file rather than a shell function: xargs starts a fresh shell per probe, and
+# `export -f` is a bashism that would tie this to whatever /bin/sh happens to be.
+cat > "$TMP/probe.sh" <<'PROBE'
+set -uo pipefail
+header="$1"
+rel="${header#"$REPO_ROOT/"}"
+id="$(printf '%s' "$rel" | md5sum | cut -d' ' -f1)"
+src="$TMP/probes/$id.cpp"
+err="$TMP/probes/$id.err"
+printf '#include "%s"\n' "$header" > "$src"
+if ! eval "$COMPILE_LINE -fsyntax-only -w \"$src\"" > "$err" 2>&1; then
+    {
+        echo "### $rel"
+        grep -m3 -E "error:" "$err" || true
+    } > "$TMP/probes/$id.detail"
+    echo "$rel" > "$TMP/probes/$id.failed"
+fi
+# Always zero. A header that does not compile is this script's finding, not a
+# failure of the probe, and a non-zero worker makes xargs give up early.
+exit 0
+PROBE
+
+export COMPILE_LINE REPO_ROOT TMP
+
+# -d '\n' rather than the default whitespace split: a header path containing a
+# space would otherwise arrive at the probe as two separate arguments.
+xargs -a "$headers" -d '\n' -P "$jobs" -I{} bash "$TMP/probe.sh" {}
 
 while IFS= read -r header; do
-    total=$((total + 1))
     rel="${header#"$REPO_ROOT/"}"
-    printf '#include "%s"\n' "$header" > "$TMP/probe.cpp"
-    if ! eval "$COMPILE_LINE -fsyntax-only -w \"$TMP/probe.cpp\"" > "$TMP/err.txt" 2>&1; then
-        echo "$rel" >> "$failed"
-        {
-            echo "### $rel"
-            grep -m3 -E "error:" "$TMP/err.txt" || true
-        } >> "$TMP/detail.txt"
-    fi
-done < <(find "$REPO_ROOT/src/game" -name '*.h' | sort)
+    id="$(printf '%s' "$rel" | md5sum | cut -d' ' -f1)"
+    [ -f "$TMP/probes/$id.failed" ] || continue
+    cat "$TMP/probes/$id.failed" >> "$failed"
+    cat "$TMP/probes/$id.detail" >> "$TMP/detail.txt"
+done < "$headers"
 
 sort -o "$failed" "$failed"
 

@@ -28,6 +28,8 @@
 #include "ObjectGuid.h"
 #include "Database/DatabaseEnv.h"
 #include "Database/Database.h"
+
+class ChatHandler;
 #include "Database/SqlOperations.h"
 #include "WorldSession.h"
 #include "World.h"

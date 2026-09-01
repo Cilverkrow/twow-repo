@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Database/DatabaseEnv.h"
+// DEFAULT_OBJECT_SCALE, and sWorld for the config lookups below.
+#include "Objects/Object.h"
+#include "World.h"
 
 #include <unordered_map>
 #include <string>

@@ -4,6 +4,11 @@
 
 #pragma once
 
+#include "Platform/Define.h"
+// CreatureAI is the base class below; SpellEntry appears in its signatures.
+#include "AI/CreatureAI.h"
+#include "Database/DBCStructure.h"
+
 #define DEFAULT_MIN_CD 10000
 #define DEFAULT_MAX_CD 20000
 #define DEFAULT_TARGET GENERIC_TARGET_AUTO
