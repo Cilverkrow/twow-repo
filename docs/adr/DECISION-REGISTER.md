@@ -10,7 +10,9 @@ The accepted durable decisions are recorded by ADR-0001 through ADR-0019. They c
 
 - The source-only GitHub repository exists independently from the live workspace.
 - The collaboration hub and nine-workstream model are materialized and verified.
-- Graceful shutdown helper behavior has passed its controlled evidence run.
+- The graceful-shutdown invariant remains accepted. The historical Windows helper passed
+  one interactive evidence run but later failed before `saveall` under headless execution;
+  it is retired and unsupported. The Linux/Docker console-FIFO path is canonical.
 - The donation progress table migration was applied and the feature-specific persistence path passed; an unrelated PlayerBot deadlock kept the broad runtime test's strict overall result at `FAIL`.
 - Persistent-roster Phase B-R2 and LLM-bridge Phase B-R1 passed isolated tests and clean builds. Neither result authorizes production deployment.
 - The 50-GUID roster shortlist, ordered snapshot, and unapplied `INITIALIZE` request were generated and verified in Phase C0. They were not applied.

@@ -21,6 +21,22 @@ Shutdown order is Worldserver, Realmd, then MariaDB. Worldserver receives its su
 
 Forced name-based termination such as `taskkill` is not the normal or fallback behavior. A helper may report a partial stop, but must not kill an unverified process.
 
+### Platform amendment (2026-09-01)
+
+The ownership, ordering, identity-validation, no-force-kill, and graceful-shutdown
+rules remain accepted. The Windows `WriteConsoleInput` implementation does not.
+The same helper bytes passed an earlier interactive evidence run, then failed in a
+later headless production invocation at the first command write before `saveall` was
+delivered. This proves that the earlier result was not a generally reliable operating
+contract; it does not prove that every interactive invocation fails.
+
+ADR-0028 makes Linux/Docker the supported deployment platform and Windows a compile-only
+target. The supported implementation is therefore the container console FIFO in
+`deploy/docker/entrypoint-mangosd.sh`, which translates termination into `saveall` and
+`server shutdown 0`. The Windows helper is retained byte-for-byte as historical evidence,
+is unsupported, and has no supported wrapper. `ops/windows/server/shutdown_all.bat` is a
+fail-closed tombstone that performs no process or database action.
+
 ## Consequences
 
 - A title mismatch cannot silently stop the wrong console.
@@ -32,4 +48,8 @@ Forced name-based termination such as `taskkill` is not the normal or fallback b
 
 - `runbooks/shutdown-helper-console-lab/`
 - `runbooks/world-shutdown-smoke-evidence-20260828-160724-135/`
-- `ops/windows/server/shutdown-tortoise-servers-gracefully.ps1`
+- Earlier passing Windows evidence: `runbooks/external-evidence/DEPLOY-SHUTDOWN-HELPER-REALMD-01/`
+- Later headless failure: `runbooks/ssc-source-baseline-02c-20260829-233607/`
+- Historical Windows helper: `ops/windows/server/shutdown-tortoise-servers-gracefully.ps1`
+- Supported implementation: `deploy/docker/entrypoint-mangosd.sh`
+- Shutdown smoke contract: `test/smoke/40-shutdown.sh`
