@@ -218,9 +218,22 @@ if(BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS)
       debug ${OPENSSL_DEBUG_LIBRARIES}
     )
   else()
+    # libcrypto by name, for the same reason the sibling unit suite needs it:
+    # cmake/FindOpenSSL.cmake searches only for "ssl", so OPENSSL_LIBRARIES is
+    # libssl alone on UNIX, and PersistentActiveRoster.cpp calls SHA256(), which
+    # lives in libcrypto. Linking `shared` does not reliably drag it in -- with
+    # --as-needed (the default on Ubuntu) a static library contributes nothing
+    # the final link has not already asked for, and CI failed here with
+    # "undefined reference to symbol 'SHA256@@OPENSSL_3.0.0'" while a Debian
+    # container linked it fine.
+    find_library(TW_OPENSSL_CRYPTO_LIBRARY NAMES crypto)
+    if(NOT TW_OPENSSL_CRYPTO_LIBRARY)
+      message(FATAL_ERROR "libcrypto not found; it is required for SHA256 in the roster adapter test")
+    endif()
     target_link_libraries(persistent_active_roster_database_tests PRIVATE
       ${MYSQL_LIBRARY}
       ${OPENSSL_LIBRARIES}
+      ${TW_OPENSSL_CRYPTO_LIBRARY}
     )
   endif()
   if(WIN32)

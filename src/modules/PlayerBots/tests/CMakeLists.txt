@@ -50,9 +50,9 @@ target_link_libraries(persistent_active_roster_tests PRIVATE ${OPENSSL_LIBRARIES
 # cmake/FindOpenSSL.cmake's find_library() searches only for "ssl", so on UNIX
 # that variable resolves to libssl alone. PersistentActiveRoster.cpp calls
 # SHA256(), which lives in libcrypto: without this the link fails with five
-# undefined references to SHA256. The sibling adapter test never noticed because
-# it links `shared`, which drags libcrypto in transitively - this suite links no
-# core library at all, by design, so it has to name it.
+# undefined references to SHA256. The sibling adapter test needs it too: linking
+# `shared` does not reliably supply it, because with --as-needed a static
+# library contributes nothing the final link has not already asked for.
 #
 # Windows needs nothing extra: the root CMakeLists sets OPENSSL_LIBRARIES to the
 # libssl and libcrypto import libraries together.
