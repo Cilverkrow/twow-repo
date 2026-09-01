@@ -158,6 +158,7 @@ migrations:
     pullPolicy: IfNotPresent
   sqlPath: /sql
   baseSqlPath: /sql/base
+  playerbotsSqlPath: /sql-playerbots
   # Import the ~130 MB world content. Only needed on an empty database; leave it
   # off for upgrades, which is why it defaults off and is set once by hand.
   importBase: false

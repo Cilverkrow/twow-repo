@@ -9,6 +9,7 @@
 #include "PlayerbotAI.h"
 #include "Objects/Player.h"
 #include "RandomPlayerbotFactory.h"
+#include "PlayerbotDatabaseContract.h"
 #include "SystemConfig.h"
 #include "SocialMgr.h"
 #include "Guild/GuildMgr.h"
@@ -558,8 +559,8 @@ void RandomPlayerbotFactory::CreateRandomBots()
     // check if scheduled for delete
     bool delAccs = false;
     bool delFriends = false;
-    auto values = CharacterDatabase.Query(
-        "select value from ai_playerbot_random_bots where event = 'bot_delete'");
+    auto values = CharacterDatabase.Query(ai::PlayerbotDatabaseContract::EventStoreSql(
+        "SELECT `value` FROM ", " WHERE `event`='bot_delete'").c_str());
 
     if (values)
     {
@@ -686,13 +687,16 @@ void RandomPlayerbotFactory::CreateRandomBots()
             } while (results->NextRow());
         }
 
-        CharacterDatabase.Execute("DELETE FROM ai_playerbot_random_bots WHERE bot NOT IN (SELECT guid FROM characters)");
+        CharacterDatabase.Execute(ai::PlayerbotDatabaseContract::EventStoreSql(
+            "DELETE FROM ", " WHERE `bot` NOT IN (SELECT `guid` FROM `characters`)").c_str());
         sLog.outString("Random bot characters deleted");
     }
 
     //Delete temporary bots.
 
-    auto temporarybots = CharacterDatabase.Query("SELECT characters.guid, characters.account FROM ai_playerbot_random_bots JOIN characters ON (characters.guid = ai_playerbot_random_bots.bot AND characters.name = ai_playerbot_random_bots.data) WHERE ai_playerbot_random_bots.event = 'temporary'");
+    auto temporarybots = CharacterDatabase.Query(ai::PlayerbotDatabaseContract::EventStoreSql(
+        "SELECT `characters`.`guid`,`characters`.`account` FROM ",
+        " AS `events` JOIN `characters` ON (`characters`.`guid`=`events`.`bot` AND `characters`.`name`=`events`.`data`) WHERE `events`.`event`='temporary'").c_str());
 
     if (temporarybots)
     {
@@ -704,7 +708,8 @@ void RandomPlayerbotFactory::CreateRandomBots()
             uint32 guid = fields[0].GetUInt32();
             uint32 accountId = fields[1].GetUInt32();
 
-            CharacterDatabase.PExecute("DELETE FROM ai_playerbot_random_bots WHERE bot = %d", guid);
+            CharacterDatabase.PExecute(ai::PlayerbotDatabaseContract::EventStoreSql(
+                "DELETE FROM ", " WHERE `bot`=%d").c_str(), guid);
             Player::DeleteFromDB(ObjectGuid(HIGHGUID_PLAYER, guid), accountId, true, true);
 
             if (sAccountMgr.GetCharactersCount(accountId) == 0)
@@ -714,7 +719,8 @@ void RandomPlayerbotFactory::CreateRandomBots()
         } while (temporarybots->NextRow());
     }
 
-    CharacterDatabase.PExecute("DELETE FROM ai_playerbot_random_bots WHERE ai_playerbot_random_bots.event = 'temporary'");
+    CharacterDatabase.PExecute(ai::PlayerbotDatabaseContract::EventStoreSql(
+        "DELETE FROM ", " WHERE `event`='temporary'").c_str());
 
     //Loop over randombot accounts that have no characters and delete them as well, to clean up after temporary bots.
     auto temporaryAccounts = LoginDatabase.PQuery("SELECT id FROM account WHERE username like '%s%%' and id >= %u", sPlayerbotAIConfig.randomBotAccountPrefix.c_str(), sPlayerbotAIConfig.randomBotAccountCount);
@@ -1216,8 +1222,8 @@ void RandomPlayerbotFactory::CreateRandomArenaTeams()
 {
     std::vector<uint32> randomBots;
 
-    auto results = CharacterDatabase.PQuery(
-        "select `bot` from ai_playerbot_random_bots where event = 'add'");
+    auto results = CharacterDatabase.PQuery(ai::PlayerbotDatabaseContract::EventStoreSql(
+        "SELECT `bot` FROM ", " WHERE `event`='add'").c_str());
 
     if (results)
     {
@@ -1457,4 +1463,3 @@ std::string RandomPlayerbotFactory::CreateRandomArenaTeamName()
     return aname;
 }
 #endif
-

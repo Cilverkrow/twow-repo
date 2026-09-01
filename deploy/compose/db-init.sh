@@ -286,6 +286,20 @@ stage_playerbots() {
     apply_module_sql tw_char  "$PB_SQL_DIR/characters"
 }
 
+# ------------------------------------------------- 45 playerbot migrations
+# cv_bots is this module's own schema (ADR-0021: a module owns its tables), so
+# its migrations are applied to cv_bots and NOT through stage 40 above. They
+# deliberately live in their own directory rather than in characters/: stage 40
+# applies every *.sql under characters/ to tw_char, so a cv_bots migration
+# parked there would be loaded into the wrong database as well as the right one.
+stage_playerbot_migrations() {
+    if [ "${IMPORT_PLAYERBOTS:-ON}" != "ON" ]; then
+        log "IMPORT_PLAYERBOTS is not ON; skipping PlayerBot migrations"
+        return 0
+    fi
+    apply_module_sql "$BOT_DB" "$PB_SQL_DIR/cv_bots"
+}
+
 # -------------------------------------------------------------- 60 realmlist
 # create_databases.sql creates realmlist and leaves it empty, so the realm list
 # is empty until this runs. Two fields decide whether the client works at all:
@@ -308,6 +322,7 @@ stage 10-grants     stage_grants
 stage 20-world-base stage_base
 stage 30-updates    stage_updates
 stage 40-playerbots stage_playerbots
+stage 45-playerbot-migrations stage_playerbot_migrations
 stage 60-realmlist  stage_realmlist
 
 # Verification. Every stage above now fails loudly, so this is no longer the only
