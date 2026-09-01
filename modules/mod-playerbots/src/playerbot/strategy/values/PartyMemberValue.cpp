@@ -17,6 +17,10 @@ Unit* PartyMemberValue::FindPartyMember(std::list<Player*>* party, FindPlayerPre
         if (!player)
             continue;
 
+        Map* const playerMap = player->GetMap();
+        if (!playerMap || playerMap != bot->GetMap())
+            continue;
+
         if (ignoreTanks && ai->IsTank(player))
             continue;
 
