@@ -1,0 +1,95 @@
+warning_class	source_path	line	column	emission_count	decision	owner	follow_up	message
+-Wattributes	src/scripts/dungeons/scarlet_citadel/boss_ardaeus.hpp	112	23	1	FIX	twow-core	core-nodiscard-placement	attribute ignored
+-Wattributes	src/scripts/dungeons/scarlet_citadel/boss_daelus.hpp	91	23	1	FIX	twow-core	core-nodiscard-placement	attribute ignored
+-Wattributes	src/scripts/dungeons/scarlet_citadel/boss_mariella.hpp	100	23	1	FIX	twow-core	core-nodiscard-placement	attribute ignored
+-Wattributes	src/scripts/dungeons/scarlet_citadel/boss_mariella.hpp	158	23	1	FIX	twow-core	core-nodiscard-placement	attribute ignored
+-Wdeprecated-declarations	dep/include/rapidjson/document.h	102	19	9	SUPPRESS_WITH_REASON	twow-core+twow-repo-consumers	target-scoped-SYSTEM-includes	'template<class _Category, class _Tp, class _Distance, class _Pointer, class _Reference> struct std::iterator' is deprecated
+-Wdeprecated-declarations	dep/include/rapidjson/document.h	110	18	9	SUPPRESS_WITH_REASON	twow-core+twow-repo-consumers	target-scoped-SYSTEM-includes	'template<class _Category, class _Tp, class _Distance, class _Pointer, class _Reference> struct std::iterator' is deprecated
+-Wdeprecated-declarations	dep/include/utf8cpp/utf8/checked.h	260	34	2	SUPPRESS_WITH_REASON	twow-core+twow-repo-consumers	target-scoped-SYSTEM-includes	'template<class _Category, class _Tp, class _Distance, class _Pointer, class _Reference> struct std::iterator' is deprecated
+-Wdeprecated-declarations	dep/include/utf8cpp/utf8/unchecked.h	179	40	2	SUPPRESS_WITH_REASON	twow-core+twow-repo-consumers	target-scoped-SYSTEM-includes	'template<class _Category, class _Tp, class _Distance, class _Pointer, class _Reference> struct std::iterator' is deprecated
+-Wdeprecated-declarations	src/game/Anticheat/Warden/WardenMac.cpp	76	13	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Init(MD5_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/game/Anticheat/Warden/WardenMac.cpp	77	15	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Update(MD5_CTX*, const void*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/game/Anticheat/Warden/WardenMac.cpp	78	14	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Final(unsigned char*, MD5_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/game/Anticheat/Warden/WardenModule.cpp	47	17	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Init(MD5_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/game/Anticheat/Warden/WardenModule.cpp	48	19	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Update(MD5_CTX*, const void*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/game/Anticheat/Warden/WardenModule.cpp	51	18	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Final(unsigned char*, MD5_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/realmd/PatchHandler.cpp	221	13	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Init(MD5_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/realmd/PatchHandler.cpp	230	19	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Update(MD5_CTX*, const void*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/realmd/PatchHandler.cpp	237	14	1	FIX	twow-core	core-openssl-md5-api	'int MD5_Final(unsigned char*, MD5_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Hmac.cpp	25	25	1	FIX	twow-core	core-openssl-auth-api	'HMAC_CTX* HMAC_CTX_new()' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Hmac.cpp	26	17	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Init_ex(HMAC_CTX*, const void*, int, const EVP_MD*, ENGINE*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Hmac.cpp	36	18	1	FIX	twow-core	core-openssl-auth-api	'void HMAC_CTX_free(HMAC_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Hmac.cpp	50	16	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Update(HMAC_CTX*, const unsigned char*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Hmac.cpp	59	16	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Update(HMAC_CTX*, const unsigned char*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Hmac.cpp	69	15	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Final(HMAC_CTX*, unsigned char*, unsigned int*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/HMACSHA1.cpp	25	25	1	FIX	twow-core	core-openssl-auth-api	'HMAC_CTX* HMAC_CTX_new()' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/HMACSHA1.cpp	26	17	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Init_ex(HMAC_CTX*, const void*, int, const EVP_MD*, ENGINE*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/HMACSHA1.cpp	36	18	1	FIX	twow-core	core-openssl-auth-api	'void HMAC_CTX_free(HMAC_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/HMACSHA1.cpp	50	16	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Update(HMAC_CTX*, const unsigned char*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/HMACSHA1.cpp	59	16	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Update(HMAC_CTX*, const unsigned char*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/HMACSHA1.cpp	74	15	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Final(HMAC_CTX*, unsigned char*, unsigned int*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/HMACSHA1.cpp	85	16	1	FIX	twow-core	core-openssl-auth-api	'int HMAC_Update(HMAC_CTX*, const unsigned char*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Sha1.cpp	25	14	1	FIX	twow-core	core-openssl-auth-api	'int SHA1_Init(SHA_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Sha1.cpp	30	14	1	FIX	twow-core	core-openssl-auth-api	'int SHA1_Init(SHA_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Sha1.cpp	35	16	1	FIX	twow-core	core-openssl-auth-api	'int SHA1_Update(SHA_CTX*, const void*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Sha1.cpp	40	16	1	FIX	twow-core	core-openssl-auth-api	'int SHA1_Update(SHA_CTX*, const void*, size_t)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Sha1.cpp	65	14	1	FIX	twow-core	core-openssl-auth-api	'int SHA1_Init(SHA_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wdeprecated-declarations	src/shared/Auth/Sha1.cpp	70	15	1	FIX	twow-core	core-openssl-auth-api	'int SHA1_Final(unsigned char*, SHA_CTX*)' is deprecated: Since OpenSSL 3.0
+-Wenum-compare	src/game/Battlegrounds/BattleGroundSV.cpp	521	28	1	FIX	twow-core	core-enum-domain	comparison between 'enum BattleGroundTeamIndex' and 'enum TeamId'
+-Wenum-compare	src/game/Battlegrounds/BattleGroundSV.cpp	542	28	1	FIX	twow-core	core-enum-domain	comparison between 'enum BattleGroundTeamIndex' and 'enum TeamId'
+-Wmultichar	src/realmd/AuthSocket.h	131	39	2	FIX	twow-core	core-explicit-protocol-tags	multi-character character constant
+-Wmultichar	src/realmd/AuthSocket.h	132	39	2	FIX	twow-core	core-explicit-protocol-tags	multi-character character constant
+-Wmultichar	src/realmd/AuthSocket.h	134	39	2	FIX	twow-core	core-explicit-protocol-tags	multi-character character constant
+-Wmultichar	src/realmd/AuthSocket.h	135	39	2	FIX	twow-core	core-explicit-protocol-tags	multi-character character constant
+-Woverflow	src/shared/Log.cpp	405	35	1	FIX	twow-core	core-64-bit-log-threshold	integer overflow in expression of type 'int' results in '-1539607552'
+-Wpointer-arith	src/game/Commands/Commands.cpp	18904	39	1	FIX	twow-core	core-strcmp-result	NULL used in arithmetic
+-Wpointer-arith	src/game/Commands/Commands.cpp	18911	40	1	FIX	twow-core	core-strcmp-result	NULL used in arithmetic
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	38	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	56	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	66	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	76	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	88	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	98	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	108	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	118	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	132	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	142	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	152	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	162	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	192	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	238	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	248	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	284	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wreturn-type	modules/mod-playerbots/src/playerbot/ServerFacade.h	294	9	21	FIX	twow-repo	REF-010/#90	no return statement in function returning non-void
+-Wstringop-overflow=	/usr/include/c++/14/bits/new_allocator.h	191	11	1	FIX	twow-core	core-aq40-stomach-vector-overflow	writing 1 byte into a region of size 0
+-Wwrite-strings	src/game/Anticheat/AddonHandler.cpp	82	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/AddonHandler.cpp	83	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/AddonHandler.cpp	84	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/AddonHandler.cpp	85	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	10	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	11	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	12	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	13	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	14	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	15	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	16	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	17	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	18	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	19	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	20	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	21	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	22	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	23	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	24	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	25	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	26	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	27	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	28	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	29	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	30	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	31	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Anticheat/Config.cpp	32	5	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+-Wwrite-strings	src/game/Spells/SpellEntry.cpp	551	16	1	FIX	twow-core	core-const-correctness	ISO C++ forbids converting a string constant to 'char*'
+UNFLAGGED	src/game/World.h	1065	34	3	FIX	twow-core	core-complete-Player-type	invalid use of incomplete type 'class Player'
+UNFLAGGED	src/game/World.h	1083	22	3	FIX	twow-core	core-complete-Player-type	invalid use of incomplete type 'class Player'
+UNFLAGGED	src/game/World.h	1107	41	3	FIX	twow-core	core-complete-Player-type	invalid use of incomplete type 'class Player'

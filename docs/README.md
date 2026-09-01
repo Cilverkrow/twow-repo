@@ -9,6 +9,7 @@ This repository is a source-controlled project view, not a self-contained server
 - [Footguns](FOOTGUNS.md) — known ways to produce a wrong result, damage state, or misread the evidence.
 - [External requirements](EXTERNAL-REQUIREMENTS.md) — tools, runtime data, services, credentials, and artifacts intentionally absent from Git.
 - [Windows build resources](BUILD-RESOURCES.md) — pinned external icon/library prerequisites and their temporary materialization contract.
+- [Compiler warning triage](COMPILER-WARNING-TRIAGE.md) — REF-005 classifications, repository ownership, and follow-up gates.
 - [Claude Code restructuring handover](HANDOVER-CLAUDE-CODE.md) — verified starting state, constraints, intended module seams, and proposal criteria.
 
 ## Decisions and boundaries

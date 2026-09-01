@@ -203,6 +203,14 @@ body: |
 
   **Do:** triage into fix / suppress-with-reason / accept. Do not add `-Werror` until the
   backlog is empty. Vendored `dep/` warnings can be excluded rather than fixed.
+
+  **Triage record:** [`docs/COMPILER-WARNING-TRIAGE.md`](https://github.com/Cilverkrow/twow-repo/blob/refactor/modular-platform/docs/COMPILER-WARNING-TRIAGE.md)
+  assigns the proven families to `FIX`, `SUPPRESS WITH REASON`, or `ACCEPT`, records
+  the two-repository owner, and defines the follow-up gates. A successful retained
+  GCC 14.2 job now accounts for all 462 current emissions at 94 unique sites. The
+  original 105 are reconciled by its 95 named warnings, nine unflagged `World.h`
+  emissions, and one allocator-reported string-overflow diagnostic. Another 357
+  current emissions route to existing REF-010 / issue #90 rather than a duplicate.
 ---
 id: REF-006
 title: Stop writing revision.h into the source tree
