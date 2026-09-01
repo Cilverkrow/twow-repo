@@ -478,3 +478,41 @@ body: |
   **Done when** the baseline file is empty or contains only headers with a
   recorded reason, and the CI step still passes.
 ---
+id: REF-013
+title: Decide the debug-symbol policy for the shipped image (mangosd is 2.0 GB)
+workstream: WS-50
+priority: p1
+existing_ot: none
+source: CMakeLists.txt
+superseded_by: none
+body: |
+  **`DEBUG_SYMBOLS` defaults to `ON` and nothing overrides it**, so a Release
+  build appends `-g` and the installed `mangosd` measures **2,041,064,544 bytes
+  (2.0 GB)** — measured on a Debian 13 container build, `CMAKE_BUILD_TYPE=Release`.
+  `Dockerfile.core` copies the install prefix straight into the runtime stage and
+  strips nothing, so that is what GHCR stores and what every deploy pulls.
+
+  This surfaced as a CI failure, not a complaint: the image build ran the runner
+  out of disk (`Free space left: 90 MB`) and died with `{standard input}: Fatal
+  error: <object>: No such file or directory` — the assembler failing to write.
+  A `Free runner disk` step now buys the room, so this is no longer urgent, but
+  it treats the symptom.
+
+  **The trade-off is real, which is why this is a decision and not a fix.**
+  Stripping makes a production stack trace unreadable, and this project has
+  needed them: the null anticheat pointer on bot sessions and the knocked-back
+  bot crash were both diagnosed from backtraces.
+
+  **Options:**
+  1. **Split symbols** (`objcopy --only-keep-debug` + `--add-gnu-debuglink`).
+     Runtime image gets a stripped binary; the `.debug` file ships as a separate
+     artefact or a second image tag. Keeps backtraces, cuts the image.
+     Most work, best outcome.
+  2. **`-DDEBUG_SYMBOLS=OFF` for the image, ON for local builds.** One line.
+     Loses production backtraces entirely.
+  3. **Keep as is.** Costs storage, pull time and disk on every builder,
+     and the 2 GB will keep growing.
+
+  **Measure first:** how much of the 2.0 GB is symbols? `strip -s` a copy and
+  compare. That number decides whether option 1 is worth the machinery.
+---

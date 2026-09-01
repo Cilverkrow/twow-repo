@@ -813,6 +813,24 @@ jobs:
       # would actually be released rather than a CI-only approximation of it.
       - uses: docker/setup-buildx-action@v3
 
+      # The runner ships with ~25 GB of toolchains this build never touches, and
+      # it needs the room: making MODULES=static the default added five module
+      # targets to the image build -- mod-dungeon-clear alone is hundreds of
+      # generated route files -- on top of a mangosd that is 2.0 GB because
+      # DEBUG_SYMBOLS defaults to ON. Without this the run dies deep in the
+      # build with "{standard input}: Fatal error: <object>: No such file or
+      # directory", which is the assembler failing to write, not a compile
+      # error. The runner's own warning ("Free space left: 90 MB") is the only
+      # thing that says so, and it scrolls past.
+      #
+      # df on both sides, so the next disk failure is diagnosable from the log.
+      - name: Free runner disk
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af || true
+          df -h /
+
       - name: Build the core image
         uses: docker/build-push-action@v6
         with:
