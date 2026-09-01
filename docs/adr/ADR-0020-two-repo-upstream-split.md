@@ -167,3 +167,72 @@ Two facts measured at the same time, both of which enlarge the job:
   the path this project vacated by promoting it to `modules/mod-playerbots`. Two
   divergent copies of ike3's tree is a collision that needs deciding before the
   first upstream merge — see REF-016.
+
+## Update 2026-09-01: the core can now verify itself, and the delta is mostly not ours
+
+Two things changed since the correction above.
+
+**`twow-core` builds and tests itself.** When this ADR was written the repository had
+no workflows at all — only issue templates and `FUNDING.yml` — so a fork whose entire
+purpose is to be reviewable and to send fixes upstream could not check its own claims.
+Its first PR said as much in its own verification section. It now has a `Build core
+(Debian trixie)` workflow that configures and builds `mangosd` and `realmd` from a
+clean checkout with no reference to `modules/`, which is the acceptance test for the
+split: **the core does not know the platform exists.** `cmake/ConfigureModules.cmake`
+is gone from `main`; the extension seam prints *"Host extensions: none (standalone
+core)"* and configures without the module framework.
+
+**Retracted 2026-09-02: the fork delta was measured against a stale ref, and the
+lineage described here was wrong.** An earlier revision of this section claimed the
+delta was "shared heritage" split 70 / 27 / 6, and that `Shyalya/tortoise-wow` is
+"not a neutral upstream -- the same project developed in parallel by the same
+people", making an upstream offer a "joint decision". **All of that is false.**
+
+Two errors compounded:
+
+1. **The measurement used `upstream-tracking` at `be3e6cd`, a stale snapshot**, not
+   the live tip `83e40a6a`. Against the live branch, **all 103 files exist upstream**.
+   The "6 files ours alone" figure -- `ShopMgr.{cpp,h}`, `AutoUpdater.cpp`,
+   `DatabaseMysql.{cpp,h}`, `ConfigureModules.cmake` -- is wrong; every one is present
+   upstream.
+2. **The lineage claim came from misreading a commit-count statistic.** "236 of 379
+   commits by shyalya" only says Shyalya does most of the commits *on Shyalya's own
+   fork*, which is true of anyone's fork. It does not mean the fork is co-developed
+   with this project.
+
+## Lineage, verified against the GitHub API (2026-09-02)
+
+Recorded because two documents previously got this wrong.
+
+```
+Penqle/tortoise-wow          real Turtle-WoW. 303 stars. Not a fork.
+        |
+        v
+Shyalya/tortoise-wow         public fork by GitHub user Shyalya, an unrelated
+        |                    third party. Created 2026-07-28. Default branch
+        |                    `playerbots-integration-gh`. Active daily.
+        v
+Cilverkrow/twow-repo         this repository. History rewritten by git-filter-repo
+        |                    at creation, so it shares NO ancestry with upstream
+        |                    and can never `git merge` from it, at any path.
+        v
+Cilverkrow/twow-core         branched from the real fork point `61a8269`, so it
+                             does share history and merges normally. This is the
+                             only place upstream merges can happen.
+```
+
+**Shyalya is a stranger, not a collaborator.** Their commits carry a
+`Co-Authored-By: Claude` trailer, which means only that they also use Claude -- it
+was previously misread as evidence of shared work. Offering our fixes to Penqle or
+Shyalya is an ordinary pull request and needs nobody's agreement.
+
+**Upstream is 385 commits ahead of our fork point** and independently did much of what
+this project did: `8415f1b` (2026-09-01) moved playerbots to `modules/mod-playerbots`,
+the same layout arrived at here; `be0706b` locked the visible-GUID set; `c388a7e` fixed
+the snare freeze. Their core **contains** `modules/`, so twow-core deleting `modules/`
+is a divergence from upstream, not an alignment with it.
+
+**Correct upstream ref, for anyone measuring against it:**
+`upstream/playerbots-integration-gh`. Their `main`, `dev`, `1181dev`, `challenges`,
+`shop` and `1181-rogue-fixes` branches are all **ancestors of our fork point** -- dead,
+and measuring against them produces nonsense.
