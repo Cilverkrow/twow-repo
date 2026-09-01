@@ -31,17 +31,13 @@
 # so the redefinition is legal and silent. target_compile_definitions cannot
 # express this: CMake escapes "NAME=" into -DNAME="" (verified), which is a value
 # of "" and warns just the same.
-if (MSVC)
+if (MSVC AND TORTOISE_MODULE_CMAKE_PHASE STREQUAL "POST_TARGETS")
     # GetModuleProjectName lowercases and maps every non [a-z0-9_] character to
-    # an underscore, so this module's dynamic target is mod_mod_dungeon_clear -
-    # not mod_mod-dungeon-clear, which was named here and therefore never
-    # matched. Ask for the name instead of spelling it.
-    GetModuleProjectName("${TORTOISE_CURRENT_MODULE}" DC_DYNAMIC_TARGET)
-    foreach (DC_MATH_TARGET modules ${DC_DYNAMIC_TARGET})
-        if (TARGET ${DC_MATH_TARGET})
-            target_compile_options(${DC_MATH_TARGET} PRIVATE /D_USE_MATH_DEFINES=)
-        endif()
-    endforeach()
+    # an underscore, so this module's target is mod_mod_dungeon_clear - not
+    # mod_mod-dungeon-clear, which was named here and therefore never matched.
+    # Ask for the name instead of spelling it.
+    GetModuleProjectName("${TORTOISE_CURRENT_MODULE}" DC_TARGET)
+    target_compile_options(${DC_TARGET} PRIVATE /D_USE_MATH_DEFINES=)
 endif()
 
 # The unit test suites used to be declared here. They are not any more: this
@@ -75,8 +71,10 @@ endif()
 # ---------------------------------------------------------------------------
 
 if(TORTOISE_MODULE_CMAKE_PHASE STREQUAL "POST_TARGETS")
-  target_include_directories(modules
-    PUBLIC
+  GetModuleProjectName("${TORTOISE_CURRENT_MODULE}" DC_TARGET)
+
+  target_include_directories(${DC_TARGET}
+    PRIVATE
       ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots
       ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot
       ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy
@@ -101,8 +99,16 @@ if(TORTOISE_MODULE_CMAKE_PHASE STREQUAL "POST_TARGETS")
       ${CMAKE_CURRENT_LIST_DIR}/src
       ${CMAKE_CURRENT_LIST_DIR}/src/compat)
 
-  target_link_libraries(modules PUBLIC playerbots)
+  target_link_libraries(${DC_TARGET} PUBLIC playerbots)
 
-  target_compile_options(modules PRIVATE
-    -include ${CMAKE_CURRENT_LIST_DIR}/src/AcCompat.h)
+  # PRIVATE, and on this module's own target: the shim renames types that appear
+  # in the CORE headers, so applying it to anything but this module's own
+  # translation units changes how unrelated code sees the core.
+  if(NOT MSVC)
+    target_compile_options(${DC_TARGET} PRIVATE
+      -include ${CMAKE_CURRENT_LIST_DIR}/src/AcCompat.h)
+  else()
+    target_compile_options(${DC_TARGET} PRIVATE
+      /FI${CMAKE_CURRENT_LIST_DIR}/src/AcCompat.h)
+  endif()
 endif()

@@ -23,6 +23,16 @@
 
 #include "SharedDefines.h"
 
+// Declared, not included: every signature below takes them by pointer only, and
+// pulling in Object.h/Map.h here would put two of the heaviest headers in the
+// tree behind a file that only needs the names. Their absence was invisible
+// until a translation unit included this header before anything that declares
+// them -- CustomMerchantMgr.cpp does -- and MSVC then reported four
+// "syntax error: identifier 'WorldObject'" in a header the file had not
+// touched.
+class WorldObject;
+class Map;
+
 enum ConditionType
 {
     //                                                      // Legend:

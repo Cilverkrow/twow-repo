@@ -171,9 +171,9 @@ Other rules:
   shared; two modules using `Enable` collide silently.
 - **Own your schema.** A module writes only its own tables. CI rejects a module migration
   naming `tw_world`/`tw_char`/`tw_logon`/`tw_logs` (ADR-0024 invariant 2).
-- **Use `-DMODULES=dynamic` while developing.** Each module gets its own target, so
-  compile flags are isolated and an edit rebuilds one file with no `mangosd` relink.
-  Release builds are static.
+- **Use `-DMODULES=dynamic` while developing.** Every module has its own target in both
+  linkage modes, so compile flags are isolated either way; what dynamic adds is that an
+  edit rebuilds one file with no `mangosd` relink. Release builds are static.
 
 ## Before changing anything
 

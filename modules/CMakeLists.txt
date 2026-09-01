@@ -1,8 +1,8 @@
 GetModuleSourceList(MODULES_MODULE_LIST)
 
 set(MODULES_PUBLIC_INCLUDES)
-set(MODULES_STATIC_SOURCES)
 set(MODULES_STATIC_MODULES)
+set(MODULES_STATIC_PROJECTS)
 set(MODULES_DYNAMIC_MODULES)
 set(MODULES_DYNAMIC_PROJECTS)
 set(MODULES_ENABLED_MODULES)
@@ -174,11 +174,42 @@ foreach(SOURCE_MODULE ${MODULES_MODULE_LIST})
   if(MODULE_LINKAGE STREQUAL "static")
     CollectModuleSourceFiles("${MODULE_SOURCE_PATH}" MODULE_SOURCE_FILES)
     CollectModuleIncludeDirectories("${MODULE_SOURCE_PATH}" MODULE_INCLUDE_DIRS)
-    list(APPEND MODULES_STATIC_SOURCES ${MODULE_SOURCE_FILES})
-    list(APPEND MODULES_STATIC_SOURCES ${MODULE_EXTRA_SCRIPT_SOURCES})
+
+    # One target per module, in static linkage as well as dynamic.
+    #
+    # These sources used to be poured into the shared `modules` library, which
+    # left a module no place to put a compile option that is its own. The only
+    # way to set one was to set it on the shared target, and then every other
+    # module got it too: mod-dungeon-clear force-included its AzerothCore name
+    # shim (`-include AcCompat.h`) into every static module's translation units,
+    # and module number two would have inherited it without ever asking.
+    #
+    # With a target of its own, a module configures ${MODULE_PROJECT_NAME} and
+    # affects nothing else -- the same name the dynamic branch already uses, so
+    # a module's .cmake reads identically in both linkage modes.
+    add_library(${MODULE_PROJECT_NAME} STATIC
+      ${MODULE_SOURCE_FILES}
+      ${MODULE_EXTRA_SCRIPT_SOURCES})
+
+    target_include_directories(${MODULE_PROJECT_NAME}
+      PUBLIC
+        ${MODULES_COMMON_INCLUDES}
+        ${MODULE_INCLUDE_DIRS}
+        ${MODULE_EXTRA_SCRIPT_INCLUDE_DIRS})
+
+    target_link_libraries(${MODULE_PROJECT_NAME}
+      PUBLIC
+        game)
+
+    set_target_properties(${MODULE_PROJECT_NAME} PROPERTIES FOLDER "modules")
+
+    # The generated loader lives in `modules` and calls Add<name>Scripts(),
+    # which is defined here, so the include directories still have to reach the
+    # loader's TU -- see the target_include_directories on `modules` below.
     list(APPEND MODULES_PUBLIC_INCLUDES ${MODULE_INCLUDE_DIRS})
     list(APPEND MODULES_PUBLIC_INCLUDES ${MODULE_EXTRA_SCRIPT_INCLUDE_DIRS})
     list(APPEND MODULES_STATIC_MODULES "${SOURCE_MODULE}")
+    list(APPEND MODULES_STATIC_PROJECTS "${MODULE_PROJECT_NAME}")
   elseif(MODULE_LINKAGE STREQUAL "dynamic")
     CollectModuleSourceFiles("${MODULE_SOURCE_PATH}" MODULE_SOURCE_FILES)
     CollectModuleIncludeDirectories("${MODULE_SOURCE_PATH}" MODULE_INCLUDE_DIRS)
@@ -227,10 +258,13 @@ endforeach()
 
 ConfigureModuleLoader("static" MODULE_STATIC_LOADER OFF ${MODULES_STATIC_MODULES})
 
+# `modules` is now the generated loader and nothing else: it holds the single
+# AddModulesScripts() entry point mangosd calls, and pulls in each statically
+# linked module through its own target. Listed after `game` so the linker
+# resolves each Add<name>Scripts() from the library that defines it.
 add_library(modules STATIC
   ModulesScriptLoader.h
-  ${MODULE_STATIC_LOADER}
-  ${MODULES_STATIC_SOURCES})
+  ${MODULE_STATIC_LOADER})
 
 target_include_directories(modules
   PUBLIC
@@ -239,7 +273,8 @@ target_include_directories(modules
 
 target_link_libraries(modules
   PUBLIC
-    game)
+    game
+    ${MODULES_STATIC_PROJECTS})
 
 set_target_properties(modules PROPERTIES FOLDER "modules")
 
