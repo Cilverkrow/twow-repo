@@ -515,6 +515,8 @@ void PlayerbotHolder::LogoutPlayerBot(uint32 guid, bool allowInstant, bool forDe
             return;
         }
 
+        ai->RevalidateMasterPointer();
+
         // BotActionLog: write LIFECYCLE LOGOUT and close the per-bot log
         // file. Done early in the logout sequence so the file flushes
         // before any potentially-crashing teardown work runs.

@@ -694,6 +694,7 @@ public:
     // master (the master) disconnected — `if (master && IsInCombat(master))`
     // dereferenced a freed Player. The `master &&` guard catches null
     // but not dangling.
+    void RevalidateMasterPointer();
     void SetMaster(Player* m)
     {
         this->master = m;
