@@ -13,14 +13,28 @@
 # are gone -- CollectModuleIncludeDirectories publishes every directory under
 # src/ that holds a header, and linking the target carries them across.
 #
-# STATIC ONLY. mod-dungeon-clear derives from this module's strategy, action,
-# trigger and value classes, so the two have to end up in the same library; a
-# dlopen'd .so cannot satisfy that. The core's own call sites are still free
-# functions resolved at link time (src/game/PlayerbotStubs.cpp supplies the
-# no-op versions when the module is off), which is the same arrangement, and
-# it is deliberate: six of those eleven symbols are BotActionLog_* diagnostic
-# probes, and turning logging probes into core hooks would cost six entries in
-# ScriptObjects.h for no gain.
+# STATIC ONLY, for three reasons worth stating because none of them is "C++
+# forbids it":
+#
+# 1. The core's seam is resolved by the LINKER, not by dlopen. game.a calls
+#    eleven free functions -- World::InitPlayerbotsAtStartup(), four chat
+#    commands, and six BotActionLog_* probes compiled into Unit.cpp and
+#    Spell.cpp -- and src/game/PlayerbotStubs.cpp supplies no-op versions
+#    whenever this module is off. Build this as a .so and game.a still links
+#    those stubs, so the stubs are what the core calls. The result is a server
+#    with no bots and no error anywhere.
+# 2. The framework has no way for one module to depend on another.
+#    mod-dungeon-clear subclasses this module's strategy, action, trigger and
+#    value classes. DynamicModules.cpp dlopens with RTLD_GLOBAL, so on Linux
+#    that could in principle resolve -- but only if mod-playerbots happens to
+#    load first, and load order is a config list with no dependency resolution
+#    behind it. A failure that depends on alphabetical order is not a design.
+# 3. Windows has no equivalent at all: a DLL exports only what is marked
+#    __declspec(dllexport), and the vendored tree marks nothing.
+#
+# Keeping the free-function seam is deliberate rather than unfinished: six of
+# the eleven symbols are diagnostic probes, and six entries in ScriptObjects.h
+# to relocate logging would buy nothing.
 # ---------------------------------------------------------------------------
 
 if(TORTOISE_CURRENT_MODULE_LINKAGE STREQUAL "dynamic")

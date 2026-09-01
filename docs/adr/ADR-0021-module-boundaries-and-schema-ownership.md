@@ -102,10 +102,16 @@ Slots stay scarce and each keeps a named owner; there is no runtime collision ch
 
 Two things came out differently from what was written above:
 
-- **Static only.** `mod-dungeon-clear` derives from the bot tree's strategy, action,
-  trigger and value classes, so the two have to land in the same library and a
-  dlopen'd `.so` cannot satisfy that. `mod-playerbots.cmake` refuses dynamic linkage
-  with that reason rather than failing at link time.
+- **Static only**, and not because C++ forbids the alternative. The decisive reason is
+  that the core's seam is resolved by the *linker*: `game.a` calls eleven free
+  functions, and `PlayerbotStubs.cpp` supplies no-ops whenever the module is off, so a
+  `.so` would leave the core calling the stubs — a server with no bots and no error.
+  Two more reasons stack on top: the framework cannot express that
+  `mod-dungeon-clear` depends on this module (dlopen is `RTLD_GLOBAL`, so on Linux it
+  would resolve only if load order happened to be right), and a Windows DLL exports
+  nothing the vendored tree has not marked, which it has not.
+  `mod-playerbots.cmake` refuses dynamic linkage with that reason rather than failing
+  at link time.
 - **The link-time seam stays.** The plan called for deleting
   `src/game/PlayerbotStubs.cpp` first. Six of its eleven symbols are `BotActionLog_*`
   diagnostic probes called from twelve sites in `Unit.cpp` and `Spell.cpp`; six new

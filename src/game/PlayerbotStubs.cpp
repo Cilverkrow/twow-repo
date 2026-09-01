@@ -1,7 +1,12 @@
 // Empty implementations for builds without the playerbots module
-// (BUILD_PLAYERBOTS=OFF). The host calls these unconditionally; without the
-// stubs the link step fails on missing symbols. When the module is built it
-// provides the real ones and this file is excluded (src/game/CMakeLists.txt).
+// (-DMODULE_MOD_PLAYERBOTS=disabled). The host calls these unconditionally;
+// without the stubs the link step fails on missing symbols. When the module is
+// built it provides the real ones and this file is excluded
+// (src/game/CMakeLists.txt).
+//
+// This is also why mod-playerbots is static-only: these symbols are resolved by
+// the linker, so a dlopen'd module would leave the core calling the stubs
+// below - no bots, and nothing anywhere saying so.
 //
 // This list used to be three times as long. Everything the bots reached the
 // core through is a module hook now, and a hook needs no stub - the virtual
@@ -28,14 +33,14 @@ void BotActionLog_LogAuraApply  (Unit*, uint32, int32, uint64)                 {
 void BotActionLog_LogAuraRemove (Unit*, uint32, uint64)                        {}
 
 // ChatHandler bot-command stubs. Chat.cpp registers `.bot`, `.rndbot`,
-// `.ahbot`, and `.perfmon` in the command table unconditionally (no
-// #ifdef BUILD_PLAYERBOTS gate), so the host must link these symbols even
-// when the bot module isn't compiled in. Return true and inform the user.
+// `.ahbot`, and `.perfmon` in the command table unconditionally, with no gate
+// on whether the module exists, so the host must link these symbols even when
+// the bot module isn't compiled in. Return true and inform the user.
 bool ChatHandler::HandlePlayerbotCommand(char*)
-    { SendSysMessage("Playerbots not built (BUILD_PLAYERBOTS=OFF)."); return true; }
+    { SendSysMessage("Playerbots not built (module mod-playerbots is disabled)."); return true; }
 bool ChatHandler::HandleRandomPlayerbotCommand(char*)
-    { SendSysMessage("Random playerbots not built (BUILD_PLAYERBOTS=OFF)."); return true; }
+    { SendSysMessage("Random playerbots not built (module mod-playerbots is disabled)."); return true; }
 bool ChatHandler::HandleAhBotCommand(char*)
-    { SendSysMessage("AHBot not built (BUILD_PLAYERBOTS=OFF)."); return true; }
+    { SendSysMessage("AHBot not built (module mod-playerbots is disabled)."); return true; }
 bool ChatHandler::HandlePerfMonCommand(char*)
-    { SendSysMessage("Bot performance monitor not built (BUILD_PLAYERBOTS=OFF)."); return true; }
+    { SendSysMessage("Bot performance monitor not built (module mod-playerbots is disabled)."); return true; }
