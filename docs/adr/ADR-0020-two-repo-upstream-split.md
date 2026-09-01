@@ -63,6 +63,45 @@ all by upstream authors.
 - **Pure patch series (quilt-style).** Maximum upstream cleanliness, but every rebase
   touches every patch, and large new subsystems do not fit the model.
 
+## Spike result: the compat shim stays in core
+
+The plan assumed most of the core delta could move module-side, using the pattern
+`modules/mod-dungeon-clear/src/AcCompat.h` already demonstrates. **Measured, it cannot.**
+
+The delta is dominated by a compatibility shim that gives Penqle's classes cmangos and
+AzerothCore names so the vendored playerbots tree compiles unmodified. Across the main
+shim headers that is 1,074 added lines, and they are overwhelmingly **member functions
+and in-struct field aliases on core types**:
+
+| header | added | inside a type |
+|---|---|---|
+| `Player.h` | 340 | 305 |
+| `Unit.h` | 151 | 151 (all of it) |
+| `Map.h` | 144 | 123 |
+| `SharedDefines.h` | 106 | in-struct unions and enum values |
+| `Object.h` | 91 | 88 |
+| `Creature.h` | 91 | in-struct unions |
+| `DBCStructure.h` | 48 | in-struct unions |
+
+A module cannot add a member to a core class. `AcCompat.h` works because it maps *names
+and free functions*; it cannot supply `Unit::GetHealthPct()`. So the shim is not
+relocatable, and the core delta against upstream will stay roughly this size.
+
+**This does not undermine the decision, because delta size was never the real cost.**
+The shim is *additive*: declarations appended inside a class body, which merge cleanly.
+What made merges painful was feature code *interleaved* into the middle of
+`World::Update()`, `Unit::DealDamage()` and `Player::RepopAtGraveyard()` — and that is
+gone, extracted into modules.
+
+So the value of the split is what it always mainly was: a history that lets our fixes be
+offered upstream. Expect the shim to remain, and size the work by the 33 upstream-worthy
+fixes rather than by the file count.
+
+If the shim is ever to shrink, the lever is the vendored tree, not the core: patching
+`src/modules/PlayerBots` to use Penqle's names moves the compatibility burden to where
+the incompatibility actually is. That trades merge pain with upstream for merge pain with
+ike3, and 255 vendor files are already modified — a separate decision, not a prerequisite.
+
 ## Consequences
 
 - Clones need `--recursive`; CI needs recursive checkout. This is the main cost.
