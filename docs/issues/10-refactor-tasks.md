@@ -24,7 +24,7 @@ body: |
   - `src/test/mocks/TestMap.cpp` does not exist
   - the `game-interface` target it links does not exist
 
-  **2. `src/modules/PlayerBots/tests/` — added by `3c2b931`.**
+  **2. The bot tree's `tests/` directory — added by `3c2b931`.**
   - `persistent_active_roster_database_tests` (48 assertions + a real multi-threaded
     concurrency scenario) IS in the main build, behind
     `BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS`, default OFF. Needs a real MariaDB.
@@ -59,7 +59,7 @@ title: Fix platform-divergent canonical-request validation in the roster
 workstream: WS-10
 priority: p1
 existing_ot: none
-source: src/modules/PlayerBots/playerbot/PersistentActiveRoster.cpp
+source: modules/mod-playerbots/src/playerbot/PersistentActiveRoster.cpp
 superseded_by: none
 body: |
   **Bug: the same roster admin request is accepted on Linux and rejected on Windows.**
@@ -92,7 +92,7 @@ superseded_by: none
 body: |
   **Goal: make upstream merges routine and let our bug fixes go home.**
 
-  **Today:** 114 core files differ from upstream tip `db5fb2a` (+5,246 / −1,809),
+  **Today:** 114 core files differ from the fork point (ADR-0026) (+5,246 / −1,809),
   concentrated in the files that change most often upstream — `Player.*`, `World.*`,
   `Unit.*`, `WorldSession.cpp`, `CharacterHandler.cpp`. Every merge is a hand fight, and
   our genuinely upstream-worthy fixes cannot be offered in that shape.
@@ -117,8 +117,15 @@ body: |
      they are upstream's content (188 MiB, 336 files, 9 commits ever, all upstream
      authors). Fix `setup_databases.sh` there to import `sql/base` and recurse.
 
-  **Prep that parallelizes:** classifying the 114-file delta into fix / feature / hook is
-  the expensive analytical part and can be done ahead of the serial re-application.
+  **Dropped 2026-09-02: the "classify the delta" prep.** It was scoped as the expensive
+  analytical part that could run ahead of the serial re-application. It cannot deliver
+  what it promised: measured against the live upstream tip `83e40a6a` rather than the
+  stale snapshot `be3e6cd` it was originally run against, **all 103 unclassified files
+  exist upstream and 70 are byte-identical to it**, so there is no "ours alone" bucket to
+  populate and no classification that a diff against the live branch does not already
+  give for free. Classify each commit as it is re-applied instead (step 2), which is
+  where the fix/hook judgement actually has to be made. See ADR-0020's 2026-09-02
+  retraction. **The rest of this issue stands** -- the split itself is not done.
 
   **Constraint:** preserve commit `3c2b931` through the split.
 ---
@@ -154,7 +161,7 @@ body: |
   the literal `'manual'`. Collapse the three competing character-migration conventions
   (`database_updates/character/`, `character_updates/`, `wip_updates/`) into one.
 
-  **Also:** promote `src/modules/PlayerBots` to `modules/mod-playerbots` so there is one
+  **Also:** promote the vendored bot tree out of `src/modules/` into `modules/mod-playerbots` so there is one
   module system rather than two.
 
   **Parallelizes well:** each module is its own directory, schema, tests and config. The
@@ -320,7 +327,7 @@ body: |
   effect. Permanent diagnostic seam, or a finished investigation?
 ---
 id: REF-009
-title: Promote src/modules/PlayerBots to modules/mod-playerbots
+title: Promote the vendored bot tree out of src/modules into modules/mod-playerbots
 workstream: WS-10
 priority: p1
 existing_ot: OT-016
@@ -330,7 +337,7 @@ body: |
   **Goal: one module system instead of two, and delete the last thing that makes
   a module configure the shared CMake target.**
 
-  Today playerbots is a separate static library under `src/modules/PlayerBots`,
+  Today playerbots is a separate static library under `src/modules/`,
   gated by its own `BUILD_PLAYERBOTS` option, with ~20 hand-written `file(GLOB)`
   blocks. It is not a `modules/` module, and that single fact is why
   `mod-dungeon-clear.cmake` reaches out and mutates the shared `modules` target
@@ -430,7 +437,7 @@ existing_ot: none
 source: patches/llm-debug-only.patch
 superseded_by: none
 body: |
-  The patch targets `source/src/modules/PlayerBots/...`. That tree is
+  The patch targets the bot tree at its pre-promotion path. That tree is
   `modules/mod-playerbots/src/...` now, so the patch cannot apply.
 
   Decide which it is:
@@ -606,22 +613,23 @@ body: |
   linkage is the cheap intermediate step, not a substitute.
 ---
 id: REF-016
-title: Upstream now carries its own copy of the bot tree at src/modules/PlayerBots
+title: Upstream now carries its own copy of the bot tree at the path we vacated
 workstream: WS-10
 priority: p1
 existing_ot: none
 source: docs/adr/ADR-0020-two-repo-upstream-split.md
 superseded_by: none
 body: |
-  Found while building `twow-core`. At our fork point (upstream `61a8269`)
-  upstream had no `src/modules` at all. Upstream's tip has **1,022 files** under
-  it: `src/modules/Eluna` and `src/modules/PlayerBots`, added by "Integrate Eluna
-  Lua engine with Turtle WoW".
+  **CLOSED 2026-09-02 as moot: the collision is gone.** Upstream commit `8415f1b`
+  (2026-09-01) moved its own bot tree to `modules/mod-playerbots` — the same path
+  this project promoted it to. There are no longer two copies at divergent paths,
+  so there is nothing to decide before the first upstream merge. Kept for the
+  record.
 
-  So upstream vendored ike3's playerbots at the very path we just vacated by
-  promoting it to `modules/mod-playerbots`. When `twow-core` merges upstream it
-  acquires upstream's copy, and we would carry two divergent copies of the same
-  imported bot line.
+  Found while building `twow-core`. At the fork point (ADR-0026) upstream had no
+  `src/modules` at all. Upstream then vendored Eluna and ike3's playerbots under
+  `src/modules/`, at the very path this project had just vacated — which is what
+  this issue was opened about, and which upstream has since undone.
 
   Our module can be compared with graft checkpoint
   `0af2567767de69a819287acaab4c5c947cc1e04c`, whose PlayerBots subtree is
@@ -633,16 +641,16 @@ body: |
   measures the upstream ike3 delta. No verified ike3 source commit, tag or remote
   is recorded in either repository, so the true vendor delta is unknown.
 
-  **Decide before the first upstream merge:**
-  - **(a)** `twow-core` deletes `src/modules/PlayerBots`; ours stays authoritative.
-    Costs a delete-vs-modify conflict on every upstream merge that touches it.
-  - **(b)** Adopt upstream's copy and re-apply our graft-relative module delta on top.
-    Most work now, least friction later, and it puts us on upstream's bot tree.
-  - **(c)** Keep both and never merge that path.
+  The three options this issue listed — delete upstream's copy in `twow-core`,
+  adopt it and re-apply our delta, or keep both and never merge that path — are
+  all moot now that both sides use the same path. What remains true is that
+  neither repository records a verified ike3 source commit, so the vendor delta
+  is still unknown; that is PROV-01's business, not this one's.
 
-  Related: upstream has moved **379 commits** since our fork point — 1,178 files,
-  +851,023 lines, most of it the Eluna vendoring. That is the merge the split
-  exists to make possible, and it is not small.
+  Related: upstream has moved **385 commits** since the fork point (measured
+  2026-09-02; 379 when this was written) — 1,178 files, +851,023 lines, most of
+  it the Eluna vendoring. That is the merge the split exists to make possible,
+  and it is not small.
 ---
 id: REF-017
 title: CI cannot clone the private twow-core submodule

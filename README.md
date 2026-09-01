@@ -9,9 +9,18 @@ This project targets version 1.18.1 build 7272
 
 ## About this fork
 
-A fork of **[Penqle/tortoise-wow](https://github.com/Penqle/tortoise-wow)** running a
-small private server with **~1000 playerbots** permanently online. Upstream is merged in
-periodically; everything below is what this fork adds on top.
+A fork of **[Shyalya/tortoise-wow](https://github.com/Shyalya/tortoise-wow)**, which is
+itself a fork of **[Penqle/tortoise-wow](https://github.com/Penqle/tortoise-wow)** — the
+real Turtle-WoW restoration. This repository runs a small private server with **~1000
+playerbots** permanently online; everything below is what it adds on top.
+
+**Upstream is not merged in, and cannot be.** This repository's history was rewritten to
+strip binaries when it was created, so it shares no ancestry with upstream: there is no
+merge base and no merge is possible, at any path. Upstream merges happen in the sibling
+repository `twow-core`, which is a genuine fork. The full chain, the fork point and the
+merge rules are recorded once, in
+[ADR-0026](docs/adr/ADR-0026-project-lineage-and-provenance.md); this README does not
+restate them.
 
 **Playerbots are the foundation of this fork, not a side feature.** Upstream still lists
 them as planned; here they are what the server is built around, and running a thousand of
@@ -23,11 +32,15 @@ commit messages read like bug reports rather than feature notes.
 
 ### Playerbots
 
-Integrated from [r-o-sh's branch](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh),
-which vendors [ike3's playerbots][20] as `modules/mod-playerbots/`. It is built by
-default (`-DMODULES=static`); runtime activation is gated by `AiPlayerbot.Enabled`.
+Inherited from [upstream's `playerbots-integration-gh` branch](https://github.com/Shyalya/tortoise-wow/tree/playerbots-integration-gh),
+which vendors [ike3's playerbots][20]; here they live in `modules/mod-playerbots/`. Built
+by default (`-DMODULES=static`); runtime activation is gated by `AiPlayerbot.Enabled`.
 
-Fixes made while running them:
+Fixes made **in this fork** while running them. Upstream has since fixed some of the same
+bugs independently — `c388a7e` (the snare freeze, same `ratio=10` diagnosis), `be0706b`
+(the `m_visibleGUIDs` lock) and `9baa692` (a family of crashes including the freed-target
+read below). Rows marked **[also fixed upstream]** are not unique to this fork and are not
+worth offering as pull requests.
 
 | Area | What was wrong |
 |---|---|
@@ -39,7 +52,7 @@ Fixes made while running them:
 | Summoning | Works without a meeting stone, reports why it failed, and no longer drops the bot under the world |
 | Group loot | Bots vote instead of letting every countdown expire |
 | Talent specs | Premade specs generated for the talent rate the config actually ships — the stock vanilla links are all rejected by Turtle's reworked trees |
-| Target values | Cached a raw `Unit*` for up to a second. If the creature died inside that window the next read followed a freed pointer — crash in `AttackAction::IsTargetValid`. The guid is carried alongside now and cached reads resolve through the object accessor |
+| Target values **[also fixed upstream]** | Cached a raw `Unit*` for up to a second. If the creature died inside that window the next read followed a freed pointer — crash in `AttackAction::IsTargetValid`. The guid is carried alongside now and cached reads resolve through the object accessor |
 | Battleground queue | `BattleGroundQueue` declares a `recursive_mutex`, but all five acquisitions were left commented out during the ACE migration. A thousand bots queueing from parallel map threads tore the `std::map` apart. Restored |
 | Anticheat on bot sessions | `m_antiCheat` is only assigned during a network login, so bot sessions carried a null pointer for life — and seven call sites in `MovementHandler` dereference it unchecked, one of which the bot module calls directly. Every session now starts with the `NullSessionAnticheat` the core already ships |
 | Dungeon fill | A role that cannot be filled is counted as covered, but the queue count does not follow — so with no tank available the group stopped at four and could never form, the matcher wanting exactly one tank, one healer and three damage. The player waited without being told anything. The level window is asymmetric now (a bot above the waiting player still works, one below misses and dies), a tank can be taken out of a bot-only run, and an unfilled role is logged |
@@ -105,6 +118,12 @@ Two are deliberately manual, in `sql/tools/`, because both depend on per-server 
 - `playerbot_bypass_crossroads.sql` — routes bots around a guard 21 yards from a travel
   node. Rewrites travel graph links by id, so check your own node ids first
 
+### Not ours
+
+`modules/mod-dungeon-clear` was **written by shyalya**, not by this project — commits
+`1792e0cf`, `f65898ec` and `0638fe21` (August 2026). It arrived with the fork and is
+listed here so it is not mistaken for work done in this repository.
+
 ### Build and documentation
 
 - Release builds on MSVC ship debug symbols, so a crash dump is readable
@@ -141,7 +160,7 @@ Additions will be added as the core code reaches feature completion
 - **Autoscale** - Rudimentary toggleable dungeon/raid auto scaling system, found in mangosd.conf
 - **Leech** - Basic toggleable leech system designed for solo play, found in mangosd.conf
 - **Additional Talent Points** - Mostly used for testing, found in tw_char.characters
-- **[Playerbots][20]** *(this fork)* - Integrated from [r-o-sh's branch](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh). Not an experiment: ~1000 of them run permanently and the fork is built around them. Upstream still lists this as planned.
+- **[Playerbots][20]** *(inherited from [upstream](https://github.com/Shyalya/tortoise-wow/tree/playerbots-integration-gh), not authored here)* - Not an experiment: ~1000 of them run permanently and this fork is built around them. Penqle still lists this as planned; upstream and this fork both run it.
 
 #### Planned Additions
 

@@ -1,6 +1,7 @@
 # ADR-0025: Repository and project structure
 
-- Status: Proposed
+- Status: Proposed; amended 2026-09-02 (stale bot-tree paths; CI file corrected;
+  `core/` is not yet a submodule)
 - Date: 2026-09-01
 - Primary: WS-00 / WS-80
 - Relates to: ADR-0020 (two-repo split), ADR-0021 (module boundaries), ADR-0018 (runbook retention), ADR-0028 (Windows is compile-only)
@@ -11,7 +12,7 @@ The repository is one merged tree in which upstream code, fork fixes, fork featu
 governance evidence are indistinguishable. Nothing states where a new file belongs, so
 new work lands wherever the nearest existing file sits — which is how three fork features
 ended up spliced into `World::Update()` and the spell pipeline with no file of their own,
-and how a second module system grew under `src/modules/PlayerBots`.
+and how a second module system grew under `src/modules/`.
 
 A layout that is only described in a plan is a suggestion. To be binding it has to be
 recorded and checked.
@@ -22,8 +23,9 @@ recorded and checked.
 code, config, migrations and tests live inside it, and nothing of it lives outside.
 
 ```
-twow-repo/                     the platform
-├── core/                      → submodule: twow-core @ pinned SHA
+twow-repo/                     the platform  (target layout; not all of it exists yet)
+├── core/                      → submodule: twow-core @ pinned SHA  (PLANNED,
+│                              not present: no .gitmodules exists yet)
 ├── core-patches/              generated review artifact (0001-*.patch), never hand-edited
 ├── modules/
 │   ├── mod-playerbots/        src/  conf/  data/sql/  t/
@@ -47,8 +49,14 @@ Rules:
   `src/` (code), `conf/` (its own `.conf`), `data/sql/{auth,character,world}/` (its
   migrations, which `AutoUpdater.cpp` already discovers), `t/` (its tests). A module
   never writes a schema it does not own (ADR-0021).
-- **`core/` is a submodule**, pinned by SHA, with `UPSTREAM.lock` recording the URL,
-  the pinned SHA and the merge-base. Clones need `--recursive`.
+- **`core/` is to be a submodule**, pinned by SHA, with `UPSTREAM.lock` recording the
+  URL, the pinned SHA and the fork point (ADR-0026 states the fork point; `UPSTREAM.lock`
+  is its machine-readable copy). Clones will then need `--recursive`.
+  **Not done as of 2026-09-02: there is no `.gitmodules` in this repository and no
+  `core/` directory.** The tree above is the target layout, not the current one; the
+  submodule arrives with ADR-0020's split, and REF-017 records the private-submodule CI
+  blocker in the way. Do not write tooling, CI or documentation that assumes a submodule
+  is already there.
 - **`core-patches/` is a generated artifact**, produced in CI from `twow-core`'s branch so
   a reviewer can see the whole core delta at a glance. The source of truth is commits in
   `twow-core`, never these files.
@@ -66,7 +74,8 @@ Rules:
   for it; the same applies to `test/fixtures/snapshots/`. They arrive with the deferred
   architecture work, if at all.
 
-**Enforcement is CI, not convention** (`.github/workflows/lint.yml`):
+**Enforcement is CI, not convention** (`.github/workflows/ci.yml`, job `lint`; there is
+no standalone lint workflow file -- every check below is a step of that job):
 
 - a **boundary check** failing any pull request that touches `core/` without the
   `core-change` label, so a core edit is always a deliberate, separately reviewed act;
@@ -84,7 +93,7 @@ Rules:
 - Requiring `--recursive` is a real onboarding cost and a real failure mode; the one-command
   contract (ADR-0023) has to absorb it.
 - Some existing paths are wrong under this layout and are moved by the phases, not by this
-  ADR: `src/game/LFT/LFTBotFill.cpp` and `src/modules/PlayerBots/`.
+  ADR: `src/game/LFT/LFTBotFill.cpp` and the old `src/modules/` bot tree.
 - `AGENTS.md` currently uses Windows path separators while claiming repository-relative
   paths, which breaks in Linux CI and containers. Its rewrite points at this ADR for the
   directory map.
@@ -96,15 +105,16 @@ Rules:
 - `docs/issues/00-refactor-plan.md` ("Target structure", Phases 2 and 3)
 - `cmake/ConfigureModules.cmake`, `modules/create_module.sh`, `modules/mod-dungeon-clear/`
 - `src/shared/Database/AutoUpdater.cpp` (`ProcessModuleUpdates`)
-- `.github/workflows/lint.yml`
+- `.github/workflows/ci.yml`, job `lint`
 - `docs/adr/ADR-0020-two-repo-upstream-split.md`, `ADR-0024-project-invariants.md`,
   `ADR-0028-platform-and-ci-strategy.md`
 - `docs/REPOSITORY-BOUNDARIES.md`, `docs/PROVENANCE.md`
 
 ## Update 2026-09-01: the promotion happened
 
-`src/modules/PlayerBots` is `modules/mod-playerbots`, and `BUILD_PLAYERBOTS` is gone.
-`src/modules/` no longer exists; every module lives under `modules/`.
+The vendored bot tree is `modules/mod-playerbots`, and `BUILD_PLAYERBOTS` is gone.
+`src/modules/` no longer exists; every module lives under `modules/`. See ADR-0026
+("Paths") for the rename of record.
 
 Two things came out differently from what was written above:
 

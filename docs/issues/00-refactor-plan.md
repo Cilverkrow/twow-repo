@@ -11,24 +11,23 @@ Branch: **`refactor/modular-platform`**, rebased onto `main` at each phase bound
 
 `Cilverkrow/twow-repo` is a WoW 1.12 / Turtle-1.18.1 private server (mangos-zero / VMaNGOS lineage) whose defining feature is ~1000 playerbots. It works. But it is one merged tree where upstream code, fork fixes, fork features and governance evidence are indistinguishable, and it has no automated verification of any kind:
 
-- **No upstream boundary.** 114 core files differ from upstream tip `db5fb2a` (+5246/−1809), concentrated in the highest-traffic upstream files (`Player.*`, `World.*`, `Unit.*`, `WorldSession.cpp`, `CharacterHandler.cpp`). Three fork features — `AutoWorldBuff`, `AutoDonationPoints`, `SoloDungeonRepop`/`Leech` — have **no file of their own**; they are spliced into `World::Update()` and the spell pipeline, marked only by `// custom:`. Every upstream merge is a hand fight, and our genuinely upstream-worthy fixes cannot be PR'd back in that shape.
+- **No upstream boundary.** 114 core files differ from the fork point (ADR-0026) (+5246/−1809), concentrated in the highest-traffic upstream files (`Player.*`, `World.*`, `Unit.*`, `WorldSession.cpp`, `CharacterHandler.cpp`). Three fork features — `AutoWorldBuff`, `AutoDonationPoints`, `SoloDungeonRepop`/`Leech` — have **no file of their own**; they are spliced into `World::Update()` and the spell pipeline, marked only by `// custom:`. Every upstream merge is a hand fight, and our genuinely upstream-worthy fixes cannot be PR'd back in that shape.
 - **No CI, and the one C++ test suite cannot build.** `.github/` has no workflows. `modules/mod-dungeon-clear/t/` has 54 gtest files (~900KB), but googletest is never fetched, and neither `src/test/mocks/TestMap.cpp` nor the `game-interface` target it links exists. No `enable_testing()`/`add_test()` anywhere. Everything else called a "test" is a Windows PowerShell evidence script under `runbooks/`.
 - **Not runnable in one command; not containerizable as-is.** No Dockerfile, no compose. Four blockers, all verified: `CMAKE_INSTALL_PREFIX` is compiled into the binary (`SYSCONFDIR`, `CMakeLists.txt:637` → `PlayerbotAIConfig.h:16`) so build-then-copy silently ships a botless server; `-march=native` (`CMakeLists.txt:496`) makes images host-specific; `mangosd` exits on stdin EOF; and `AutoUpdater.cpp:238` blocks on `std::getline(std::cin, …)` when a migration fails, hanging a headless container forever.
 - **Migrations are not trustworthy.** `AutoUpdater.cpp` keys on `Module + ":" + SHA1(file bytes)` in a `migrations` table — sound in principle — but the documented bootstrap backfills the tracker with the literal string `'manual'` (OT-015, FG-033), so much of history is neither proven applied nor suppressed. `sql/setup_databases.sh` skips `sql/base` entirely and doesn't recurse into `database_updates/{world,character}`. `cmake/migrations.cmake` is dead code pointing at a nonexistent `sql/migrations/`. There are **three competing conventions** for "a character migration".
 
 Goal of *this* refactor: separate upstream from ours so our fixes can go home; make our features modules with their own schemas and migrations; one-command build and run on Linux and Windows; and real automated tests behind all of it.
 
-## Confirmed lineage
+## Lineage
 
-```
-mangos-zero / VMaNGOS  (+ AzerothCore ports)
-  └── Penqle/tortoise-wow                    Turtle 1.18.1 restoration; the modules/ script system; ScriptObjects.h
-        └── r-o-sh playerbots-integration-gh vendors ike3's cmangos playerbots
-              └── Shyalya/tortoise-wow @ playerbots-integration-gh   ← the actual upstream
-                    └── Cilverkrow/twow-repo (this repo; history filtered to strip binaries)
-```
+**See [ADR-0026](../adr/ADR-0026-project-lineage-and-provenance.md).** It is the single
+authority for the chain, the fork point, the upstream of record and the merge rules, and
+nothing else in the repository restates them. The version of the chain that stood here
+was wrong twice over: it placed a third account between Penqle and Shyalya that does not
+exist in the fork graph, and the plan below measured against a local post-filter hash it
+called "upstream tip" (FG-076).
 
-`kasperfriend/tortoise-oneclick-compiler` — where the project started — builds `Shyalya/tortoise-wow`; `ops/windows/build/compile-tortoise-wow.ps1` here is its descendant. This gets written down as **ADR-0026**, because right now it exists nowhere in the repo and had to be reconstructed from GitHub.
+`kasperfriend/tortoise-oneclick-compiler` — where the project started — builds `Shyalya/tortoise-wow`; `ops/windows/build/compile-tortoise-wow.ps1` here is its descendant.
 
 Two pieces of directly reusable prior art:
 
@@ -39,7 +38,7 @@ Two pieces of directly reusable prior art:
 
 Three commits landed and they change several conclusions. **This plan is now OT-025** in `TODOS.md` ("Claude Code repository restructuring"), and `docs/HANDOVER-CLAUDE-CODE.md` is its brief.
 
-- **OT-001 is done.** The persistent roster is integrated on `main` as commit `3c2b931` — 28 paths, including `PersistentActiveRoster{,Database}.{cpp,h}`, a migration (`sql/character_updates/20260830230336_…`), a rollback, `src/modules/PlayerBots/tests/` with fixtures, and a new root option `BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS` (default OFF). It also modified **core** `src/shared/Database/{Database,DatabaseMysql}.{cpp,h}`, which matters for the upstream split. Deferred issue #3 is therefore closed; what replaces it is **OT-024** (roster expansion and capacity proof: 50→100→250→500, with startup/login/CPU/RAM measurement).
+- **OT-001 is done.** The persistent roster is integrated on `main` as commit `3c2b931` — 28 paths, including `PersistentActiveRoster{,Database}.{cpp,h}`, a migration (`sql/character_updates/20260830230336_…`), a rollback, the bot tree's `tests/` directory with fixtures, and a new root option `BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS` (default OFF). It also modified **core** `src/shared/Database/{Database,DatabaseMysql}.{cpp,h}`, which matters for the upstream split. Deferred issue #3 is therefore closed; what replaces it is **OT-024** (roster expansion and capacity proof: 50→100→250→500, with startup/login/CPU/RAM measurement).
 - **ADR-0018 and ADR-0019 now exist** (runbook evidence retention; external Windows build inputs). All ADR numbers proposed here shift up — the new ones start at **ADR-0020**.
 - **OT-026 settles the runbook question**, and in the direction I recommended: keep sanitized text-only runbooks in place for this restructuring; evaluate a separate evidence repository later, only with stable IDs, link migration and retention policy. So bucket-C deletion is explicitly off the table for now. Good — that's now a decision rather than my suggestion.
 - **ADR-0019 is a hard constraint on Windows CI** (detailed below). It also raises the handover's open question: how a build agent provisions those inputs without shipping them in Git.
@@ -193,7 +192,7 @@ Each phase is a PR into `refactor/modular-platform`, each ends green in CI, each
 2. **Fix the build so it can be containerized**: replace `-march=native` with `-march=x86-64-v2` behind a `TW_ARCH` cache variable (`CMakeLists.txt:496`); drop `--no-warnings`; make `SYSCONFDIR` runtime-resolvable with the compile-time value as fallback (`PlayerbotAIConfig.cpp:100` started this — finish it for `ahbot.conf` at `AhBotConfig.cpp:28`); add a non-interactive mode so `AutoUpdater.cpp:238` fails loudly instead of blocking on stdin.
 3. **Make the test infrastructure real.** There are now *two* disconnected suites, and neither runs from a plain build:
    - `modules/mod-dungeon-clear/t/` — 54 gtest files, but googletest is never fetched and the `src/test/mocks/TestMap.cpp` and `game-interface` targets it links don't exist.
-   - `src/modules/PlayerBots/tests/` — new with `3c2b931`, and it is actually **two** targets with different wiring. `persistent_active_roster_database_tests` **is** in the main build (`src/modules/PlayerBots/CMakeLists.txt:161-194`, behind the new root option `BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS`, default OFF) — 48 assertions plus a real multi-threaded concurrency scenario against a disposable MariaDB. `persistent_active_roster_tests` (the pure unit suite, 7 functions / **142 assertions**) is **not wired in at all**: `tests/CMakeLists.txt` is a standalone `project()` with no `add_subdirectory` anywhere, hard-requiring an external `ROSTER_TEST_OPENSSL_LIBRARY` import library, unconditionally adding `dep/windows/include`, and driven by `run-tests.ps1` with a hard-coded CMake path and the VS 2022 generator. Neither uses a test framework — both are hand-rolled `CHECK` macros counting failures.
+   - the bot tree's `tests/` directory — new with `3c2b931`, and it is actually **two** targets with different wiring. `persistent_active_roster_database_tests` **is** in the main build (in the bot tree's `CMakeLists.txt:161-194` as it then was, behind the new root option `BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS`, default OFF) — 48 assertions plus a real multi-threaded concurrency scenario against a disposable MariaDB. `persistent_active_roster_tests` (the pure unit suite, 7 functions / **142 assertions**) is **not wired in at all**: `tests/CMakeLists.txt` is a standalone `project()` with no `add_subdirectory` anywhere, hard-requiring an external `ROSTER_TEST_OPENSSL_LIBRARY` import library, unconditionally adding `dep/windows/include`, and driven by `run-tests.ps1` with a hard-coded CMake path and the VS 2022 generator. Neither uses a test framework — both are hand-rolled `CHECK` macros counting failures.
 
    Work: `enable_testing()`/`include(CTest)` at root; `FetchContent` googletest pinned by tag; create the missing `TestMap.cpp` mock and `game-interface` target; `add_subdirectory(tests)` behind a new `BUILD_PERSISTENT_ROSTER_UNIT_TESTS` option, dropping the standalone `project()`; replace the raw `ROSTER_TEST_OPENSSL_LIBRARY` filepath with `find_package(OpenSSL REQUIRED)` + `OpenSSL::Crypto`; **guard the `dep/windows/include` include dir** — unconditional, it shadows system OpenSSL headers on Linux; register everything with `add_test()`, with the adapter test only registered when a connection string is supplied. Success = `ctest` runs both suites on both platforms.
 
@@ -237,7 +236,7 @@ Each phase is a PR into `refactor/modular-platform`, each ends green in CI, each
 19. Extract each spliced feature into `modules/mod-*` using the existing hook system (`ScriptObjects.h` — `WorldScript`, `PlayerScript`, `AllSpellScript`, …), adding a core hook only where none fits; each such hook is a separate reviewed commit in `twow-core`.
 20. Each module gets `conf/`, `data/sql/`, and **unit tests from day one**. Behavior is pinned by a characterization test written *before* the move, so each extraction is provably behavior-preserving.
 21. Create `cv_ops` / `cv_bots`; forward migrations move our tables out of upstream schemas. Replay-guarded (`INSERT IGNORE … WHERE NOT EXISTS`), real SHA-1 hashes. Collapse the three character-migration conventions into one.
-22. Promote `src/modules/PlayerBots` to `modules/mod-playerbots` so there's one module system, not two.
+22. Promote the vendored bot tree out of `src/modules/` into `modules/mod-playerbots` so there's one module system, not two.
 
 That is the end of the refactor. Everything past this point is an issue.
 
