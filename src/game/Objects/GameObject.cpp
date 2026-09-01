@@ -43,6 +43,7 @@
 #include "Geometry.h"
 #include "GameObjectAI.h"
 #include "ScriptMgr.h"
+#include "ScriptObjects.h"
 #include "ZoneScript.h"
 #include "DynamicTree.h"
 #include "vmap/GameObjectModel.h"
@@ -131,6 +132,8 @@ bool CanOnlyBeLootedByPlayersOnMapAtSpawn(uint32 entry)
 
 void GameObject::AddToWorld()
 {
+    bool const bWasInWorld = IsInWorld();
+
     ///- Register the gameobject for guid lookup
     if (!IsInWorld())
     {
@@ -159,6 +162,21 @@ void GameObject::AddToWorld()
                 m_allowedLooters.insert(pPlayer->GetObjectGuid());
         }
     }
+
+    // OnGameObjectAddWorld had no call site, so modules registering it linked and
+    // never ran - the same dead-hook bug already fixed once for
+    // OnCreatureAddWorld in Creature::AddToWorld. Fired at the end, with the
+    // object fully in the world and its AI initialised, so a script that reaches
+    // for GetMap() or AI() here finds them. First entry only, like the creature
+    // side: the registration block above is already guarded on !IsInWorld(), and
+    // a hook that fires twice for one object is worse than one that fires late.
+    if (!bWasInWorld && IsInWorld())
+    {
+        ScriptRegistry<AllGameObjectScript>::ForEachEnabledHook(ALLGAMEOBJECTHOOK_ON_GAMEOBJECT_ADD_WORLD, [&](AllGameObjectScript* script)
+        {
+            script->OnGameObjectAddWorld(this);
+        });
+    }
 }
 
 void GameObject::AIM_Initialize()
@@ -172,6 +190,15 @@ void GameObject::RemoveFromWorld()
     ///- Remove the gameobject from the accessor
     if (IsInWorld())
     {
+        // Counterpart of the OnGameObjectAddWorld dispatch above, which was also
+        // missing. Fired first, while the object is still in the world and still
+        // resolvable through the map, so a script can undo whatever it set up on
+        // add before the teardown below unhooks the object.
+        ScriptRegistry<AllGameObjectScript>::ForEachEnabledHook(ALLGAMEOBJECTHOOK_ON_GAMEOBJECT_REMOVE_WORLD, [&](AllGameObjectScript* script)
+        {
+            script->OnGameObjectRemoveWorld(this);
+        });
+
         if (m_zoneScript)
             m_zoneScript->OnGameObjectRemove(this);
 
@@ -321,6 +348,18 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
     WorldObject::Update(update_diff, update_diff);
     if (GetObjectGuid().IsMOTransport())
         return;
+
+    // OnGameObjectUpdate was declared with no call site either. Dispatched here
+    // and not at the end of the function, because the loot-state machine below
+    // returns from a dozen places; an end-of-function call would fire on some
+    // ticks and not others, which is worse than not firing at all. Placed after
+    // the MO-transport bail so it matches the set of objects this function
+    // actually updates. ForEachEnabledHook, not ForEach: this is per game object
+    // per map tick.
+    ScriptRegistry<AllGameObjectScript>::ForEachEnabledHook(ALLGAMEOBJECTHOOK_ON_GAMEOBJECT_UPDATE, [&](AllGameObjectScript* script)
+    {
+        script->OnGameObjectUpdate(this, update_diff);
+    });
 
     m_Events.Update(update_diff);
 

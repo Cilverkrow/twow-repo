@@ -272,10 +272,9 @@ void Creature::AddToWorld()
     // The backported AllCreatureScript surface never had a caller for
     // OnCreatureAddWorld - modules registering it were silently dead. Fire it
     // where AzerothCore does: creature fully in the world, first entry only.
-    // (AllCreatureScript has no per-hook registry; ForEach walks all scripts.)
     if (!bWasInWorld && IsInWorld())
     {
-        ScriptRegistry<AllCreatureScript>::ForEach([&](AllCreatureScript* script)
+        ScriptRegistry<AllCreatureScript>::ForEachEnabledHook(ALLCREATUREHOOK_ON_CREATURE_ADD_WORLD, [&](AllCreatureScript* script)
         {
             script->OnCreatureAddWorld(this);
         });
@@ -711,6 +710,20 @@ void Creature::Update(uint32 update_diff, uint32 diff)
 {
     update_diff *= sWorld.GetTimeRate();
     diff *= sWorld.GetTimeRate();
+
+    // OnAllCreatureUpdate was declared in ScriptObjects.h with no call site at
+    // all, so modules registering it linked and never ran. Dispatched here, at
+    // the top and after the time-rate scaling, rather than at the end the way
+    // AzerothCore does it: the state machine below returns early on the pool
+    // despawn path and on the removed-corpse path, so an end-of-function call
+    // would silently skip ticks and would also fire on creatures already queued
+    // for removal. ForEachEnabledHook, not ForEach - this runs for every creature
+    // on every map tick, and walking the whole script registry there would cost
+    // more than the hook delivers.
+    ScriptRegistry<AllCreatureScript>::ForEachEnabledHook(ALLCREATUREHOOK_ON_ALL_CREATURE_UPDATE, [&](AllCreatureScript* script)
+    {
+        script->OnAllCreatureUpdate(this, update_diff);
+    });
 
     // AI was locked and switch was delayed to next update.
     if (HasCreatureState(CSTATE_INIT_AI_ON_UPDATE))

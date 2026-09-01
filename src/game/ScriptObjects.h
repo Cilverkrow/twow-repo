@@ -588,10 +588,31 @@ class WorldObjectScript : public ScriptObject
         virtual void OnWorldObjectUpdate(WorldObject* /*object*/, uint32 /*diff*/) {}
 };
 
+enum AllCreatureHook
+{
+    ALLCREATUREHOOK_ON_ALL_CREATURE_UPDATE,
+    ALLCREATUREHOOK_ON_CREATURE_ADD_WORLD,
+    ALLCREATUREHOOK_ON_CREATURE_REMOVE_WORLD,
+    ALLCREATUREHOOK_CAN_CREATURE_GOSSIP_HELLO,
+    ALLCREATUREHOOK_GET_CREATURE_AI,
+    ALLCREATUREHOOK_END
+};
+
+// The enabled-hook list exists so OnAllCreatureUpdate can be dispatched at all.
+// It fires once per creature per map tick; walking every registered script for
+// every creature, the way ForEach does, would cost more than the hook is worth.
+// The other AllCreatureScript entry points are rare enough that they still use
+// plain ForEach/ForEachWithReturn in ScriptMgr.cpp.
 class AllCreatureScript : public ScriptObject
 {
     protected:
-        explicit AllCreatureScript(char const* name) : ScriptObject(name) { ScriptRegistry<AllCreatureScript>::AddScript(this); }
+        explicit AllCreatureScript(char const* name, std::vector<uint16> enabledHooks = {})
+            : ScriptObject(name, ALLCREATUREHOOK_END)
+        {
+            TortoiseEnableAllHooksIfEmpty(enabledHooks, ALLCREATUREHOOK_END);
+            ScriptRegistry<AllCreatureScript>::AddScript(this, std::move(enabledHooks));
+        }
+
     public:
         virtual void OnAllCreatureUpdate(Creature* /*creature*/, uint32 /*diff*/) {}
         virtual void OnCreatureAddWorld(Creature* /*creature*/) {}
@@ -600,10 +621,29 @@ class AllCreatureScript : public ScriptObject
         virtual CreatureAI* GetCreatureAI(Creature* /*creature*/) const { return nullptr; }
 };
 
+enum AllGameObjectHook
+{
+    ALLGAMEOBJECTHOOK_ON_GAMEOBJECT_ADD_WORLD,
+    ALLGAMEOBJECTHOOK_ON_GAMEOBJECT_REMOVE_WORLD,
+    ALLGAMEOBJECTHOOK_ON_GAMEOBJECT_UPDATE,
+    ALLGAMEOBJECTHOOK_CAN_GAMEOBJECT_GOSSIP_HELLO,
+    ALLGAMEOBJECTHOOK_GET_GAMEOBJECT_AI,
+    ALLGAMEOBJECTHOOK_END
+};
+
+// Same reasoning as AllCreatureScript: OnGameObjectUpdate runs once per game
+// object per map tick, so it is dispatched through the enabled-hook list rather
+// than by walking the whole registry.
 class AllGameObjectScript : public ScriptObject
 {
     protected:
-        explicit AllGameObjectScript(char const* name) : ScriptObject(name) { ScriptRegistry<AllGameObjectScript>::AddScript(this); }
+        explicit AllGameObjectScript(char const* name, std::vector<uint16> enabledHooks = {})
+            : ScriptObject(name, ALLGAMEOBJECTHOOK_END)
+        {
+            TortoiseEnableAllHooksIfEmpty(enabledHooks, ALLGAMEOBJECTHOOK_END);
+            ScriptRegistry<AllGameObjectScript>::AddScript(this, std::move(enabledHooks));
+        }
+
     public:
         virtual void OnGameObjectAddWorld(GameObject* /*go*/) {}
         virtual void OnGameObjectRemoveWorld(GameObject* /*go*/) {}
