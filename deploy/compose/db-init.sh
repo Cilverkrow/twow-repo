@@ -38,6 +38,7 @@ PB_SQL_DIR=${PB_SQL_DIR:-/sql-playerbots}
 
 DB_HOST=${DB_HOST:-db}
 DB_PORT=${DB_PORT:-3306}
+BOT_DB=cv_bots
 
 mysql_root() { mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -p"$DB_ROOT_PASSWORD" "$@"; }
 log() { printf '[db-init] %s\n' "$*" >&2; }
@@ -71,6 +72,7 @@ mysql_root -e 'SELECT 1' >/dev/null || { log "cannot reach $DB_HOST:$DB_PORT as 
 stage_schemas() {
     [ -f "$SQL_DIR/create_databases.sql" ] || { log "missing $SQL_DIR/create_databases.sql"; exit 1; }
     mysql_root < "$SQL_DIR/create_databases.sql"
+    mysql_root -e "CREATE DATABASE IF NOT EXISTS \`$BOT_DB\` CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci;"
 }
 
 # ----------------------------------------------------------------- 10 grants
@@ -85,6 +87,7 @@ GRANT ALL PRIVILEGES ON tw_world.*  TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_char.*   TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_logon.*  TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_logs.*   TO '${DB_USER}'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON cv_bots.* TO '${DB_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL
 }

@@ -49,11 +49,17 @@ spec:
               value: {{ .Values.database.names.world | quote }}
             - name: CHAR_DB
               value: {{ .Values.database.names.characters | quote }}
+            - name: BOT_DB
+              value: {{ .Values.database.names.playerbots | quote }}
           command: ["/bin/bash", "-c"]
           args:
             - |
               set -euo pipefail
               m() { mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -p"$DB_ROOT_PASSWORD" "$@"; }
+
+              [ "$BOT_DB" = "cv_bots" ] || { echo "FAILED: PlayerBot schema must be cv_bots"; exit 1; }
+              m -e "CREATE DATABASE IF NOT EXISTS \`cv_bots\` CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci;"
+              m -e "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON \`cv_bots\`.* TO '${DB_USER}'@'%';"
 
               # sql/base is the world *content* (~130 MB, 190 files), not a
               # migration baseline. It is imported once, into an empty database,

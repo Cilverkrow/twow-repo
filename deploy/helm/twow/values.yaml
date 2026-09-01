@@ -31,6 +31,7 @@ database:
     characters: tw_char
     logon: tw_logon
     logs: tw_logs
+    playerbots: cv_bots
   # Required. Create it yourself:
   #   kubectl create secret generic twow-db \
   #     --from-literal=password=... --from-literal=root-password=...
