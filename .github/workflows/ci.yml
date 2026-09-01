@@ -41,6 +41,24 @@ name: ci
 on:
   push:
     branches: [main, 'refactor/**']
+    # A change that touches only prose cannot break a C++ build, and a full run
+    # costs around 34 minutes cold. A large share of the commits on this project
+    # are issue manifests, ADRs and runbook evidence; each of those was buying a
+    # full compile to prove that Markdown still parses.
+    #
+    # Deliberately NOT ignored: ops/ (it holds the audit scripts CI runs),
+    # .github/ (the workflows themselves), and any *.md inside src/ or modules/,
+    # because those sit beside code and a path filter that swallowed them would
+    # be surprising. AGENTS.md is likewise not ignored -- it is the handover
+    # contract, and a broken one is worth a run.
+    paths-ignore:
+      - 'docs/**'
+      - 'runbooks/**'
+      - 'README.md'
+      - 'INSTALL-*.md'
+      - 'PLAYERBOTS_QUICKSTART.md'
+      - 'CONTRIBUTING.md'
+      - 'AUTHORS.md'
   pull_request:
   # Nightly backstop on main, inherited from smoke.yml and integration.yml. Both
   # of those had their own cron for the same reason: the stack can break from a
