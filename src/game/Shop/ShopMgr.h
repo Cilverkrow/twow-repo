@@ -38,6 +38,18 @@ class ShopMgr
         bool RequestBalance(uint32 accountId);
         bool RequestPurchase(uint32 accountId, uint32 guidLow, uint32 itemId);
         void ProcessRequestsWorker();
+
+        // Credit an account's shop balance.
+        //
+        // The seam a module uses to grant coins without owning the table.
+        // shop_coins belongs to the shop; a module that wrote it directly would
+        // break the one-schema-one-owner rule (ADR-0021) and would have to
+        // duplicate the insert-or-add shape GetBalance depends on for an
+        // account that has never been in the shop.
+        //
+        // Asynchronous, like every other write here. Awarding zero is a no-op
+        // rather than a pointless round trip.
+        void AwardCoins(uint32 accountId, uint32 amount);
     private:
         int32 GetBalance(uint32 accountId);
         void BuyItem(uint32 accountId, uint32 guidLow, uint32 itemId);

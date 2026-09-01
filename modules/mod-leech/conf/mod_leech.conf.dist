@@ -1,0 +1,32 @@
+[worldserver]
+
+########################################
+# mod-leech
+#
+# Heals a player for a share of the damage they deal. A pet's damage credits
+# its owner.
+#
+# The restrictions below all default to ON, so a bare "Leech.Enable = 1" holds
+# no surprises: without them the leech applies to every player -- including the
+# random bots -- and in PvP, where a flat heal on damage dealt skews fights.
+########################################
+
+# Off by default. The core must run with every project feature disabled
+# (ADR-0024 invariant 4).
+Leech.Enable = 0
+
+# Fraction of damage dealt that is healed back. 0.05 = 5%.
+Leech.Amount = 0.05
+
+# Only against non-players.
+Leech.PvEOnly = 1
+
+# Only while not in a party or raid.
+Leech.SoloOnly = 1
+
+# Only inside dungeons and raids. Levelling in the open world stays untouched;
+# the bonus applies where soloing actually gets hard.
+Leech.DungeonOnly = 1
+
+# Exclude bots (RNDBOT accounts).
+Leech.RealPlayersOnly = 1

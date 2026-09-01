@@ -2062,35 +2062,12 @@ BeginnersGuildAlliance = 126
 
 # --- Fork additions (see README About this fork) ---
 
-# AutoWorldBuff. Periodically applies world buffs to real online players (bots
-# and the Discord bridge are excluded). Each buff has its own independent timer
-# so they do not all fire at the same moment:
-#   Spirit of Zandalar               - anyone in Stranglethorn Vale
-#   Warchief's Blessing              - Horde only, in Crossroads or Orgrimmar
-#   Rallying Cry of the Dragonslayer - Alliance in Stormwind City,
-#                                      Horde in Orgrimmar
-# FirstMin/FirstMaxInterval apply to the first roll after a (re)start and are
-# kept short so frequent restarts do not delay the buffs by a full interval
-# every time. Min/MaxInterval apply to every roll after that. All values in ms.
+# AutoWorldBuff moved to modules/mod-worldbuff. Its settings live in
+# modules/mod_worldbuff.conf - see modules/README.md.
 
-AutoWorldBuff.Enable = 0
-AutoWorldBuff.FirstMinInterval = 600000
-AutoWorldBuff.FirstMaxInterval = 7200000
-AutoWorldBuff.MinInterval = 3600000
-AutoWorldBuff.MaxInterval = 10800000
-AutoWorldBuff.WarningInterval = 600000
-
-# AutoDonationPoints. Grants donation points (shop_coins) to real online players
-# for time spent online, tracked per account. Requires the
-# donation_point_progress table in the LOGIN database - see
-# sql/logon/donation_point_progress.sql. Without it the feature still runs but
-# progress is lost on every restart. FlushIntervalMs controls how often progress
-# is written out; at worst that much time is lost on an unclean shutdown.
-
-AutoDonationPoints.Enable = 0
-AutoDonationPoints.IntervalMs = 3600000
-AutoDonationPoints.Amount = 1
-AutoDonationPoints.FlushIntervalMs = 300000
+# AutoDonationPoints moved to modules/mod-donation. Its settings live in
+# modules/mod_donation.conf, which the module installs and the server loads
+# alongside this file - see modules/README.md.
 
 # AutoBroadcast.Timer. Print broadcast messages in players chat.
 
@@ -2191,22 +2168,8 @@ Perf.ReportInterval = 600
 
 
 # Leech Module
-# Enables a baseline heal on damage
-Leech.Enable = 0
-
-# Sets the percentage of damage to leech
-Leech.Amount = 0.05
-
-# Leech restrictions. Without them the leech applies to every player -
-# including the random bots - and in PvP as well.
-#   PvEOnly          against non-players only
-#   RealPlayersOnly  no random bots (RNDBOT accounts)
-#   SoloOnly         only while not in a party or raid
-#   DungeonOnly      instances only (dungeons and raids), not the open world
-Leech.PvEOnly = 1
-Leech.RealPlayersOnly = 1
-Leech.SoloOnly = 1
-Leech.DungeonOnly = 1
+# Leech moved to modules/mod-leech. Its settings live in
+# modules/mod_leech.conf - see modules/README.md.
 
 # SoloDungeonRepopAlive. A player who dies ALONE inside an instance is brought
 # back alive just inside the entrance instead of having to walk their corpse

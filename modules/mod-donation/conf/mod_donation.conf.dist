@@ -1,0 +1,35 @@
+[worldserver]
+
+########################################
+# mod-donation
+#
+# Awards online players shop coins for time spent in the world. Bots and the
+# Discord bridge account are excluded.
+#
+# Progress is persisted in `donation_point_progress` in the login database, so a
+# restart no longer resets everyone to zero. Before that it was memory-only, and
+# with frequent restarts a normal player practically never reached a full hour
+# in one go -- while the permanently connected Discord bridge was the only
+# "session" that did.
+########################################
+
+# Off by default. The core must run with every project feature disabled
+# (ADR-0024 invariant 4).
+AutoDonationPoints.Enable = 0
+
+# How much online time earns one award, in milliseconds. Default one hour.
+#
+# Zero is refused at runtime and replaced by the default: it would make the
+# award condition true on every tick, which is two database writes and a chat
+# line per online player per tick. That saturates the connection pool and takes
+# the server down, with MySQL logging aborted connections that look like the
+# cause and are the consequence.
+AutoDonationPoints.IntervalMs = 3600000
+
+# Coins granted per interval. Credited through ShopMgr, the same balance the
+# shop spends.
+AutoDonationPoints.Amount = 1
+
+# How often partial progress is written out, in milliseconds. Lower means less
+# progress lost on an unclean stop and more database traffic.
+AutoDonationPoints.FlushIntervalMs = 300000

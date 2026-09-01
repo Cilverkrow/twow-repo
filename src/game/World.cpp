@@ -1460,7 +1460,6 @@ void World::LoadConfigSettingsFromFile(bool reload)
     setConfig(CONFIG_UINT32_TRANSMOG_REQ_ITEM, "Transmog.ReqItemID", 0);
     setConfig(CONFIG_UINT32_TRANSMOG_REQ_ITEM_COUNT, "Transmog.ReqItemCount", 1);
     setConfig(CONFIG_FLOAT_TRANSMOG_REQ_MONEY_RATE, "Transmog.ReqMoneyRate", 0.0);
-    setConfig(CONFIG_FLOAT_LEECH_AMOUNT, "Leech.Amount", 0.10f);
     setConfig(CONFIG_BOOL_STATIC_OBJECT_LOS, "StaticObjectLOS", true);
     setConfig(CONFIG_BOOL_DUAL_SPEC, "DualSpec", false);
     
@@ -1517,11 +1516,6 @@ void World::LoadConfigSettingsFromFile(bool reload)
     setConfig(CONFIG_UINT32_AUTO_PDUMP_DELETE_AFTER_DAYS, "AutoPDump.DeleteAfterDays", 60);
 
     setConfig(CONFIG_BOOL_PERFORMANCE_ENABLE, "Perf.Enable", true);
-    setConfig(CONFIG_BOOL_LEECH_ENABLE, "Leech.Enable", false);
-    setConfig(CONFIG_BOOL_LEECH_PVE_ONLY, "Leech.PvEOnly", true);
-    setConfig(CONFIG_BOOL_LEECH_REAL_PLAYERS_ONLY, "Leech.RealPlayersOnly", true);
-    setConfig(CONFIG_BOOL_LEECH_SOLO_ONLY, "Leech.SoloOnly", true);
-    setConfig(CONFIG_BOOL_LEECH_DUNGEON_ONLY, "Leech.DungeonOnly", true);
     setConfig(CONFIG_BOOL_SOLO_DUNGEON_REPOP_ALIVE, "SoloDungeonRepopAlive.Enable", false);
     setConfig(CONFIG_BOOL_LFT_BOTFILL_ENABLE, "LFT.BotFill.Enable", false);
     setConfig(CONFIG_UINT32_LFT_BOTFILL_DELAY, "LFT.BotFill.DelaySeconds", 90);
@@ -2549,80 +2543,6 @@ void TotalMoneyCallback(QueryResult* result, uint32 money)
 }
 
 
-// custom: AutoWorldBuff per-buff timer (2026-07-28) - see the call sites in
-// World::Update() and World.h's WorldBuffTimerState for context. Handles one
-// independent buff's warning/reroll/cast cycle; called once per configured
-// buff so they don't all fire simultaneously.
-void World::UpdateWorldBuffTimer(uint32 diff, WorldBuffTimerState& state, uint32 spellId,
-    std::string const& announceLabel, std::function<bool(Player*)> const& eligible)
-{
-    // One warning per cycle, shortly before the buff is renewed.
-    if (!state.warned && state.warningMs > 0 && state.timer <= state.warningMs)
-    {
-        state.warned = true;
-        uint32 warnMinutes = std::max<uint32>(1, state.warningMs / 60000);
-        SendWorldText(3 /* LANG_SYSTEMMESSAGE */,
-            string_format("{} will be refreshed in {} minute(s)!", announceLabel, warnMinutes).c_str());
-    }
-
-    if (state.timer <= diff)
-    {
-        uint32 minMs, maxMs;
-        if (state.firstSinceRestart)
-        {
-            // A short interval for the very first roll after a start, so that
-            // frequent restarts do not push the buffs back by a whole long
-            // interval every single time.
-            minMs = sConfig.GetIntDefault("AutoWorldBuff.FirstMinInterval", 600000);   // 10min
-            maxMs = sConfig.GetIntDefault("AutoWorldBuff.FirstMaxInterval", 7200000);  // 2h
-            state.firstSinceRestart = false;
-        }
-        else
-        {
-            minMs = sConfig.GetIntDefault("AutoWorldBuff.MinInterval", 3600000);  // 1h
-            maxMs = sConfig.GetIntDefault("AutoWorldBuff.MaxInterval", 10800000); // 3h
-        }
-        if (maxMs < minMs)
-            maxMs = minMs;
-        state.timer = minMs + (maxMs > minMs ? urand(0, maxMs - minMs) : 0);
-
-        state.warningMs = sConfig.GetIntDefault("AutoWorldBuff.WarningInterval", 600000); // 10min
-        if (state.warningMs >= state.timer)
-            state.warningMs = state.timer / 2; // Sicherheitsnetz falls Warnzeit > Intervall
-        state.warned = false;
-
-        uint32 buffedCount = 0;
-        for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-        {
-            WorldSession* worldBuffSession = itr->second;
-            if (!worldBuffSession)
-                continue;
-            Player* worldBuffPlayer = worldBuffSession->GetPlayer();
-            if (!worldBuffPlayer || !worldBuffPlayer->IsInWorld())
-                continue;
-
-            // Random bots sit on RNDBOT accounts; their session carries no
-            // username, so look it up by account id. The Discord bridge
-            // character on account DISCORD is a genuine session too, but not
-            // a player, so it is excluded as well.
-            std::string worldBuffAccName;
-            sAccountMgr.GetName(worldBuffSession->GetAccountId(), worldBuffAccName);
-            if (worldBuffAccName.rfind("RNDBOT", 0) == 0 || worldBuffAccName == "DISCORD")
-                continue;
-
-            if (eligible(worldBuffPlayer))
-            {
-                worldBuffPlayer->CastSpell(worldBuffPlayer, spellId, true);
-                ++buffedCount;
-            }
-        }
-
-        if (buffedCount)
-            SendWorldText(3 /* LANG_SYSTEMMESSAGE */, string_format("World buff refreshed: {}!", announceLabel).c_str());
-    }
-    else
-        state.timer -= diff;
-}
 
 /// Update the World !
 void World::Update(uint32 diff)
@@ -2840,161 +2760,10 @@ void World::Update(uint32 diff)
     // Update AutoBroadcast
     sAutoBroadCastMgr.Update(diff);
 
-    // --- Custom: AutoWorldBuff. Periodically hands real online players - no
-    // bots, no Discord bridge character - Spirit of Zandalar (Stranglethorn
-    // Vale only), Warchief's Blessing (Horde only, Crossroads and Orgrimmar)
-    // and Rallying Cry of the Dragonslayer (BOTH factions, each in their own
-    // capital: Alliance in Stormwind, Horde in Orgrimmar - see the correction
-    // note at the call site).
-    // Each buff has its OWN independent timer rather than a shared one, by
-    // request: before that all three always arrived together. The very first
-    // roll after a start uses a SHORT interval (FirstMinInterval to
-    // FirstMaxInterval, 10 minutes to 2 hours by default) so that frequent
-    // restarts do not push the buffs back by a whole 1-3 hour interval every
-    // time. After that the normal, longer interval applies
-    // (MinInterval to MaxInterval).
-    // Siehe UpdateWorldBuffTimer() weiter unten. ---
-    if (sConfig.GetBoolDefault("AutoWorldBuff.Enable", false))
-    {
-        // Zonen-/Area-IDs aus turtle_world.area_template (2026-07-27):
-        // Stranglethorn Vale (33), Orgrimmar (1637) and Stormwind City (1519)
-        // are top level zone entries themselves (zone_id 0). The Crossroads is
-        // only an AREA inside the Barrens (entry 380, zone_id 17), which is why
-        // that one uses GetAreaId() rather than GetZoneId().
-        const uint32 ZONE_STRANGLETHORN_VALE = 33;
-        const uint32 ZONE_ORGRIMMAR = 1637;
-        const uint32 ZONE_STORMWIND_CITY = 1519;
-        const uint32 AREA_THE_CROSSROADS = 380;
+    // AutoWorldBuff lived here inline. It is modules/mod-worldbuff now.
 
-        UpdateWorldBuffTimer(diff, m_zandalarBuffTimer, 24425, "Spirit of Zandalar (in Stranglethorn Vale)",
-            [ZONE_STRANGLETHORN_VALE](Player* p) { return p->GetZoneId() == ZONE_STRANGLETHORN_VALE; });
-
-        UpdateWorldBuffTimer(diff, m_warchiefBuffTimer, 16609, "Warchief's Blessing (in Crossroads/Orgrimmar)",
-            [ZONE_ORGRIMMAR, AREA_THE_CROSSROADS](Player* p) {
-                return p->GetTeam() == HORDE && (p->GetAreaId() == AREA_THE_CROSSROADS || p->GetZoneId() == ZONE_ORGRIMMAR);
-            });
-
-        // Rallying Cry is NOT faction exclusive. The buff comes from the Onyxia
-        // and Nefarian heads, which are turned in in BOTH capitals - Horde in
-        // Orgrimmar, Alliance in Stormwind. It was wrongly limited to Alliance
-        // in Stormwind at first, on the assumption that it was the Alliance
-        // counterpart to Warchief's Blessing. Only Warchief's Blessing above
-        // is actually Horde exclusive.
-        UpdateWorldBuffTimer(diff, m_dragonslayerBuffTimer, 22888, "Rallying Cry of the Dragonslayer (in Stormwind City/Orgrimmar)",
-            [ZONE_STORMWIND_CITY, ZONE_ORGRIMMAR](Player* p) {
-                return (p->GetTeam() == ALLIANCE && p->GetZoneId() == ZONE_STORMWIND_CITY) ||
-                       (p->GetTeam() == HORDE && p->GetZoneId() == ZONE_ORGRIMMAR);
-            });
-    }
-
-    // --- Custom: AutoDonationPoints. Awards real online players - no bots and
-    // no Discord bridge character - donation points (shop_coins, the same
-    // table and currency ShopMgr uses) for every full hour spent online.
-    // Each account carries its own accumulator rather than sharing a single
-    // timer, so it does not matter when somebody logged in: everyone gets
-    // their own full hour of playing time before the next award.
-    //
-    // Progress is persisted in `donation_point_progress` in the login
-    // database. Before that it lived in memory only and reset to zero on
-    // EVERY restart - with frequent restarts a normal player practically
-    // never reached a full hour in one go, while the permanently connected
-    // Discord bridge was the only "session" running long enough to qualify.
-    // It is loaded once per account, the first time that account is seen
-    // after a start. It is written on every award and periodically besides,
-    // controlled by FlushIntervalMs, so that not every tick has to fire a
-    // query against the database. ---
-    if (sConfig.GetBoolDefault("AutoDonationPoints.Enable", false))
-    {
-        uint32 dpIntervalMs = sConfig.GetIntDefault("AutoDonationPoints.IntervalMs", 3600000); // 1h
-
-        // A zero here makes the award condition below true on every tick, which
-        // means two writes to the login database and a chat line per online
-        // player per tick - roughly sixty writes a second each. That saturates
-        // the connection pool, the world thread waits on it, and MySQL logs a
-        // row of "Aborted connection ... Got an error reading communication
-        // packets" as the dying server drops its handles. The warnings look
-        // like the cause and are the consequence. Fall back to the default
-        // rather than letting a stray value take the server down.
-        if (!dpIntervalMs)
-        {
-            sLog.outError("AutoDonationPoints.IntervalMs is 0, which would award every tick. Using 3600000 instead.");
-            dpIntervalMs = 3600000;
-        }
-        uint32 dpAmount = sConfig.GetIntDefault("AutoDonationPoints.Amount", 1);
-        uint32 dpFlushMs = sConfig.GetIntDefault("AutoDonationPoints.FlushIntervalMs", 300000); // 5min
-
-        bool dpShouldFlush = false;
-        if (m_donationPointFlushTimer <= diff)
-        {
-            m_donationPointFlushTimer = dpFlushMs;
-            dpShouldFlush = true;
-        }
-        else
-            m_donationPointFlushTimer -= diff;
-
-        for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-        {
-            WorldSession* dpSession = itr->second;
-            if (!dpSession)
-                continue;
-            Player* dpPlayer = dpSession->GetPlayer();
-            if (!dpPlayer || !dpPlayer->IsInWorld())
-                continue;
-
-            // Compare case insensitively: the Discord bridge account is spelled
-            // "discord" in this database while the comparison ran against
-            // "DISCORD", so the bridge of all things collected the points and
-            // its chat output turned up as "[Server]: You have ..." in the
-            // Discord channel. The same applies to the RNDBOT prefix.
-            std::string dpAccName;
-            sAccountMgr.GetName(dpSession->GetAccountId(), dpAccName);
-            for (char& dpNameChar : dpAccName)
-                if (dpNameChar >= 'a' && dpNameChar <= 'z')
-                    dpNameChar = dpNameChar - 'a' + 'A';
-            if (dpAccName.rfind("RNDBOT", 0) == 0 || dpAccName == "DISCORD")
-                continue;
-
-            uint32 dpAccountId = dpSession->GetAccountId();
-
-            // Load the persisted progress once, if this account has not been
-            // seen since the server started.
-            if (m_donationPointAccumulatorMs.find(dpAccountId) == m_donationPointAccumulatorMs.end())
-            {
-                uint32 dpLoadedMs = 0;
-                std::unique_ptr<QueryResult> dpResult(LoginDatabase.PQuery(
-                    "SELECT `accumulated_ms` FROM `donation_point_progress` WHERE `account_id` = %u", dpAccountId));
-                if (dpResult)
-                    dpLoadedMs = dpResult->Fetch()[0].GetUInt32();
-                m_donationPointAccumulatorMs[dpAccountId] = dpLoadedMs;
-            }
-
-            uint32& dpAccumMs = m_donationPointAccumulatorMs[dpAccountId];
-            dpAccumMs += diff;
-
-            if (dpAccumMs >= dpIntervalMs)
-            {
-                dpAccumMs -= dpIntervalMs;
-                // Insert or add, the same shape ShopMgr::GetBalance uses for an
-                // account that has never been in the shop.
-                LoginDatabase.PExecute(
-                    "INSERT INTO `shop_coins` (`id`, `coins`) VALUES (%u, %u) "
-                    "ON DUPLICATE KEY UPDATE `coins` = `coins` + %u",
-                    dpAccountId, dpAmount, dpAmount);
-                LoginDatabase.PExecute(
-                    "INSERT INTO `donation_point_progress` (`account_id`, `accumulated_ms`) VALUES (%u, %u) "
-                    "ON DUPLICATE KEY UPDATE `accumulated_ms` = %u",
-                    dpAccountId, dpAccumMs, dpAccumMs);
-                ChatHandler(dpPlayer).PSendSysMessage("You received %u Donation Point(s) for your time online!", dpAmount);
-            }
-            else if (dpShouldFlush)
-            {
-                LoginDatabase.PExecute(
-                    "INSERT INTO `donation_point_progress` (`account_id`, `accumulated_ms`) VALUES (%u, %u) "
-                    "ON DUPLICATE KEY UPDATE `accumulated_ms` = %u",
-                    dpAccountId, dpAccumMs, dpAccumMs);
-            }
-        }
-    }
+    // AutoDonationPoints lived here inline. It is modules/mod-donation now,
+    // driven by WORLDHOOK_ON_UPDATE, which this function already dispatches.
 
     // Update liste des ban si besoin
     sAccountMgr.Update(diff);

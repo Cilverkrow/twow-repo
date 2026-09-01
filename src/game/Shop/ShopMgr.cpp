@@ -301,3 +301,16 @@ void ShopMgr::BuyItem(uint32 accountId, uint32 guidLow, uint32 itemId)
         return;
     }
 }
+
+void ShopMgr::AwardCoins(uint32 accountId, uint32 amount)
+{
+    if (!accountId || !amount)
+        return;
+
+    // Insert-or-add, the same shape GetBalance expects for an account that has
+    // never had a shop row.
+    LoginDatabase.PExecute(
+        "INSERT INTO `shop_coins` (`id`, `coins`) VALUES (%u, %u) "
+        "ON DUPLICATE KEY UPDATE `coins` = `coins` + %u",
+        accountId, amount, amount);
+}

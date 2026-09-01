@@ -1,0 +1,35 @@
+[worldserver]
+
+########################################
+# mod-worldbuff
+#
+# Periodically grants online players the three vanilla world buffs:
+#   Spirit of Zandalar               - Stranglethorn Vale
+#   Warchief's Blessing              - Horde only, Crossroads and Orgrimmar
+#   Rallying Cry of the Dragonslayer - both factions, each in its own capital
+#
+# Bots and the Discord bridge account are excluded.
+#
+# Each buff has its OWN independent timer rather than a shared one: before that
+# all three always arrived together.
+########################################
+
+# Off by default. The core must run with every project feature disabled
+# (ADR-0024 invariant 4).
+AutoWorldBuff.Enable = 0
+
+# Interval range for the FIRST roll after a server start, in milliseconds.
+# Deliberately short: with a long interval, frequent restarts pushed the buffs
+# back by a full 1-3 hours every single time.
+AutoWorldBuff.FirstMinInterval = 600000
+AutoWorldBuff.FirstMaxInterval = 7200000
+
+# Interval range for every roll after the first, in milliseconds. Each buff
+# rolls its own value in this range, which is what keeps them apart.
+AutoWorldBuff.MinInterval = 3600000
+AutoWorldBuff.MaxInterval = 10800000
+
+# How long before a refresh the warning is announced, in milliseconds. If this
+# is longer than the rolled interval it is halved instead, so a misconfiguration
+# cannot suppress the warning entirely.
+AutoWorldBuff.WarningInterval = 600000

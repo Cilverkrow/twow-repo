@@ -922,57 +922,17 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
             damage *= 0.5f;
     }
 
-    if (damage > 0 && sWorld.getConfig(CONFIG_BOOL_LEECH_ENABLE))
+    // Leech lived here inline. It is modules/mod-leech now, driven by the
+    // hook below.
+    //
+    // The dispatch is here, not at the OnDamage site further up, because this
+    // is where `damage` is final: between the two points the core applies the
+    // hardcore pet scaling and the pet avoidance halving, and a consumer that
+    // scales off damage dealt needs the number that actually lands.
+    ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_ON_DAMAGE_APPLIED, [&](UnitScript* script)
     {
-        Unit* owner = GetOwner();
-        bool isPetHit = owner && owner->GetTypeId() == TYPEID_PLAYER;
-        Player* player = isPetHit ? owner->ToPlayer() : ToPlayer();
-
-        // Restrictions. Without them the leech applies to EVERY player -
-        // including the ~1000 random bots - and in PvP as well, where a flat
-        // heal on damage dealt skews fights. Each restriction can be switched
-        // off on its own; all default to on, so a bare "Leech.Enable = 1"
-        // holds no surprises.
-        if (player)
-        {
-            // Against non-players only (PvE)
-            if (sWorld.getConfig(CONFIG_BOOL_LEECH_PVE_ONLY) && pVictim->IsPlayer())
-                player = nullptr;
-
-            // Solo only (no party, no raid)
-            if (player && sWorld.getConfig(CONFIG_BOOL_LEECH_SOLO_ONLY) && player->GetGroup())
-                player = nullptr;
-
-            // Instances only - levelling out in the open world stays
-            // untouched, the bonus applies where soloing actually gets hard.
-            // Map::IsDungeon() covers dungeons and raids.
-            if (player && sWorld.getConfig(CONFIG_BOOL_LEECH_DUNGEON_ONLY) &&
-                !(player->GetMap() && player->GetMap()->IsDungeon()))
-                player = nullptr;
-
-            // Real players only - random bots run on RNDBOT accounts.
-            // Looked up by account id because bot sessions carry no
-            // account name of their own.
-            if (player && sWorld.getConfig(CONFIG_BOOL_LEECH_REAL_PLAYERS_ONLY))
-            {
-                std::string leechAccName;
-                if (WorldSession* leechSession = player->GetSession())
-                    sAccountMgr.GetName(leechSession->GetAccountId(), leechAccName);
-                for (char& c : leechAccName)
-                    if (c >= 'a' && c <= 'z')
-                        c = c - 'a' + 'A';
-                if (leechAccName.rfind("RNDBOT", 0) == 0)
-                    player = nullptr;
-            }
-        }
-
-        if (player)
-        {
-            float leechAmount = sWorld.getConfig(CONFIG_FLOAT_LEECH_AMOUNT);
-            int32 bp1 = int32(leechAmount * float(damage));
-            player->CastCustomSpell(this /*attacker*/, 18984, &bp1, nullptr, nullptr, true);
-        }
-    }
+        script->OnDamageApplied(this, pVictim, damage);
+    });
 
     if (health <= damage && pVictim->GetInvincibilityHpThreshold() == 0)
     {

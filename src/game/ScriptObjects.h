@@ -518,6 +518,7 @@ enum UnitHook
     UNITHOOK_ON_UNIT_ENTER_COMBAT,
     UNITHOOK_ON_UNIT_EXIT_COMBAT,
     UNITHOOK_ON_UNIT_DEATH,
+    UNITHOOK_ON_DAMAGE_APPLIED,
     UNITHOOK_END
 };
 
@@ -534,6 +535,18 @@ class UnitScript : public ScriptObject
     public:
         virtual void OnHeal(Unit* /*healer*/, Unit* /*receiver*/, uint32& /*gain*/) {}
         virtual void OnDamage(Unit* /*attacker*/, Unit* /*victim*/, uint32& /*damage*/) {}
+
+        // Damage after every modifier has been applied, immediately before it
+        // is subtracted from health.
+        //
+        // Distinct from OnDamage, which fires early enough to still change the
+        // number - and which mod-dungeon-clear relies on for exactly that, to
+        // catch a lethal blow before it lands. This one fires late and is
+        // read-only: it reports what was actually dealt. A consumer that wants
+        // to scale off real damage (leeching a share of it, say) needs this
+        // one, because between the two points the core applies hardcore pet
+        // scaling and the pet avoidance halving.
+        virtual void OnDamageApplied(Unit* /*attacker*/, Unit* /*victim*/, uint32 /*damage*/) {}
         virtual void ModifyMeleeDamage(Unit* /*target*/, Unit* /*attacker*/, uint32& /*damage*/) {}
         virtual void ModifySpellDamageTaken(Unit* /*target*/, Unit* /*attacker*/, int32& /*damage*/, SpellEntry const* /*spellInfo*/) {}
         virtual void ModifyHealReceived(Unit* /*target*/, Unit* /*healer*/, uint32& /*heal*/, SpellEntry const* /*spellInfo*/) {}
