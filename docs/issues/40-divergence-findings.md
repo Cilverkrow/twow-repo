@@ -1,9 +1,16 @@
 # Divergence findings
 
-Concrete, verified items from reviewing `Shyalya/tortoise-wow` -- which is not an
-upstream in the usual sense but the same project developed in parallel by the
-same people. Two read-only reviews produced these; the seven defects that were
-also live in our tree have already been fixed and are not repeated here.
+Concrete, verified items from reviewing `Shyalya/tortoise-wow`, the public fork
+this project was forked from. Two read-only reviews produced these; the seven
+defects that were also live in our tree have already been fixed and are not
+repeated here.
+
+> **Correction 2026-09-02.** This document previously called Shyalya's repository
+> "not an upstream in the usual sense but the same project developed in parallel by
+> the same people", and the phrase "the parallel line" throughout means only
+> "upstream". Shyalya is an **unrelated third party**; their fork of
+> `Penqle/tortoise-wow` is an ordinary upstream. Nothing here requires anyone's
+> agreement to offer upstream. See ADR-0020 for the verified lineage.
 
 Every entry names the file and, where one exists, the reference commit. Nothing
 here was taken on trust: the claims that drove code changes were verified against
