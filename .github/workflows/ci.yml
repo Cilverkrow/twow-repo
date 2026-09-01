@@ -52,11 +52,26 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # One group for the whole pipeline, so a new push cancels the previous run's
-  # compile as well as its lint. Per-workflow groups used to leave an orphaned
-  # 25-minute build running after its commit had been superseded.
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Pushes never cancel or queue each other; pull request updates still do.
+  #
+  # This used to be one group per ref with cancel-in-progress, on the reasoning
+  # that an orphaned build of a superseded commit is waste. That is true when the
+  # pipeline is cheap. It is not cheap -- a full run is around 26 minutes -- and
+  # the effect in practice was that an afternoon of active work produced ZERO
+  # completed runs: four were killed between 20 and 26 minutes by the next push,
+  # including the ones meant to measure whether the pipeline rework had worked.
+  # Cancelling saved runner minutes and cost hours of wall clock.
+  #
+  # Including the SHA in the group on pushes gives every commit its own group, so
+  # nothing is cancelled and nothing queues behind anything. On a pull request
+  # the group is stable per ref, so a new commit supersedes the old run -- which
+  # is right there, because only the tip of a PR is interesting.
+  #
+  # The trade is runner minutes on busy branches. Worth it while several agents
+  # are pushing and the results are being used as measurements rather than as a
+  # pass/fail light.
+  group: ci-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
