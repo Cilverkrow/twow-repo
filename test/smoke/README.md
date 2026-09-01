@@ -47,7 +47,7 @@ a stack on other ports, another host, or a differently named compose file.
 | `TWOW_FIFO` | `/opt/turtle/run/mangosd.in` | the console FIFO |
 | `TWOW_DATA_DIR` | `/opt/turtle/data` | where the stack mounts client data inside the world container |
 | `TWOW_CLIENT_DATA` | `auto` | `0`/`1` to override detection |
-| `TWOW_STRICT_MIGRATION_HASHES` | `0` | `1` makes a `manual` ledger hash a failure instead of a warning |
+| `TWOW_STRICT_MIGRATION_HASHES` | `1` | `0` downgrades a `manual` ledger hash to a warning, for a volume bootstrapped before OPS-020 |
 | `TWOW_TIMEOUT` | `120` | seconds to wait for a restart |
 
 ## Client data
@@ -58,14 +58,16 @@ cannot start, so every check that needs a running world **skips with an explicit
 message** instead of passing. In CI that is normal and expected; on a developer
 machine with data mounted, the same scripts run the full set.
 
-Only `10-migrations.sh` and the realmd half of `00-ports.sh` need no client data.
+Only `10-migrations.sh`, `15-schema-effects.sh` and the realmd half of
+`00-ports.sh` need no client data.
 
 ## What each check proves
 
 | Check | Proves | Needs client data |
 |---|---|---|
 | `00-ports.sh` | realmd accepts TCP on 3724; worldserver on 8090 | for the 8090 half |
-| `10-migrations.sh` | all four schemas exist and every schema with migration files has a non-empty `migrations` ledger. Rows hashed with the literal `manual` are reported as a warning - see below | no |
+| `10-migrations.sh` | all four schemas exist and every schema with migration files has a non-empty `migrations` ledger, and no row is hashed with the literal `manual` - see below | no |
+| `15-schema-effects.sh` | the schema changes the ledger claims are actually in the database: the composite `idx_owner_bot_event` on `ai_playerbot_random_bots`, and `spell_template.script_name` with rows written into it. Both were recorded as applied while missing (OPS-020) | no |
 | `20-console.sh` | the console FIFO exists **and is being read** - `server info` goes in, the answer appears in the log. This is the container failure the entrypoint exists to prevent (ADR-0023 blocker 3) | yes |
 | `30-bot-persistence.sh` | **ADR-0024 invariant 1.** Records the roster, restarts the world server, requires identical GUIDs, names, levels, xp, money, inventory counts and the same roster version | yes |
 | `40-shutdown.sh` | `docker stop` is a graceful in-game shutdown: exit code 0, the entrypoint's clean-shutdown line in the log, no character left flagged online, no rows lost | yes |
@@ -74,16 +76,17 @@ Only `10-migrations.sh` and the realmd half of `00-ports.sh` need no client data
 
 ADR-0024 invariant 3 and FG-033 say a ledger records real content hashes and
 never the literal `manual`; it made 146 world migrations unverifiable (OPS-012).
-`deploy/compose/db-init.sh` writes `manual` deliberately and argues its case in
-its own header: `sql/base` is a mixed snapshot rather than "the first N
-migrations applied", so there is no honest per-file digest to record, and the
-tombstone is only safe while `Database.AutoUpdate.Enabled = 0`.
+`deploy/compose/db-init.sh` used to write it deliberately, so this check only
+warned. OPS-020 removed the reason: the bootstrap now records the uppercase
+SHA-1 of each file's bytes, and only for files it actually applied.
 
-Both positions are defensible and a smoke script is the wrong place to settle
-it. So the count is printed loudly on every run and fails only on request:
+A `manual` row can therefore only come from a database bootstrapped by the old
+script, so it is a failure by default and the suite agrees with the CI check
+that rejects `manual` in new `.sql` files. Operators carrying such a volume can
+downgrade it to a warning while they rebuild:
 
 ```sh
-TWOW_STRICT_MIGRATION_HASHES=1 sh test/smoke/10-migrations.sh
+TWOW_STRICT_MIGRATION_HASHES=0 sh test/smoke/10-migrations.sh
 ```
 
 ### On `30-bot-persistence.sh`

@@ -8,26 +8,29 @@
 #      nothing was recorded, and the next auto-update replays everything;
 #   3. no row records the literal hash 'manual'.
 #
-# Claim 3 is a WARNING here, not a failure, and that is a deliberate and
-# uncomfortable choice. ADR-0024 invariant 3 and FG-033 say real content hashes,
-# never 'manual' - it made 146 world migrations unverifiable (OPS-012).
-# deploy/compose/db-init.sh writes 'manual' on purpose and argues its case in
-# its own header: sql/base is a mixed snapshot rather than "the first N
-# migrations applied", so there is no honest per-file digest to record, and the
-# tombstone is only safe while Database.AutoUpdate.Enabled = 0.
+# Claim 3 used to be a warning, because deploy/compose/db-init.sh wrote 'manual'
+# on purpose and argued its case: sql/base is a mixed snapshot rather than "the
+# first N migrations applied", so there was supposedly no honest per-file digest
+# to record. OPS-020 removed the premise. The bootstrap now applies each file on
+# its own, records it only if the client exited 0, and records the uppercase
+# SHA-1 of the file's bytes - the same digest the AutoUpdater computes. A
+# 'manual' row can therefore only come from a database bootstrapped by the old
+# script, and it means exactly what ADR-0024 invariant 3 and FG-033 say it means:
+# a row nobody can check against a file.
 #
-# Both positions are defensible and this script is not the place to settle it.
-# So it reports the count loudly on every run and fails only when asked:
+# So it fails by default now, and agrees with the CI check that rejects 'manual'
+# in new .sql files. An operator carrying an old volume can downgrade it to the
+# old warning while they rebuild:
 #
-#     TWOW_STRICT_MIGRATION_HASHES=1 sh test/smoke/10-migrations.sh
+#     TWOW_STRICT_MIGRATION_HASHES=0 sh test/smoke/10-migrations.sh
 #
-# This is the only check that needs nothing but the database, which is why it
-# still runs in CI where there is no client data.
+# Like 15-schema-effects.sh it needs nothing but the database, which is why both
+# still run in CI where there is no client data.
 set -eu
 # shellcheck source=test/smoke/lib.sh
 . "$(dirname "$0")/lib.sh"
 
-: "${TWOW_STRICT_MIGRATION_HASHES:=0}"
+: "${TWOW_STRICT_MIGRATION_HASHES:=1}"
 
 require_stack
 
@@ -52,11 +55,10 @@ for schema in $LEDGER_SCHEMAS; do
 
     rows=$(dbq "$schema" "SELECT COUNT(*) FROM \`migrations\`;") || fail "database query failed"
     if [ "${rows:-0}" -eq 0 ]; then
-        # Name the gap rather than just the symptom: db-init.sh records
-        # sql/database_updates into tw_world and nothing else, so sql/logon and
-        # sql/character_updates (which is where the persistent roster lives)
-        # currently reach no ledger at all.
-        fail "$schema.migrations is empty - the bootstrap recorded nothing for it (deploy/compose/db-init.sh records sql/database_updates only)"
+        # Name the gap rather than just the symptom. db-init.sh records a row
+        # where it applies a file, so an empty ledger for a schema that has
+        # migration files on disk means the applying stage never reached it.
+        fail "$schema.migrations is empty - the bootstrap applied nothing to it (see stage 30-updates in deploy/compose/db-init.sh)"
     fi
     info "$schema.migrations rows: $rows"
     total=$(( total + rows ))
@@ -65,6 +67,7 @@ for schema in $LEDGER_SCHEMAS; do
     if [ "${manual:-0}" -gt 0 ]; then
         manual_total=$(( manual_total + manual ))
         info "WARN $schema.migrations has $manual rows hashed 'manual' (ADR-0024 invariant 3, FG-033, OPS-012)"
+        info "     nothing writes those any more - this database predates the OPS-020 fix and wants rebuilding"
     fi
 done
 
