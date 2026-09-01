@@ -127,6 +127,13 @@ import_file() {
     esac
     awk '
         /^---$/ { if (id != "") emit(); reset(); inbody=0; next }
+        # An id line while a body is still open means the previous entry has no
+        # closing ---. Silently, awk would then overwrite the id, keep appending to
+        # the same body, and emit ONE record carrying two entries concatenated --
+        # dropping the first outright. That happened to ARCH-003, which vanished
+        # from the tracker while ARCH-004 was created holding both bodies. Nothing
+        # reported it. Refuse instead.
+        /^id: / && inbody==1 { print "MALFORMED " FILENAME ":" FNR ": " $0 " begins while the body of \"" id "\" is still open (missing --- separator)" > "/dev/stderr"; exit 3 }
         /^id: / { id=substr($0,5); next }
         /^title: / { title=substr($0,8); next }
         /^workstream: / { ws=tolower(substr($0,13)); next }
@@ -139,7 +146,11 @@ import_file() {
         END { if (id != "") emit() }
         function reset() { id=""; title=""; ws=""; prio=""; ot=""; src=""; body="" }
         function emit() {
-            gsub(/\x27/, "\x27\\\x27\x27", body)
+            # Deliberately no shell-escaping of the body here. It travels through a
+            # variable and is passed as --body "$full_body" -- inside double quotes,
+            # where single quotes need no escaping at all. Nothing ever consumed it, so
+            # the escape sequence simply landed in the issue text: every apostrophe in
+            # 32 of 117 imported issues rendered as a four-character mess on GitHub.
             printf "%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1e", id, title, ws, prio, ot, src, body
         }
     ' "$file" | while IFS=$'\x1f' read -r -d $'\x1e' id title ws prio ot src body; do

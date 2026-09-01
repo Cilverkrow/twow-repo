@@ -220,6 +220,7 @@ body: |
   decision. Amend **ADR-0013** for the model/package pinning. Their admission and
   delivery-safety rules survive unchanged and should be restated as
   transport- and provider-independent.
+---
 id: ARCH-004
 title: Evaluate a WASM policy sandbox for per-tick bot behaviour
 workstream: WS-10
