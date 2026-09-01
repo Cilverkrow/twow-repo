@@ -196,10 +196,15 @@ apply_update_dir() {
 # content decision about which trainer list is correct, in files this change does
 # not own; it is reported with OPS-020 rather than papered over here.
 world_migration_stream() {
-    {
-        find "$SQL_DIR/database_updates" -maxdepth 1 -name '*.sql'
-        find "$SQL_DIR/database_updates/world" -maxdepth 1 -name '*.sql'
-    } | while IFS= read -r p; do
+    local d
+    for d in "$SQL_DIR/database_updates" "$SQL_DIR/database_updates/world"; do
+        # Guarded rather than left to find, whose "No such file or directory" on
+        # stderr would be the only sign that half the stream had gone missing.
+        # This runs inside a process substitution, so its exit status is
+        # discarded and a failing find would just silently yield fewer files.
+        [ -d "$d" ] || continue
+        find "$d" -maxdepth 1 -name '*.sql'
+    done | while IFS= read -r p; do
         printf '%s\t%s\n' "$(basename "$p")" "$p"
     done | LC_ALL=C sort | cut -f2-
 }
