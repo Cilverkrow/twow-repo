@@ -136,3 +136,36 @@ failing to say so.
 
 A module exists to be built. Turning them off is the special case, and the nightly
 all-features-off job asks for it explicitly.
+
+## Update 2026-09-01: a module's feature macros are a usage requirement, not a private detail
+
+`mod-playerbots` defined `CMANGOS`, `MANGOSBOT_ZERO` and `ENABLE_PLAYERBOTS` as `PRIVATE`.
+`mod-dungeon-clear` includes sixteen of its headers and therefore compiled them with none of
+the three set. That is not two harmless views of one type -- the vendored code is written as
+
+    bool UnitIsDead(Unit *unit)
+    {
+    #ifdef MANGOS
+        return unit->IsDead();
+    #endif
+    #ifdef CMANGOS
+        return unit->IsDead();
+    #endif
+    }
+
+so with neither macro defined the body has **no return statement at all**. Falling off the
+end of a non-void function is undefined behaviour; GCC plants a `ud2`. Every `ServerFacade`
+call mod-dungeon-clear made either returned garbage or executed an illegal instruction.
+
+It was found by the REF-005 warning inventory, not by a test: 357 of 462 GCC emissions were
+`-Wreturn-type` in one header, roughly one per dungeon-clear translation unit. Nothing else
+reported it, because the code compiled and linked cleanly.
+
+**The rule.** If a module's headers change meaning under a macro, that macro is part of the
+module's interface and belongs on the target as `PUBLIC`. Anything compiling those headers
+must compile them the way the module does. `PRIVATE` is for flags that affect only how a
+module's own translation units are built -- the MSVC `/Ob1` inliner constraint is a genuine
+example, since it changes code generation and nothing else.
+
+Verified: with `PUBLIC`, `-Wreturn-type` emissions go 357 -> 0 and `mod_mod_dungeon_clear`
+still builds and links.
