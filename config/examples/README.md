@@ -1,7 +1,14 @@
-# Sanitized configuration examples
+# Sanitized historical configuration examples
 
-These files preserve the non-secret local configuration choices needed to reproduce the private-server setup.
+These files are retained as non-secret historical snapshots. They are useful for
+review and reconstruction, but they are neither complete current configuration
+nor deployment input.
 
-All database connection strings and API keys have been replaced with explicit placeholders. Live `.conf` files remain ignored and must never be committed. Supply credentials through local, untracked configuration or a dedicated secret manager.
+The authoritative shared configuration contract is
+[`config/canonical`](../canonical/README.md): complete version-matched `.dist.in`
+templates plus reviewed non-secret overlays. Compose renders from that contract,
+adds protected machine inputs, and records source and file hashes.
 
-Before deployment, compare an example with the matching `.dist` template from the selected server build. Do not assume that an old example contains every option introduced by a newer binary.
+All database connection strings and API keys in this directory have been
+replaced with explicit placeholders. Live and generated `.conf` files remain
+ignored and must never be committed or copied back here.

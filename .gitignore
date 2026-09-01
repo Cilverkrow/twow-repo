@@ -80,10 +80,12 @@ core.[0-9]*
 *.blp
 
 # Secrets and machine-local configuration
+/deploy/compose/config/
 .env
 .env.*
 !.env.example
 *.conf
+!/config/canonical/**/*.conf
 !*.conf.dist
 !*.conf.dist.in
 !*.conf.example

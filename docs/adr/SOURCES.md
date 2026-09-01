@@ -75,3 +75,12 @@ New primary evidence imported as sanitized text:
 - `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-repository-integration-closure-20260831T205652Z/`
 
 The recovery evidence supersedes the earlier generic “MSBuild stalled” explanation with the reproducible blocker `RC2135 file not found: mangosd.ico`. The later repository-integration closure records the successful external-input recovery, clean build, candidate hashes, unchanged 28-path patch, and local `main` integration. Neither later package rewrites the earlier point-in-time evidence.
+
+## 2026-09-01 configuration-as-code decision
+
+ADR-0038 was imported from the verified local collaboration hub after explicit
+acceptance. Its source identity was 3,257 bytes with SHA-256
+`807FBDA1D13544255049625A507209D563AC9CE2941A35682833008A8805F30D`.
+The repository implementation and formal drift-recovery closure are recorded in
+`runbooks/ops-009-config-as-code-20260901/`; neither source copies nor approves
+the active runtime configuration.

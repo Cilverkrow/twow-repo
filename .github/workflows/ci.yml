@@ -1232,7 +1232,8 @@ jobs:
       - name: Require the compose stack
         run: |
           set -eu
-          for f in "$TWOW_COMPOSE_FILE" deploy/compose/.env.example deploy/compose/render-config.sh; do
+          for f in "$TWOW_COMPOSE_FILE" deploy/compose/.env.example \
+                   deploy/compose/render-config.sh deploy/compose/verify-config.sh; do
             if [ ! -f "$f" ]; then
               echo "::error::$f does not exist - the stack cannot be brought up (ADR-0023)"
               exit 1
@@ -1277,6 +1278,7 @@ jobs:
           . "./$TWOW_ENV_FILE"
           set +a
           bash deploy/compose/render-config.sh
+          bash deploy/compose/verify-config.sh
 
       # Only realmd. It pulls in db and db-init through depends_on (the latter
       # with service_completed_successfully), and mangosd is deliberately left
