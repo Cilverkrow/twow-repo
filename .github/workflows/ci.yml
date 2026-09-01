@@ -16,6 +16,14 @@
 # Five job entries. ONE full server compile per push, in the build-and-test job,
 # and smoke consumes the image that build produced instead of building its own.
 #
+# That claim was not true for a while and the numbers said so: build-and-test
+# measured 77 minutes, 71 of them recompiling the whole tree a second time
+# inside `docker build`, where the Dockerfile's ccache is a BuildKit cache mount
+# and type=gha cannot export one. The compile now happens once, on the runner,
+# in a container made from the Dockerfile's own toolchain stage, and the image
+# is assembled from what it installed. The build-and-test job below says exactly
+# what that still verifies and what it no longer does.
+#
 # What is deliberately NOT here:
 #   * the clang build and the all-features-off invariant build - nightly.yml.
 #     They catch slow-moving breakage, not "this push is broken", so paying for
@@ -514,6 +522,30 @@ jobs:
     runs-on: windows-2022
     name: msvc compile-only
     timeout-minutes: 90
+
+    env:
+      # Everything slow about this job was a cache miss.
+      #
+      # It measured 21-33 minutes with no compiler cache of any kind, and about
+      # seven of those minutes were vcpkg building ACE from source - once for
+      # Release and once for Debug - on every push, for a dependency that has
+      # not moved in months. Two caches address that: a vcpkg binary cache for
+      # the dependencies, and sccache (the ccache equivalent that understands
+      # cl.exe) for the tree itself.
+      #
+      # Both live on disk and are carried by actions/cache rather than by
+      # sccache's own GitHub backend, so neither depends on which cache-service
+      # API a particular sccache release happens to speak.
+      SCCACHE_GHA_ENABLED: 'false'
+      SCCACHE_DIR: ${{ github.workspace }}\.sccache
+      SCCACHE_CACHE_SIZE: 2G
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-cache
+      # Written once and used twice: to install the packages, and to key their
+      # cache. Spelling the list out in two places is how a cache outlives the
+      # dependency set it was built for and starts handing back the wrong ACE.
+      VCPKG_TRIPLET: x64-windows
+      VCPKG_PACKAGES: ace boost-thread boost-filesystem boost-system boost-stacktrace
+
     steps:
       # Insurance. Checkout used to die with "Filename too long": that is Git's
       # own 260-character MAX_PATH limit, not a filesystem limit. The offending
@@ -539,19 +571,97 @@ jobs:
       - name: Install Ninja
         run: choco install ninja --no-progress -y
 
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          version: v0.10.0
+
+      # What the two caches are keyed on, written to one file so hashFiles() can
+      # key on all of it at once.
+      #
+      # The compiler has to be in the key. An object file produced by a
+      # different MSVC toolset is not a cache miss, it is a wrong answer, and
+      # because this job never links it is an answer that would go unnoticed
+      # here and surface in somebody else's build. VCToolsVersion is exactly
+      # that toolset's build number and msvc-dev-cmd exports it; asking cl.exe
+      # for its banner instead would mean capturing a native command's stderr,
+      # which PowerShell 5.1 turns into an error record.
+      - name: Record what the caches are keyed on
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .ci, $env:SCCACHE_DIR, $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          $toolset = if ($env:VCToolsVersion) { $env:VCToolsVersion } else { 'unknown-toolset' }
+          $sdk = if ($env:WindowsSDKVersion) { $env:WindowsSDKVersion } else { 'unknown-sdk' }
+          $vcpkgVersion = (vcpkg version) -join ' '
+          @(
+            "toolset=$toolset"
+            "sdk=$sdk"
+            "vcpkg=$vcpkgVersion"
+            "triplet=$env:VCPKG_TRIPLET"
+            "packages=$env:VCPKG_PACKAGES"
+          ) | Set-Content -Encoding utf8 .ci/msvc-cache-key.txt
+          Get-Content .ci/msvc-cache-key.txt
+
+      # No run-id suffix and no restore-keys: a vcpkg binary package is either
+      # the one this exact toolset and package list asked for or it is useless,
+      # so an inexact hit would only mean rebuilding ACE with extra steps. On an
+      # exact hit actions/cache skips the save, which is why this entry does not
+      # grow on every push.
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: .vcpkg-cache
+          key: msvc-vcpkg-${{ hashFiles('.ci/msvc-cache-key.txt') }}
+
+      # sccache is the opposite case: a partial hit is most of the win, because
+      # a push changes a handful of translation units out of the whole tree.
+      # Hence the run-id suffix, so every run writes a fresh entry, plus a
+      # prefix restore-key, so every run starts from the newest previous one.
+      - name: Restore the compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .sccache
+          key: msvc-sccache-${{ hashFiles('.ci/msvc-cache-key.txt') }}-${{ github.run_id }}
+          restore-keys: |
+            msvc-sccache-${{ hashFiles('.ci/msvc-cache-key.txt') }}-
+
+      # VCPKG_DEFAULT_BINARY_CACHE above is all that is needed: vcpkg's binary
+      # caching is on by default and writes there. The packages come from the
+      # same VCPKG_PACKAGES the cache key was built from, so the two cannot
+      # disagree about what is in the cache.
       - name: Fetch ACE and Boost
         shell: pwsh
         run: |
-          vcpkg install ace:x64-windows boost-thread:x64-windows `
-            boost-filesystem:x64-windows boost-system:x64-windows `
-            boost-stacktrace:x64-windows
+          $pkgs = ($env:VCPKG_PACKAGES -split ' +') | ForEach-Object { $_ + ':' + $env:VCPKG_TRIPLET }
+          Write-Host "vcpkg install $($pkgs -join ' ')"
+          vcpkg install @pkgs
 
+      # Two flags here exist only because of sccache, and both are acceptable
+      # only because this job never links and never ships what it produces:
+      #
+      #   USE_PCH=OFF - sccache declines to cache any translation unit compiled
+      #     with /Yu, so with precompiled headers left on it would cache nothing
+      #     at all and the rest of this would be theatre.
+      #   MSVC_SEPARATE_PDB=OFF - /Zi makes the compiler emit a second output
+      #     file beside the object, which sccache also declines to cache. A
+      #     compile-only job has no use for a .pdb.
+      #
+      # The honest cost: with PCH off a COLD cache compiles slower than this job
+      # did before, because the precompiled header was buying real time. The bet
+      # is that on a push-triggered job the warm cache is the common case and a
+      # near-total hit rate beats a precompiled header on every run but the
+      # first. If cold runs turn out to be normal - eviction, a toolset bump
+      # every week - this trade is the wrong way round and should be revisited.
       - name: Configure
         shell: pwsh
         run: |
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
+            -DUSE_PCH=OFF `
+            -DMSVC_SEPARATE_PDB=OFF
 
       # Build the object files for the libraries, never the executables. If a
       # target name changes, this fails loudly rather than silently covering
@@ -559,6 +669,14 @@ jobs:
       - name: Compile objects (no link)
         shell: pwsh
         run: cmake --build build --target shared framework game --parallel
+
+      # Printed whatever happened. A hit rate near zero here means one of the
+      # two flags above stopped doing its job: the run would still be green,
+      # just slow again, and this line is the only thing that would say so.
+      - name: sccache statistics
+        if: always()
+        shell: pwsh
+        run: sccache --show-stats
 
       - name: Confirm objects were produced
         shell: pwsh
@@ -572,38 +690,68 @@ jobs:
 
   # ---------------------------------------------------------------- build+test
   #
-  # The compile, and the tests, in one job.
+  # The compile, the tests, and the image, out of ONE build tree.
   #
-  # Merging test.yml in here is the point of the exercise: it used to configure
-  # the project a second time and rebuild the same objects on a second runner.
-  # One configure, one build tree, tests run out of it.
+  # THE COMPILE USED TO HAPPEN TWICE. This job measured 77 minutes, 71 of them
+  # in `Build the core image`, while the ccache on the runner reported "Hits:
+  # 128/128 (100%)" - because that cache only ever covered the small test-target
+  # build. The Docker build recompiled all ~1200 translation units from scratch
+  # every single run, for the reason the old comment on that step already gave:
+  # the Dockerfile's ccache is a BuildKit cache mount and type=gha does not
+  # export cache mounts. So a run compiled the tree twice, once warm and once
+  # cold, and paid for the cold one.
   #
-  # Two builds happen here and their scopes are deliberately different:
+  # Now there is one compile. It happens on the runner, in a container made from
+  # Dockerfile.core's `builder-base` stage, and the image is assembled from what
+  # it installed.
   #
-  #  1. The TEST BUILD - native, ubuntu-24.04, ccache-warm. One configure with
-  #     -DBUILD_TESTING=ON, then only the test targets. The adapter suite links
-  #     `shared` and `framework`, not `game`, so this is a fraction of the tree
-  #     and finishes in minutes on a warm cache. Its output is a build tree ctest
-  #     can run out of.
+  # WHY A CONTAINER AND NOT JUST THE RUNNER. The runner is Ubuntu 24.04 and the
+  # image is Debian trixie, and the two disagree about the libraries the server
+  # links hardest against: ACE is 7.1.3 on noble and 8.0.2 on trixie, and
+  # default-libmysqlclient-dev resolves to libmysqlclient.so.21 on one and
+  # libmariadb.so.3 on the other. Binaries built on the runner would copy into
+  # the image perfectly and then fail to exec. Building in `builder-base` means
+  # the same Debian, the same gcc and the same sonames as the release image,
+  # with the ccache bind-mounted out to an ordinary directory that actions/cache
+  # can carry between runs - which is the one thing a BuildKit cache mount could
+  # not do. ops/ci/in-builder.sh holds the mounts and explains each one.
   #
-  #  2. The IMAGE BUILD - deploy/docker/Dockerfile.core. THIS is the full server
-  #     compile and link. Its builder stage runs the same cmake + ninja + install
-  #     the release image runs, so mangosd and realmd are proven to compile, link
-  #     and install on the Debian trixie that actually ships them rather than on
-  #     the runner's Ubuntu - strictly better coverage than build-linux.yml's
-  #     `test -x build/src/mangosd/mangosd`. It is also the exact image the smoke
-  #     job needs, so doing it once here is what removes four of the five full
-  #     compiles this repository used to pay for on every push.
+  # WHAT THIS RUN STILL VERIFIES:
+  #   * the whole tree compiles and links on the Debian that ships it, with
+  #     MODULES=static and TW_ARCH=x86-64-v2, exactly as Dockerfile.core's
+  #     builder stage would have configured it;
+  #   * `cmake --install` produces a complete prefix, and the binaries in the
+  #     resulting image start - the verify step below runs ldd inside the image,
+  #     so a missing or mismatched shared library is caught here and not in the
+  #     smoke job's logs;
+  #   * the runtime image itself: same base, same apt list, same entrypoint,
+  #     same user and directories, because `ci-staged` and `runtime` are the
+  #     same `runtime-base` stage with a different source for ${PREFIX}.
   #
-  # Ordering: tests first. A broken test must not cost 25 minutes of image build
-  # before it reports.
+  # WHAT THIS RUN NO LONGER VERIFIES: that `docker build --target runtime`
+  # works from source. The COPY . /src, the in-Dockerfile configure and the
+  # in-Dockerfile build are not exercised on a push any more, so a change that
+  # breaks only them - a .dockerignore entry that removes a needed file, a
+  # build-arg default, an apt package the builder stage needs - would get past
+  # this pipeline. publish.yml builds `--target runtime` from source on every
+  # push to main and every tag, so nothing is ever released without that path
+  # having worked, and nightly.yml compiles the same tree from a clean checkout
+  # twice (clang and all-features-off) so a source-level break is found within a
+  # day. Be precise about where the hole is: a Dockerfile-only change made on a
+  # topic branch is not proven by this pipeline. It is proven the moment it
+  # merges, by publish.yml, which is the last gate before a registry push -
+  # that is the trade, and it is a Dockerfile edit's author who should know it.
+  #
+  # Ordering: tests first, still. The test targets are built and run before the
+  # full build starts, so a broken test reports in minutes instead of waiting
+  # for a link of the whole server.
   build-and-test:
     runs-on: ubuntu-24.04
     name: build + test
-    # The image build dominates. A cold BuildKit build is a full ~25-minute
-    # compile, because the Dockerfile's ccache lives in a BuildKit cache mount
-    # and GHA layer cache does not carry those between ephemeral runners.
-    timeout-minutes: 150
+    # Down from 150. The 150 existed to cover a cold from-scratch compile inside
+    # BuildKit on every run; a warm ccache and one compile do not need it, and a
+    # cold cache still fits.
+    timeout-minutes: 120
 
     services:
       # MariaDB 11.8 per ADR-0027, matching what the stack deploys. The adapter
@@ -620,6 +768,11 @@ jobs:
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=5s --health-timeout=5s --health-retries=20
 
+    env:
+      # The toolchain container every compile step below runs in. Local to this
+      # runner and never pushed.
+      BUILDER_IMAGE: twow/core-builder:ci
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -627,41 +780,96 @@ jobs:
           # Shallow is fine for building; the revision header only needs HEAD.
           fetch-depth: 1
 
-      - name: Install dependencies
+      # Moved ahead of the build rather than sitting just before the image step,
+      # because the build tree is now on the runner's disk instead of inside
+      # BuildKit and it is the biggest thing here: DEBUG_SYMBOLS defaults to ON,
+      # which is a 2.0 GB mangosd before the five static module targets. The
+      # runner ships with ~25 GB of toolchains this build never touches.
+      # Without the room the run dies deep in the compile with "{standard
+      # input}: Fatal error: <object>: No such file or directory", which is the
+      # assembler failing to write, not a compile error. The runner's own
+      # warning ("Free space left: 90 MB") is the only thing that says so, and
+      # it scrolls past.
+      #
+      # df on both sides, so the next disk failure is diagnosable from the log.
+      - name: Free runner disk
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af || true
+          df -h /
+
+      # The only toolchain the runner itself still needs. Everything that
+      # compiles happens in the container; this is for the step that applies the
+      # roster migration against the service database.
+      - name: Install the MariaDB client
         run: |
           sudo apt-get update
-          # Only the Boost components actually linked (thread, filesystem,
-          # system) plus headers. libboost-all-dev pulls ~230 packages
-          # including OpenMPI and adds several minutes for nothing.
-          sudo apt-get install -y --no-install-recommends \
-            build-essential cmake ninja-build ccache \
-            libace-dev default-libmysqlclient-dev \
-            libssl-dev zlib1g-dev libbz2-dev \
-            libboost-dev libboost-thread-dev libboost-filesystem-dev \
-            libboost-system-dev libboost-stacktrace-dev \
-            mariadb-client
+          sudo apt-get install -y --no-install-recommends mariadb-client
 
-      # ccache is the difference between ~25 minutes and a few minutes warm.
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ci-linux-gcc
-          max-size: 2G
+      - uses: docker/setup-buildx-action@v3
 
-      # ONE configure. Everything below builds out of this tree; the old
-      # build-linux + test split configured twice for no gain.
+      # THE cache. This is the one that matters now: it covers the whole tree,
+      # not the handful of test translation units the old ci-linux-gcc key
+      # covered. A fresh entry per run plus a prefix restore-key is the standard
+      # rolling-cache shape - every run starts from the newest previous one and
+      # leaves its own behind.
       #
-      # TW_ARCH is left at its default (x86-64-v2) rather than `native`: a
-      # `native` build bakes this runner's CPU into the result (ADR-0028).
+      # A whole-tree cache with debug symbols is large; ccache is told to
+      # compress and to stay under 4G by ops/ci/in-builder.sh. The Actions cache
+      # is a 10 GB LRU for the entire repository, so this will evict other
+      # scopes, and that is the intended trade - nothing else in this repository
+      # is worth 71 minutes.
+      - name: Restore the compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ci-trixie-gcc-${{ github.run_id }}
+          restore-keys: |
+            ci-trixie-gcc-
+
+      # Just the apt layer of Dockerfile.core's builder: no source is copied
+      # into this stage, so it is one `apt-get install` and about a minute.
+      #
+      # Deliberately NOT cached in the Actions cache. The whole repository gets
+      # 10 GB of it and the ccache above is the only thing in this job worth
+      # spending it on; exporting a gigabyte of Debian packages to buy back
+      # sixty seconds would evict the cache that buys back an hour.
+      - name: Build the toolchain image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.core
+          target: builder-base
+          push: false
+          load: true
+          tags: ${{ env.BUILDER_IMAGE }}
+
+      # ONE configure, and it is the release configuration plus the tests.
+      #
+      # Two settings changed when this became the configure the image is built
+      # from. CMAKE_BUILD_TYPE is Release rather than RelWithDebInfo, and
+      # MODULES is static rather than the CMakeLists default of disabled -
+      # because those are what Dockerfile.core's builder stage passes, and an
+      # image assembled from a differently configured tree would not be the
+      # image. It also means the test targets are now compiled against the
+      # configuration that ships, which the old split did not do.
+      #
+      # TW_ARCH is spelled out at the Dockerfile's default rather than left to
+      # CMake's, so the two cannot drift. `native` would bake this runner's CPU
+      # into the artefact (ADR-0028).
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          bash ops/ci/in-builder.sh 'cmake -S /src -B /src/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
+            -DTW_ARCH=x86-64-v2 \
+            -DMODULES=static \
             -DBUILD_TESTING=ON \
             -DBUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
 
       # Headers that use a type without declaring it compile fine until a
       # translation unit reaches them before the declaration -- and then the
@@ -671,9 +879,15 @@ jobs:
       # Checked against a baseline, so this fails on a NEW one only.
       #
       # Runs off the configure above and compiles nothing but one-line probes,
-      # so it costs seconds and reports before the long build starts.
+      # so it reports before the long build starts. It used to cost four minutes
+      # doing 216 of them one after another; the script now runs them nproc at a
+      # time and collates the results in sorted order, so the report is
+      # unchanged and the wall time is roughly a quarter of it.
+      #
+      # In the container because compile_commands.json names container paths and
+      # the flags in it are trixie's include paths, not the runner's.
       - name: Core headers are self-contained
-        run: bash ops/audit/header-self-containment.sh build
+        run: bash ops/ci/in-builder.sh 'bash ops/audit/header-self-containment.sh /src/build'
 
       # Named test targets, built one at a time so a target that does not exist
       # yet is reported as absent rather than failing the run. The CTest wiring
@@ -688,7 +902,7 @@ jobs:
         id: testbuild
         run: |
           set -eu
-          known=$(ninja -C build -t targets all 2>/dev/null | sed 's/:.*//' || true)
+          known=$(bash ops/ci/in-builder.sh 'ninja -C /src/build -t targets all' 2>/dev/null | sed 's/:.*//' || true)
           built=0
           for t in persistent_active_roster_database_tests \
                    dungeon_clear_tests_fast \
@@ -696,7 +910,7 @@ jobs:
                    persistent_active_roster_tests; do
             if printf '%s\n' "$known" | grep -qxF "$t"; then
               echo "::group::building $t"
-              cmake --build build --target "$t" --parallel "$(nproc)"
+              bash ops/ci/in-builder.sh "cmake --build /src/build --target $t --parallel \"\$(nproc)\""
               echo "::endgroup::"
               built=$((built + 1))
             else
@@ -727,11 +941,14 @@ jobs:
             mariadb -h 127.0.0.1 -P 3306 -u root roster_ci < "$mig"
           done
 
+      # The binary is a trixie binary, so it runs in the container. The service
+      # database is published on the runner's 127.0.0.1:3306 and in-builder.sh
+      # uses --network host, so the connection string below is unchanged.
       - name: Run the adapter suite
         id: adapter
         shell: bash
         run: |
-          bin=./build/adapter-bin/persistent_active_roster_database_tests
+          bin=build/adapter-bin/persistent_active_roster_database_tests
           if [ ! -x "$bin" ]; then
             echo "::notice::$bin was not built - the adapter suite is not in this configuration"
             echo "ran=0" >> "$GITHUB_OUTPUT"
@@ -742,7 +959,8 @@ jobs:
           # Connection string format is host;port;user;password;database - see
           # the usage line in persistent_active_roster_database_tests.cpp.
           set +e
-          "$bin" "127.0.0.1;3306;root;ci-root;roster_ci" 2>&1 | tee "$log"
+          bash ops/ci/in-builder.sh \
+            "/src/$bin '127.0.0.1;3306;root;ci-root;roster_ci'" 2>&1 | tee "$log"
           rc=${PIPESTATUS[0]}
           set -e
           # STAGE=COMPLETE is printed only after the last scenario. Without this
@@ -768,7 +986,7 @@ jobs:
           # -N lists without running. The count is recorded either way for the
           # gate below - hence `|| true`: with no tests registered ctest exits
           # non-zero, and the default shell runs with -e and pipefail.
-          raw=$(ctest --test-dir build -N 2>/dev/null || true)
+          raw=$(bash ops/ci/in-builder.sh 'ctest --test-dir /src/build -N' 2>/dev/null || true)
           found=$(printf '%s\n' "$raw" | sed -n 's/^Total Tests: //p' | tail -n1)
           found=${found:-0}
           echo "found=$found" >> "$GITHUB_OUTPUT"
@@ -778,7 +996,8 @@ jobs:
             exit 0
           fi
           mkdir -p test-results
-          ctest --test-dir build --output-on-failure --output-junit ../test-results/ctest.xml
+          bash ops/ci/in-builder.sh \
+            'ctest --test-dir /src/build --output-on-failure --output-junit ../test-results/ctest.xml'
 
       - name: Upload test results
         if: always()
@@ -808,68 +1027,91 @@ jobs:
 
       # ------------------------------------------------------------- the image
       #
-      # The full server compile and link, once. Same Dockerfile publish.yml
-      # ships, same runtime stage, so the smoke job exercises the artefact that
-      # would actually be released rather than a CI-only approximation of it.
-      - uses: docker/setup-buildx-action@v3
-
-      # The runner ships with ~25 GB of toolchains this build never touches, and
-      # it needs the room: making MODULES=static the default added five module
-      # targets to the image build -- mod-dungeon-clear alone is hundreds of
-      # generated route files -- on top of a mangosd that is 2.0 GB because
-      # DEBUG_SYMBOLS defaults to ON. Without this the run dies deep in the
-      # build with "{standard input}: Fatal error: <object>: No such file or
-      # directory", which is the assembler failing to write, not a compile
-      # error. The runner's own warning ("Free space left: 90 MB") is the only
-      # thing that says so, and it scrolls past.
+      # The full server compile and link, once, out of the same build tree the
+      # tests just ran from. `cmake --install` writes to /opt/turtle inside the
+      # container, which in-builder.sh has bind-mounted to ./stage on the
+      # runner - the prefix must be the real one because it is compiled into the
+      # binary as SYSCONFDIR, so a DESTDIR here would produce a server that
+      # cannot find its own configs.
       #
-      # df on both sides, so the next disk failure is diagnosable from the log.
-      - name: Free runner disk
+      # ccache statistics are printed on purpose. If the hit rate collapses, the
+      # cache key or the compile line moved and this step is back to being an
+      # hour; that would still be green, and this line is the only warning.
+      - name: Build the server and stage the install
+        run: |
+          bash ops/ci/in-builder.sh 'cmake --build /src/build --parallel "$(nproc)" \
+            && cmake --install /src/build \
+            && ccache --show-stats'
+          du -sh stage
+          ls -la stage/bin
+
+      # The build tree is the largest thing on the disk and nothing after this
+      # reads it. Removing it before the image build leaves room for the context
+      # transfer and for `docker save`.
+      - name: Reclaim the build tree
         run: |
           df -h /
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost
-          sudo docker image prune -af || true
+          rm -rf build
           df -h /
 
-      - name: Build the core image
+      # `ci-staged` is `runtime-base` plus a COPY of ./stage - the same base
+      # image, apt list, entrypoint, user and directory layout as the `runtime`
+      # target publish.yml ships. See the long comment at the top of this job
+      # for what that does and does not prove.
+      - name: Assemble the core image from the staged install
         uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/docker/Dockerfile.core
-          target: runtime
+          target: ci-staged
           push: false
           # Loaded into the local docker daemon so the next steps can inspect it
           # and `docker save` it for the smoke job.
           load: true
           tags: ${{ env.CORE_IMAGE }}
-          # TW_ARCH stays at the Dockerfile default (x86-64-v2). `native` would
-          # bake this runner's CPU into the image (ADR-0028).
-          build-args: |
-            BUILD_TYPE=Release
-          # Scoped away from publish.yml's per-image scopes, so a CI build can
-          # never evict a release build's cache. It helps when the source did not
-          # move (re-runs, docs-only pushes); it cannot help a source change,
-          # because the Dockerfile's ccache is a BuildKit cache mount and those
-          # are not exported by type=gha.
-          cache-from: type=gha,scope=ci-core
-          cache-to: type=gha,mode=max,scope=ci-core
+          # No cache-to for the same reason as the toolchain image, and one
+          # sharper one: the only substantial layer here is the COPY of the
+          # staged install, which is 2.5 GB and different on every run by
+          # definition. Exporting that to the Actions cache would push a fresh
+          # multi-gigabyte entry per push and evict everything else in the
+          # repository to cache something that can never be hit.
 
       # What build-linux.yml's `test -x` used to assert, asserted against the
-      # image that would be shipped.
+      # image that would be shipped - and then one step further.
+      #
+      # The ldd check is new and it is the guard on the whole staged-install
+      # approach: the binaries are compiled in `builder-base` and run in
+      # `runtime-base`, two different images, and the only thing that keeps them
+      # compatible is that both are the same Debian release. If that ever stops
+      # being true, ldd prints "not found" here rather than the smoke job timing
+      # out on a container that exits instantly.
       - name: Verify the binaries are in the image
         run: |
-          docker run --rm --entrypoint /bin/sh "$CORE_IMAGE" -c \
-            'test -x /opt/turtle/bin/mangosd && test -x /opt/turtle/bin/realmd && ls -la /opt/turtle/bin'
+          docker run --rm --entrypoint /bin/sh "$CORE_IMAGE" -c '
+            set -eu
+            test -x /opt/turtle/bin/mangosd
+            test -x /opt/turtle/bin/realmd
+            ls -la /opt/turtle/bin
+            missing=0
+            for b in /opt/turtle/bin/mangosd /opt/turtle/bin/realmd; do
+              echo "--- ldd $b"
+              ldd "$b" || true
+              if ldd "$b" | grep -q "not found"; then
+                echo "::error::$b has unresolved shared libraries in the runtime image"
+                missing=1
+              fi
+            done
+            exit $missing'
 
       # WHY AN ARTIFACT AND NOT A SHARED BUILD CACHE.
       #
       # The alternative was to let smoke run its own `docker build` with
       # cache-from: type=gha. That is not reliable. The Actions cache is a 10 GB
-      # LRU shared with every other scope in the repository, and the Dockerfile's
-      # ccache mount is not in it at all - so a miss there does not cost seconds,
-      # it silently costs a second full 25-minute compile inside smoke, which is
-      # precisely the failure this consolidation exists to remove. Worse, it
-      # fails quietly: the job still goes green, just an hour later.
+      # LRU shared with every other scope in the repository, and a miss there
+      # does not cost seconds, it silently costs a second full compile inside
+      # smoke, which is precisely the failure this consolidation exists to
+      # remove. Worse, it fails quietly: the job still goes green, just an hour
+      # later.
       #
       # A tar is deterministic. Smoke either loads the exact image this job
       # built, or it has nothing to load and says so. gzip -1 because the layers

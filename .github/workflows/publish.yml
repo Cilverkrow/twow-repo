@@ -137,14 +137,13 @@ jobs:
           # part of the artifact, so a promoted digest carries them along.
           provenance: mode=max
           sbom: true
-          # ci-core is the scope ci.yml's build-and-test writes with identical
-          # build-args and target, so its layers are usable here. It is a bonus,
-          # not a dependency: on a push to main the two workflows run at the same
-          # time and this will usually miss, while a release tag built after main
-          # has already gone green can hit it outright.
-          cache-from: |
-            type=gha,scope=${{ matrix.image }}
-            type=gha,scope=ci-core
+          # This used to also read ci.yml's ci-core scope, on the theory that a
+          # release tag built after main had gone green could reuse its layers.
+          # ci.yml does not build `--target runtime` any more - it assembles the
+          # CI image from an install staged on the runner - so nothing writes
+          # ci-core and reading it was a guaranteed miss. Its own scope is the
+          # only one left that can hit.
+          cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
       # The registry attestation above is buildkit's. This one is signed against

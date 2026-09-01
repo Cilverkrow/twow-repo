@@ -11,3 +11,13 @@ ops/
 **/CMakeCache.txt
 **/CMakeFiles/
 *.log
+
+# ci.yml artefacts. The staged install (./stage) is deliberately NOT here - the
+# ci-staged target COPYs it - but everything else the build job leaves behind is
+# large and would only slow the context transfer down.
+.ccache/
+.sccache/
+.vcpkg-cache/
+.ci/
+test-results/
+image/

@@ -600,12 +600,26 @@ if(MSVC)
   # /OPT:REF and /OPT:ICF are here because /DEBUG turns them off by default;
   # with them the generated binary is the same as before, there is simply a
   # .pdb beside it.
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
-  foreach(_linker EXE SHARED MODULE)
-    set(CMAKE_${_linker}_LINKER_FLAGS_RELEASE
-        "${CMAKE_${_linker}_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
-  endforeach()
+  #
+  # MSVC_SEPARATE_PDB exists for exactly one caller: ci.yml's compile-only
+  # Windows job, which runs behind sccache. A separate .pdb is a second output
+  # file from a single compiler invocation, and sccache cannot cache a
+  # translation unit that produces one - it declines every /Zi compile and the
+  # cache stays empty. That job never links and never ships a binary, so it has
+  # no use for a .pdb at all. Anything that produces a real Windows build leaves
+  # this ON; turning it off in a shipped build would make the crash minidumps
+  # unreadable, which is the whole reason the flag is here.
+  option(MSVC_SEPARATE_PDB "Emit a separate .pdb (/Zi) for Release builds" ON)
+  if(MSVC_SEPARATE_PDB)
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+    foreach(_linker EXE SHARED MODULE)
+      set(CMAKE_${_linker}_LINKER_FLAGS_RELEASE
+          "${CMAKE_${_linker}_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
+    endforeach()
+  else()
+    message(STATUS "MSVC_SEPARATE_PDB=OFF - no /Zi, no .pdb (compile-only builds)")
+  endif()
 endif()
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE)

@@ -14,28 +14,58 @@
 #
 # Client data (dbc/maps/vmaps/mmaps) is deliberately NOT in this image. It is
 # extracted from a game client and mounted at runtime.
+#
+# STAGE LAYOUT. The apt layers are split out of the two interesting stages
+# (`builder-base` and `runtime-base`) so that ci.yml can reuse them without
+# copying their package lists into a second file. A copied package list drifts:
+# the day somebody adds a runtime library here, a CI-only duplicate would still
+# be building the old image and the smoke job would stop exercising what ships.
+# There is exactly one apt list per stage and both workflows read it from here.
+#
+#   builder-base --> builder ----+
+#                                 \
+#   runtime-base --> runtime <----+  (publish.yml, nightly, `--target runtime`)
+#                \
+#                 -> ci-staged      (ci.yml only, see below)
 
 ARG DEBIAN_VERSION=trixie
 ARG PREFIX=/opt/turtle
 
+# ------------------------------------------------------------ builder-base
+#
+# The compile toolchain, and nothing that depends on the source tree. Kept as
+# its own stage because ci.yml runs its build in a container made from exactly
+# this image: same Debian, same gcc, same libace/libmariadb sonames as the
+# runtime stage below. Building the server on the runner's Ubuntu instead would
+# link against libACE-7.1.3 and libmysqlclient.so.21, neither of which exists in
+# a trixie runtime -- the binaries would install fine and fail to exec.
+#
+# python3 is here for ops/audit/extract_compile_flags.py, which the header
+# self-containment audit runs off this build's compile_commands.json. It costs
+# nothing that ships: this stage is discarded, only ${PREFIX} is copied out.
+FROM debian:${DEBIAN_VERSION}-slim AS builder-base
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+      build-essential cmake ninja-build git ccache python3 \
+      libace-dev default-libmysqlclient-dev \
+      libssl-dev zlib1g-dev libbz2-dev \
+      libboost-dev libboost-thread-dev libboost-filesystem-dev \
+      libboost-system-dev libboost-stacktrace-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # ---------------------------------------------------------------- builder
-FROM debian:${DEBIAN_VERSION}-slim AS builder
+#
+# The from-source build. publish.yml and nightly.yml go through here; ci.yml no
+# longer does, because a BuildKit cache mount cannot be exported by type=gha and
+# so this stage recompiled all ~1200 translation units on every push.
+FROM builder-base AS builder
 ARG PREFIX
 ARG TW_ARCH=x86-64-v2
 # static, dynamic or disabled. Applies to every module under modules/,
 # mod-playerbots included.
 ARG MODULES=static
 ARG BUILD_TYPE=Release
-
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-      build-essential cmake ninja-build git ccache \
-      libace-dev default-libmysqlclient-dev \
-      libssl-dev zlib1g-dev libbz2-dev \
-      libboost-dev libboost-thread-dev libboost-filesystem-dev \
-      libboost-system-dev libboost-stacktrace-dev \
-    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
 COPY . /src
@@ -53,8 +83,14 @@ RUN --mount=type=cache,target=/ccache \
     CCACHE_DIR=/ccache cmake --build /build --parallel "$(nproc)" \
     && cmake --install /build
 
-# ---------------------------------------------------------------- runtime
-FROM debian:${DEBIAN_VERSION}-slim AS runtime
+# ------------------------------------------------------------ runtime-base
+#
+# Everything about the shipped image except where ${PREFIX} came from: the apt
+# list, the entrypoint, the unprivileged user, the data directories, the ports.
+# The two stages below differ in one COPY and nothing else, which is the point -
+# the CI image and the released image are the same image with a different
+# provenance for the same tree of files.
+FROM debian:${DEBIAN_VERSION}-slim AS runtime-base
 ARG PREFIX
 ENV PREFIX=${PREFIX}
 
@@ -65,14 +101,44 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       mariadb-client tini \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder ${PREFIX} ${PREFIX}
 COPY deploy/docker/entrypoint-mangosd.sh /usr/local/bin/entrypoint-mangosd.sh
 RUN chmod +x /usr/local/bin/entrypoint-mangosd.sh \
     && useradd --system --create-home --home-dir /home/turtle turtle \
     && mkdir -p /data /var/log/turtle ${PREFIX}/run \
     && chown -R turtle:turtle /data /var/log/turtle ${PREFIX}/run
 
-USER turtle
+# WORKDIR before USER on purpose: it creates ${PREFIX}/bin, and that directory
+# was root-owned when the COPY below created it, so it stays root-owned.
 WORKDIR ${PREFIX}/bin
 EXPOSE 8090 3724
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint-mangosd.sh"]
+USER turtle
+
+# ---------------------------------------------------------------- runtime
+#
+# The released image. `--target runtime` is what publish.yml builds and what the
+# compose file and the Helm chart address.
+FROM runtime-base AS runtime
+ARG PREFIX
+COPY --from=builder ${PREFIX} ${PREFIX}
+
+# --------------------------------------------------------------- ci-staged
+#
+# CI ONLY. Never published, never referenced by publish.yml or nightly.yml.
+#
+# Identical to `runtime` except that ${PREFIX} comes from the build context
+# instead of from the builder stage. ci.yml produces that directory by running
+# `cmake --install` inside a container made from `builder-base`, which is the
+# same compiler and the same libraries the builder stage would have used - so
+# the resulting image is byte-comparable in everything except how the files got
+# there, and the smoke job still exercises a realistic artefact.
+#
+# What this target does NOT prove is that `--target runtime` still builds: that
+# the COPY . /src, the in-Dockerfile configure and the in-Dockerfile build all
+# work. nightly.yml and publish.yml cover it. See the long comment on the image
+# steps in ci.yml.
+FROM runtime-base AS ci-staged
+ARG PREFIX
+# Relative to the build context. ci.yml stages into ./stage.
+ARG STAGE=stage
+COPY ${STAGE} ${PREFIX}

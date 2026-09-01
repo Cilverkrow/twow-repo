@@ -121,3 +121,14 @@ runbooks/**/*.base64.*
 *.swp
 .DS_Store
 Thumbs.db
+
+# ci.yml working directories: the staged install, the compiler and dependency
+# caches, and the small files the cache keys are hashed from. All are produced
+# inside a run and none of them belongs in the tree (ADR-0004).
+/stage/
+/.ccache/
+/.sccache/
+/.vcpkg-cache/
+/.ci/
+/image/
+/test-results/

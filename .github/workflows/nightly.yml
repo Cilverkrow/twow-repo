@@ -221,3 +221,64 @@ jobs:
             echo "| upstream tip | \`$tip\` |"
             echo "| commits ahead | **$ahead** |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # The from-source Docker build, which CI no longer does.
+  #
+  # ci.yml used to prove this on every push, by compiling the whole tree a second
+  # time inside the image build -- 71 of its 77 minutes. That step now assembles
+  # the image from an already-built staging tree instead, which is the right
+  # trade for a per-push job but leaves a real hole: nothing on a topic branch
+  # exercises `COPY . /src`, the in-Dockerfile configure, or the in-Dockerfile
+  # build any more. Only publish.yml did, and that runs on main and on tags --
+  # so a Dockerfile-only regression would not surface until merge.
+  #
+  # This closes that at a day's latency instead of a push's. It is deliberately
+  # the plain thing: no ccache, no staging, no shortcuts, exactly what a release
+  # build does.
+  docker-from-source:
+    name: docker image builds from source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same reclaim ci.yml needs: the runner ships ~25 GB of toolchains this
+      # build never touches, and a from-scratch compile of the whole tree plus a
+      # 2.0 GB mangosd does not fit without it.
+      - name: Free runner disk
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af || true
+          df -h /
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the runtime image the way a release builds it
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.core
+          target: runtime
+          push: false
+          load: true
+          tags: twow/core:nightly-from-source
+          build-args: |
+            BUILD_TYPE=Release
+
+      # The failure this is really guarding against is a binary that builds and
+      # then cannot start, so check the loader too, not just the file mode.
+      - name: Verify the binaries run in the image
+        run: |
+          docker run --rm --entrypoint /bin/sh twow/core:nightly-from-source -c '
+            set -e
+            test -x /opt/turtle/bin/mangosd
+            test -x /opt/turtle/bin/realmd
+            for b in /opt/turtle/bin/mangosd /opt/turtle/bin/realmd; do
+              if ldd "$b" | grep "not found"; then
+                echo "::error::$b has unresolved shared libraries"
+                exit 1
+              fi
+            done
+            echo "both binaries present with every shared library resolved"
+          '
