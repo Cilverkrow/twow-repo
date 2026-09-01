@@ -63,7 +63,8 @@ Additional facts of record:
 - `UPSTREAM.lock` (ADR-0020) becomes the machine-readable form of the merge-base line
   recorded here; this ADR is the human-readable one.
 - The missing ike3 vendor hash is now a recorded gap. Re-vendoring a newer playerbots
-  release would be a 255-file three-way merge and needs that hash first.
+  release would be a large three-way merge whose exact ike3-relative size is unknown,
+  and it needs a verified source baseline first.
 - When the upstream of record changes, this ADR is superseded rather than edited, so
   the history of who we tracked stays legible.
 

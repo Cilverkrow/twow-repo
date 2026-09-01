@@ -98,9 +98,25 @@ offered upstream. Expect the shim to remain, and size the work by the 33 upstrea
 fixes rather than by the file count.
 
 If the shim is ever to shrink, the lever is the vendored tree, not the core: patching
-`src/modules/PlayerBots` to use Penqle's names moves the compatibility burden to where
+`modules/mod-playerbots` to use Penqle's names moves the compatibility burden to where
 the incompatibility actually is. That trades merge pain with upstream for merge pain with
-ike3, and 255 vendor files are already modified — a separate decision, not a prerequisite.
+the imported PlayerBots line.
+
+The previously reported 255-path figure is a snapshot-specific, graft-relative count,
+not an ike3 delta. It is reproducible at `ed32ae41` against the PlayerBots subtree in
+graft checkpoint `0af2567767de69a819287acaab4c5c947cc1e04c`, which describes itself as
+"cmangos/playerbots port grafted onto Penqle/tortoise-wow 1181dev" and is already a
+port. The content-equivalent checkpoint in this repository's rewritten history is
+`1af237d5346456dd6a5d457b0759be3215790f4c`; both commits resolve the PlayerBots
+subtree to `9bd691ccdccf88ebdbe362d293337068ec01a636`.
+
+The count is not current even on the old path: at tested roster baseline `3c2b931`, the
+same raw tree comparison reports 267 changed paths. The later module promotion changes
+the path layout, so post-promotion counts require an explicit mapping and must not be
+compared as if they used the same namespace. Neither repository records a verified ike3
+remote, tag or source commit for the import. The true delta from upstream ike3 is
+therefore unknown; establishing that baseline is separate provenance work, not a
+prerequisite for this split.
 
 ## Consequences
 
@@ -119,6 +135,11 @@ ike3, and 255 vendor files are already modified — a separate decision, not a p
 ## Evidence
 
 - `docs/PROVENANCE.md`, `docs/FOOTGUNS.md` (FG-005, FG-006, FG-007, FG-072)
+- `docs/history/source-commit-map.tsv` maps `0af2567` to `1af237d`; both resolve
+  `src/modules/PlayerBots` to tree `9bd691ccdccf88ebdbe362d293337068ec01a636`.
+- Counting the output of
+  `git diff --name-only 0af2567:src/modules/PlayerBots ed32ae41:src/modules/PlayerBots`
+  gives 255 paths; substituting `3c2b931` for `ed32ae41` gives 267.
 - `docs/adr/ADR-0005-preserve-upstream-history-and-modularize-incrementally.md`
 - `docs/adr/ADR-0008-source-baseline-and-build-provenance.md`
 - `docs/issues/00-refactor-plan.md`
