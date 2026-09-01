@@ -1,5 +1,6 @@
 
 #include "playerbot/playerbot.h"
+#include "playerbot/StringTokenizer.h"
 #include <algorithm>
 #include <functional>
 #include <cctype>
@@ -7,21 +8,7 @@
 
 void split(std::vector<std::string>& dest, const std::string& str, const char* delim)
 {
-    // strtok_r, not strtok. strtok keeps its parse position in a single
-    // process-wide static, and this runs from every bot's AI on several map
-    // threads at once -- two concurrent splits silently corrupt each other's
-    // tokenisation, and the caller gets fragments of somebody else's string.
-    // (Common.h defines strtok_r as strtok_s for MSVC.)
-    char* pTempStr = strdup( str.c_str() );
-    char* saveptr = nullptr;
-    char* pWord = strtok_r(pTempStr, delim, &saveptr);
-    while(pWord != NULL)
-    {
-        dest.push_back(pWord);
-        pWord = strtok_r(NULL, delim, &saveptr);
-    }
-
-    free(pTempStr);
+    playerbot::AppendTokens(dest, str, delim);
 }
 
 std::vector<std::string>& split(const std::string &s, char delim, std::vector<std::string> &elems)
