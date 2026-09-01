@@ -1458,9 +1458,44 @@ void Group::UpdatePlayerOutOfRange(Player* pPlayer)
     pPlayer->GetSession()->BuildPartyMemberStatsChangedPacket(pPlayer, &data);
 
     for (GroupReference *itr = GetFirstMember(); itr != nullptr; itr = itr->next())
-        if (Player *player = itr->getSource())
-            if (player != pPlayer && !player->IsInVisibleList(pPlayer)) // Possible unsafe call (cross maps groups)
-                player->GetSession()->SendPacket(&data);
+    {
+        Player* player = itr->getSource();
+        if (!player || player == pPlayer)
+            continue;
+
+        // IsInVisibleList reads the OTHER player's m_visibleGUIDs while his own
+        // map thread rebuilds it. The line here carried the core's own warning,
+        // "possible unsafe call (cross maps groups)", and it was exactly that:
+        // SIGSEGV inside _Hashtable::find under Group::UpdatePlayerOutOfRange.
+        // This is the reader side of the race whose writer side was fixed by
+        // locking m_visibleGUIDs in Player::HandleStealthedUnitsDetection.
+        //
+        // IsInVisibleList does take a shared_lock, but that is not enough on its
+        // own: several writers still mutate the set unlocked from the owning map
+        // thread - Map::Add and Map::ExistingPlayerLogin clear() it, and
+        // WorldObject::DestroyForNearbyPlayers erases from it - so a reader can
+        // still land in a rehashing table. The only reliable cure from over here
+        // is not to reach into another map thread's set at all.
+        //
+        // The call is skipped rather than replaced because on a different map its
+        // answer is already known: the visible list is filled by grid visitation
+        // on the member's own map and is cleared on far-teleport arrival
+        // (Map::Add, IsBeingTeleportedFar), so a member resident on another map
+        // does not hold pPlayer and IsInVisibleList would have answered false -
+        // the packet went out anyway. The one divergence is the gap between
+        // Map::Remove (which does not clear the set) and the next Map::Add: there
+        // the stale entry used to suppress this packet, and now it does not. That
+        // is a redundant stats refresh to a client mid-teleport, which is the
+        // harmless direction.
+        if (player->FindMap() != pPlayer->FindMap())
+        {
+            player->GetSession()->SendPacket(&data);
+            continue;
+        }
+
+        if (!player->IsInVisibleList(pPlayer))
+            player->GetSession()->SendPacket(&data);
+    }
 }
 
 void Group::UpdatePlayerOnlineStatus(Player* player, bool online /*= true*/)
