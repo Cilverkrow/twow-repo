@@ -270,3 +270,44 @@ body: |
   Related: OPS-006 (bot grouping lifecycle is unbounded) and OPS-002 (fixed-count
   config defects) both touch the same subsystem and would inform the design.
 ---
+id: REF-008
+title: Decide the fate of four unexplained fork changes
+workstream: WS-80
+priority: p2
+existing_ot: none
+source: docs/adr/ADR-0020-two-repo-upstream-split.md
+superseded_by: none
+body: |
+  **Four changes in the fork's core delta that nobody can explain from the
+  commit history.** Each needs a decision before the upstream split, because
+  each has to be classified as fix / feature / noise to be re-applied — and
+  "unknown" is not one of the buckets.
+
+  **1. A temporary diagnostic still in the tree.**
+  `src/game/Objects/Player.cpp:2645` — a block self-labelled `DIAG(temp, Z-GEIST)`
+  that logs an error line on every teleport into map 36 above a Z threshold. It
+  was added to chase a dungeon-clear test tank parked somewhere wrong. Is the
+  investigation finished? If so it should go; if not, it should say so.
+
+  **2. `ForcePinAccountRank` changed from 1 to 6.**
+  `src/realmd/realmd.conf.dist.in:143`. This effectively **disables forced
+  two-factor authentication for ordinary accounts**. No commit message in range
+  explains it. Deliberate server policy, or a leftover from testing? This is the
+  one with a security consequence, so it should be answered first.
+
+  **3. `Map::HasActiveZone()` and `HasActiveZones()` return unconditional `true`.**
+  `src/game/Maps/Map.h:551-553`. The comment calls them stubs — cmangos has the
+  concept, Penqle does not track active zones. But the names read as predicates a
+  module would branch on, and nothing argues that `true` is the safe default. If
+  a bot asks "is this zone active?" and always hears yes, what does it do?
+
+  **4. An unused spell constant.**
+  `src/scripts/spells/spell_warrior.cpp:11` defines
+  `SPELL_WARRIOR_SHIELD_SPECIALIZATION_RAGE = 23602` and nothing reads it. Merge
+  commit `83d2aa8` dropped the fork's AuraScript version in favour of Penqle's
+  SpellScript; this looks like what was left behind. Probably just delete it.
+
+  **Also worth a decision, lower stakes:** ~64 lines of `SC_LOG` worldport-ack
+  instrumentation in `src/game/Handlers/MovementHandler.cpp` with no non-debug
+  effect. Permanent diagnostic seam, or a finished investigation?
+---
