@@ -1,6 +1,6 @@
 # ADR-0022: Test strategy
 
-- Status: Proposed
+- Status: Proposed; amended 2026-09-02 (stale bot-tree paths; CI file corrected)
 - Date: 2026-09-01
 - Primary: WS-10 / WS-50
 - Relates to: ADR-0024 (invariants 1 and 4), ADR-0021 (module boundaries), ADR-0023 (containerization)
@@ -15,7 +15,8 @@ The project has no automated verification. Measured:
   - `modules/mod-dungeon-clear/t/` — 54 gtest files, ~900 KB. googletest is never
     fetched, and both `src/test/mocks/TestMap.cpp` and the `game-interface` target it
     links against **do not exist**.
-  - `src/modules/PlayerBots/tests/`, added by commit `3c2b931`. Two targets, wired
+  - the vendored bot tree's `tests/` directory, added by commit `3c2b931` (then under
+    `src/modules/`, now `modules/mod-playerbots/tests/`). Two targets, wired
     differently. `persistent_active_roster_database_tests` *is* in the main build behind
     the root option `BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS` (default OFF): 48 assertions
     plus a real multi-threaded concurrency scenario against a disposable MariaDB.
@@ -41,7 +42,7 @@ Five levels, all registered with CTest, all runnable from a clean clone.
 | Characterization | proves an extracted feature behaves identically to the spliced original | written **before** each Phase 3 extraction, kept afterwards |
 | Integration | migrations apply cleanly from empty; module tables land in the owning schema | compose-driven, ephemeral MariaDB |
 | Smoke | is it alive | `make smoke`: ports, `migrations` row count, bot login, clean shutdown, **plus bot-persistence conformance** |
-| Lint | everything non-compiling, incl. boundary and schema-ownership rules | `.github/workflows/lint.yml` |
+| Lint | everything non-compiling, incl. boundary and schema-ownership rules | `.github/workflows/ci.yml`, job `lint` |
 
 Specifics:
 
@@ -49,7 +50,7 @@ Specifics:
   **pinned by tag**, never floating.
 - **Both existing suites are wired in and made cross-platform.** Create the missing
   `TestMap.cpp` mock and the `game-interface` target; add
-  `add_subdirectory(src/modules/PlayerBots/tests)` behind a new
+  `add_subdirectory(modules/mod-playerbots/tests)` behind a new
   `BUILD_PERSISTENT_ROSTER_UNIT_TESTS` option and drop its standalone `project()`;
   replace the raw `ROSTER_TEST_OPENSSL_LIBRARY` filepath with
   `find_package(OpenSSL REQUIRED)` and `OpenSSL::Crypto`; **guard the
@@ -90,8 +91,9 @@ Specifics:
 ## Evidence
 
 - `CMakeLists.txt` (no `enable_testing`), `modules/mod-dungeon-clear/t/`
-- `src/modules/PlayerBots/CMakeLists.txt`, `src/modules/PlayerBots/tests/CMakeLists.txt`,
+- `modules/mod-playerbots/mod-playerbots.cmake`, `modules/mod-playerbots/tests.cmake`,
   `run-tests.ps1`
-- `src/modules/PlayerBots/playerbot/PersistentActiveRoster.{h,cpp}`
+- `modules/mod-playerbots/src/playerbot/PersistentActiveRoster.{h,cpp}`
 - Commit `3c2b931`; `docs/FOOTGUNS.md` FG-072
-- `.github/workflows/lint.yml`, `docs/issues/00-refactor-plan.md` (Phase 0 §3, Verification)
+- `.github/workflows/ci.yml`, job `lint` (there is no standalone lint workflow file)
+- `docs/issues/00-refactor-plan.md` (Phase 0 §3, Verification)

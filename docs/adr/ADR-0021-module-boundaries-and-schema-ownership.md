@@ -1,6 +1,6 @@
 # ADR-0021: Module boundaries and per-module schema ownership
 
-- Status: Proposed
+- Status: Proposed; amended 2026-09-02 (stale bot-tree paths; CI file corrected)
 - Date: 2026-09-01
 - Primary: WS-10 / WS-20
 - Relates to: ADR-0005 (incremental modularization), ADR-0007 (forward migrations), ADR-0024 (invariants 2 and 4)
@@ -29,10 +29,10 @@ features do not use the system at all.
   each is marked only by a `// custom:` comment inside an upstream file.
 - `mod-lft-botfill` is already one file (`src/game/LFT/LFTBotFill.cpp`, 648 lines) but
   sits in the core tree rather than in `modules/`.
-- `src/modules/PlayerBots` is a separate static library behind its own
-  `BUILD_PLAYERBOTS` option, outside `modules/` entirely. The project therefore runs
-  **two parallel module systems**, with different discovery, linkage and migration
-  rules.
+- The vendored bot tree was a separate static library behind its own
+  `BUILD_PLAYERBOTS` option, under `src/modules/`, outside `modules/` entirely. The
+  project therefore ran **two parallel module systems**, with different discovery,
+  linkage and migration rules. (Resolved -- see the promotion update below.)
 
 ## Decision
 
@@ -48,15 +48,16 @@ features do not use the system at all.
 | `cv_ops` | `mod-donation`, `mod-worldbuff`, `mod-guildbank` | each module's `data/sql/` |
 
 Upstream schemas are read-only to us (ADR-0024 invariant 2). A module migration that
-names an upstream schema fails CI (`.github/workflows/lint.yml`, job `schema-ownership`).
+names an upstream schema fails CI (`.github/workflows/ci.yml`, job `lint`, step
+*Migrations respect schema ownership*).
 Multiple modules may share `cv_ops`, but a table has exactly one owning module and its
 migrations live only there.
 
 **Features to extract into modules** (Phase 3): `mod-donation`, `mod-worldbuff`,
 `mod-solo-dungeon` (all three currently spliced into upstream files), `mod-guildbank`,
-`mod-lft-botfill` (moved out of `src/game/LFT/`), and `mod-playerbots` — promoted from
-`src/modules/PlayerBots`, first and alone, since it retires the second module system and
-the other extractions follow its pattern.
+`mod-lft-botfill` (moved out of `src/game/LFT/`), and `mod-playerbots` — promoted out of
+the old `src/modules/` tree, first and alone, since it retires the second module system
+and the other extractions follow its pattern.
 
 **Modules reach the core only through declared extension points.** A module prefers an
 existing `ScriptObjects.h` hook. Where none fits, adding one is a **core edit** and goes
@@ -91,14 +92,17 @@ Slots stay scarce and each keeps a named owner; there is no runtime collision ch
 - `src/game/ScriptObjects.h`, `src/game/ModuleSlots.h`
 - `src/shared/Database/AutoUpdater.cpp` (`MigrationTable`, `Database.AutoUpdate.AllowedModules`,
   `ProcessModuleUpdates`)
-- `src/game/LFT/LFTBotFill.cpp` (648 lines), `src/modules/PlayerBots/CMakeLists.txt`
-- `.github/workflows/lint.yml` (job `schema-ownership`)
+- `src/game/LFT/LFTBotFill.cpp` (648 lines), `modules/mod-playerbots/mod-playerbots.cmake`
+- `.github/workflows/ci.yml`, job `lint`, step *Migrations respect schema ownership*
+  (a standalone lint workflow file does not exist; every lint check is a step of the
+  `lint` job in `ci.yml`)
 - `docs/issues/00-refactor-plan.md` (Phase 3), `docs/adr/ADR-0024-project-invariants.md`
 
 ## Update 2026-09-01: the promotion happened
 
-`src/modules/PlayerBots` is `modules/mod-playerbots`, and `BUILD_PLAYERBOTS` is gone.
-`src/modules/` no longer exists; every module lives under `modules/`.
+The vendored bot tree is `modules/mod-playerbots`, and `BUILD_PLAYERBOTS` is gone.
+`src/modules/` no longer exists; every module lives under `modules/`. See ADR-0026
+("Paths") for the rename of record.
 
 Two things came out differently from what was written above:
 
