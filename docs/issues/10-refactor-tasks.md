@@ -626,3 +626,44 @@ body: |
   +851,023 lines, most of it the Eluna vendoring. That is the merge the split
   exists to make possible, and it is not small.
 ---
+id: REF-017
+title: CI cannot clone the private twow-core submodule
+workstream: WS-50
+priority: p0
+existing_ot: none
+source: .github/workflows/ci.yml
+superseded_by: none
+body: |
+  **`Cilverkrow/twow-core` is private, and the default `GITHUB_TOKEN` has no
+  access to it.** Every `actions/checkout` with `submodules: recursive` fails:
+
+      remote: Repository not found.
+      fatal: clone of 'https://github.com/Cilverkrow/twow-core.git' into
+             submodule path '.../core' failed
+
+  Note the wording — "Repository not found" is what GitHub returns for *no
+  permission*, not only for *does not exist*. Anyone debugging this without
+  knowing the repo is private will look in the wrong place.
+
+  This is a hard prerequisite for ADR-0020's submodule split, not a detail to
+  sort out afterwards. It blocks REF-003.
+
+  **Options, in the order I would try them:**
+  1. **Deploy key.** Generate a keypair, add the public half to `twow-core` as a
+     read-only deploy key, the private half to `twow-repo` as a secret, and pass
+     it to checkout via `ssh-key:`. Scoped to exactly one repository, read-only,
+     and revocable without touching anything else.
+  2. **Fine-grained PAT** with read access to `twow-core`, passed as `token:`.
+     Simpler, but it is tied to a person and expires.
+  3. **Make `twow-core` public.** It is a fork of a public repository
+     (`Shyalya/tortoise-wow`, itself a fork of `Penqle/tortoise-wow`), so almost
+     nothing in it is secret. Check for credentials in config templates first.
+
+  **Every recursive checkout needs it**, not just the build job: `ci.yml` (build,
+  SQL, gitleaks), `nightly.yml` (`docker-from-source`, `upstream-drift`),
+  `publish.yml` (core, db-init).
+
+  **Also check the Docker build context.** `Dockerfile.core` does `COPY . /src`;
+  if the submodule is not checked out at build time, the core is silently absent
+  and the failure appears as a missing-source error deep in cmake.
+---
