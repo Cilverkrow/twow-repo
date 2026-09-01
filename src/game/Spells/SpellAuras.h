@@ -33,6 +33,11 @@
 // SpellEntry by value-of-member: GetId() dereferences m_spellProto inline, so a
 // forward declaration is not enough here.
 #include "Spells/SpellEntry.h"
+// SetAura() calls m_target->SetUInt32Value() inline and names UNIT_FIELD_AURA,
+// so this needs the complete Unit and the update-field enum. No cycle: Unit.h
+// does not include this header.
+#include "Objects/Unit.h"
+#include "Objects/UpdateFields.h"
 #include <vector>
 
 /**
