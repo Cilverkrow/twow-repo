@@ -29,7 +29,11 @@ import io, json, glob, re, sys, os
 root, issues_path = sys.argv[1], sys.argv[2]
 
 man = {}
-for f in sorted(glob.glob(os.path.join(root, 'docs/issues/*.md'))):
+# Manifests are the numbered files. docs/issues/README.md documents the FORMAT, and
+# its example line `id: WS10-001  # stable; ...` parses as a real entry whose id carries
+# the trailing comment -- which then sorts last and overwrites the genuine WS10-001.
+# import-issues.sh reads the numbered files only; match it.
+for f in sorted(glob.glob(os.path.join(root, 'docs/issues/[0-9]*.md'))):
     cur = None; inbody = False; body = []
     def flush():
         if cur and cur[0]:

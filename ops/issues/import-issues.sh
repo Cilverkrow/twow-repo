@@ -187,13 +187,21 @@ import_file() {
         if [ "$exists" -eq 1 ]; then
             say "  ~ $full_title (update body)"
             if [ "$APPLY" -eq 1 ]; then
-                # Resolve by id prefix and take the lowest number: the original,
-                # not any accidental duplicate. Only open issues, so a closed
-                # duplicate is never revived by an update.
-                num="$(gh issue list --repo "$REPO" --state open --limit 500 \
-                        --json number,title \
-                        --jq ".[] | select(.title | startswith(\"${id}: \")) | .number" \
-                        | sort -n | head -1)"
+                # Prefer an OPEN issue, then the lowest number: the original, not any
+                # accidental duplicate.
+                #
+                # This read "--state open", which meant `--update --only <ID>` silently
+                # no-opped on a CLOSED issue and printed only "could not resolve issue
+                # number". That is how two bodies kept their mangled apostrophes long
+                # after the importer bug that wrote them was fixed: both issues were
+                # closed, so the documented re-sync could never reach them.
+                #
+                # Editing a closed issue does not reopen it, so --state all is safe.
+                num="$(gh issue list --repo "$REPO" --state all --limit 500 \
+                        --json number,title,state \
+                        --jq ".[] | select(.title | startswith(\"${id}: \")) | \
+                              \"\(if .state == \"OPEN\" then 0 else 1 end) \(.number)\"" \
+                        | sort -k1,1n -k2,2n | head -1 | awk '{print $2}')"
                 if [ -n "$num" ]; then
                     gh issue edit "$num" --repo "$REPO" \
                         --title "$full_title" --body "$full_body" >/dev/null
