@@ -164,6 +164,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # The COPY sql / COPY sql/base below is upstream's world data, which
+          # ADR-0020 moves into the core/ submodule. Without a recursive
+          # checkout that COPY finds an empty directory and produces a db-init
+          # image that starts, runs and initialises nothing.
+          submodules: recursive
           fetch-depth: 1
 
       - uses: docker/setup-buildx-action@v3

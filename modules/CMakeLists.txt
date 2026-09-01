@@ -23,42 +23,51 @@ endif()
 
 set(MODULES_INSTALL_RUNTIME_DIR "${LIBS_DIR}/modules")
 
+# Core header search path, rooted at the submodule.
+#
+# Every entry below used to read ${CMAKE_SOURCE_DIR}/src/..., which was correct
+# only while the core and the modules were the same checkout. TW_CORE_ROOT is
+# what core/CMakeLists.txt sets to its own directory (CACHE INTERNAL, because
+# this directory is the core's SIBLING and inherits nothing from it), so these
+# paths resolve to core/src/... here and would resolve to src/... in a
+# standalone core build. Nothing in this list is guessed from a relative path:
+# if the submodule moves, one variable moves with it.
 set(MODULES_COMMON_INCLUDES
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/src/scripts
-  ${CMAKE_SOURCE_DIR}/src/shared
-  ${CMAKE_SOURCE_DIR}/src/framework
-  ${CMAKE_SOURCE_DIR}/src/framework/Network
-  ${CMAKE_SOURCE_DIR}/src/game
-  ${CMAKE_SOURCE_DIR}/src/game/AI
-  ${CMAKE_SOURCE_DIR}/src/game/Anticheat
-  ${CMAKE_SOURCE_DIR}/src/game/AuctionHouse
-  ${CMAKE_SOURCE_DIR}/src/game/Battlegrounds
-  ${CMAKE_SOURCE_DIR}/src/game/Chat
-  ${CMAKE_SOURCE_DIR}/src/game/Commands
-  ${CMAKE_SOURCE_DIR}/src/game/Database
-  ${CMAKE_SOURCE_DIR}/src/game/Group
-  ${CMAKE_SOURCE_DIR}/src/game/Guild
-  ${CMAKE_SOURCE_DIR}/src/game/Handlers
-  ${CMAKE_SOURCE_DIR}/src/game/LFG
-  ${CMAKE_SOURCE_DIR}/src/game/Mail
-  ${CMAKE_SOURCE_DIR}/src/game/Maps
-  ${CMAKE_SOURCE_DIR}/src/game/Maps/Pool
-  ${CMAKE_SOURCE_DIR}/src/game/Movement
-  ${CMAKE_SOURCE_DIR}/src/game/Movement/spline
-  ${CMAKE_SOURCE_DIR}/src/game/Objects
-  ${CMAKE_SOURCE_DIR}/src/game/OutdoorPvP
-  ${CMAKE_SOURCE_DIR}/src/game/Protocol
-  ${CMAKE_SOURCE_DIR}/src/game/Spells
-  ${CMAKE_SOURCE_DIR}/src/game/Threat
-  ${CMAKE_SOURCE_DIR}/src/game/Transports
-  ${CMAKE_SOURCE_DIR}/src/game/vmap
-  ${CMAKE_SOURCE_DIR}/dep/include
-  ${CMAKE_SOURCE_DIR}/dep/recastnavigation
-  ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
-  ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour/Include
-  ${CMAKE_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/shared
+  ${TW_CORE_ROOT}/src/scripts
+  ${TW_CORE_ROOT}/src/shared
+  ${TW_CORE_ROOT}/src/framework
+  ${TW_CORE_ROOT}/src/framework/Network
+  ${TW_CORE_ROOT}/src/game
+  ${TW_CORE_ROOT}/src/game/AI
+  ${TW_CORE_ROOT}/src/game/Anticheat
+  ${TW_CORE_ROOT}/src/game/AuctionHouse
+  ${TW_CORE_ROOT}/src/game/Battlegrounds
+  ${TW_CORE_ROOT}/src/game/Chat
+  ${TW_CORE_ROOT}/src/game/Commands
+  ${TW_CORE_ROOT}/src/game/Database
+  ${TW_CORE_ROOT}/src/game/Group
+  ${TW_CORE_ROOT}/src/game/Guild
+  ${TW_CORE_ROOT}/src/game/Handlers
+  ${TW_CORE_ROOT}/src/game/LFG
+  ${TW_CORE_ROOT}/src/game/Mail
+  ${TW_CORE_ROOT}/src/game/Maps
+  ${TW_CORE_ROOT}/src/game/Maps/Pool
+  ${TW_CORE_ROOT}/src/game/Movement
+  ${TW_CORE_ROOT}/src/game/Movement/spline
+  ${TW_CORE_ROOT}/src/game/Objects
+  ${TW_CORE_ROOT}/src/game/OutdoorPvP
+  ${TW_CORE_ROOT}/src/game/Protocol
+  ${TW_CORE_ROOT}/src/game/Spells
+  ${TW_CORE_ROOT}/src/game/Threat
+  ${TW_CORE_ROOT}/src/game/Transports
+  ${TW_CORE_ROOT}/src/game/vmap
+  ${TW_CORE_ROOT}/dep/include
+  ${TW_CORE_ROOT}/dep/recastnavigation
+  ${TW_CORE_ROOT}/dep/include/g3dlite
+  ${TW_CORE_ROOT}/dep/recastnavigation/Detour/Include
+  ${TW_CORE_BINARY_DIR}
+  ${TW_CORE_BINARY_DIR}/src/shared
   ${TBB_INCLUDE_DIRS}
   ${ACE_INCLUDE_DIR}
   ${MYSQL_INCLUDE_DIR}
@@ -258,12 +267,18 @@ endforeach()
 
 ConfigureModuleLoader("static" MODULE_STATIC_LOADER OFF ${MODULES_STATIC_MODULES})
 
-# `modules` is now the generated loader and nothing else: it holds the single
+# `modules` is the generated loader and nothing else: it holds the single
 # AddModulesScripts() entry point mangosd calls, and pulls in each statically
 # linked module through its own target. Listed after `game` so the linker
 # resolves each Add<name>Scripts() from the library that defines it.
+#
+# ModulesScriptLoader.h is no longer listed, or shipped from here at all. The
+# core declares AddModulesScripts() in core/src/shared/ModulesScriptLoader.h
+# because the core is the side that calls it -- a declaration kept only in this
+# repository would leave the two repositories agreeing on the signature by
+# convention rather than by compilation. The generated loader below still
+# #includes it by that name; core/src/shared is on MODULES_COMMON_INCLUDES.
 add_library(modules STATIC
-  ModulesScriptLoader.h
   ${MODULE_STATIC_LOADER})
 
 target_include_directories(modules
@@ -301,3 +316,11 @@ set(WORLDSERVER_DYNAMIC_MODULES_DEPENDENCIES ${MODULES_DYNAMIC_PROJECTS} PARENT_
 set(WORLDSERVER_DYNAMIC_MODULES ${MODULES_DYNAMIC_MODULES} PARENT_SCOPE)
 set(WORLDSERVER_ENABLED_MODULES ${MODULES_ENABLED_MODULES} PARENT_SCOPE)
 set(MODULES_BUILD_RUNTIME_DIR "${MODULES_BUILD_RUNTIME_DIR}" PARENT_SCOPE)
+
+# Where a dynamic module ends up after `cmake --install`, which the root
+# CMakeLists bakes into mangosd as TW_DYNAMIC_MODULES_INSTALL_DIR so
+# DynamicModules.cpp knows where to dlopen from. Exported rather than
+# recomputed: it is derived from the core's LIBS_DIR, and two places deriving
+# the same install path is how a server ends up looking for its modules
+# somewhere they were never put.
+set(MODULES_INSTALL_RUNTIME_DIR "${MODULES_INSTALL_RUNTIME_DIR}" PARENT_SCOPE)

@@ -1,0 +1,67 @@
+# What this platform is built on top of, and where that came from.
+#
+# ADR-0020 splits the tree in two: this repository is the platform (modules,
+# deploy, docs, tests, project SQL), and the server core is the `core/`
+# submodule. Three questions have to have written answers, and this file is
+# where they live:
+#
+#   1. which core commit is this platform pinned to?   -> CORE_COMMIT
+#   2. which upstream is that core a fork of?          -> UPSTREAM_URL/BRANCH
+#   3. which upstream commit does the fork delta sit on top of? -> UPSTREAM_BASE
+#
+# Question 1 is also answered by the gitlink in the tree, and that is the
+# authority -- this file is the human- and CI-readable copy of it, and
+# .github/workflows/nightly.yml asserts the two agree. Questions 2 and 3 cannot
+# be answered from this repository at all: its history was rewritten with
+# git-filter-repo to strip binaries, so its hashes correspond to nothing
+# upstream (docs/PROVENANCE.md, FG-005/FG-006).
+#
+# FORMAT: POSIX shell assignments, no spaces around `=`, values unquoted or
+# single-quoted. nightly.yml sources this file directly (`. ./UPSTREAM.lock`),
+# so anything that is not a valid assignment breaks the drift check rather than
+# being ignored. core/UPSTREAM.lock uses a different, prose-friendly `key =
+# value` layout and is NOT sourceable; it is the core's own record and is not
+# read by anything here.
+
+# ---------------------------------------------------------------------------
+# The core submodule.
+CORE_URL=https://github.com/Cilverkrow/twow-core.git
+
+# The branch the submodule tracks. Recorded here as well as in .gitmodules so
+# `git submodule update --remote` and this file cannot disagree silently.
+#
+# It was called `tortoise` while ADR-0020 was being written; the fork renamed it
+# to `main` on 2026-09-01. Anything that still says `tortoise` is stale.
+CORE_BRANCH=main
+
+# The pinned commit. Must equal `git -C core rev-parse HEAD` on a clean checkout;
+# a mismatch means somebody moved the submodule without recording it, which is
+# how a build stops being reproducible from a tag.
+CORE_COMMIT=baa2f11858a122ccd9ee77ab7ab2c8f523bbc42b
+
+# ---------------------------------------------------------------------------
+# What the core is a fork of. These are read by the nightly upstream-drift job.
+UPSTREAM_URL=https://github.com/Shyalya/tortoise-wow.git
+UPSTREAM_BRANCH=playerbots-integration-gh
+
+# The upstream commit the fork's delta applies to -- "Merge pull request #404
+# from Penqle/1181dev".
+#
+# ADR-0020 originally recorded db5fb2a here and called it the upstream tip. It
+# is not an upstream hash at all: it is a post-filter-repo commit in THIS
+# repository, so `git fetch upstream db5fb2a` fails and always did. The mapping
+# to 61a8269 was confirmed by content rather than by hash -- every file under
+# src/game is byte-identical between the two, the only difference being the 146
+# warden .cr/.key binaries filter-repo stripped from here and a genuine fork
+# gets back.
+UPSTREAM_BASE=61a8269151721f6467eddb05e7bed37704d0fc0b
+
+# Kept only so the old value is greppable when somebody finds it in an ADR or a
+# workflow and wonders which of the two is wrong.
+UPSTREAM_BASE_SUPERSEDED=db5fb2a197f05611ad9d243568122c6be466ab8a
+
+# Upstream tip at the moment the fork was cut, and how far ahead it already was.
+# Recorded so the size of the first merge is a known quantity rather than a
+# discovery. Most of the 379 commits are the Eluna Lua engine vendoring.
+UPSTREAM_TIP_AT_FORK=be3e6cdd47680c1308251e115164eb3d9eecc6f7
+UPSTREAM_COMMITS_AHEAD=379

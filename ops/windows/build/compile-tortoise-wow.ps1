@@ -282,9 +282,15 @@ if ($BuildPlayerbots) {
 # ---------------------------------------------------------------------------------------
 # 5. Clone or update the source
 # ---------------------------------------------------------------------------------------
+# --recursive, and a submodule update on the pull path. The server core lives in
+# the core/ submodule since ADR-0020, and a plain clone leaves that directory
+# empty -- the configure then stops at the root CMakeLists' FATAL_ERROR, which
+# says what to run but only after the operator has waited through vcpkg.
+# Existing checkouts hit the same thing on their first pull after the split,
+# which is why the update runs on both paths rather than only on the clone.
 Step "Getting the tortoise-wow source ($Branch)"
 if (-not (Test-Path $SourceDir)) {
-    git clone --branch $Branch $RepoUrl $SourceDir
+    git clone --recursive --branch $Branch $RepoUrl $SourceDir
     if ($LASTEXITCODE -ne 0) { Fail "Could not clone $RepoUrl." }
 } else {
     Warn "Source folder already exists at $SourceDir - pulling latest instead of re-cloning."
@@ -294,6 +300,10 @@ if (-not (Test-Path $SourceDir)) {
     git pull origin $Branch
     Pop-Location
 }
+Push-Location $SourceDir
+git submodule update --init --recursive
+if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "Could not fetch the core/ submodule." }
+Pop-Location
 Ok "Source ready at $SourceDir"
 
 # ---------------------------------------------------------------------------------------

@@ -85,6 +85,10 @@ jobs:
     steps:
       # fetch-depth: 0 because gitleaks scans history and the added-file checks
       # diff against a base commit.
+      # No submodules on purpose. gitleaks scans what this repository is
+      # responsible for; the core is a separate repository with its own history
+      # and its own scan, and pulling 190 MB of upstream world data through a
+      # secret scanner on every push buys nothing.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -305,6 +309,10 @@ jobs:
       IMPORT_PLAYERBOTS: 'ON'
       # db-init.sh reads these to find the SQL. In the container they are bind
       # mounts; here they are the tree itself.
+      # sql/ is this project's own migrations. sql/base is upstream's world
+      # data, which ADR-0020 moves into the core/ submodule -- when that move
+      # lands this becomes core/sql/base here and in deploy/compose/db-init.sh,
+      # and the checkout below is already recursive so the files will be there.
       SQL_DIR: sql
       SQL_BASE_DIR: sql/base
       PB_SQL_DIR: modules/mod-playerbots/data/sql
@@ -313,6 +321,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # For sql/base, which is upstream's world data and lives in the core/
+          # submodule once ADR-0020's move completes.
+          submodules: recursive
           fetch-depth: 1
 
       - name: Install the MariaDB client

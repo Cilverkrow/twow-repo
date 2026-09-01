@@ -93,15 +93,15 @@ target_include_directories(${PB_TARGET} PUBLIC
   # subdirectory-qualified has to name the directory those paths are relative
   # to.
   ${CMAKE_CURRENT_LIST_DIR}/src/cmangos-compat-stubs
-  ${CMAKE_SOURCE_DIR}/src/game/MapNodes
-  ${CMAKE_SOURCE_DIR}/src/game/PacketBroadcast
-  ${CMAKE_SOURCE_DIR}/src/shared/Config
-  ${CMAKE_SOURCE_DIR}/src/shared/Database
-  ${CMAKE_SOURCE_DIR}/src/shared/Log
-  ${CMAKE_SOURCE_DIR}/src/shared/Util
-  ${CMAKE_SOURCE_DIR}/dep/recastnavigation
-  ${CMAKE_SOURCE_DIR}/dep/include
-  ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
+  ${TW_CORE_ROOT}/src/game/MapNodes
+  ${TW_CORE_ROOT}/src/game/PacketBroadcast
+  ${TW_CORE_ROOT}/src/shared/Config
+  ${TW_CORE_ROOT}/src/shared/Database
+  ${TW_CORE_ROOT}/src/shared/Log
+  ${TW_CORE_ROOT}/src/shared/Util
+  ${TW_CORE_ROOT}/dep/recastnavigation
+  ${TW_CORE_ROOT}/dep/include
+  ${TW_CORE_ROOT}/dep/include/g3dlite
   # ACE_ROOT and BOOST_ROOT are only the hints a builder may pass in; the paths
   # find_package actually resolved are ACE_INCLUDE_DIR and Boost_INCLUDE_DIRS.
   # Without the resolved ones this target gets no ACE include path whenever ACE
@@ -115,8 +115,8 @@ target_include_directories(${PB_TARGET} PUBLIC
 
 if(WIN32)
   target_include_directories(${PB_TARGET} PUBLIC
-    ${CMAKE_SOURCE_DIR}/dep/windows/include
-    ${CMAKE_SOURCE_DIR}/dep/windows/include/mysql
+    ${TW_CORE_ROOT}/dep/windows/include
+    ${TW_CORE_ROOT}/dep/windows/include/mysql
   )
 endif()
 
@@ -132,7 +132,46 @@ target_link_libraries(${PB_TARGET}
 if(WIN32)
   target_link_libraries(${PB_TARGET} PRIVATE zlib PRIVATE ws2_32)
 else()
+  # find_package here, not in the core's root, even though the core's root also
+  # calls it. An IMPORTED target is scoped to the directory that created it and
+  # its children -- and since ADR-0020 the core is this directory's SIBLING, so
+  # the ZLIB::ZLIB the core creates is invisible from here and the configure
+  # ends with "links to ZLIB::ZLIB but the target was not found". Calling it
+  # again is free: the results are cached, so this resolves to the same zlib the
+  # core linked.
+  find_package(ZLIB REQUIRED)
   target_link_libraries(${PB_TARGET} PRIVATE ZLIB::ZLIB)
+endif()
+
+# Where Boost's compiled libraries are on Windows.
+#
+# This used to sit in src/mangosd/CMakeLists.txt, guarded by
+# `GetModuleEffectiveLinkage("mod-playerbots")` -- which is exactly the kind of
+# line that stopped the core from configuring without a module framework
+# present. It was there because the unresolved Boost references surface at
+# mangosd's link line rather than here: this is a static library, so nothing is
+# linked until the executable is. PUBLIC is what fixes that; a link directory
+# declared PUBLIC propagates to every consumer, and mangosd is one by way of
+# `modules`.
+#
+# BOOST_LIBRARYDIR if the builder set it; otherwise Boost's prebuilt layout,
+# lib64-msvc-<toolset>, derived from the toolset actually in use. The 14.3
+# fallback matches the Boost 1.86 prebuilt binaries.
+if(WIN32)
+  if(DEFINED ENV{BOOST_LIBRARYDIR})
+    target_link_directories(${PB_TARGET} PUBLIC "$ENV{BOOST_LIBRARYDIR}")
+  elseif(DEFINED ENV{BOOST_ROOT})
+    if(MSVC_TOOLSET_VERSION GREATER_EQUAL 143)
+      set(_boost_lib_suffix "14.3")
+    elseif(MSVC_TOOLSET_VERSION GREATER_EQUAL 142)
+      set(_boost_lib_suffix "14.2")
+    elseif(MSVC_TOOLSET_VERSION GREATER_EQUAL 141)
+      set(_boost_lib_suffix "14.1")
+    else()
+      set(_boost_lib_suffix "14.3")
+    endif()
+    target_link_directories(${PB_TARGET} PUBLIC "$ENV{BOOST_ROOT}/lib64-msvc-${_boost_lib_suffix}")
+  endif()
 endif()
 
 if(MSVC)

@@ -84,11 +84,17 @@ jobs:
       - name: Build
         run: cmake --build build --parallel "$(nproc)"
 
+      # build/core/src/..., not build/src/... . The core is a subdirectory of
+      # the platform project since ADR-0020, and CMake mirrors the source layout
+      # into the build tree, so the executables moved one level down with it.
+      # Spelled as an explicit path rather than a find: the point of this step is
+      # to assert where the artifacts are, and a find would keep passing after
+      # the next move.
       - name: Verify binaries exist
         run: |
-          test -x build/src/mangosd/mangosd
-          test -x build/src/realmd/realmd
-          ls -la build/src/mangosd/mangosd build/src/realmd/realmd
+          test -x build/core/src/mangosd/mangosd
+          test -x build/core/src/realmd/realmd
+          ls -la build/core/src/mangosd/mangosd build/core/src/realmd/realmd
 
   # Invariant 4 (ADR-0024): the core must still build and run with every project
   # feature switched off. Cheapest possible guard against a module that cannot be
@@ -128,7 +134,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --parallel "$(nproc)"
-          test -x build/src/mangosd/mangosd
+          test -x build/core/src/mangosd/mangosd
 
   # How far has upstream moved, and into which of our files?
   #
@@ -153,9 +159,11 @@ jobs:
     env:
       UPSTREAM_URL: https://github.com/Shyalya/tortoise-wow.git
       UPSTREAM_BRANCH: playerbots-integration-gh
-      # ADR-0026: the effective upstream merge-base for the Penqle line,
-      # reachable only as 14d4cdc^2 and named nowhere else in the tree.
-      UPSTREAM_BASE: db5fb2a197f05611ad9d243568122c6be466ab8a
+      # Fallbacks only; UPSTREAM.lock below overrides all three. 61a8269 is
+      # "Merge pull request #404 from Penqle/1181dev" - a real upstream commit,
+      # unlike the db5fb2a this line used to carry, which was a post-filter-repo
+      # hash from THIS repository and could never be fetched from upstream.
+      UPSTREAM_BASE: 61a8269151721f6467eddb05e7bed37704d0fc0b
     steps:
       - uses: actions/checkout@v4
         with:
@@ -164,9 +172,10 @@ jobs:
       - name: Fetch upstream and measure the drift
         run: |
           set -eu
-          # UPSTREAM.lock is ADR-0020's home for these values. It does not exist
-          # yet; when it does, prefer it over the env defaults above so this job
-          # never disagrees with the pinned submodule.
+          # UPSTREAM.lock is ADR-0020's home for these values and now exists,
+          # so it wins over the env defaults above and this job cannot disagree
+          # with the pinned submodule. It is written as POSIX shell assignments
+          # for exactly this line.
           if [ -f UPSTREAM.lock ]; then
             . ./UPSTREAM.lock
             UPSTREAM_URL="${UPSTREAM_URL:?}"
@@ -241,6 +250,13 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          # `COPY . /src` is only as complete as the checkout. Without this the
+          # context has an empty core/ and the configure stops at the
+          # FATAL_ERROR in the root CMakeLists - which is the good outcome; the
+          # bad one is a job that appears to prove the release build works while
+          # building something other than the release build.
+          submodules: recursive
 
       # Same reclaim ci.yml needs: the runner ships ~25 GB of toolchains this
       # build never touches, and a from-scratch compile of the whole tree plus a

@@ -127,3 +127,62 @@ Two things came out differently from what was written above:
 The payoff landed as expected: `mod-dungeon-clear` dropped 25 hand-written include
 directories, because `CollectModuleIncludeDirectories` now publishes them and linking
 the target carries them across.
+
+## Update 2026-09-01: `core/` exists, and what "folder structure is module structure" now means for the build
+
+The submodule is in at `core/`, on the branch that was `tortoise` when ADR-0020 was
+drafted and is `main` since 2026-09-01. Three things about the layout above changed
+in contact with the build, and two of them are traps rather than preferences.
+
+**`core/` was ignored by `.gitignore`.** The core-dump rule was a bare `core`, and a
+bare pattern matches a directory exactly as well as a file. `git submodule add core`
+was refused outright, and had it been forced without noticing, `git status` would have
+reported nothing about the submodule from then on. The rule now carries a `!/core/`
+negation directly under it. This is the second time that same line has caused a silent
+omission — it previously matched `deploy/docker/Dockerfile.core` under a `*.core`
+spelling and kept the Dockerfile out of the repository entirely.
+
+**`.dockerignore` patterns are anchored, so the split reopened a hole it had closed.**
+`sql/` excluded 130 MB of upstream world data from the build context. That data moves
+to the core, and `sql/` does not match `core/sql/`, so the context silently grew back
+by the exact amount that entry exists to prevent. Both are named now. Anything added
+to `.dockerignore` from here has to be checked against the core tree as well as this
+one.
+
+**The build is now inverted, and the order is load-bearing.** This repository's root
+`CMakeLists.txt` is the top-level project; `core/` is a subdirectory of it. The
+sequence is: discover modules (directory globbing only), hand the core three input
+variables, `add_subdirectory(core)`, **re-apply the core's compile settings at this
+scope**, `add_subdirectory(modules)`, then attach `modules` to the core's
+`tw_core_extensions` seam. ADR-0020's update records why each step is where it is.
+
+The step that reads as redundant and is not is the re-application. CMake directory
+properties are inherited by *children*, and under this layout `modules/` is a
+**sibling** of `core/`. Skip it and every module translation unit compiles core
+headers without `DO_MYSQL`, without `SYSCONFDIR`, and — the dangerous one, because it
+links cleanly — without `DT_VIRTUAL_QUERYFILTER`, which decides whether
+`dtQueryFilter::getCost` is virtual. A module whose navigation filter is never called
+is not a build failure; it is a bug report six weeks later.
+
+So the rule the directory map implies has a build counterpart worth stating outright:
+
+- **A module names core paths through `TW_CORE_ROOT`, never relatively and never
+  through `CMAKE_SOURCE_DIR`.** The core publishes it as a `CACHE INTERNAL` entry
+  because sibling directories inherit nothing. `modules/CMakeLists.txt`'s
+  `MODULES_COMMON_INCLUDES`, `mod-playerbots.cmake` and both `tests.cmake` files were
+  converted; `${CMAKE_SOURCE_DIR}/modules/...` inside a module is still correct and
+  was deliberately left alone.
+- **The core never names a module.** `src/game/CMakeLists.txt` and
+  `src/mangosd/CMakeLists.txt` both called
+  `GetModuleEffectiveLinkage("mod-playerbots" ...)` — the core reaching into the
+  module framework to ask about one of our modules by name. Those are core options
+  now (`TW_EXTERNAL_PLAYERBOT_HOOKS`, `TW_EXTERNAL_MODULE_LOADER`), and the Windows
+  Boost link-directory hunt that sat in `src/mangosd` moved into
+  `mod-playerbots.cmake`, where the dependency actually originates.
+
+**Still not done, and deliberately so:** the duplicated core files under `src/`,
+`dep/`, `cmake/`, `tools/` and `sql/base` are still present in this repository. They
+are byte-identical to the submodule apart from a handful of header self-containment
+fixes that exist here and not yet in `twow-core`. Deleting them before those fixes are
+committed upstream in the core would lose them. The enforcement checks this ADR
+specifies (`lint.yml`'s boundary check on `core/`) also do not exist yet.
