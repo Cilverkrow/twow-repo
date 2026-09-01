@@ -2171,11 +2171,8 @@ Perf.ReportInterval = 600
 # Leech moved to modules/mod-leech. Its settings live in
 # modules/mod_leech.conf - see modules/README.md.
 
-# SoloDungeonRepopAlive. A player who dies ALONE inside an instance is brought
-# back alive just inside the entrance instead of having to walk their corpse
-# back - solo there is nobody who could resurrect them. Does nothing while in a
-# group, since a group can resurrect. Map::IsDungeon() covers raids too.
-SoloDungeonRepopAlive.Enable = 0
+# SoloDungeonRepopAlive moved to modules/mod-solo-dungeon. Its settings live
+# in modules/mod_solo_dungeon.conf - see modules/README.md.
 
 # GuildBank.NpcEntries*. Which creatures count as guild vault keepers - a player
 # has to stand next to one of them for guild bank actions to be accepted.

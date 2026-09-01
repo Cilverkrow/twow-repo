@@ -1,0 +1,22 @@
+[worldserver]
+
+########################################
+# mod-solo-dungeon
+#
+# A player who dies ALONE inside an instance is returned to its entrance alive,
+# instead of walking back as a ghost. Solo there is nobody who could resurrect
+# them.
+#
+# "Alone" means nobody who could resurrect you: no group, or a group whose only
+# other members are bots. With a real player present this stays off -- someone
+# can resurrect, and it would be a free pass.
+#
+# Bots get this regardless of this setting and regardless of a group. They
+# cannot walk back in through an instance portal, so a wipe would strand them as
+# ghosts at the outdoor graveyard for good and the group would be over. It is
+# not a perk for them, it is the only way back to the party.
+########################################
+
+# Off by default. The core must run with every project feature disabled
+# (ADR-0024 invariant 4).
+SoloDungeonRepopAlive.Enable = 0

@@ -6510,55 +6510,16 @@ void Player::RepopAtGraveyard()
     // Special handle for battleground maps
     uint32 TeleOptions = TELE_TO_NOT_UNSUMMON_PET;
 
-    // Solo dungeon resurrection: a player who dies ALONE inside an instance is
-    // brought back alive just inside the entrance instead of having to walk
-    // back as a ghost - solo there is nobody who could resurrect them.
-    //
-    // The target is the instance ENTRANCE trigger, not a graveyard: instance
-    // graveyards sit outside the instance (that is what the corpse run is for),
-    // so resurrecting at one would drop the player out of the dungeon.
-    //
-    // Deliberately solo only - with a group present someone can resurrect, and
-    // this would be a free pass. Map::IsDungeon() covers raids and excludes
-    // battlegrounds, which are their own map type.
-    // Bots get this regardless of the config and regardless of a group: they
-    // cannot walk back in through an instance portal (LfgTeleportAction is
-    // MANGOSBOT_TWO only), so a wipe would strand them as ghosts at the outdoor
-    // graveyard for good and the group would be over. Not a perk - the only way
-    // back to the party.
-    // "Solo" means nobody who could resurrect you: no group, or a group whose
-    // only other members are bots. After a wipe a bot party is no more help
-    // than an empty one, and releasing the spirit already means you chose not
-    // to wait for a resurrection.
-    bool noHumanHelp = !GetGroup();
-    if (!noHumanHelp)
+    // A module may take the player somewhere else entirely rather than let the
+    // corpse run begin - mod-solo-dungeon returns a player who died alone in an
+    // instance to its entrance, alive. Returning true means it handled it, so
+    // nothing below should run.
+    if (ScriptRegistry<PlayerScript>::ForEachEnabledHookWithReturn(PLAYERHOOK_ON_REPOP_AT_GRAVEYARD, [&](PlayerScript* script)
     {
-        noHumanHelp = true;
-        for (GroupReference* itr = GetGroup()->GetFirstMember(); itr; itr = itr->next())
-        {
-            Player* member = itr->getSource();
-            if (member && member != this && !Script_IsAIControlled(member))
-            {
-                noHumanHelp = false;
-                break;
-            }
-        }
-    }
+        return script->OnRepopAtGraveyard(this);
+    }))
+        return;
 
-    bool const repopAtEntrance =
-        (sWorld.getConfig(CONFIG_BOOL_SOLO_DUNGEON_REPOP_ALIVE) && noHumanHelp) ||
-        Script_IsAIControlled(this);
-
-    if (!IsAlive() && repopAtEntrance && GetMap() && GetMap()->IsDungeon())
-    {
-        if (AreaTriggerTeleport const* entrance = sObjectMgr.GetMapEntranceTrigger(GetMapId()))
-        {
-            ResurrectPlayer(1.0f);
-            SpawnCorpseBones();
-            TeleportTo(entrance->destination, TeleOptions);
-            return;
-        }
-    }
     if (BattleGround *bg = GetBattleGround())
     {
         ClosestGrave = bg->GetClosestGraveYard(this);

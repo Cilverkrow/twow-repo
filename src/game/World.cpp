@@ -1516,7 +1516,6 @@ void World::LoadConfigSettingsFromFile(bool reload)
     setConfig(CONFIG_UINT32_AUTO_PDUMP_DELETE_AFTER_DAYS, "AutoPDump.DeleteAfterDays", 60);
 
     setConfig(CONFIG_BOOL_PERFORMANCE_ENABLE, "Perf.Enable", true);
-    setConfig(CONFIG_BOOL_SOLO_DUNGEON_REPOP_ALIVE, "SoloDungeonRepopAlive.Enable", false);
     setConfig(CONFIG_BOOL_LFT_BOTFILL_ENABLE, "LFT.BotFill.Enable", false);
     setConfig(CONFIG_UINT32_LFT_BOTFILL_DELAY, "LFT.BotFill.DelaySeconds", 90);
     setConfig(CONFIG_UINT32_LFT_BOTFILL_LEVEL_BELOW, "LFT.BotFill.LevelRangeBelow", 2);

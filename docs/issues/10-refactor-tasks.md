@@ -232,3 +232,41 @@ body: |
   **Low risk, small change** — but it blocks hermetic and cached container builds, so it
   is worth doing before the CI story hardens.
 ---
+id: REF-007
+title: Decide whether LFT bot fill should become a module
+workstream: WS-10
+priority: p2
+existing_ot: OT-016
+source: src/game/LFT/LFTBotFill.cpp
+superseded_by: none
+body: |
+  **Deliberately NOT extracted during the Phase C module work. Recording why, so
+  the decision is not silently re-made.**
+
+  The other three features (donation, world buffs, leech) were spliced into
+  unrelated core functions — `World::Update()` and `Unit::DealDamage()` — with no
+  file of their own. That is what made them worth extracting: they sat in the
+  middle of the hottest functions in the tree and every upstream merge touched
+  them.
+
+  **LFT bot fill is different.** `src/game/LFT/LFTBotFill.cpp` (648 lines) already
+  has its own file, so it causes none of that merge pain. What it does have is
+  depth: it implements `LFTMgr::UpdateBotFill`, a method of the core manager, and
+  touches **six private members** of it:
+
+  - `m_queue`, `m_offers`, `m_playerOffers` — the LFT matching state
+  - `m_lftGroupIds`, `m_fillBots` — bot-fill bookkeeping
+  - `m_botFillTimer`
+
+  Turning it into a module means exposing essentially the whole LFT queue through
+  hooks. That is a large, fragile surface for a feature that is not currently
+  costing anything, and the module would break on any LFT internal change.
+
+  **If it is revisited, the question to answer first** is whether LFT should have
+  a proper extension point — something like "offer candidates for an unfilled
+  role" — rather than a module reaching into queue internals. That is a design
+  job on LFT, not a mechanical extraction.
+
+  Related: OPS-006 (bot grouping lifecycle is unbounded) and OPS-002 (fixed-count
+  config defects) both touch the same subsystem and would inform the design.
+---

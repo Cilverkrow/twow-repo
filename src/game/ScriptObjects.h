@@ -148,6 +148,7 @@ enum PlayerHook
     PLAYERHOOK_SET_FORCED_ROLE,
     PLAYERHOOK_ON_CHAT_COMMAND,
     PLAYERHOOK_CAN_USE_GROUP_CHAT,
+    PLAYERHOOK_ON_REPOP_AT_GRAVEYARD,
     PLAYERHOOK_END
 };
 
@@ -239,6 +240,18 @@ class PlayerScript : public ScriptObject
         // fills with unknown-message-type lines.
         virtual bool CanUseGroupChat(Player* /*player*/, uint32 /*type*/, uint32 /*lang*/,
                                      std::string& /*msg*/) { return true; }
+
+        // A module may take over where a dead player is returned to life.
+        //
+        // Returning true means "I have handled it" and stops
+        // Player::RepopAtGraveyard() before it picks a graveyard - so an
+        // implementation must actually leave the player somewhere valid. The
+        // core's own behaviour is the default; returning false changes nothing.
+        //
+        // A veto rather than a notification because the two outcomes are
+        // mutually exclusive: a module that resurrects a player at an instance
+        // entrance cannot also let the corpse run start.
+        virtual bool OnRepopAtGraveyard(Player* /*player*/) { return false; }
 };
 
 class CreatureScript : public ScriptObject, public UpdatableScript<Creature>
