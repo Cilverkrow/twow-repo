@@ -152,26 +152,24 @@ workstream: WS-20
 priority: p2
 existing_ot: OT-006
 source: runbooks/workstreams/WS-10-ssc-analyse-entwicklung/rndbot-persistent-active-roster-analysis-01-package-closure-r1-20260830-223307/evidence/TABLE-WRITE-SCAN.txt
-superseded_by: none
+superseded_by: REF-018
 body: |
-  **Problem:** `ai_playerbot_random_bots` has no uniqueness guarantee, only a convention.
+  **Superseded by REF-018. Do not add this constraint in place.**
 
-  - The only index (`idx_owner_bot_event`) is explicitly non-unique.
-  - Uniqueness is enforced by `RandomPlayerbotMgr::SetEventValue` doing DELETE-then-INSERT
-    (`RandomPlayerbotMgr.cpp:3560, 3567, 3573`).
-  - 9 write sites across `RandomPlayerbotMgr.cpp` and `RandomPlayerbotFactory.cpp`, plus
-    6 manual SQL scripts.
-  - Scan verdict: `UNIQUE_OWNER_BOT_EVENT_CONSTRAINT=NO`, `DESIRED_ROSTER_STORAGE_SUITABLE=NO`.
+  The original finding is valid: `ai_playerbot_random_bots` has only the non-unique
+  `idx_owner_bot_event`, and `SetEventValue` relies on separate asynchronous
+  DELETE-then-INSERT operations. The proposed location is no longer valid.
 
-  **Why it matters:** DELETE+INSERT per event over the same key range with a non-unique
-  index is a plausible cause of the MariaDB 1213 deadlock in OT-006, on this exact table.
-  Duplicate rows would also silently corrupt lease semantics. The persistent roster does
-  not replace this table.
+  `tw_char` is upstream-owned and read-only to project migrations under ADR-0021 and
+  ADR-0024 invariant 2. Adding another project constraint there would deepen the
+  architecture violation. UNIQUE alone is also insufficient while `event` remains
+  nullable and the two writes can execute on different database workers.
 
-  **Do, in order:**
-  1. Confirm on a disposable copy that no duplicate `(owner,bot,event)` rows exist today.
-  2. Sequence with OT-006's transaction-ordering instrumentation — not ahead of it.
-  3. Then decide whether to promote the index to UNIQUE via a forward migration + rollback.
+  REF-018 owns the identity-preserving cutover to the project-owned `cv_bots` schema,
+  the non-null unique event key, the atomic write primitive and its disposable-database
+  proof. OPS-007 (#29) remains responsible for the deadlock-ordering evidence and the
+  separately authorized strict runtime rerun. Never deduplicate or discard an existing
+  event row automatically.
 ---
 id: WS10-004
 title: Make the real-database roster adapter suite runnable on demand
