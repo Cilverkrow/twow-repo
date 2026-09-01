@@ -117,8 +117,15 @@ body: |
      they are upstream's content (188 MiB, 336 files, 9 commits ever, all upstream
      authors). Fix `setup_databases.sh` there to import `sql/base` and recurse.
 
-  **Prep that parallelizes:** classifying the 114-file delta into fix / feature / hook is
-  the expensive analytical part and can be done ahead of the serial re-application.
+  **Dropped 2026-09-02: the "classify the delta" prep.** It was scoped as the expensive
+  analytical part that could run ahead of the serial re-application. It cannot deliver
+  what it promised: measured against the live upstream tip `83e40a6a` rather than the
+  stale snapshot `be3e6cd` it was originally run against, **all 103 unclassified files
+  exist upstream and 70 are byte-identical to it**, so there is no "ours alone" bucket to
+  populate and no classification that a diff against the live branch does not already
+  give for free. Classify each commit as it is re-applied instead (step 2), which is
+  where the fix/hook judgement actually has to be made. See ADR-0020's 2026-09-02
+  retraction. **The rest of this issue stands** -- the split itself is not done.
 
   **Constraint:** preserve commit `3c2b931` through the split.
 ---
