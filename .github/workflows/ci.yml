@@ -202,6 +202,18 @@ jobs:
           find ops deploy sql -name '*.sh' -print0 2>/dev/null \
             | xargs -0 -r shellcheck --severity=warning
 
+      # The issue importer has created duplicates or silently no-opped four
+      # times: title matching (27 duplicates), `--state open` in the existence
+      # check (REF-001/REF-002 refiled as #85/#86 after #79/#80 were closed),
+      # `--state open` in the --update resolver (a silent no-op on every closed
+      # issue), and a docs/issues/*.md glob that read README.md as a manifest.
+      # A comment explaining the second sat directly above the code that caused
+      # the third, so prose is demonstrably not enough. This runs the rules.
+      # It needs jq (preinstalled on ubuntu-24.04) and talks to no network.
+      - name: Issue tooling guard
+        if: always()
+        run: bash ops/audit/issue-tooling-guard.sh
+
       - name: hadolint
         if: always()
         uses: hadolint/hadolint-action@v3.1.0
