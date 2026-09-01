@@ -18,7 +18,7 @@ this register until 2026-09-02:
 
 | ADR | Decision | Status |
 |---|---|---|
-| ADR-0020 | Split upstream and project code across two repositories (`twow-core` + `twow-repo`) | Proposed; amended 2026-09-02 |
+| ADR-0020 | Split upstream and project code across two repositories (`twow-core` + `twow-repo`) | Proposed; amended 2026-09-02, and its *module-free core* rationale superseded |
 | ADR-0021 | Module boundaries and per-module schema ownership; one module system, `modules/` | Proposed; amended 2026-09-02 |
 | ADR-0022 | Test strategy: five levels, all registered with CTest | Proposed; amended 2026-09-02 |
 | ADR-0023 | Containerization and the one-command contract (`make up` / `smoke` / `test`) | Proposed; amended 2026-09-02 |
@@ -100,6 +100,13 @@ and measured a delta against a stale ref. All of the following are **retracted**
 - **"Upstream carries a divergent copy of the bot tree at the path we vacated"**: no
   longer true. Upstream commit `8415f1b` moved its bots to `modules/mod-playerbots`, the
   same path this project uses; REF-016 and PROV-02 were closed as moot.
+- **ADR-0020's "module-free core", and "the core does not know the platform exists" as
+  the acceptance test for the split**: superseded. `twow-core` PR #9 restores `modules/`
+  and `cmake/ConfigureModules.cmake`. `cmake/ConfigureModules.cmake` and
+  `modules/CMakeLists.txt` are *unmodified upstream files*, so deleting them on our side
+  produces **no merge signal** -- every upstream merge would resolve silently to "still
+  deleted", upstream's build system quietly gone behind a green tick. The **mergeable**
+  core, which is the reason the split exists, is untouched.
 - **ADR-0005's "upstream comparison and blame remain useful"**: superseded. There is no
   shared ancestry in `twow-repo`, so there is nothing to compare or blame across.
 - **ADR-0008's `42b8a7f7` as the source baseline anchor**: superseded by the fork point.

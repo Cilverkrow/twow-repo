@@ -1,6 +1,8 @@
 # ADR-0020: Split upstream and project code across two repositories
 
-- Status: Proposed
+- Status: Proposed; **amended 2026-09-02** -- its *module-free core* rationale is
+  superseded (see the last section). The *mergeable core* rationale, which is the reason
+  the split exists, stands.
 - Date: 2026-08-31
 - Primary: WS-00 / WS-10 / WS-50
 - Supersedes: the "keep one tree" half of ADR-0005
@@ -181,10 +183,14 @@ upstream could not check its own claims. Its first PR said as much in its own
 verification section.
 
 It now has a `Build core (Debian trixie)` workflow that configures and builds `mangosd`
-and `realmd` from a clean checkout with no reference to `modules/`, which is the
-acceptance test for the split: **the core does not know the platform exists.**
-`cmake/ConfigureModules.cmake` is gone from `main`; the extension seam prints
-*"Host extensions: none (standalone core)"* and configures without the module framework.
+and `realmd` from a clean checkout. **That workflow is the durable result of this
+section** and it still holds.
+
+What does not hold is the gloss put on it at the time: that the workflow configured *with
+no reference to `modules/`*, that `cmake/ConfigureModules.cmake` was gone from `main`, and
+that "the core does not know the platform exists" was the acceptance test for the split.
+Both files are back in `twow-core` and the second sentence is retracted -- see the next
+section.
 
 ## Retraction 2026-09-02: the "shared heritage" delta split
 
@@ -206,5 +212,44 @@ Two errors compounded:
    fork*, which is true of anyone's fork. See ADR-0026: upstream is an unrelated third
    party, and offering fixes to them is an ordinary pull request.
 
-Consequently REF-003's "classify the delta" deliverable is dead and the issue was
-closed.
+Consequently REF-003's "classify the delta" prep step is dead and was struck from its
+manifest. The rest of REF-003 -- the split itself -- stands and stays open.
+
+## Superseded 2026-09-02: the *module-free* core. The *mergeable* core stays.
+
+This ADR conflated two properties of `twow-core` and treated them as one goal:
+
+- **mergeable** -- a history that shares ancestry with upstream, so `git pull upstream`
+  is an ordinary operation and our fixes can be offered back. **This is load-bearing and
+  is the whole reason the split exists. It is untouched.**
+- **module-free** -- a core stripped of `modules/` and `cmake/ConfigureModules.cmake`,
+  so that "the core does not know the platform exists". **This is dropped.**
+
+`twow-core` PR #9 (merged) restores `modules/` and `cmake/ConfigureModules.cmake`.
+`twow-core` carries no `docs/` tree, so the supersession is recorded in its
+`FORK-README.md`; this section is its counterpart here, where the ADR lives.
+
+**Why it was dropped, precisely.** Not merely "upstream changed". The module framework is
+**upstream's own**: `cmake/ConfigureModules.cmake` and `modules/CMakeLists.txt` are
+unmodified upstream files that this project never edited. Deleting a file that upstream
+does not touch produces **no merge signal at all** -- git sees one side deleting and the
+other side leaving it alone, which is not a conflict. So every future upstream merge would
+resolve silently to "still deleted": upstream's build system quietly absent, no conflict
+marker, no failing job, a green tick. The divergence would be invisible in exactly the
+operation the split exists to make safe.
+
+A deletion that upstream never contests is the worst kind of divergence, because it is the
+kind that never announces itself.
+
+Two consequences follow:
+
+- **The acceptance test for the split is not "the core has no `modules/`."** It is "the
+  core merges from upstream without structural conflict, and its fixes are offerable as
+  ordinary pull requests". The `Build core (Debian trixie)` workflow tests the first half.
+- **Platform-vs-core separation is enforced by *content*, not by absence.** `twow-core`
+  keeps upstream's framework and simply ships no project modules in it; project modules
+  live here (ADR-0021, ADR-0025). Upstream's core contains `modules/`, and matching that
+  shape is alignment, not a compromise.
+
+This does not reopen anything else in this ADR. The two-repository split, the submodule,
+`UPSTREAM.lock`, `core-patches/`, and the SQL move are all unchanged.
