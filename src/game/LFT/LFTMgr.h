@@ -10,6 +10,12 @@
 #include <vector>
 
 #include "Common.h"
+// ObjectGuid by value, in members and as a std::vector/std::map parameter, so a
+// forward declaration is not enough. Its absence was invisible for as long as
+// every translation unit reaching this header happened to include ObjectGuid.h
+// first; LFTBotFill.cpp does not, and MSVC reported forty errors here against a
+// header that file had not touched.
+#include "ObjectGuid.h"
 
 class Group;
 class Player;

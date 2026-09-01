@@ -432,3 +432,49 @@ body: |
   Nothing in the build or the deployment references it, which is itself the
   question: a patch file nobody applies is either dead or a missing step.
 ---
+id: REF-012
+title: Burn down the 25 core headers that are not self-contained
+workstream: WS-10
+priority: p2
+existing_ot: none
+source: ops/audit/header-self-containment-baseline.txt
+superseded_by: none
+body: |
+  **25 of 216 headers under `src/game` do not compile on their own.** They use a
+  type without declaring it, and get away with it only because every translation
+  unit that reaches them happens to include the declaration first.
+
+  Four of these were found the expensive way in one afternoon — `Conditions.h`,
+  `SharedDefines.h`, `WorldSession.h`, `LFTMgr.h` — each by a Windows CI job,
+  twelve minutes at a time, because GCC's include order in this tree is luckier
+  than MSVC's. All four are fixed; these 25 are the rest, found by
+  `ops/audit/header-self-containment.sh` and baselined so CI fails on a new one
+  but not on these.
+
+  **The list** is `ops/audit/header-self-containment-baseline.txt`. Reproduce
+  with:
+
+      cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      ops/audit/header-self-containment.sh build
+
+  **Most are one line.** The causes cluster:
+  - missing `Platform/Define.h` (`uint32` undeclared) — `GenericSpellAI.h`,
+    `HonorMgr.h`, `NPCHandler.h`, `GridMapDefines.h`,
+    `CharacterDatabaseCleaner.h`
+  - missing `ObjectGuid.h` — `CreatureGroups.h`, `LFGMgr.h`
+  - missing a standard header — `<thread>` in `ChannelBroadcaster.h`,
+    `<vector>` in `NPCHandler.h`
+  - missing `Chat.h` / `World.h` — `AnticheatChatCommands.h`,
+    `AsyncCommandHandlers.h`, `GuidObjectScaling.h`
+
+  **Check before fixing** whether a header is *meant* to be included from one
+  place only: `spline.impl.h` and `MovementGeneratorImpl.h` look deliberate. Those
+  should stay in the baseline with a note saying why, not be forced standalone.
+
+  **Fix them upstream-first.** Most are upstream files and these are plain bug
+  fixes, so they belong in the ADR-0020 batch that goes to `twow-core` as
+  individually PR-able commits — not carried as fork delta forever.
+
+  **Done when** the baseline file is empty or contains only headers with a
+  recorded reason, and the CI step still passes.
+---

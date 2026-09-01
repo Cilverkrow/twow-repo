@@ -659,8 +659,21 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
             -DBUILD_TESTING=ON \
             -DBUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      # Headers that use a type without declaring it compile fine until a
+      # translation unit reaches them before the declaration -- and then the
+      # errors point at a header that file never touched. Four landed in one
+      # afternoon, each found by the Windows job twelve minutes at a time,
+      # because GCC's include order here happens to be luckier than MSVC's.
+      # Checked against a baseline, so this fails on a NEW one only.
+      #
+      # Runs off the configure above and compiles nothing but one-line probes,
+      # so it costs seconds and reports before the long build starts.
+      - name: Core headers are self-contained
+        run: ops/audit/header-self-containment.sh build
 
       # Named test targets, built one at a time so a target that does not exist
       # yet is reported as absent rather than failing the run. The CTest wiring
