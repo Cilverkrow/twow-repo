@@ -373,18 +373,25 @@ existing_ot: none
 source: docs/adr/ADR-0020-two-repo-upstream-split.md
 superseded_by: none
 body: |
-  ADR-0020 and `docs/issues/10-refactor-tasks.md` describe 255 files as our
-  modifications to the vendored bot tree, implying a pristine-ike3 baseline. The
-  number is real; **the baseline is not ike3.** It is `0af2567`, the graft
-  checkpoint of the parallel line -- "cmangos/playerbots port grafted onto
-  Penqle/tortoise-wow 1181dev" -- which is already a port.
+  ADR-0020, ADR-0026 and `docs/issues/10-refactor-tasks.md` present a 255-file
+  PlayerBots delta without naming what was compared, which makes it look like an
+  upstream-ike3 measurement. It is not.
 
-  Measured the same way, our tree is 258 files changed. The delta against upstream
-  ike3 is **unmeasured and necessarily larger**: neither repository has an ike3
-  remote, and neither line tracks it.
+  The 255 paths are reproducible only for snapshot `ed32ae41` relative to the
+  PlayerBots subtree in graft checkpoint
+  `0af2567767de69a819287acaab4c5c947cc1e04c`. That checkpoint describes itself as
+  "cmangos/playerbots port grafted onto Penqle/tortoise-wow 1181dev" and is already
+  a port. Its PlayerBots subtree is content-identical to checkpoint `1af237d` in
+  this repository's rewritten history. At tested roster baseline `3c2b931`, the
+  same raw comparison reports 267 changed paths. The previously proposed 258-path
+  replacement is not reproducible without an undocumented exclusion or path
+  normalization and must not become a provenance claim.
 
-  Reword both documents to name `0af2567` as the baseline, and either add an ike3
-  remote to `twow-core` or state plainly that the true vendor delta is unknown.
+  Reword all three documents to identify the graft-relative snapshots and state
+  plainly that neither repository records a verified ike3 source commit, tag or
+  remote. The true upstream-ike3 delta is unknown. Selecting and verifying such a
+  baseline is separate provenance work; merely adding a remote would not establish
+  it.
 ---
 id: PROV-02
 title: Record the standing decision on the vendored bot tree and enforce it at merge time

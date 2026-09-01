@@ -613,12 +613,22 @@ body: |
   So upstream vendored ike3's playerbots at the very path we just vacated by
   promoting it to `modules/mod-playerbots`. When `twow-core` merges upstream it
   acquires upstream's copy, and we would carry two divergent copies of the same
-  vendored tree — ours has 255 modified files.
+  imported bot line.
+
+  Our module can be compared with graft checkpoint
+  `0af2567767de69a819287acaab4c5c947cc1e04c`, whose PlayerBots subtree is
+  content-identical to checkpoint `1af237d5346456dd6a5d457b0759be3215790f4c`
+  in this repository's rewritten history. That checkpoint is already a
+  cmangos/PlayerBots port, not a pristine ike3 revision. The historic 255-path
+  figure describes snapshot `ed32ae41` relative to that graft; the same raw
+  comparison at tested roster baseline `3c2b931` yields 267 paths. Neither count
+  measures the upstream ike3 delta. No verified ike3 source commit, tag or remote
+  is recorded in either repository, so the true vendor delta is unknown.
 
   **Decide before the first upstream merge:**
   - **(a)** `twow-core` deletes `src/modules/PlayerBots`; ours stays authoritative.
     Costs a delete-vs-modify conflict on every upstream merge that touches it.
-  - **(b)** Adopt upstream's copy and re-apply our 255 file modifications on top.
+  - **(b)** Adopt upstream's copy and re-apply our graft-relative module delta on top.
     Most work now, least friction later, and it puts us on upstream's bot tree.
   - **(c)** Keep both and never merge that path.
 
