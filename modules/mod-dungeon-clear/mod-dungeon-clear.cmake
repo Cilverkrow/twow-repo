@@ -32,7 +32,12 @@
 # express this: CMake escapes "NAME=" into -DNAME="" (verified), which is a value
 # of "" and warns just the same.
 if (MSVC)
-    foreach (DC_MATH_TARGET modules mod_mod-dungeon-clear)
+    # GetModuleProjectName lowercases and maps every non [a-z0-9_] character to
+    # an underscore, so this module's dynamic target is mod_mod_dungeon_clear -
+    # not mod_mod-dungeon-clear, which was named here and therefore never
+    # matched. Ask for the name instead of spelling it.
+    GetModuleProjectName("${TORTOISE_CURRENT_MODULE}" DC_DYNAMIC_TARGET)
+    foreach (DC_MATH_TARGET modules ${DC_DYNAMIC_TARGET})
         if (TARGET ${DC_MATH_TARGET})
             target_compile_options(${DC_MATH_TARGET} PRIVATE /D_USE_MATH_DEFINES=)
         endif()
