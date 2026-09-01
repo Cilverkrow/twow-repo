@@ -314,7 +314,23 @@ VALUES
 -- FILE: npc_trainer_blackstone.sql
 -- GENERATED: 20260718150344
 -- ==============================================
-INSERT INTO `npc_trainer`
+-- INSERT IGNORE, not INSERT. The five starter rows for trainers 80104-80107
+-- that 20260617120000_world.sql restores are byte-identical to five of the rows
+-- below, so on a fresh bootstrap this statement collides with them:
+--     ERROR 1062 Duplicate entry '80106-1780' for key 'entry_spell'
+--
+-- That collision was invisible until migrations stopped being applied with
+-- --force: 20260508064255_world.sql drops and recreates npc_trainer between the
+-- two files in the OLD directory order, so the earlier rows were being wiped
+-- before this ran. Timestamp ordering removes that accident and exposes the
+-- duplicate.
+--
+-- IGNORE here is a statement of intent, not error-swallowing: this file is the
+-- authoritative full trainer list (97 rogue rows against the earlier file's 5),
+-- it is a strict superset, and the overlapping rows are identical -- verified
+-- row by row. The end state is the same whichever file runs first. The earlier
+-- file already declares itself idempotent the same way and for the same reason.
+INSERT IGNORE INTO `npc_trainer`
 (
     `entry`,
     `spell`,
