@@ -311,3 +311,71 @@ body: |
   instrumentation in `src/game/Handlers/MovementHandler.cpp` with no non-debug
   effect. Permanent diagnostic seam, or a finished investigation?
 ---
+id: REF-009
+title: Promote src/modules/PlayerBots to modules/mod-playerbots
+workstream: WS-10
+priority: p1
+existing_ot: OT-016
+source: docs/adr/ADR-0021-module-boundaries-and-schema-ownership.md
+superseded_by: none
+body: |
+  **Goal: one module system instead of two, and delete the last thing that makes
+  a module configure the shared CMake target.**
+
+  Today playerbots is a separate static library under `src/modules/PlayerBots`,
+  gated by its own `BUILD_PLAYERBOTS` option, with ~20 hand-written `file(GLOB)`
+  blocks. It is not a `modules/` module, and that single fact is why
+  `mod-dungeon-clear.cmake` reaches out and mutates the shared `modules` target
+  with 25 playerbots include directories, a link to `playerbots`, and a global
+  `-include AcCompat.h`. Its own comment says so.
+
+  **The payoff:** once both are modules, `CollectModuleIncludeDirectories`
+  publishes those paths automatically and the whole block deletes. The CI guard
+  in `ci.yml` can then drop its known exception, and module #2 stops inheriting
+  another module's AzerothCore name shim.
+
+  **Design refinement found while scoping — declare it static-only.**
+
+  The plan assumed the promotion required removing `src/game/PlayerbotStubs.cpp`
+  first, because link-time stubs cannot work with `dlopen`. Scoping the actual
+  symbols shows that is the wrong trade:
+
+  - 6 `BotActionLog_*` diagnostic probes, called from 12 sites in `Unit.cpp` and
+    `Spell.cpp` via inline `extern` declarations. Converting these to core hooks
+    means six new entries in `ScriptObjects.h` **for logging** — a poor use of
+    the hook surface.
+  - 4 chat commands, registered unconditionally in `Chat.cpp:1004-1007`.
+    Migratable to a `CommandScript`.
+  - `World::InitPlayerbotsAtStartup()`. Migratable to a `WorldScript`.
+
+  Dynamic linkage was never realistic for playerbots anyway: `mod-dungeon-clear`
+  subclasses playerbots' strategy, action, trigger and value classes, so the two
+  must live in the same library regardless. **So promote it as a static-only
+  module** (`MODULE_MOD_PLAYERBOTS=static`, refusing dynamic with a clear
+  message), keep the free-function seam, and the payoff still lands.
+
+  **Steps:**
+  1. `modules/mod-playerbots/src/` <- `playerbot/`, `ahbot/`, `botpch.*`,
+     `cmangos-compat-*`. The ~20 GLOB blocks delete: the framework globs `src/`
+     recursively with `CONFIGURE_DEPENDS`.
+  2. `data/sql/{world,character}/` <- the module's `sql/` tree.
+  3. `mod-playerbots.cmake` carries what cannot be inferred: `CMANGOS`,
+     `MANGOSBOT_ZERO`, `ENABLE_PLAYERBOTS`, Boost (thread/filesystem/system),
+     the `botpch.h` PCH, and MSVC `/Ob1` — the last is load-bearing, `/Ob2`
+     ICEs the optimizer with C1001 on the templated strategy code.
+  4. Retire `BUILD_PLAYERBOTS`; update `src/mangosd/CMakeLists.txt`,
+     `.dockerignore`, `deploy/compose/db-init.sh` (`PB_SQL_DIR`), `ci.yml`,
+     `AGENTS.md`, `INSTALL-LINUX.md`.
+  5. Delete the 25 include dirs and the `target_link_libraries(modules PUBLIC
+     playerbots)` from `mod-dungeon-clear.cmake`; make its `-include AcCompat.h`
+     per-module rather than applied to the shared target.
+  6. Drop the known exception from the `ci.yml` isolation guard.
+
+  **Sequencing hazard:** `modules/CMakeLists.txt:242` iterates modules in sorted
+  order, so `mod-dungeon-clear`'s `POST_TARGETS` runs before `mod-playerbots`
+  exists. There is no inter-module dependency mechanism today; that needs solving
+  as part of this, not after.
+
+  **Verify:** static build with modules enabled; `ctest` still green; the
+  isolation guard passes with no exception.
+---
