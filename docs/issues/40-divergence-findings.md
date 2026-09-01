@@ -270,7 +270,30 @@ body: |
     pack MSVC chokes on, and writes a patched copy. It fails *open*: a submodule
     bump silently produces an unpatched file.
 
-  **If we want Eluna, it attaches through `ScriptObjects.h`.** Decide that first.
+  **Correction, after reading the code rather than the diff summary.** The thread
+  zeroing is *not* a property of Eluna. Eluna keeps **one Lua state per map**
+  (`m_elunaInfo`, keyed by map and instance), and the pools are zeroed because
+  parallel updates *within a single map* would re-enter that map's single state
+  concurrently. Crucially, `Eluna.OnlyOnMaps` already exists as a config key.
+
+  So the damage is scoped to whichever maps load Eluna, and the options are:
+
+  1. **Do not take it.** We have a module system with hooks, and the data-driven
+     direction (`DcRosterFile`) already solves reload-without-rebuild for the
+     cases that recur.
+  2. **`Eluna.OnlyOnMaps = <instance ids>`.** Continents keep full threading --
+     that is where the ~1000 bots live and where the pools matter. Instances get
+     Lua, and instances are where scripted encounters are. **No code change
+     needed** beyond deleting the blanket zeroing.
+  3. **Serialise Lua behind a per-map mutex.** Keeps threads for all non-Lua
+     work; contention only while a script runs.
+  4. **Marshal Lua calls onto the map's own thread.** Cleanest concurrency, but
+     hooks become asynchronous, which breaks any hook that returns a value or
+     vetoes.
+
+  **Decide whether we want Lua content scripting at all first.** If yes, option 2
+  makes the integration unobjectionable and the rest of the objections above
+  still need answering separately.
 ---
 id: CORE-08
 title: Decide which Penqle content changes to take
