@@ -7796,13 +7796,24 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
             speed *= sWorld.getConfig(((Player*)this)->InBattleGround() ? CONFIG_FLOAT_GHOST_RUN_SPEED_BG : CONFIG_FLOAT_GHOST_RUN_SPEED_WORLD);
     }
 
-    // Apply strongest slow aura mod to speed
+    // Apply the strongest slow aura. Deliberately NOT scaled by `ratio`.
+    //
+    // `ratio` is a speed multiplier a caller passes to go faster -- the bots'
+    // movespeed cheat passes 10 (PlayerbotAI.cpp, HasCheat(movespeed)).
+    // Multiplying the slow by it too meant a mere 10% snare became -100%:
+    // speed *= (100 + (-10 * 10)) / 100 == 0. MoveSplineInitArgs::Validate then
+    // rejects every spline, so the unit holds a perfectly good path and never
+    // moves again, with nothing logged -- the route was fine and the spline
+    // counted as issued.
     int32 slow = GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
-	if (slow)
-	{
-		int32 scaledSlow = int32(float(slow) * ratio);
-        speed *= (100.0f + scaledSlow) / 100.0f;
-	}
+    if (slow)
+        speed *= (100.0f + slow) / 100.0f;
+
+    // A 100% snare is a hold, not an invalid spline. Validate() rejects
+    // non-positive speeds outright, which loses the movement entirely instead
+    // of stopping it.
+    if (speed < 0.01f)
+        speed = 0.01f;
 
     if (IsCreature())
     {

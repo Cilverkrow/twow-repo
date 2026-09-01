@@ -358,7 +358,14 @@ class Spell
 
         Spell(Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid originalCasterGUID = ObjectGuid(), SpellEntry const* triggeredBy = nullptr, Unit* victim = nullptr, SpellEntry const* triggeredByParent = nullptr, bool bCanIgnoreLOS = false);
         Spell(GameObject* caster, SpellEntry const *info, bool triggered, ObjectGuid originalCasterGUID = ObjectGuid(), SpellEntry const* triggeredBy = nullptr, Unit* victim = nullptr, SpellEntry const* triggeredByParent = nullptr, bool bCanIgnoreLOS = false);
-        ~Spell();
+        // Virtual, because Spell::Delete() ends in `delete this` and the
+        // playerbots module derives from this class -- BotUseItemSpell in
+        // modules/mod-playerbots/.../UseItemAction.h adds a member, making the
+        // derived object larger than the base. Deleting it through a Spell*
+        // with a non-virtual destructor frees the base size, corrupting the
+        // allocator on every bot item use, and the resulting abort lands
+        // somewhere unrelated.
+        virtual ~Spell();
 
         SpellCastResult prepare(SpellCastTargets targets, Aura* triggeredByAura = nullptr, uint32 chance = 0);
         SpellCastResult prepare(Aura* triggeredByAura = nullptr, uint32 chance = 0);

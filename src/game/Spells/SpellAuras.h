@@ -30,6 +30,9 @@
 #include "SharedDefines.h"
 // AuraRemoveMode.
 #include "Objects/UnitDefines.h"
+// SpellEntry by value-of-member: GetId() dereferences m_spellProto inline, so a
+// forward declaration is not enough here.
+#include "Spells/SpellEntry.h"
 #include <vector>
 
 /**

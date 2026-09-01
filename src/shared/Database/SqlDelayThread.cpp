@@ -52,7 +52,9 @@ void SqlDelayThread::run()
     #endif
 
     char ThreadName[128];
-    sprintf(ThreadName, "SqlDelay %s", Name);
+    // snprintf: the name is caller-supplied and this buffer is 128 bytes on the
+    // stack. sprintf here was one long database name away from a stack smash.
+    snprintf(ThreadName, sizeof(ThreadName), "SqlDelay %s", Name.c_str());
 
     thread_name(ThreadName);
     const uint32 loopSleepms = 10;

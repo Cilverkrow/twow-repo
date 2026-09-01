@@ -2589,9 +2589,19 @@ char* ChatHandler::ExtractLiteralArg(char** args, char const* lit /*= nullptr*/)
         return arg;
     }
 
-    char* name = strtok(head, " ");
+    // strtok_r, not strtok. strtok keeps its position in a single
+    // process-wide static, and this runs concurrently from every bot's
+    // reaction engine on several map threads -- SpellIdValue reaches it
+    // through extractSpellId, over short-lived strings. One thread's call
+    // silently resumed inside a buffer another thread had already freed.
+    //
+    // Deliberately scoped to these two calls. The other uses of strtok in this
+    // file are GM commands and config loading, which are not concurrent, and
+    // changing them would be churn without a reason.
+    char* strtokState = nullptr;
+    char* name = strtok_r(head, " ", &strtokState);
 
-    char* tail = strtok(nullptr, "");
+    char* tail = strtok_r(nullptr, "", &strtokState);
 
     *args = tail ? tail : (char*)"";                        // *args don't must be nullptr
 

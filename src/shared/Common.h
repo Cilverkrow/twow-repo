@@ -294,4 +294,12 @@ std::array<
 
 #define BATCHING_INTERVAL 400
 
+
+// MSVC spells the reentrant strtok "strtok_s"; the argument order and
+// semantics are identical. Code that needs thread-safe tokenising -- which
+// is any of it that runs on a map thread -- writes strtok_r.
+#if defined(_MSC_VER) || defined(_WIN32)
+#  define strtok_r strtok_s
+#endif
+
 #endif

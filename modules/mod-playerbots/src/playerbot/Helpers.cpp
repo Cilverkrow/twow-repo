@@ -7,12 +7,18 @@
 
 void split(std::vector<std::string>& dest, const std::string& str, const char* delim)
 {
+    // strtok_r, not strtok. strtok keeps its parse position in a single
+    // process-wide static, and this runs from every bot's AI on several map
+    // threads at once -- two concurrent splits silently corrupt each other's
+    // tokenisation, and the caller gets fragments of somebody else's string.
+    // (Common.h defines strtok_r as strtok_s for MSVC.)
     char* pTempStr = strdup( str.c_str() );
-    char* pWord = strtok(pTempStr, delim);
+    char* saveptr = nullptr;
+    char* pWord = strtok_r(pTempStr, delim, &saveptr);
     while(pWord != NULL)
     {
         dest.push_back(pWord);
-        pWord = strtok(NULL, delim);
+        pWord = strtok_r(NULL, delim, &saveptr);
     }
 
     free(pTempStr);

@@ -36,6 +36,7 @@
 
 class Player;
 class WorldPacket;
+class Group;
 
 enum ClassRoles
 {

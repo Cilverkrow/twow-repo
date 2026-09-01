@@ -849,7 +849,13 @@ bool PlayerbotAI::IsInRaid()
     bool inRaidFight = false;
     if (IsSafe(bot))
     {
-        const Map* map = bot->GetMap();
+        // FindMap(), never GetMap(). On this core GetMap() is
+        // MANGOS_ASSERT(m_currMap), and MANGOS_ASSERT expands to WPError which
+        // THROWS std::runtime_error rather than aborting. Nothing up the value
+        // tree catches it, so a bot with no map -- mid-teleport, or logging out
+        // -- ends the world server from inside a loot check. The null tests
+        // below were always here; they simply could never be reached.
+        const Map* map = bot->FindMap();
         if (map && (map->IsDungeon() || map->IsRaid()))
         {
             inRaidFight = true;
@@ -2752,7 +2758,7 @@ Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
     if (!guid)
         return NULL;
 
-    Map* map = bot->GetMap();
+    Map* map = bot->FindMap();
     if (!map)
         return NULL;
 
@@ -2783,7 +2789,7 @@ Creature* PlayerbotAI::GetCreature(ObjectGuid guid) const
     if (!guid)
         return NULL;
 
-    Map* map = bot->GetMap();
+    Map* map = bot->FindMap();
     if (!map)
         return NULL;
 
@@ -2795,7 +2801,7 @@ Creature* PlayerbotAI::GetAnyTypeCreature(ObjectGuid guid) const
     if (!guid)
         return NULL;
 
-    Map* map = bot->GetMap();
+    Map* map = bot->FindMap();
     if (!map)
         return NULL;
 
@@ -2807,7 +2813,7 @@ GameObject* PlayerbotAI::GetGameObject(ObjectGuid guid)
     if (!guid)
         return NULL;
 
-    Map* map = bot->GetMap();
+    Map* map = bot->FindMap();
     if (!map)
         return NULL;
 
@@ -2837,7 +2843,7 @@ WorldObject* PlayerbotAI::GetWorldObject(ObjectGuid guid)
     if (!guid)
         return NULL;
 
-    Map* map = bot->GetMap();
+    Map* map = bot->FindMap();
     if (!map)
         return NULL;
 
@@ -4860,7 +4866,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
 
         if (ObjectGuid guid = bot->m_ObjectSlotGuid[slot])
         {
-            if (GameObject* obj = bot ? bot->GetMap()->GetGameObject(guid) : nullptr)
+            if (GameObject* obj = (bot && bot->FindMap()) ? bot->FindMap()->GetGameObject(guid) : nullptr)
             {
                 //Object is not mine because I created an object with same guid on different map. 
                 //Make object mine, remove it from my list and give it back to the original owner.
@@ -6214,10 +6220,12 @@ ActivePiorityType PlayerbotAI::GetPriorityType()
     if (IsInRealGuild())
         return ActivePiorityType::PLAYER_GUILD;
 
-    if (bot->IsBeingTeleported() || !bot->IsInWorld() || !bot->GetMap()->HasRealPlayers())
+    // FindMap, not GetMap, and checked: a bot mid-teleport genuinely has no map,
+    // which is exactly the state the first two conditions are testing for.
+    if (bot->IsBeingTeleported() || !bot->IsInWorld() || !bot->FindMap() || !bot->FindMap()->HasRealPlayers())
         return ActivePiorityType::IN_INACTIVE_MAP;
 
-    if (!bot->GetMap()->HasActiveZone(bot->GetZoneId()))
+    if (!bot->FindMap() || !bot->FindMap()->HasActiveZone(bot->GetZoneId()))
         return ActivePiorityType::IN_ACTIVE_MAP;
 
     return ActivePiorityType::IN_ACTIVE_AREA;

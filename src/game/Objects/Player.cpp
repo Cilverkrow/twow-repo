@@ -24593,7 +24593,19 @@ void Player::HandleStealthedUnitsDetection()
                     if (i_player->m_broadcaster)
                         i_player->m_broadcaster->AddListener(this);
 
-                m_visibleGUIDs.insert(stealthedUnit->GetObjectGuid());
+                // Locked, like every other writer of this set. These two were
+                // the only mutations that skipped it, and they rehash the table
+                // while readers on other map threads hold a shared_lock -- the
+                // crash lands in _Hashtable::find under
+                // Group::UpdatePlayerOutOfRange, a long way from here.
+                //
+                // Scope is the mutation only: SendCreateUpdateToPlayer builds
+                // and sends a packet, and holding an exclusive lock across that
+                // would serialise visibility updates for the whole map.
+                {
+                    std::unique_lock<std::shared_mutex> lock(m_visibleGUIDs_lock);
+                    m_visibleGUIDs.insert(stealthedUnit->GetObjectGuid());
+                }
                 stealthedUnit->SendCreateUpdateToPlayer(this);
             }
         }
@@ -24607,7 +24619,10 @@ void Player::HandleStealthedUnitsDetection()
                     if (i_player->m_broadcaster)
                         i_player->m_broadcaster->RemoveListener(this);
 
-                m_visibleGUIDs.erase(stealthedUnit->GetObjectGuid());
+                {
+                    std::unique_lock<std::shared_mutex> lock(m_visibleGUIDs_lock);
+                    m_visibleGUIDs.erase(stealthedUnit->GetObjectGuid());
+                }
             }
         }
     }

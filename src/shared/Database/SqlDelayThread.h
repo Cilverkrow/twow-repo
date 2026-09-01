@@ -22,6 +22,8 @@
 #ifndef __SQLDELAYTHREAD_H
 #define __SQLDELAYTHREAD_H
 
+#include <string>
+
 #include "LockedQueue.h"
 
 class Database;
@@ -38,7 +40,12 @@ class SqlDelayThread
         SqlQueue m_serialDelayQueue;
         SqlConnection *m_dbConnection;                     ///< Pointer to DB connection
         volatile bool m_running;
-        const char* Name;
+        // By value, not const char*. Master::_StartDB passes name.c_str() of a
+        // local std::string; the pointer dangles the moment that function
+        // returns and its stack becomes the world thread's. Whether the read
+        // produced garbage or not depended on where the next zero byte happened
+        // to land.
+        std::string Name;
 
 
         //process all enqueued requests

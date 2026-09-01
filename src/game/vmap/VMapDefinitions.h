@@ -19,6 +19,10 @@
 #ifndef _VMAPDEFINITIONS_H
 #define _VMAPDEFINITIONS_H
 
+// FILE for the fread/fwrite helpers, and Define.h for the uint32 in
+// readChunk() below.
+#include "Platform/Define.h"
+
 #include <cstdio>
 
 #define LIQUID_TILE_SIZE (533.333f / 128.f)
