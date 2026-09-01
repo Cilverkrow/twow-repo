@@ -160,6 +160,25 @@ entry instead of growing the original.
 
 An agent owns **`modules/<name>/**` and nothing else.**
 
+**Commit by path, never by index.** When anyone else is working in the same tree, this
+is the rule that matters most, and it is not "be careful":
+
+```bash
+git commit -- path/one path/two      # right
+git add -A && git commit             # wrong
+git add some/dir/ && git commit      # also wrong: commits the WHOLE index
+```
+
+`git commit` commits the index, not the paths of the `git add` that preceded it. Three
+separate commits in one session picked up another agent's in-progress work this way:
+once through `git add -A`, once through `git add ops/audit/` sweeping a file being
+rewritten, and once because `git submodule add` had already staged `.gitmodules` and a
+gitlink — which then shipped a submodule declaration inside a commit of unrelated bug
+fixes, and broke CI.
+
+Cheap habit that catches all three: run `git diff --cached --stat` and read it before
+every commit. If a path you did not touch appears, stop.
+
 **Never edit these** — they are shared, and a change here is a request to the core owner,
 not a change you make:
 
