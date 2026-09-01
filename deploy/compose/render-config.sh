@@ -113,4 +113,45 @@ EOF
     echo "wrote $OUT/aiplayerbot.conf" >&2
 fi
 
+# ------------------------------------------------------------- permissions
+#
+# Every file rendered above carries the database password in cleartext, and
+# every one of them is bind-mounted into a container that runs as the
+# unprivileged `turtle` account -- uid 10001, pinned in
+# deploy/docker/Dockerfile.core, see the long comment there.
+#
+# Those two facts used to contradict each other. The files were mode 600 owned
+# by whoever ran this script (uid 1000 on a developer box, 1001 on the GitHub
+# runner), the container process was a different uid entirely, and so realmd
+# could not read /opt/turtle/etc/realmd.conf. Mangos reports an unreadable
+# config as "Could not find configuration file", which sends you hunting for a
+# missing bind mount instead of a permission bit; the stack had in fact never
+# come up under compose. This applies to all three files, not just realmd's:
+# mangosd.conf and aiplayerbot.conf are mounted the same way.
+#
+# The directory is the real guard. 0700 means no other account on this host can
+# reach these files at all, whatever mode the files themselves carry, and the
+# container never traverses it -- a bind mount resolves the file's inode, so the
+# only path check inside the container is against image-owned /opt/turtle/etc.
+chmod 700 "$OUT"
 chmod 600 "$OUT"/*.conf
+
+# Preferred: keep 0600 and hand uid 10001 an explicit read entry. A file's owner
+# may grant an ACL to any uid without being root, which is the only mechanism
+# here that works unprivileged in both environments that matter -- the CI runner
+# renders these as uid 1001 with no sudo in that step, and a developer renders
+# them as their own login uid. Neither can chown to 10001, and neither is in a
+# group the container user belongs to, so plain owner/group bits cannot express
+# "readable by exactly one foreign uid" and an ACL can.
+#
+# Fallback: filesystems mounted without ACL support and hosts with no setfacl
+# (a Docker Desktop file share, a busybox environment) cannot do that, and a
+# stack that will not start is worse than a mode bit. 0644 there is not a
+# meaningful loss: the 0700 directory above still keeps every account except
+# root and the owner out, and root can read the file whatever its mode says.
+if setfacl -m "u:10001:r" "$OUT"/*.conf 2>/dev/null; then
+    echo "granted uid 10001 (container 'turtle') read access via ACL" >&2
+else
+    chmod 644 "$OUT"/*.conf
+    echo "no usable ACL support here; configs are 0644 inside a 0700 $OUT" >&2
+fi

@@ -109,8 +109,39 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 COPY deploy/docker/entrypoint-mangosd.sh /usr/local/bin/entrypoint-mangosd.sh
+# The uid and the gid are pinned, and that is load-bearing rather than tidiness.
+#
+# The compose file bind-mounts host-rendered configs (deploy/compose/config/
+# *.conf) over /opt/turtle/etc/*.conf. Those files carry the database password in
+# cleartext -- the server does no environment substitution -- so they are not
+# world-readable, which means the host has to grant read access to a *specific*
+# identity before the container starts. `useradd --system` with no --uid takes
+# the highest free system uid at image build time: 999 today, 998 the day an apt
+# package claims an account ahead of it, something else again on another Debian
+# point release. An identity that moves cannot be granted anything in advance,
+# so realmd ran as a uid nothing on the host had ever heard of, could not open
+# its own config, and mangos reported that as "Could not find configuration file
+# /opt/turtle/etc/realmd.conf" -- a permission failure wearing a missing-file
+# message. It crash-looped on exactly this the first time the CI smoke job
+# actually ran.
+#
+# render-config.sh grants read to uid 10001; this line is the other half of that
+# agreement. Change one of the two numbers and you must change the other.
+#
+# 10001 rather than something low: above the 0-999 range Debian hands to system
+# accounts, and above the 1000-1999 band that desktop logins and CI runners (the
+# GitHub runner is uid 1001) sit in, so it collides with nothing that already
+# exists on a host whose files this container is about to be handed.
+#
+# Changing this number on an existing deployment orphans the `server-logs`
+# volume: Docker takes a named volume's ownership from the image directory the
+# first time it is mounted, so a volume created by an older image is still owned
+# by that older uid and the new one cannot write logs into it. `docker volume rm
+# twow_server-logs` (or `make clean`) is the fix; nothing but logs is lost.
 RUN chmod +x /usr/local/bin/entrypoint-mangosd.sh \
-    && useradd --system --create-home --home-dir /home/turtle turtle \
+    && groupadd --system --gid 10001 turtle \
+    && useradd --system --uid 10001 --gid 10001 \
+         --create-home --home-dir /home/turtle turtle \
     && mkdir -p /data /var/log/turtle ${PREFIX}/run \
     && chown -R turtle:turtle /data /var/log/turtle ${PREFIX}/run
 
