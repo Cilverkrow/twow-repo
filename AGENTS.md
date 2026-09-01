@@ -127,6 +127,16 @@ The `id` is the stable key and prefixes the issue title. **The importer matches 
 id prefix, never on the title** — matching on titles once created 27 duplicate issues the
 moment titles were reworded.
 
+It matches against issues in **every state**, open and closed. Deduplicating against open
+issues only was the first attempted fix for those 27 duplicates, and it aimed at the wrong
+cause: with the id as the key, ignoring closed issues means finishing a task and closing
+its issue makes the next run file it again. REF-001 and REF-002 came back as #85 and #86
+that way.
+
+**Priorities are `p0`, `p1` or `p2`.** There is no `p3` label, and the importer creates
+the issue anyway when it cannot apply a label — so a typo here costs you a
+correctly-titled issue with no priority on it.
+
 **Reading comments.** Check periodically:
 
 ```bash

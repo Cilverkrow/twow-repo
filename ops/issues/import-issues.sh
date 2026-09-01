@@ -99,9 +99,20 @@ ensure_milestones() {
 # with awk keeps this script dependency-free; the format is deliberately simple
 # enough that this is safe (no nested structures, one 'body: |' block last).
 existing_titles() {
-    # Open issues only. A closed duplicate must not make the importer think
-    # the item still exists.
-    gh issue list --repo "$REPO" --state open --limit 500 --json title --jq '.[].title'
+    # Every state, open and closed.
+    #
+    # This read "--state open" for a while, from the incident where 27
+    # duplicates were created and then closed: the reasoning was that a closed
+    # duplicate must not make the importer think the item exists. That reasoning
+    # was aimed at the wrong cause. The duplicates came from matching on the
+    # full TITLE, which changes; the fix was to match on the id prefix, which
+    # does not.
+    #
+    # With the id as the key, ignoring closed issues is actively wrong: it means
+    # finishing a task and closing its issue makes the next importer run create
+    # it again. REF-001 and REF-002 were recreated as #85 and #86 that way,
+    # hours after #79 and #80 were closed as done.
+    gh issue list --repo "$REPO" --state all --limit 500 --json title --jq '.[].title'
 }
 
 import_file() {

@@ -417,7 +417,7 @@ body: |
 id: REF-011
 title: patches/llm-debug-only.patch applies to paths that no longer exist
 workstream: WS-10
-priority: p3
+priority: p2
 existing_ot: none
 source: patches/llm-debug-only.patch
 superseded_by: none
