@@ -677,3 +677,47 @@ body: |
   if the submodule is not checked out at build time, the core is silently absent
   and the failure appears as a missing-source error deep in cmake.
 ---
+id: REF-018
+title: Move PlayerBot-owned state to cv_bots and make event writes atomic
+workstream: WS-20
+priority: p1
+existing_ot: OT-006
+source: docs/adr/ADR-0021-module-boundaries-and-schema-ownership.md
+superseded_by: none
+body: |
+  **PlayerBot state still lives in upstream-owned `tw_char`.** The module promotion is
+  complete, but its tables were not moved to the `cv_bots` schema assigned by ADR-0021.
+  This blocks WS20-001: adding a project-owned UNIQUE constraint directly to
+  `tw_char.ai_playerbot_random_bots` would violate ADR-0024 invariant 2.
+
+  The event table also has a correctness defect independent of placement:
+
+  - `event` is nullable, so a composite UNIQUE key would still permit repeated NULL keys.
+  - `SetEventValue` enqueues DELETE and INSERT separately; multiple CharacterDatabase
+    workers can interleave them, and MariaDB error 1213 has already occurred on this table.
+  - Existing duplicate or NULL-event rows cannot be resolved without an explicit data
+    decision; differing time/value/data fields make automatic deduplication lossy.
+
+  **Implement in this order:**
+
+  1. Complete OPS-007's disposable transaction/worker-ordering reproduction. Preserve
+     its deadlock evidence; do not call a schema hypothesis the proven root cause.
+  2. On a disposable restore, inventory exact row counts and hashes, duplicate
+     `(owner,bot,event)` groups and NULL events. Fail closed on either condition.
+  3. Add a forward-only, replay-safe `mod-playerbots` migration under
+     `modules/mod-playerbots/data/sql/` which creates project-owned `cv_bots` state and
+     copies every source row without deleting or rewriting the old table.
+  4. Make `event` NOT NULL and enforce `UNIQUE(owner,bot,event)` on the new event table.
+     Keep the old table read-only through the verified cutover and rollback window.
+  5. Route every runtime and maintained tooling path to the owned table. For nonzero
+     values use one atomic `INSERT ... ON DUPLICATE KEY UPDATE`; zero remains one precise
+     DELETE. Do not use REPLACE.
+  6. Prove fresh and replayed migration, exact copy equality, duplicate/NULL fail-closed
+     behaviour, same-key ordering and a contention run with zero 1213 and zero 1062.
+     Add a static guard against new unqualified writes to the legacy table.
+
+  Schema/grant changes, any required core database seam and the module PR must remain
+  separately reviewable. Production backup, cutover, process control and the final
+  donation strict-PASS rerun require later explicit authorization; this issue does not
+  authorize them.
+---
