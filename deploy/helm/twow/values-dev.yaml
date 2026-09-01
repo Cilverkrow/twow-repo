@@ -59,7 +59,7 @@ realmd:
       memory: 256Mi
 
 playerbots:
-  enabled: true               # == BUILD_PLAYERBOTS=ON
+  enabled: true               # image must be built with MODULES=static
   minRandomBots: 10           # == AIPLAYERBOT_MIN_BOTS
   maxRandomBots: 10           # == AIPLAYERBOT_MAX_BOTS
 

@@ -21,6 +21,18 @@ function(GetPathToModuleSource module variable)
   set(${variable} "${MODULE_BASE_PATH}/${module}/src" PARENT_SCOPE)
 endfunction()
 
+# Resolves what a module's linkage actually is, folding the "default" sentinel
+# into the tree-wide MODULES setting. Three places used to open-code this and a
+# fourth needed it, which is how src/game came to guess.
+function(GetModuleEffectiveLinkage module variable)
+  ModuleNameToVariable("${module}" MODULE_VARIABLE)
+  if("${${MODULE_VARIABLE}}" STREQUAL "default" OR "${${MODULE_VARIABLE}}" STREQUAL "")
+    set(${variable} "${MODULES_DEFAULT_LINKAGE}" PARENT_SCOPE)
+  else()
+    set(${variable} "${${MODULE_VARIABLE}}" PARENT_SCOPE)
+  endif()
+endfunction()
+
 function(ModuleNameToVariable module variable)
   string(TOUPPER "${module}" MODULE_VARIABLE_NAME)
   string(REGEX REPLACE "[^A-Z0-9_]" "_" MODULE_VARIABLE_NAME "${MODULE_VARIABLE_NAME}")
@@ -360,8 +372,20 @@ function(IsDynamicLinkingModulesRequired variable)
 endfunction()
 
 function(ConfigureModuleBuildOptions)
+  # Default `static`, not `disabled`.
+  #
+  # It was `disabled`, and nothing in the tree passed -DMODULES: not the
+  # Dockerfile, not docker-compose, not CI. So every image and every pipeline
+  # build silently shipped with no modules at all -- which stopped being merely
+  # untidy once AutoWorldBuff, AutoDonationPoints, Leech and SoloDungeonRepop
+  # moved out of World.cpp/Unit.cpp/Player.cpp and became modules. Those four
+  # features were compiled into the server before the extraction and would have
+  # been absent from it afterwards, with nothing failing to say so.
+  #
+  # A module exists to be built. Turning them off is the special case, and the
+  # nightly all-features-off job asks for it explicitly.
   if(NOT MODULES)
-    set(MODULES "disabled" CACHE STRING "Module build mode: disabled, static, dynamic, or default." FORCE)
+    set(MODULES "static" CACHE STRING "Module build mode: disabled, static, dynamic, or default." FORCE)
   endif()
 
   set_property(CACHE MODULES PROPERTY STRINGS disabled static dynamic default)

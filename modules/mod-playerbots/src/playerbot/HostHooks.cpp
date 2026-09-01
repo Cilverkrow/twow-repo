@@ -9,7 +9,8 @@
 // Lives in the bot module so it sees both the host headers and the bot
 // module's full PlayerbotAI / PlayerbotMgr types — the host declares the
 // methods, only the bot module satisfies the linker with real bodies. The
-// matching BUILD_PLAYERBOTS=OFF stubs live in src/game/PlayerbotStubs.cpp.
+// matching no-op stubs, used when this module is disabled, live in
+// src/game/PlayerbotStubs.cpp.
 
 #include "playerbot/playerbot.h"
 #include "Objects/Player.h"

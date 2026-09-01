@@ -36,7 +36,7 @@ RUN --mount=type=cache,target=/ccache \
       -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DTW_ARCH=${TW_ARCH} \
       -DUSE_EXTRACTORS=ON \
-      -DBUILD_PLAYERBOTS=OFF \
+      -DMODULES=disabled \
       -DCMAKE_C_COMPILER_LAUNCHER=ccache \
       -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 

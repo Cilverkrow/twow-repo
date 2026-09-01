@@ -100,3 +100,24 @@ Rules:
 - `docs/adr/ADR-0020-two-repo-upstream-split.md`, `ADR-0024-project-invariants.md`,
   `ADR-0028-platform-and-ci-strategy.md`
 - `docs/REPOSITORY-BOUNDARIES.md`, `docs/PROVENANCE.md`
+
+## Update 2026-09-01: the promotion happened
+
+`src/modules/PlayerBots` is `modules/mod-playerbots`, and `BUILD_PLAYERBOTS` is gone.
+`src/modules/` no longer exists; every module lives under `modules/`.
+
+Two things came out differently from what was written above:
+
+- **Static only.** `mod-dungeon-clear` derives from the bot tree's strategy, action,
+  trigger and value classes, so the two have to land in the same library and a
+  dlopen'd `.so` cannot satisfy that. `mod-playerbots.cmake` refuses dynamic linkage
+  with that reason rather than failing at link time.
+- **The link-time seam stays.** The plan called for deleting
+  `src/game/PlayerbotStubs.cpp` first. Six of its eleven symbols are `BotActionLog_*`
+  diagnostic probes called from twelve sites in `Unit.cpp` and `Spell.cpp`; six new
+  entries in `ScriptObjects.h` to relocate logging is a bad trade, and dynamic linkage
+  — the only reason the stubs were a blocker — was never available anyway.
+
+The payoff landed as expected: `mod-dungeon-clear` dropped 25 hand-written include
+directories, because `CollectModuleIncludeDirectories` now publishes them and linking
+the target carries them across.

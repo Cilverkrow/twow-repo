@@ -308,7 +308,7 @@ $cmakeArgs = @(
     "-B", $buildDir, "-A", "x64",
     "-DCMAKE_INSTALL_PREFIX=$InstallPrefix",
     "-DUSE_EXTRACTORS=$(if ($UseExtractors) {'ON'} else {'OFF'})",
-    "-DBUILD_PLAYERBOTS=$(if ($BuildPlayerbots) {'ON'} else {'OFF'})",
+    "-DMODULE_MOD_PLAYERBOTS=$(if ($BuildPlayerbots) {'static'} else {'disabled'})",
     "-DACE_ROOT=$vcpkgInstalled"
 )
 if ($BuildPlayerbots) { $cmakeArgs += "-DBOOST_ROOT=$vcpkgInstalled" }
@@ -392,7 +392,7 @@ $configMap = @{
 foreach ($distName in $configMap.Keys) {
     $distPath = Join-Path $InstallPrefix $distName
     $realPath = Join-Path $InstallPrefix $configMap[$distName]
-    if (-not (Test-Path $distPath)) { Warn "$distName not found in $InstallPrefix - skipping (playerbot templates only exist if BUILD_PLAYERBOTS was ON)"; continue }
+    if (-not (Test-Path $distPath)) { Warn "$distName not found in $InstallPrefix - skipping (playerbot templates only exist if mod-playerbots was built)"; continue }
     if (Test-Path $realPath) { Ok "$($configMap[$distName]) already exists - leaving it alone (delete it and re-run if you want it regenerated)"; continue }
     Copy-Item $distPath $realPath
     Ok "Created $($configMap[$distName])"

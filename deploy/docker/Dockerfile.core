@@ -22,7 +22,9 @@ ARG PREFIX=/opt/turtle
 FROM debian:${DEBIAN_VERSION}-slim AS builder
 ARG PREFIX
 ARG TW_ARCH=x86-64-v2
-ARG BUILD_PLAYERBOTS=ON
+# static, dynamic or disabled. Applies to every module under modules/,
+# mod-playerbots included.
+ARG MODULES=static
 ARG BUILD_TYPE=Release
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -43,7 +45,7 @@ RUN --mount=type=cache,target=/ccache \
       -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
       -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DTW_ARCH=${TW_ARCH} \
-      -DBUILD_PLAYERBOTS=${BUILD_PLAYERBOTS} \
+      -DMODULES=${MODULES} \
       -DCMAKE_C_COMPILER_LAUNCHER=ccache \
       -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 

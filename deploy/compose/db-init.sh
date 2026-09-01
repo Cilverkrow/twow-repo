@@ -149,7 +149,7 @@ stage_updates() {
 # maintenance tooling, not part of an install.
 stage_playerbots() {
     if [ "${IMPORT_PLAYERBOTS:-ON}" != "ON" ]; then
-        log "BUILD_PLAYERBOTS is not ON; skipping playerbot schema"
+        log "IMPORT_PLAYERBOTS is not ON; skipping playerbot schema"
         return 0
     fi
     [ -d "$PB_SQL_DIR" ] || { log "missing $PB_SQL_DIR"; exit 1; }

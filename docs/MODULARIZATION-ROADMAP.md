@@ -5,7 +5,7 @@ Deep modularization is intentionally not a prerequisite for the first safe repos
 The initial repository uses boundaries that do not require modifying the live project:
 
 1. Server source stays in its existing upstream-compatible layout.
-2. PlayerBot and LLM bridge code stays under `src/modules/PlayerBots` until its interfaces and configuration contract are stable.
+2. PlayerBot and LLM bridge code lives in `modules/mod-playerbots`; its interfaces and configuration contract are not yet stable, so treat the vendored tree as vendored.
 3. Project-owned server helper scripts live under `ops/windows` in this repository.
 4. Only sanitized configuration examples live under `config/examples`.
 5. Runbooks remain text evidence under `runbooks` and are not executable deployment input by default.

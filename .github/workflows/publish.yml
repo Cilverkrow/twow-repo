@@ -131,7 +131,6 @@ jobs:
           # TW_ARCH stays at the Dockerfile default (x86-64-v2). `native` would
           # bake this runner's CPU into a published image (ADR-0028).
           build-args: |
-            BUILD_PLAYERBOTS=ON
             BUILD_TYPE=Release
           # Attached to the image in the registry: provenance mode=max records
           # the full build definition, sbom records what is inside it. Both are
@@ -199,7 +198,7 @@ jobs:
           COPY deploy/compose/db-init.sh /db-init.sh
           COPY sql /sql
           COPY sql/base /sql-base
-          COPY src/modules/PlayerBots/sql /sql-playerbots
+          COPY modules/mod-playerbots/data/sql /sql-playerbots
           RUN chmod +x /db-init.sh
           VOLUME ["/state"]
           ENTRYPOINT ["/bin/bash", "/db-init.sh"]

@@ -48,7 +48,7 @@ sudo apt install build-essential cmake ninja-build ccache libace-dev \
   libboost-dev libboost-thread-dev libboost-filesystem-dev \
   libboost-system-dev libboost-stacktrace-dev
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=/opt/turtle -DBUILD_PLAYERBOTS=ON
+  -DCMAKE_INSTALL_PREFIX=/opt/turtle
 cmake --build build --parallel "$(nproc)"
 ```
 
@@ -69,8 +69,8 @@ Do not use `libboost-all-dev`: it pulls ~230 packages including OpenMPI. Only `t
 
 | Path | Contents |
 |---|---|
-| `src/` | Server source: `game/`, `shared/`, `framework/`, `mangosd/`, `realmd/`, `modules/PlayerBots/` |
-| `modules/` | Project modules (`mod-*`), each with its own `src/`, `conf/`, `data/sql/`, `t/` |
+| `src/` | Server source: `game/`, `shared/`, `framework/`, `mangosd/`, `realmd/` |
+| `modules/` | Every module (`mod-*`), each with its own `src/`, `conf/`, `data/sql/`, `t/`. The vendored bot tree is one of them: `mod-playerbots`. |
 | `sql/` | Schema and migrations |
 | `deploy/` | `docker/`, `compose/`, `helm/` |
 | `test/` | `smoke/`, and unit/integration targets registered with ctest |

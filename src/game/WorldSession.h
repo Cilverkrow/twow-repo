@@ -420,8 +420,16 @@ class WorldSession
         bool ForcePlayerLogoutDelay();
 
         void QueuePacket(WorldPacket* new_packet);
-        // bot wraps packets in unique_ptr.
-        void QueuePacket(std::unique_ptr<WorldPacket> new_packet) { QueuePacket(new_packet.release()); }
+        // bot wraps packets in unique_ptr. Body is out-of-line for the same
+        // reason as the const-reference overload below: destroying the
+        // parameter instantiates ~unique_ptr, which instantiates
+        // default_delete<WorldPacket>::operator(), which needs the complete
+        // type. That the pointer has been release()d first does not help --
+        // the destructor is still instantiated. GCC defers the instantiation
+        // far enough to get away with it; MSVC does not, and failed here with
+        // "use of undefined type 'WorldPacket'" plus the static_assert "can't
+        // delete an incomplete type".
+        void QueuePacket(std::unique_ptr<WorldPacket> new_packet);
         // Const-reference overload (bot sometimes constructs an inline WorldPacket).
         // Copies into a fresh heap WorldPacket so QueuePacket(WorldPacket*) — which
         // takes ownership and may delete on the unknown-opcode path — never sees

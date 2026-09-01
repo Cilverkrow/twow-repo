@@ -1893,6 +1893,19 @@ enum TicketType
 
 #include <cmath>
 
+// M_PI is a POSIX extension, not standard C++. MSVC's <math.h> defines it only
+// when _USE_MATH_DEFINES was defined before the FIRST include of that header,
+// and the header is #pragma once -- so any translation unit that reached
+// <cmath> earlier through <algorithm>, <vector> or G3D has already missed the
+// window, and no #define placed here can reopen it. That is a real failure, not
+// a hypothetical: MSVC reported four "'M_PI': undeclared identifier" inside this
+// header while compiling Commands.cpp, each followed by the cascade "'fmod': no
+// overloaded function takes 1 arguments" -- the second argument had failed to
+// compile, so the call was seen with one.
+//
+// So this header does not use M_PI at all.
+float constexpr TW_PI = 3.14159265358979323846f;
+
 // Dungeon difficulty arrived with The Burning Crusade. Every instance on this
 // core is the only version of itself. The type exists because Map::GetDifficulty
 // returns it and ported code compares against it; the heroic value is named so
@@ -1957,7 +1970,7 @@ struct Position
 
     float GetAngle(float px, float py) const {
         float a = std::atan2(py - y, px - x);
-        return a < 0.0f ? a + 2.0f * float(M_PI) : a;
+        return a < 0.0f ? a + 2.0f * TW_PI : a;
     }
     float GetAngle(Position const& p) const { return GetAngle(p.x, p.y); }
     template<class T>
@@ -1973,10 +1986,10 @@ struct Position
     {
         if (o < 0.0f)
         {
-            float const mod = std::fmod(o, 2.0f * float(M_PI));
-            return mod < 0.0f ? mod + 2.0f * float(M_PI) : mod;
+            float const mod = std::fmod(o, 2.0f * TW_PI);
+            return mod < 0.0f ? mod + 2.0f * TW_PI : mod;
         }
-        return std::fmod(o, 2.0f * float(M_PI));
+        return std::fmod(o, 2.0f * TW_PI);
     }
     float GetExactDist2d(Position const* p) const { return GetExactDist2d(p->x, p->y); }
     float GetExactDist(Position const* p) const { return GetExactDist(p->x, p->y, p->z); }

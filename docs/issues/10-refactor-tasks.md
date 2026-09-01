@@ -379,3 +379,56 @@ body: |
   **Verify:** static build with modules enabled; `ctest` still green; the
   isolation guard passes with no exception.
 ---
+id: REF-010
+title: mod-playerbots and mod-dungeon-clear compile the same headers with different macros
+workstream: WS-10
+priority: p2
+existing_ot: none
+source: modules/mod-playerbots/mod-playerbots.cmake
+superseded_by: none
+body: |
+  **The two modules disagree about what the bot classes are, and the compiler is
+  not told.**
+
+  `mod-playerbots` compiles its own sources with `CMANGOS`, `MANGOSBOT_ZERO` and
+  `ENABLE_PLAYERBOTS` defined. They are `PRIVATE`, so `mod-dungeon-clear` — which
+  subclasses those same classes and includes those same headers — compiles them
+  with none of the three.
+
+  Anything behind those macros therefore has two definitions in one program:
+  different members, different layouts, different inline bodies. That is an ODR
+  violation, and the failure mode is not a compile error but a wrong vtable or a
+  field read at the wrong offset at runtime.
+
+  **Not introduced by the module promotion.** The root `CMakeLists.txt` had
+  `target_compile_definitions(playerbots PRIVATE CMANGOS MANGOSBOT_ZERO
+  ENABLE_PLAYERBOTS)` before it, with the same consequence. The move preserved
+  the behaviour deliberately rather than quietly changing it.
+
+  **To do:**
+  1. Measure it: compile a `mod-dungeon-clear` TU with and without the three
+     macros and diff the layout of the classes it derives from
+     (`-fdump-lang-class` on GCC, or a `static_assert(sizeof(...))` probe).
+  2. If any derived-from class differs, make the definitions `PUBLIC` and rebuild
+     `mod-dungeon-clear` against them.
+  3. If nothing differs, say so in the cmake file with the evidence, so the next
+     reader does not have to re-derive it.
+---
+id: REF-011
+title: patches/llm-debug-only.patch applies to paths that no longer exist
+workstream: WS-10
+priority: p3
+existing_ot: none
+source: patches/llm-debug-only.patch
+superseded_by: none
+body: |
+  The patch targets `source/src/modules/PlayerBots/...`. That tree is
+  `modules/mod-playerbots/src/...` now, so the patch cannot apply.
+
+  Decide which it is:
+  - still needed -> rewrite the paths and record what applies it and when;
+  - already merged or obsolete -> delete it. It stays in git history.
+
+  Nothing in the build or the deployment references it, which is itself the
+  question: a patch file nobody applies is either dead or a missing step.
+---

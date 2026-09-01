@@ -299,7 +299,7 @@ jobs:
       # mounts; here they are the tree itself.
       SQL_DIR: sql
       SQL_BASE_DIR: sql/base
-      PB_SQL_DIR: src/modules/PlayerBots/sql
+      PB_SQL_DIR: modules/mod-playerbots/data/sql
       MYSQL_PWD: ci-root
 
     steps:
@@ -552,7 +552,6 @@ jobs:
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DBUILD_PLAYERBOTS=ON
 
       # Build the object files for the libraries, never the executables. If a
       # target name changes, this fails loudly rather than silently covering
@@ -658,7 +657,6 @@ jobs:
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
-            -DBUILD_PLAYERBOTS=ON \
             -DBUILD_TESTING=ON \
             -DBUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -816,7 +814,6 @@ jobs:
           # TW_ARCH stays at the Dockerfile default (x86-64-v2). `native` would
           # bake this runner's CPU into the image (ADR-0028).
           build-args: |
-            BUILD_PLAYERBOTS=ON
             BUILD_TYPE=Release
           # Scoped away from publish.yml's per-image scopes, so a CI build can
           # never evict a release build's cache. It helps when the source did not

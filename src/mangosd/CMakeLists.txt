@@ -125,10 +125,9 @@ if(USE_DISCORD_BOT)
   )
 endif()
 
-# playerbots library link gated by BUILD_PLAYERBOTS.
-if(BUILD_PLAYERBOTS)
-  target_link_libraries(${EXECUTABLE_NAME} playerbots)
-endif()
+# The bot library is not named here any more. It is modules/mod-playerbots, and
+# the root CMakeLists links `modules` into this executable, which carries every
+# enabled module's target with it.
 
 target_link_libraries(${EXECUTABLE_NAME}
     libdeflate
@@ -137,7 +136,8 @@ target_link_libraries(${EXECUTABLE_NAME}
 # Boost lib search path for playerbots' transitive boost references.
 # Boost's prebuilt Windows binaries live under lib64-msvc-<toolset> (or
 # BOOST_LIBRARYDIR if the user set it explicitly).
-if(WIN32 AND BUILD_PLAYERBOTS)
+GetModuleEffectiveLinkage("mod-playerbots" TW_PLAYERBOTS_LINKAGE)
+if(WIN32 AND NOT TW_PLAYERBOTS_LINKAGE STREQUAL "disabled")
     if(DEFINED ENV{BOOST_LIBRARYDIR})
         target_link_directories(${EXECUTABLE_NAME} PRIVATE "$ENV{BOOST_LIBRARYDIR}")
     elseif(DEFINED ENV{BOOST_ROOT})

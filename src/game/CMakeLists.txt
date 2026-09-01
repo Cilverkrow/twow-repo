@@ -604,10 +604,19 @@ source_group("HttpApi"
 )
 
 
-# playerbots host-hook stubs for non-bot builds.
-# When BUILD_PLAYERBOTS=OFF, the host-hook call sites need stub implementations.
-# With BUILD_PLAYERBOTS=ON, real implementations are in playerbots.lib.
-if(NOT BUILD_PLAYERBOTS)
+# playerbots host-hook stubs for builds without the bot module.
+#
+# The core calls eleven free functions the playerbots tree defines --
+# World::InitPlayerbotsAtStartup(), four chat command handlers, and six
+# BotActionLog_* diagnostic probes in Unit.cpp and Spell.cpp. When
+# mod-playerbots is built these resolve to the real thing; when it is not, the
+# link needs no-ops, which is what PlayerbotStubs.cpp is.
+#
+# Keyed on the module's effective linkage. This used to read `if(NOT
+# BUILD_PLAYERBOTS)`, an option that no longer exists: the bot tree is
+# modules/mod-playerbots now, enabled or disabled like any other module.
+GetModuleEffectiveLinkage("mod-playerbots" TW_PLAYERBOTS_LINKAGE)
+if(TW_PLAYERBOTS_LINKAGE STREQUAL "disabled")
     list(APPEND game_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/PlayerbotStubs.cpp)
 endif()
 

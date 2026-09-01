@@ -33,12 +33,14 @@ exception specifications, and ACE 6.x still uses them — its headers bury
 ```bash
 git clone -b playerbots-integration-gh https://github.com/Shyalya/tortoise-wow.git
 cd tortoise-wow
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$HOME/turtle -DBUILD_PLAYERBOTS=ON -DUSE_EXTRACTORS=ON
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$HOME/turtle -DUSE_EXTRACTORS=ON
 cmake --build build -j$(nproc)
 ```
 
-**`BUILD_PLAYERBOTS` defaults to `OFF`.** Leave it out and you get a server with
-no bots at all, with no warning anywhere — the module simply is not compiled in.
+**Modules build by default** (`-DMODULES=static`), and the bots are one of them:
+`modules/mod-playerbots`. `-DMODULES=disabled` gives you a server with no bots,
+no donation points and no world buffs, with no warning anywhere. To drop just the
+bots, use `-DMODULE_MOD_PLAYERBOTS=disabled`.
 
 **Use `Release`.** A `Debug` build of this tree produces a `mangosd` binary well
 over half a gigabyte and runs noticeably slower.
@@ -146,13 +148,13 @@ it against a checkout to re-derive them.
 
 ### Playerbot tables
 
-Built with `-DBUILD_PLAYERBOTS=ON`? Then the module's own tables have to go in as
+Building the bot module — the default — means its own tables have to go in as
 well, or the server aborts on startup with `Table 'ai_playerbot_weightscales'
 doesn't exist` — and it aborts through an assertion, so the message scrolls past
 in a stack trace rather than telling you plainly what to do.
 
 ```bash
-cd src/modules/PlayerBots/sql
+cd modules/mod-playerbots/data/sql
 cat world/*.sql world/classic/*.sql | mysql -u root -p tw_world
 cat characters/*.sql | mysql -u root -p tw_char
 ```
@@ -323,7 +325,7 @@ have older CSVs lying around, that is where the mangled lines came from.
 | Symptom | Cause |
 |---|---|
 | Client crashes with "interface corrupt" | built without `ALLOW_TURTLE_ADDONS` |
-| No bots, no error | built without `BUILD_PLAYERBOTS` |
+| No bots, no error | built with `MODULES=disabled` or `MODULE_MOD_PLAYERBOTS=disabled` |
 | `AI Playerbot is Disabled. Unable to open configuration file` | the install was moved after building — `SYSCONFDIR` is compiled in |
 | Server exits seconds after starting, no error | no console on stdin; see the FIFO above |
 | `No premade specs found!!` | old `aiplayerbot.conf` with the stock talent links |

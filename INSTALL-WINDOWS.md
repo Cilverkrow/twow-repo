@@ -31,10 +31,10 @@ pulling in the whole toolchain, which would break OpenSSL as described below:
 
 ```
 vcpkg install ace:x64-windows
-cmake -B build -A x64 -DBUILD_PLAYERBOTS=ON -DUSE_EXTRACTORS=ON -DACE_ROOT=C:/vcpkg/installed/x64-windows
+cmake -B build -A x64 -DUSE_EXTRACTORS=ON -DACE_ROOT=C:/vcpkg/installed/x64-windows
 ```
 
-With `-DBUILD_PLAYERBOTS=ON` you need Boost as well. Install the nine libraries
+The bot module needs Boost as well, and it builds by default. Install the nine libraries
 the module actually includes rather than the `boost` meta-package — that one
 drags in `boost-cobalt`, which needs C++20 and does not build under Visual
 Studio 2019:
@@ -113,15 +113,14 @@ pick the variable up.
 ## 2. Configure and build
 
 ```
-cmake -B build -A x64 -DBUILD_PLAYERBOTS=ON -DUSE_EXTRACTORS=ON
+cmake -B build -A x64 -DUSE_EXTRACTORS=ON
 cmake --build build --config Release
 ```
 
-Two flags matter:
-
-- **`BUILD_PLAYERBOTS` defaults to `OFF`.** Leave it out and you get a server
-  with no bots at all, with no warning anywhere — the module simply is not
-  compiled in.
+- **Modules build by default** (`-DMODULES=static`), the bots among them
+  (`modules/mod-playerbots`). `-DMODULES=disabled` gives a server with no bots,
+  no donation points and no world buffs, with no warning anywhere;
+  `-DMODULE_MOD_PLAYERBOTS=disabled` drops just the bots.
 - **`USE_EXTRACTORS`** builds the tools you need in step 4. Skip it only if you
   already have `dbc`, `maps`, `vmaps` and `mmaps` from elsewhere.
 
@@ -150,7 +149,7 @@ the client crashes with *"interface corrupt"* the moment you enter the world.
 If the link fails on `World::FinalizePlayerbotsPostPlayerInfo` or
 `Player_DispatchBotChatCommand`, the checkout predates the stub fix — pull, or
 see `src/game/PlayerbotStubs.cpp`. Those two only ever surface with
-`BUILD_PLAYERBOTS=OFF`, the one configuration nobody builds on Linux.
+`MODULE_MOD_PLAYERBOTS=disabled`, the one configuration nobody builds on Linux.
 
 ## 3. Install into one folder
 
@@ -260,13 +259,13 @@ A `1` means the schema changes went in.
 
 ### Playerbot tables
 
-Built with `-DBUILD_PLAYERBOTS=ON`? Then the module's own tables have to go in as
+Building the bot module — the default — means its own tables have to go in as
 well, or the server aborts on startup with `Table 'ai_playerbot_weightscales'
 doesn't exist` — and it aborts through an assertion, so the message scrolls past
 in a stack trace rather than telling you plainly what to do.
 
 ```
-cd src\modules\PlayerBots\sql
+cd modules\mod-playerbots\data\sql
 for %f in (world\*.sql world\classic\*.sql) do mariadb -u root -p tw_world < "%f"
 for %f in (characters\*.sql) do mariadb -u root -p tw_char < "%f"
 ```
@@ -459,7 +458,7 @@ Two things worth knowing before you spend an afternoon on it:
 | Symptom | Cause |
 |---|---|
 | Client crashes with "interface corrupt" on entering the world | built without `ALLOW_TURTLE_ADDONS` |
-| No bots anywhere, no error | built without `BUILD_PLAYERBOTS`, or `aiplayerbot.conf` not in the working directory |
+| No bots anywhere, no error | built with `MODULE_MOD_PLAYERBOTS=disabled`, or `aiplayerbot.conf` not in the working directory |
 | `AI Playerbot is Disabled. Unable to open configuration file` | `aiplayerbot.conf` is in the wrong place — see step 6 |
 | `No premade specs found!!` | old `aiplayerbot.conf` with the stock talent links |
 | Server refuses to start after applying migrations | auto-updater against a dump-restored database — see step 5 |

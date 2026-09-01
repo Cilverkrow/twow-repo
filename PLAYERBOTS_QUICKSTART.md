@@ -25,15 +25,16 @@ checkout; consult a MaNGOS/CMaNGOS extraction guide if you don't already have th
 ```
 git clone <this-repo-url> tortoise-wow
 cd tortoise-wow
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_PLAYERBOTS=ON -DALLOW_TURTLE_ADDONS=ON
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DALLOW_TURTLE_ADDONS=ON
 cmake --build build --target mangosd -j$(nproc)
 ```
 
 > Login without `-DALLOW_TURTLE_ADDONS=ON` can throw a client-side login error —
 > a known issue, so build with that flag on.
 
-`BUILD_PLAYERBOTS=ON` is required to compile the bot module at all; it's `OFF` by
-default so the core still builds standalone without it.
+The bot module is `modules/mod-playerbots` and builds by default.
+`-DMODULE_MOD_PLAYERBOTS=disabled` leaves it out, and the core still links: the
+call sites fall back to the no-op stubs in `src/game/PlayerbotStubs.cpp`.
 
 ## 3. Database setup
 
@@ -45,13 +46,13 @@ mysql -u mangos -p < sql/create_databases.sql        # creates tw_logon/tw_char/
 for f in sql/base/*.sql; do mysql -u mangos -p tw_world < "$f"; done
 
 # Playerbot-specific tables (not part of the base dump above):
-for f in src/modules/PlayerBots/sql/world/ai_playerbot_indexes.sql \
-         src/modules/PlayerBots/sql/world/ai_playerbot_rpg_races.sql \
-         src/modules/PlayerBots/sql/world/ai_playerbot_texts.sql \
-         src/modules/PlayerBots/sql/world/classic/*.sql; do
+for f in modules/mod-playerbots/data/sql/world/ai_playerbot_indexes.sql \
+         modules/mod-playerbots/data/sql/world/ai_playerbot_rpg_races.sql \
+         modules/mod-playerbots/data/sql/world/ai_playerbot_texts.sql \
+         modules/mod-playerbots/data/sql/world/classic/*.sql; do
   mysql -u mangos -p tw_world < "$f"
 done
-for f in src/modules/PlayerBots/sql/characters/*.sql; do
+for f in modules/mod-playerbots/data/sql/characters/*.sql; do
   mysql -u mangos -p tw_char < "$f"
 done
 ```
@@ -64,7 +65,7 @@ are only needed once, for a brand-new database.
 
 ```
 cp build/src/mangosd/mangosd.conf.dist build/src/mangosd/mangosd.conf
-cp src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in <SYSCONFDIR>/aiplayerbot.conf
+cp modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in <SYSCONFDIR>/aiplayerbot.conf
 ```
 
 `<SYSCONFDIR>` is the path baked in at configure time (defaults to

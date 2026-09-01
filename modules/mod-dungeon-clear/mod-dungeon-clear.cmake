@@ -55,60 +55,43 @@ endif()
 # unreachable dead code that only invited someone to edit the wrong file.
 
 # ---------------------------------------------------------------------------
-# Tortoise port: reach the vendored playerbots tree.
+# Reach mod-playerbots.
 #
-# Upstream this module sits next to mod-playerbots, both of them AzerothCore
-# modules compiled into the same `modules` library, so its includes resolve by
-# themselves. Here the bot tree is a separate library under
-# src/modules/PlayerBots, so the paths and the link have to be stated.
+# This module subclasses the bot tree's strategy, action, trigger and value
+# classes, so it compiles their headers and links their objects.
 #
-# The directory list mirrors what the bot module puts on its own compile line:
-# its root, plus the three Penqle paths its headers reach through
-# transitively. AcCompat.h - the AzerothCore-to-Penqle name and type shim -
-# lives with the module and is force-included ahead of everything, because the
-# names it maps appear in the upstream headers themselves, not only in code we
-# could edit.
+# It used to say so in 25 hand-written include directories plus a link, applied
+# to the shared `modules` target, because the bot tree was not a module and a
+# module cannot see inside a non-module. It is one now, so linking its target is
+# the whole statement: CollectModuleIncludeDirectories publishes every directory
+# under modules/mod-playerbots/src that holds a header, PUBLIC on that target,
+# and CMake carries them here.
+#
+# AcCompat.h -- the AzerothCore-to-Penqle name and type shim -- is force-included
+# ahead of everything, because the names it maps appear in the upstream headers
+# themselves, not only in code we could edit. PRIVATE and on this module's own
+# target: the shim renames types that appear in the CORE headers too, so
+# applying it anywhere else changes how unrelated code sees the core.
 # ---------------------------------------------------------------------------
 
 if(TORTOISE_MODULE_CMAKE_PHASE STREQUAL "POST_TARGETS")
   GetModuleProjectName("${TORTOISE_CURRENT_MODULE}" DC_TARGET)
+  GetModuleProjectName("mod-playerbots" DC_PLAYERBOTS_TARGET)
 
-  target_include_directories(${DC_TARGET}
-    PRIVATE
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/actions
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/triggers
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/values
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/generic
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/deathknight
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/druid
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/hunter
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/mage
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/paladin
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/priest
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/rogue
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/shaman
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/warlock
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/playerbot/strategy/warrior
-      ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/ahbot
-      ${CMAKE_SOURCE_DIR}/src/game/MapNodes
-      ${CMAKE_SOURCE_DIR}/src/framework/Network
-      ${CMAKE_SOURCE_DIR}/dep/recastnavigation
-      ${CMAKE_CURRENT_LIST_DIR}/src
-      ${CMAKE_CURRENT_LIST_DIR}/src/compat)
+  if(NOT TARGET ${DC_PLAYERBOTS_TARGET})
+    message(FATAL_ERROR
+      "mod-dungeon-clear derives from mod-playerbots classes and cannot be built "
+      "without it. Enable it (-DMODULE_MOD_PLAYERBOTS=static) or disable this "
+      "module (-DMODULE_MOD_DUNGEON_CLEAR=disabled).")
+  endif()
 
-  target_link_libraries(${DC_TARGET} PUBLIC playerbots)
+  target_link_libraries(${DC_TARGET} PUBLIC ${DC_PLAYERBOTS_TARGET})
 
-  # PRIVATE, and on this module's own target: the shim renames types that appear
-  # in the CORE headers, so applying it to anything but this module's own
-  # translation units changes how unrelated code sees the core.
-  if(NOT MSVC)
-    target_compile_options(${DC_TARGET} PRIVATE
-      -include ${CMAKE_CURRENT_LIST_DIR}/src/AcCompat.h)
-  else()
+  if(MSVC)
     target_compile_options(${DC_TARGET} PRIVATE
       /FI${CMAKE_CURRENT_LIST_DIR}/src/AcCompat.h)
+  else()
+    target_compile_options(${DC_TARGET} PRIVATE
+      -include ${CMAKE_CURRENT_LIST_DIR}/src/AcCompat.h)
   endif()
 endif()

@@ -24,8 +24,8 @@ commit messages read like bug reports rather than feature notes.
 ### Playerbots
 
 Integrated from [r-o-sh's branch](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh),
-which vendors [ike3's playerbots][20] under `src/modules/PlayerBots/`. Build with
-`-DBUILD_PLAYERBOTS=ON`; activation is gated by `AiPlayerbot.Enabled`.
+which vendors [ike3's playerbots][20] as `modules/mod-playerbots/`. It is built by
+default (`-DMODULES=static`); runtime activation is gated by `AiPlayerbot.Enabled`.
 
 Fixes made while running them:
 
@@ -62,7 +62,7 @@ All off by default, all in `mangosd.conf`:
 | Solo dungeon resurrection, leech limits | `SoloDungeonRepopAlive.Enable`, `Leech.*` | – |
 | Keep navmesh tiles loaded | `MMapTileUnload` | off by default; `removeTile` zeroes `tile->polys` and Detour reads it unvalidated, so a surviving polyRef resolves to `nullptr + index` |
 
-Playerbot keys live in `src/modules/PlayerBots/playerbot/aiplayerbot.conf.dist.in`, the
+Playerbot keys live in `modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in`, the
 rest in `src/mangosd/mangosd.conf.dist.in`. A config generated from an older checkout
 will not contain them — regenerate it or copy the blocks across.
 

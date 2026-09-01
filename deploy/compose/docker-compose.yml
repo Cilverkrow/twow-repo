@@ -23,7 +23,7 @@ x-core-build: &core-build
   dockerfile: deploy/docker/Dockerfile.core
   args:
     TW_ARCH: ${TW_ARCH:-x86-64-v2}
-    BUILD_PLAYERBOTS: ${BUILD_PLAYERBOTS:-ON}
+    MODULES: ${MODULES:-static}
 
 x-logging: &default-logging
   driver: json-file
@@ -81,7 +81,7 @@ services:
       REALM_NAME: ${REALM_NAME:-TurtleWoW}
       REALM_ADDRESS: ${REALM_ADDRESS:-127.0.0.1}
       WORLD_PORT: ${WORLD_PORT:-8090}
-      IMPORT_PLAYERBOTS: ${BUILD_PLAYERBOTS:-ON}
+      IMPORT_PLAYERBOTS: ${IMPORT_PLAYERBOTS:-ON}
     volumes:
       - db-init-state:/state
       - ./db-init.sh:/db-init.sh:ro
@@ -90,7 +90,7 @@ services:
       # tree; only the base path has to be repointed when that happens.
       - ${SQL_PATH:-../../sql}:/sql:ro
       - ${SQL_BASE_PATH:-../../sql/base}:/sql-base:ro
-      - ${PLAYERBOTS_SQL_PATH:-../../src/modules/PlayerBots/sql}:/sql-playerbots:ro
+      - ${PLAYERBOTS_SQL_PATH:-../../modules/mod-playerbots/data/sql}:/sql-playerbots:ro
     entrypoint: ["/bin/bash", "/db-init.sh"]
     healthcheck:
       # A one-shot job is gated by service_completed_successfully, not by health.
