@@ -5,12 +5,13 @@ this project was forked from. Two read-only reviews produced these; the seven
 defects that were also live in our tree have already been fixed and are not
 repeated here.
 
-> **Correction 2026-09-02.** This document previously called Shyalya's repository
-> "not an upstream in the usual sense but the same project developed in parallel by
-> the same people", and the phrase "the parallel line" throughout means only
-> "upstream". Shyalya is an **unrelated third party**; their fork of
-> `Penqle/tortoise-wow` is an ordinary upstream. Nothing here requires anyone's
-> agreement to offer upstream. See ADR-0020 for the verified lineage.
+> **Correction 2026-09-02.** This document previously described Shyalya's repository
+> as a co-developed sibling of this project rather than an upstream, and referred to it
+> throughout by a phrase implying that. Both are wrong: Shyalya is an **unrelated third
+> party** and their fork of `Penqle/tortoise-wow` is an ordinary upstream. Every such
+> reference below now reads "upstream", which is all it ever meant. Nothing here needs
+> anyone's agreement to be offered upstream. See
+> [ADR-0026](../adr/ADR-0026-project-lineage-and-provenance.md) for the verified lineage.
 
 Every entry names the file and, where one exists, the reference commit. Nothing
 here was taken on trust: the claims that drove code changes were verified against
@@ -35,7 +36,7 @@ body: |
   **Fix:** extract that block as `PlayerbotAI::RevalidateMasterPointer()` and call
   it in `LogoutPlayerBot` before anything can speak to the master.
 
-  Four crashes were attributed to this on the parallel line, all in `IsOpposing`
+  Four crashes were attributed to this upstream, all in `IsOpposing`
   reached from the farewell message. Reference: `Shyalya/tortoise-wow@c388a7e`.
 ---
 id: BOT-04
@@ -176,7 +177,7 @@ body: |
 
   **Fix:** add the dispatches in `Creature::Update` and `GameObject::AddToWorld`,
   `RemoveFromWorld` and `Update`. **Use `ForEachEnabledHook`, not the plain
-  `ForEach`** the parallel line used -- these fire per object per tick, and walking
+  `ForEach`** upstream used -- these fire per object per tick, and walking
   every registered script each time would cost more than the bug does. Reference:
   `Shyalya/tortoise-wow@aa0b2be`.
 ---
@@ -191,7 +192,7 @@ body: |
   `MotionMaster.h:171` is `bool MoveFall() { return false; }`. `MoveJump` at :156
   is an empty body wrapping commented-out code. Every dungeon drop-down and ledge
   jump silently does nothing, stranding bot parties at ledges and open shafts. The
-  parallel line logged the failed call **12,415 times for a single bot** in Wailing
+  upstream logged the failed call **12,415 times for a single bot** in Wailing
   Caverns while the party stood over the shaft.
 
   **Fix:** implement both as straight `MoveSplineInit` splines. `MoveFall` must also
@@ -215,7 +216,7 @@ superseded_by: none
 body: |
   In `World::SetInitialWorldSettings`, `GetScriptId` runs against an empty name map
   while spells are constructed, assigns `ScriptId 0`, and every SQL-bound custom
-  spell script is silently disabled. Confirmed on the parallel line against a
+  spell script is silently disabled. Confirmed upstream against a
   concrete case (Tome of Disguise: Gilnean Worgen).
 
   **Fix:** call `ScriptMgr::LoadScriptNames()` before spells load.
@@ -252,7 +253,7 @@ body: |
   range. No behaviour change; closes a real gap for module authors.
 ---
 id: CORE-07
-title: Decide whether to adopt Eluna, and not the way the parallel line did
+title: Decide whether to adopt Eluna, and not the way upstream did
 workstream: WS-10
 priority: p2
 existing_ot: none
@@ -310,7 +311,7 @@ existing_ot: none
 source: docs/adr/ADR-0020-two-repo-upstream-split.md
 superseded_by: none
 body: |
-  Independent of the engineering work on the parallel line, real Turtle-WoW
+  Independent of the engineering work upstream, real Turtle-WoW
   (`Penqle/tortoise-wow`) has shipped gameplay changes we have not merged. These
   are realm-owner decisions, not code-quality calls:
 
@@ -346,15 +347,24 @@ body: |
   CORE-04, the safe half of the same area.
 ---
 id: CORE-10
-title: Offer our build and portability fixes to the parallel line
+title: Offer our build and portability fixes upstream
 workstream: WS-00
 priority: p2
 existing_ot: none
 source: docs/adr/ADR-0020-two-repo-upstream-split.md
 superseded_by: none
 body: |
-  We hold fixes the parallel line lacks, and three are **latent MSVC build breaks
-  in their tree today**:
+  **CLOSED 2026-09-02.** The premise was wrong: this issue was written when upstream
+  was believed to be a co-developer, so "offering our fixes" was framed as a joint
+  decision between two halves of one project. Upstream is an unrelated third party
+  (ADR-0026). Offering a fix to them, or to Penqle, is an ordinary pull request that
+  needs no decision recorded here -- and several of the fixes listed below have since
+  been made upstream independently (`c388a7e`, `be0706b`, `9baa692`). Open individual
+  PRs against `Shyalya/tortoise-wow` for whatever is still missing there. Kept for the
+  record.
+
+  We hold fixes upstream lacks, and three were **latent MSVC build breaks in their
+  tree** when this was written:
 
   1. `LFTMgr.h` -- the `ObjectGuid.h` include. They removed it; `ObjectGuid` is used
      by value in members and as a container parameter, so a forward declaration
@@ -408,8 +418,15 @@ existing_ot: none
 source: docs/adr/ADR-0021-module-boundaries-and-schema-ownership.md
 superseded_by: none
 body: |
-  **Decision (pending sign-off):** `modules/mod-playerbots/` here is authoritative;
-  `src/modules/PlayerBots/` acquired from the parallel line is deleted on every
+  **CLOSED 2026-09-02 as moot.** This issue existed because upstream carried its
+  bot tree at the path this project had vacated, so a merge would have produced two
+  copies. Upstream commit `8415f1b` (2026-09-01) moved its bots to
+  `modules/mod-playerbots` -- the same path used here. There is no second path to
+  delete and nothing for a CI check to guard. What replaces it, if anything, is an
+  ordinary content merge of two trees at one path. Kept for the record.
+
+  **Original decision (pending sign-off):** `modules/mod-playerbots/` here is
+  authoritative; the copy acquired from upstream at its old path is deleted on every
   merge.
 
   The evidence: the two bot trees differ by only **22 files / 1,144 lines**, and 14
@@ -421,13 +438,12 @@ body: |
   `ai_playerbot_random_bots` unconditionally where ours refuses. Adopting their
   copy would delete the mechanism enforcing invariant 1.
 
-  Write it into an ADR, add `git rm -r src/modules/PlayerBots` as an explicit step
-  in the upstream-merge runbook, and **add a CI check that fails if
-  `src/modules/PlayerBots` reappears** -- a delete-vs-modify conflict resolved the
-  wrong way once silently resurrects 1,021 files.
+  The original enforcement proposal -- an explicit `git rm -r` of upstream's copy in
+  the merge runbook, plus a CI check that fails if that path reappears -- is dropped
+  with the issue. It guarded a path collision that no longer exists.
 ---
 id: PROV-03
-title: Establish a recurring review of the bot-tree commits on the parallel line
+title: Establish a recurring review of the bot-tree commits upstream
 workstream: WS-00
 priority: p2
 existing_ot: none
@@ -439,7 +455,7 @@ body: |
 
   Set up a recurring review -- monthly is enough at the observed rate:
 
-      cd twow-core && git log --oneline <last-reviewed>..upstream/playerbots-integration-gh -- src/modules/PlayerBots
+      cd twow-core && git log --oneline <last-reviewed>..upstream/playerbots-integration-gh -- modules/mod-playerbots
 
   Over the last month that was **7 commits, all small and all worth taking** -- they
   are BOT-01 through BOT-07. Record the last-reviewed SHA in a tracked file so the
@@ -462,7 +478,7 @@ body: |
   rapidjson) that issues outbound POSTs to a configured LLM endpoint, driven by an
   in-game debug command.
 
-  **The parallel line deliberately removed this code** (`758e571 "Remove LLM
+  **Upstream deliberately removed this code** (`758e571 "Remove LLM
   network client"`). We re-added it in hardened form: moderator-only, 64 KiB
   request and response caps, UTF-8 validation, one in-flight request per server,
   executed via `std::async` off the world thread with the future held as a member

@@ -134,105 +134,77 @@ prerequisite for this split.
 
 ## Evidence
 
-- `docs/PROVENANCE.md`, `docs/FOOTGUNS.md` (FG-005, FG-006, FG-007, FG-072)
-- `docs/history/source-commit-map.tsv` maps `0af2567` to `1af237d`; both resolve
-  `src/modules/PlayerBots` to tree `9bd691ccdccf88ebdbe362d293337068ec01a636`.
-- Counting the output of
-  `git diff --name-only 0af2567:src/modules/PlayerBots ed32ae41:src/modules/PlayerBots`
-  gives 255 paths; substituting `3c2b931` for `ed32ae41` gives 267.
+- `docs/adr/ADR-0026-project-lineage-and-provenance.md` -- the lineage authority: the
+  fork point, the upstream of record, and which repository may merge from upstream are
+  stated there and are not restated here.
+- `docs/PROVENANCE.md`, `docs/FOOTGUNS.md` (FG-005, FG-006, FG-007, FG-072, FG-076)
+- `docs/history/source-commit-map.tsv` maps `0af2567` to `1af237d`; both resolve the
+  vendored bot tree to `9bd691ccdccf88ebdbe362d293337068ec01a636`.
+- Counting the output of `git diff --name-only` between `0af2567` and `ed32ae41`,
+  restricted to the vendored bot tree at its pre-promotion path, gives 255 paths;
+  substituting `3c2b931` for `ed32ae41` gives 267. Both are pre-promotion commits, so
+  both use the pre-promotion path (ADR-0026, "Paths").
 - `docs/adr/ADR-0005-preserve-upstream-history-and-modularize-incrementally.md`
 - `docs/adr/ADR-0008-source-baseline-and-build-provenance.md`
 - `docs/issues/00-refactor-plan.md`
 
 ## Correction 2026-09-01: the fork point, correctly identified
 
-This ADR called `db5fb2a` "the upstream tip". **It is not an upstream hash.** It is a
-commit in *this* repository — a post-`git-filter-repo` hash — so `git fetch upstream
-db5fb2a` fails, and so does every other attempt to reach it from upstream. It is
-absent from all eleven branches of `Shyalya/tortoise-wow`.
+This ADR originally called a hash that resolves in *this* repository "the upstream tip".
+It is not an upstream hash: this repository's identities were all rewritten by
+`git-filter-repo`, so none of them exists upstream, `git fetch upstream <that hash>`
+fails, and the hash appears on none of upstream's branches. The generalised lesson is
+FG-076.
 
-The real upstream commit is **`61a8269`**, "Merge pull request #404 from
-Penqle/1181dev", with an identical author date. The mapping is confirmed by content,
-not by hash: every file under `src/game` is byte-identical between the two. The only
-difference is the 146 warden `.cr`/`.key` binaries that `git-filter-repo` stripped
-from this repository — which `twow-core`, as a genuine fork, gets back.
-
-`twow-core` is branched from `61a8269`.
+**The real fork point, and the mapping evidence for it, are recorded in
+[ADR-0026](ADR-0026-project-lineage-and-provenance.md).** `twow-core` is branched from
+it. Nothing here restates it, deliberately: a fork point stated in two places is a fork
+point that will eventually disagree with itself.
 
 Two facts measured at the same time, both of which enlarge the job:
 
-- Upstream has moved **379 commits** since the fork point: 1,178 files,
-  +851,023 lines, most of it vendoring the Eluna Lua engine.
-- Upstream now carries **its own copy of the bot tree** at `src/modules/PlayerBots`,
-  the path this project vacated by promoting it to `modules/mod-playerbots`. Two
-  divergent copies of ike3's tree is a collision that needs deciding before the
-  first upstream merge — see REF-016.
+- Upstream has moved **385 commits** since the fork point (measured 2026-09-02;
+  379 when this section was first written): 1,178 files, +851,023 lines, most of it
+  vendoring the Eluna Lua engine.
+- Upstream reorganised its own bot tree the same way this project did. On 2026-09-01,
+  upstream commit `8415f1b` moved playerbots to `modules/mod-playerbots` -- the path
+  this project promoted it to. **The two-divergent-copies collision this section
+  originally reported no longer exists**, which is why REF-016 and PROV-02 were closed.
+  Upstream's core also *contains* `modules/`, so a `twow-core` that deletes `modules/`
+  diverges from upstream rather than aligning with it.
 
-## Update 2026-09-01: the core can now verify itself, and the delta is mostly not ours
+## Update 2026-09-01: the core can now verify itself
 
-Two things changed since the correction above.
+When this ADR was written `twow-core` had no workflows at all -- only issue templates and
+`FUNDING.yml` -- so a fork whose entire purpose is to be reviewable and to send fixes
+upstream could not check its own claims. Its first PR said as much in its own
+verification section.
 
-**`twow-core` builds and tests itself.** When this ADR was written the repository had
-no workflows at all — only issue templates and `FUNDING.yml` — so a fork whose entire
-purpose is to be reviewable and to send fixes upstream could not check its own claims.
-Its first PR said as much in its own verification section. It now has a `Build core
-(Debian trixie)` workflow that configures and builds `mangosd` and `realmd` from a
-clean checkout with no reference to `modules/`, which is the acceptance test for the
-split: **the core does not know the platform exists.** `cmake/ConfigureModules.cmake`
-is gone from `main`; the extension seam prints *"Host extensions: none (standalone
-core)"* and configures without the module framework.
+It now has a `Build core (Debian trixie)` workflow that configures and builds `mangosd`
+and `realmd` from a clean checkout with no reference to `modules/`, which is the
+acceptance test for the split: **the core does not know the platform exists.**
+`cmake/ConfigureModules.cmake` is gone from `main`; the extension seam prints
+*"Host extensions: none (standalone core)"* and configures without the module framework.
 
-**Retracted 2026-09-02: the fork delta was measured against a stale ref, and the
-lineage described here was wrong.** An earlier revision of this section claimed the
-delta was "shared heritage" split 70 / 27 / 6, and that `Shyalya/tortoise-wow` is
-"not a neutral upstream -- the same project developed in parallel by the same
-people", making an upstream offer a "joint decision". **All of that is false.**
+## Retraction 2026-09-02: the "shared heritage" delta split
+
+A revision of this ADR briefly claimed that the fork delta was mostly not ours -- 103
+files split 70 byte-identical / 27 divergent / 6 ours alone -- and that upstream is
+therefore a co-developer whose agreement an upstream offer would need. **All of it is
+false, and none of it was ever true.** It is recorded here only so the number is not
+re-derived from a stale reading.
 
 Two errors compounded:
 
-1. **The measurement used `upstream-tracking` at `be3e6cd`, a stale snapshot**, not
-   the live tip `83e40a6a`. Against the live branch, **all 103 files exist upstream**.
-   The "6 files ours alone" figure -- `ShopMgr.{cpp,h}`, `AutoUpdater.cpp`,
-   `DatabaseMysql.{cpp,h}`, `ConfigureModules.cmake` -- is wrong; every one is present
-   upstream.
-2. **The lineage claim came from misreading a commit-count statistic.** "236 of 379
-   commits by shyalya" only says Shyalya does most of the commits *on Shyalya's own
-   fork*, which is true of anyone's fork. It does not mean the fork is co-developed
-   with this project.
+1. **The measurement used `upstream-tracking` at `be3e6cd`, a stale snapshot**, not the
+   live tip `83e40a6a`. Against the live branch **all 103 files exist upstream**. The
+   "six files ours alone" figure -- `ShopMgr.{cpp,h}`, `AutoUpdater.cpp`,
+   `DatabaseMysql.{cpp,h}`, `ConfigureModules.cmake` -- is wrong; every one of them is
+   present upstream.
+2. **The co-developer claim came from misreading a commit-count statistic.** "236 of 379
+   commits by shyalya" says only that Shyalya does most of the commits *on Shyalya's own
+   fork*, which is true of anyone's fork. See ADR-0026: upstream is an unrelated third
+   party, and offering fixes to them is an ordinary pull request.
 
-## Lineage, verified against the GitHub API (2026-09-02)
-
-Recorded because two documents previously got this wrong.
-
-```
-Penqle/tortoise-wow          real Turtle-WoW. 303 stars. Not a fork.
-        |
-        v
-Shyalya/tortoise-wow         public fork by GitHub user Shyalya, an unrelated
-        |                    third party. Created 2026-07-28. Default branch
-        |                    `playerbots-integration-gh`. Active daily.
-        v
-Cilverkrow/twow-repo         this repository. History rewritten by git-filter-repo
-        |                    at creation, so it shares NO ancestry with upstream
-        |                    and can never `git merge` from it, at any path.
-        v
-Cilverkrow/twow-core         branched from the real fork point `61a8269`, so it
-                             does share history and merges normally. This is the
-                             only place upstream merges can happen.
-```
-
-**Shyalya is a stranger, not a collaborator.** Their commits carry a
-`Co-Authored-By: Claude` trailer, which means only that they also use Claude -- it
-was previously misread as evidence of shared work. Offering our fixes to Penqle or
-Shyalya is an ordinary pull request and needs nobody's agreement.
-
-**Upstream is 385 commits ahead of our fork point** and independently did much of what
-this project did: `8415f1b` (2026-09-01) moved playerbots to `modules/mod-playerbots`,
-the same layout arrived at here; `be0706b` locked the visible-GUID set; `c388a7e` fixed
-the snare freeze. Their core **contains** `modules/`, so twow-core deleting `modules/`
-is a divergence from upstream, not an alignment with it.
-
-**Correct upstream ref, for anyone measuring against it:**
-`upstream/playerbots-integration-gh`. Their `main`, `dev`, `1181dev`, `challenges`,
-`shop` and `1181-rogue-fixes` branches are all **ancestors of our fork point** -- dead,
-and measuring against them produces nonsense.
+Consequently REF-003's "classify the delta" deliverable is dead and the issue was
+closed.

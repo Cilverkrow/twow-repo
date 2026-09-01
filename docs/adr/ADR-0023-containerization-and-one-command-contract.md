@@ -1,6 +1,6 @@
 # ADR-0023: Containerization and the one-command contract
 
-- Status: Proposed
+- Status: Proposed; amended 2026-09-02 (stale bot-tree path corrected)
 - Date: 2026-09-01
 - Primary: WS-40 / WS-50
 - Relates to: ADR-0028 (Linux/Docker is the platform), ADR-0027 (MariaDB 11.8), ADR-0006 (graceful shutdown)
@@ -92,7 +92,7 @@ Concretely:
 
 - `deploy/docker/Dockerfile.core`, `deploy/docker/entrypoint-mangosd.sh`, `.dockerignore`
 - `CMakeLists.txt:384` (`revision.h`), `:656` (`SYSCONFDIR`), `TW_ARCH` at `:66-70`, `:513`
-- `src/modules/PlayerBots/playerbot/PlayerbotAIConfig.h:16`
+- `modules/mod-playerbots/src/playerbot/PlayerbotAIConfig.h:16`
 - `src/shared/Database/AutoUpdater.cpp` (`TW_STDIN_IS_TTY` guard around `std::getline`)
 - `ops/windows/build/compile-tortoise-wow.ps1:49` (MariaDB 11.4.10 divergence)
 - `Nescabir/tortoise-docker`; verified container toolchain: gcc 14.2.0, CMake 3.31.6,

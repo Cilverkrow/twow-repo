@@ -1,6 +1,6 @@
 # ADR-0024: Project invariants
 
-- Status: Proposed
+- Status: Proposed; amended 2026-09-02 (stale bot-tree path corrected)
 - Date: 2026-08-31
 - Primary: WS-00
 
@@ -79,4 +79,4 @@ admission rules beyond the LLM bridge.
 - `docs/adr/ADR-0010-persistent-rndbot-roster.md`, `ADR-0011`, `ADR-0012`, `ADR-0004`
 - `docs/FOOTGUNS.md` FG-032, FG-033, FG-044, FG-047
 - `PLAYERBOTS_QUICKSTART.md`
-- `src/modules/PlayerBots/playerbot/PersistentActiveRoster.h`
+- `modules/mod-playerbots/src/playerbot/PersistentActiveRoster.h`

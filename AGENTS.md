@@ -18,7 +18,20 @@ mutation of that workspace.
 
 A WoW 1.12 / Turtle-WoW 1.18.1 private server (mangos-zero / VMaNGOS lineage) whose
 defining feature is playerbots. Two daemons — `mangosd` (world) and `realmd` (auth) — plus
-MariaDB. See `docs/adr/ADR-0026-project-lineage-and-provenance.md` for the upstream chain.
+MariaDB. See `docs/adr/ADR-0026-project-lineage-and-provenance.md` for the upstream chain
+-- it is the only document that states it, so read it there and never restate it here.
+
+Four rules follow from it, and getting them wrong has already cost a day:
+
+- **`twow-repo` never merges from upstream.** Its history was rewritten at creation, so
+  it shares no ancestry: `git merge-base` returns nothing and no merge is possible, at
+  any path. A proposed upstream merge here is always a mistake.
+- **`twow-core` is the only place upstream merges happen.**
+- **Upstream's live branch is `playerbots-integration-gh`.** Measure, diff and test-merge
+  against that and nothing else.
+- **Upstream's `main`, `dev`, `1181dev`, `challenges`, `shop` and `1181-rogue-fixes` are
+  all ancestors of our fork point** -- dead branches. Measuring against them produces
+  nonsense.
 
 ## Platform
 

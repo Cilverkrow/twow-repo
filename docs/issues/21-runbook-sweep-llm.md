@@ -30,7 +30,7 @@ body: |
   - New: `ExternalLLMBridgeService.{h,cpp}`
   - Modified: `PlayerbotAIConfig.{h,cpp}`, `aiplayerbot.conf.dist.in`,
     `PlayerbotScripts.cpp`, `PlayerbotAI.{h,cpp}`, `strategy/actions/SayAction.cpp`
-  - `src/modules/PlayerBots/CMakeLists.txt` needs no change; its GLOB picks up the new files.
+  - the bot tree's CMake file needs no change; its GLOB picks up the new files.
 
   **Evidence it works:** 683/683 fake-child tests, passed twice with identical results;
   27-check static forbidden-path gate; clean Release build.
