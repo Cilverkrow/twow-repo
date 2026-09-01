@@ -65,6 +65,14 @@ set(MODULES_COMMON_INCLUDES
   ${MYSQL_INCLUDE_DIR}
 )
 
+# Republished as a cache entry so the out-of-tree test targets (included from
+# the ROOT CMakeLists, which never sees this directory's variables) compile
+# against exactly the same header search path the shipping module does. A test
+# that resolves a different header than the code under test is worse than no
+# test at all.
+set(MODULES_COMMON_INCLUDES "${MODULES_COMMON_INCLUDES}" CACHE INTERNAL
+    "Header search path shared by module targets and their test suites" FORCE)
+
 function(GetModuleProjectName module variable)
   string(TOLOWER "mod_${module}" MODULE_PROJECT_NAME)
   string(REGEX REPLACE "[^a-z0-9_]" "_" MODULE_PROJECT_NAME "${MODULE_PROJECT_NAME}")

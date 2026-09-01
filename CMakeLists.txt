@@ -56,6 +56,13 @@ option(ALLOW_TURTLE_ADDONS "Allow Turtle addons" ON)
 option(BUILD_PLAYERBOTS "Build the cmangos/playerbots subsystem" OFF)
 option(BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS "Build the isolated persistent-roster real database adapter test" OFF)
 
+# Unit tests. OFF by default so a normal server build pays nothing for them:
+# no googletest download, no extra targets, no CTest machinery. `include(CTest)`
+# would otherwise declare BUILD_TESTING itself with a default of ON, which is
+# why the option is declared here first - the later declaration inside CTest is
+# a no-op once the cache entry exists.
+option(BUILD_TESTING "Build the unit test suites (googletest is fetched when ON)" OFF)
+
 # Target CPU baseline for GCC/Clang -march. The historical value was "native",
 # which bakes the build host's exact CPU into the binary: fine for a hand-built
 # server, fatal for a container image or a CI artifact that has to run somewhere
@@ -139,6 +146,46 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 # in this tree (checked in flags.make), this line provably does.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDT_VIRTUAL_QUERYFILTER=1")
 endif()
+# ---------------------------------------------------------------------------
+# Testing
+#
+# include(CTest) is what writes DartConfiguration.tcl and calls enable_testing()
+# in the TOP-LEVEL directory - without a top-level enable_testing() `ctest` in
+# the build root discovers nothing, no matter how many add_test() calls the
+# subdirectories make. It is guarded because CTest also adds a Nightly/Experimental
+# target set that a server build has no use for.
+#
+# googletest is fetched rather than found: no distro ships a version this tree
+# can rely on, and the projects that vendor it (AzerothCore upstream, from which
+# the mod-dungeon-clear suite came) assume the gtest/gmock CMake targets exist.
+# Pinned to an exact tag on purpose - `master`, as the Tracy block above uses,
+# makes the test result depend on the day it was configured.
+#
+# Placed here, after CMAKE_CXX_STANDARD and CMAKE_CXX_FLAGS are settled but
+# before the DEFINITIONS directory property is set below, so googletest compiles
+# as C++17 without inheriting the server's DO_MYSQL/WIN32/SYSCONFDIR defines.
+if(BUILD_TESTING)
+  include(CTest)
+
+  # Do not install gtest/gmock headers and libraries into the server's prefix.
+  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+  set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
+  if(MSVC)
+    # The core is built against the shared CRT; googletest defaults to the
+    # static one and the mismatch is a link error, not a warning.
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  endif()
+
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.16.0
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+  )
+  FetchContent_MakeAvailable(googletest)
+endif()
+
 # Giperion: Set Edit and Continue by default for all windows debug builds
 if(MSVC AND NOT USE_ADDRESS_SANITIZER)
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /ZI")
@@ -793,4 +840,16 @@ endif()
 
 if (USE_EXTRACTORS OR USE_REALMMERGE)
     add_subdirectory(tools)
+endif()
+
+# ---------------------------------------------------------------------------
+# Test suites that live beside a module but must not be tied to it.
+#
+# modules/<name>/<name>.cmake is only included when that module's linkage is not
+# "disabled", so putting the test targets there made them un-buildable in the
+# default configuration - exactly the configuration CI wants to run tests in.
+# The suite is source-level: it compiles the module's own .cpp files directly,
+# so it needs the sources on disk, not the `modules` library.
+if(BUILD_TESTING)
+  include("${CMAKE_SOURCE_DIR}/modules/mod-dungeon-clear/tests.cmake")
 endif()

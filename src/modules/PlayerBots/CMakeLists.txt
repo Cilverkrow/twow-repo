@@ -158,6 +158,23 @@ endif()
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
 
+# The framework-free roster unit suite (tests/). Two translation units, no
+# database, no test framework — cheap enough to build and run on every testing
+# build, so it defaults to ON whenever BUILD_TESTING is on. The separate
+# BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS suite below needs a live MariaDB and
+# stays opt-in.
+if(BUILD_TESTING)
+  set(TW_ROSTER_UNIT_TESTS_DEFAULT ON)
+else()
+  set(TW_ROSTER_UNIT_TESTS_DEFAULT OFF)
+endif()
+option(BUILD_PERSISTENT_ROSTER_UNIT_TESTS
+       "Build the persistent-roster serialiser unit tests"
+       ${TW_ROSTER_UNIT_TESTS_DEFAULT})
+if(BUILD_PERSISTENT_ROSTER_UNIT_TESTS)
+  add_subdirectory(tests)
+endif()
+
 if(BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS)
   add_executable(persistent_active_roster_database_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/persistent_active_roster_database_tests.cpp
@@ -207,7 +224,9 @@ if(BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS)
     )
   endif()
   if(WIN32)
-    target_link_libraries(persistent_active_roster_database_tests PRIVATE Normaliz ws2_32)
+    # Normaliz was here for IsNormalizedString(); the canonical-form check is
+    # portable now and links nothing Windows-specific.
+    target_link_libraries(persistent_active_roster_database_tests PRIVATE ws2_32)
   endif()
   set_target_properties(persistent_active_roster_database_tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/adapter-bin")
