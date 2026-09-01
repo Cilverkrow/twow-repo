@@ -14,7 +14,13 @@
 # a ratchet, so the number can go down and not up.
 #
 # Usage:
-#   ops/audit/header-self-containment.sh <build-dir> [--update-baseline]
+#   bash ops/audit/header-self-containment.sh <build-dir> [--update-baseline]
+#
+# Invoked through `bash` on purpose. This repository is developed on Windows and
+# carries no executable bits -- db-init.sh and render-config.sh are called the
+# same way -- so relying on one would break the moment a Windows commit dropped
+# it. It already did once: the first CI run of this step failed with
+# "Permission denied".
 #
 # The build directory must have been configured with
 # -DCMAKE_EXPORT_COMPILE_COMMANDS=ON: the flags come from the real compile line
