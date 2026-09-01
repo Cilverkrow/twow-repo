@@ -466,3 +466,50 @@ body: |
   silently through a divergence. Write it up: who can trigger it, what leaves the
   process, what the failure modes are, and whether it ships enabled by default.
 ---
+id: OPS-020
+title: db-init records failed migrations as applied, so they are never retried
+workstream: WS-20
+priority: p0
+existing_ot: none
+source: deploy/compose/db-init.sh
+superseded_by: none
+body: |
+  **A migration that fails is recorded as successfully applied.** Found by the
+  smoke job's first real execution, which surfaced a concrete instance:
+
+      ERROR 1146 (42S02) at line 11: Table 'tw_char.ai_playerbot_random_bots' doesn't exist
+        while applying 20260708055500_ai_playerbot_random_bots_index.sql
+
+  Three things compound, and each is independently wrong:
+
+  1. **Ordering.** `sql/character_updates/` is applied in `stage 30-updates`, but
+     the playerbot tables are created in `stage 40-playerbots` -- afterwards. So
+     this migration cannot succeed on a fresh database. Ever.
+  2. **The failure is swallowed twice.** `apply_update_dir` runs mariadb with
+     `--force` (continue past errors inside the file) AND appends `|| true`
+     (discard the exit code). The script sets `set -euo pipefail`, which is then
+     defeated deliberately.
+  3. **`record_migrations` runs unconditionally.** It walks the same directory
+     and inserts a row for every `.sql` file, whether or not it applied. The
+     failed migration is now recorded as done and will never be retried -- so the
+     index does not exist and the database says it does.
+
+  **Consequence:** on any fresh bootstrap, `ai_playerbot_random_bots` has no
+  `idx_owner_bot_event`. Directly relevant to REF-018 and the superseded
+  WS20-001, which reasoned about that index; it is not there.
+
+  **It also explains OPS-012.** `record_migrations` inserts `Hash='manual'`. This
+  script is the source of the 146 unverifiable rows, so fixing OPS-012 without
+  fixing this would only stop new ones.
+
+  **To fix, in order:**
+  1. Apply the module SQL before `character_updates`, or move this migration into
+     the module that owns the table. Prefer the latter -- a migration for a
+     module's table belongs with the module.
+  2. Drop `--force` and `|| true`. A migration that fails must fail the
+     bootstrap; `set -e` is already there and should be allowed to work.
+  3. Record only what actually applied, and record a content hash rather than the
+     literal string `manual`.
+  4. Add a smoke assertion that the index exists after bootstrap, so this cannot
+     regress silently again.
+---

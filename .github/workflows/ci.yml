@@ -1278,10 +1278,43 @@ jobs:
       - name: Start db, db-init and realmd
         run: |
           set -eu
-          docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" \
-            up -d --wait --wait-timeout 1800 realmd \
-            || { echo "::error::the stack did not become healthy"; exit 1; }
-          docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" ps -a
+          C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
+
+          # Deliberately NOT `up --wait`. That flag waits for every container in
+          # the dependency graph to be running or healthy, and db-init is a
+          # one-shot that exits 0 when the bootstrap succeeds. An exited
+          # container is neither, so --wait failed three seconds after a
+          # perfectly successful bootstrap, with realmd still in health: starting
+          # and 1798 of its 1800 seconds unused. The error read "the stack did
+          # not become healthy", which is precisely backwards.
+          #
+          # Not a regression: the smoke job had been skipped in every previous
+          # run because something upstream failed first, so its first real
+          # execution was also its first failure.
+          $C up -d realmd
+
+          # db-init must have finished, and cleanly. Its exit code is the
+          # bootstrap's verdict; read it rather than inferring from realmd.
+          for _ in $(seq 1 300); do
+            state=$($C ps -a --format '{{.Service}} {{.State}}' | awk '$1=="db-init"{print $2}')
+            [ "$state" = "exited" ] && break
+            sleep 2
+          done
+          rc=$(docker inspect -f '{{.State.ExitCode}}' "$($C ps -aq db-init)")
+          [ "$rc" = "0" ] || { echo "::error::db-init exited $rc - the bootstrap failed"; exit 1; }
+
+          # Then poll realmd's own health check, the only honest "it is up"
+          # signal. A fixed sleep would test the sleep.
+          h=starting
+          for _ in $(seq 1 300); do
+            h=$(docker inspect -f '{{.State.Health.Status}}' "$($C ps -aq realmd)" 2>/dev/null || echo starting)
+            [ "$h" = "healthy" ] && break
+            [ "$h" = "unhealthy" ] && { echo "::error::realmd reported unhealthy"; exit 1; }
+            sleep 2
+          done
+          [ "$h" = "healthy" ] || { echo "::error::realmd did not become healthy within 600s"; exit 1; }
+
+          $C ps -a
 
       - name: Run the smoke suite
         env:
