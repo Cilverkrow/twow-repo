@@ -625,9 +625,12 @@ bool Engine::removeStrategy(const std::string& name, bool init)
         return false;
 
     LogAction("S:-%s", name.c_str());
-    i->second->OnStrategyRemoved(state);
+    Strategy* const removed = i->second;
     strategiesHash ^= StrategyNameHash(i->first);
     strategies.erase(i);
+
+    if (removed)
+        removed->OnStrategyRemoved(state);
 
     if (init)
     {
