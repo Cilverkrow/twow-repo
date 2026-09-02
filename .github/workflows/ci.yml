@@ -1034,6 +1034,11 @@ jobs:
       # The toolchain container every compile step below runs in. Local to this
       # runner and never pushed.
       BUILDER_IMAGE: twow/core-builder:ci
+      # The named docker volume holding the build tree. Spelled here as well as
+      # defaulted in ops/ci/in-builder.sh so the two cannot drift: the workflow
+      # is what removes it, the script is what mounts it, and a disagreement
+      # would leave a multi-gigabyte volume behind on a shared daemon every run.
+      BUILD_VOLUME: twow-build
 
     steps:
       # Resolves $SUDO and prints which runner claimed the job. See the long
@@ -1132,6 +1137,11 @@ jobs:
             docker image prune -f || true
             docker builder prune -f --filter until=24h || true
           fi
+          # A build tree left by a run that died before its reclaim step. It is
+          # removed rather than reused: the checkout is fresh, so the tree would
+          # be reconfigured from scratch anyway, and a stale one is only a
+          # multi-gigabyte hold on a shared daemon's disk.
+          docker volume rm -f "$BUILD_VOLUME" 2>/dev/null || true
           df -h .
 
       # The only toolchain the runner itself still needs. Everything that
@@ -1183,6 +1193,19 @@ jobs:
           load: true
           tags: ${{ env.BUILDER_IMAGE }}
 
+      # THE BUDGET THAT ACTUALLY CONSTRAINS THE BUILD, and it is not the one
+      # `df -h .` prints anywhere else in this job. That is the runner pod's
+      # filesystem. The build tree lives on a named volume on the DOCKER
+      # DAEMON's data root - a different disk, with a different amount of room -
+      # and a 1,533-target build with debug symbols has to fit in it. Printed
+      # rather than assumed, and placed here because it is the first step at
+      # which BUILDER_IMAGE exists to run it with.
+      - name: How much room the build tree actually has
+        run: |
+          docker system df || true
+          docker run --rm --volume "$BUILD_VOLUME:/build" "$BUILDER_IMAGE" \
+            df -h /build /tmp || true
+
       # ONE configure, and it is the release configuration plus the tests.
       #
       # Two settings changed when this became the configure the image is built
@@ -1196,9 +1219,16 @@ jobs:
       # TW_ARCH is spelled out at the Dockerfile's default rather than left to
       # CMake's, so the two cannot drift. `native` would bake this runner's CPU
       # into the artefact (ADR-0028).
+      #
+      # -B /build, NOT /src/build. The build tree is a named docker volume on
+      # the daemon's local disk; /src is a bind mount that on the self-hosted
+      # runner is served over a network filesystem, and `ld` cannot write there
+      # (it dies at its final close() with ESTALE - see the long note in
+      # ops/ci/in-builder.sh). Sources may live on the network mount; the things
+      # the linker writes may not.
       - name: Configure
         run: |
-          bash ops/ci/in-builder.sh 'cmake -S /src -B /src/build -G Ninja \
+          bash ops/ci/in-builder.sh 'cmake -S /src -B /build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
             -DTW_ARCH=x86-64-v2 \
@@ -1235,7 +1265,7 @@ jobs:
       - name: Core headers are self-contained
         run: |
           bash ops/ci/in-builder.sh \
-            "CI_BUILD_JOBS=$CI_BUILD_JOBS bash ops/audit/header-self-containment.sh /src/build"
+            "CI_BUILD_JOBS=$CI_BUILD_JOBS bash ops/audit/header-self-containment.sh /build"
 
       # Named test targets, built one at a time so a target that does not exist
       # yet is reported as absent rather than failing the run. The CTest wiring
@@ -1250,7 +1280,7 @@ jobs:
         id: testbuild
         run: |
           set -eu
-          known=$(bash ops/ci/in-builder.sh 'ninja -C /src/build -t targets all' 2>/dev/null | sed 's/:.*//' || true)
+          known=$(bash ops/ci/in-builder.sh 'ninja -C /build -t targets all' 2>/dev/null | sed 's/:.*//' || true)
           built=0
           for t in persistent_active_roster_database_tests \
                    dungeon_clear_tests_fast \
@@ -1258,7 +1288,7 @@ jobs:
                    persistent_active_roster_tests; do
             if printf '%s\n' "$known" | grep -qxF "$t"; then
               echo "::group::building $t"
-              bash ops/ci/in-builder.sh "cmake --build /src/build --target $t --parallel $CI_BUILD_JOBS"
+              bash ops/ci/in-builder.sh "cmake --build /build --target $t --parallel $CI_BUILD_JOBS"
               echo "::endgroup::"
               built=$((built + 1))
             else
@@ -1292,12 +1322,19 @@ jobs:
       # The binary is a trixie binary, so it runs in the container. The service
       # database is published on the runner's 127.0.0.1:3306 and in-builder.sh
       # uses --network host, so the connection string below is unchanged.
+      #
+      # The existence check has to happen INSIDE the container now. The build
+      # tree is a named volume, so `test -x build/adapter-bin/...` on the runner
+      # would look at a path that no longer exists and report "not in this
+      # configuration" for a binary that was built perfectly well - turning a
+      # real test into a silent skip, which is the one outcome the gate below
+      # exists to prevent.
       - name: Run the adapter suite
         id: adapter
         shell: bash
         run: |
-          bin=build/adapter-bin/persistent_active_roster_database_tests
-          if [ ! -x "$bin" ]; then
+          bin=/build/adapter-bin/persistent_active_roster_database_tests
+          if ! bash ops/ci/in-builder.sh "test -x $bin"; then
             echo "::notice::$bin was not built - the adapter suite is not in this configuration"
             echo "ran=0" >> "$GITHUB_OUTPUT"
             exit 0
@@ -1308,7 +1345,7 @@ jobs:
           # the usage line in persistent_active_roster_database_tests.cpp.
           set +e
           bash ops/ci/in-builder.sh \
-            "/src/$bin '127.0.0.1;3306;root;ci-root;roster_ci'" 2>&1 | tee "$log"
+            "$bin '127.0.0.1;3306;root;ci-root;roster_ci'" 2>&1 | tee "$log"
           rc=${PIPESTATUS[0]}
           set -e
           # STAGE=COMPLETE is printed only after the last scenario. Without this
@@ -1334,7 +1371,7 @@ jobs:
           # -N lists without running. The count is recorded either way for the
           # gate below - hence `|| true`: with no tests registered ctest exits
           # non-zero, and the default shell runs with -e and pipefail.
-          raw=$(bash ops/ci/in-builder.sh 'ctest --test-dir /src/build -N' 2>/dev/null || true)
+          raw=$(bash ops/ci/in-builder.sh 'ctest --test-dir /build -N' 2>/dev/null || true)
           found=$(printf '%s\n' "$raw" | sed -n 's/^Total Tests: //p' | tail -n1)
           found=${found:-0}
           echo "found=$found" >> "$GITHUB_OUTPUT"
@@ -1344,8 +1381,12 @@ jobs:
             exit 0
           fi
           mkdir -p test-results
+          # An ABSOLUTE output path. `../test-results` was relative to the
+          # build tree, which used to be /src/build and so resolved into the
+          # checkout; from /build it would resolve to /test-results inside the
+          # container and be thrown away with it.
           bash ops/ci/in-builder.sh \
-            'ctest --test-dir /src/build --output-on-failure --output-junit ../test-results/ctest.xml'
+            'ctest --test-dir /build --output-on-failure --output-junit /src/test-results/ctest.xml'
 
       - name: Upload test results
         if: always()
@@ -1394,8 +1435,8 @@ jobs:
       # object file, which reads exactly like running out of disk.
       - name: Build the server and stage the install
         run: |
-          bash ops/ci/in-builder.sh "cmake --build /src/build --parallel $CI_BUILD_JOBS \
-            && cmake --install /src/build \
+          bash ops/ci/in-builder.sh "cmake --build /build --parallel $CI_BUILD_JOBS \
+            && cmake --install /build \
             && ccache --show-stats"
           du -sh stage
           ls -la stage/bin
@@ -1403,11 +1444,20 @@ jobs:
       # The build tree is the largest thing on the disk and nothing after this
       # reads it. Removing it before the image build leaves room for the context
       # transfer and for `docker save`.
+      #
+      # It is a named volume now, so `rm -rf build` on the runner would remove
+      # nothing and quietly leave the space occupied. The volume is emptied
+      # from inside a container instead, and then removed outright - a build
+      # tree that survived into the next run would only be reconfigured from
+      # scratch anyway (checkout wipes the source tree), so keeping it buys
+      # nothing and costs the daemon's disk, which is shared.
       - name: Reclaim the build tree
         run: |
-          df -h /
-          rm -rf build
-          df -h /
+          df -h .
+          docker run --rm --user 0:0 --volume "${BUILD_VOLUME:-twow-build}:/build" \
+            "$BUILDER_IMAGE" sh -c 'du -sh /build 2>/dev/null; rm -rf /build/* /build/.[!.]* || true'
+          docker volume rm -f "${BUILD_VOLUME:-twow-build}" || true
+          df -h .
 
       # `ci-staged` is `runtime-base` plus a COPY of ./stage - the same base
       # image, apt list, entrypoint, user and directory layout as the `runtime`
