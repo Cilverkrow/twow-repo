@@ -161,11 +161,20 @@ env:
   # stays portable - which is the requirement. Raise it with the CI_BUILD_JOBS
   # repository variable only against a measurement, not against `nproc`.
   #
-  # Two things -j does NOT bound: the single link of mangosd, which wants
-  # several GiB on its own and cannot be split, and any compile that happens
-  # inside `docker build` (nightly's docker-from-source, publish's core) - those
-  # run on the workspace daemon under a different budget and are capped by the
-  # Dockerfile's BUILD_JOBS arg instead.
+  # Where the cap has to be repeated, because one setting cannot reach
+  # everything that compiles:
+  #
+  #   * steps that call ops/ci/in-builder.sh pass it on the command line, and
+  #     the script also forwards CI_BUILD_JOBS into the container so anything
+  #     running in there inherits it without a call site having to remember;
+  #   * compiles inside `docker build` (nightly's docker-from-source,
+  #     publish's core) are on the workspace daemon, out of this file's reach
+  #     entirely, and are capped by Dockerfile.core's BUILD_JOBS arg - whose
+  #     own default is a number, not nproc, so a caller that forgets is slow
+  #     rather than OOM-killed.
+  #
+  # One thing -j does NOT bound at all: the single link of mangosd, which wants
+  # several GiB on its own and cannot be split.
   CI_BUILD_JOBS: ${{ vars.CI_BUILD_JOBS || '4' }}
 
   # The tag deploy/compose/docker-compose.yml resolves to by default
@@ -1255,17 +1264,14 @@ jobs:
       # In the container because compile_commands.json names container paths and
       # the flags in it are trixie's include paths, not the runner's.
       #
-      # CI_BUILD_JOBS is passed as a variable assignment in front of the command
-      # because in-builder.sh hands its argument to `bash -c`, so the prefix is
-      # an ordinary shell assignment inside the container and needs no change to
-      # the script's docker invocation. Without it the probe runner falls back
-      # to nproc and starts 20 concurrent -fsyntax-only compiles over the game
-      # headers, which is the same memory budget the full build has, spent on a
+      # The probe fan-out is capped by CI_BUILD_JOBS, which in-builder.sh
+      # forwards into the container - so this call site does not have to pass it
+      # and, more to the point, cannot forget to. Uncapped, the script falls
+      # back to nproc and starts 20 concurrent -fsyntax-only compiles over the
+      # game headers: the same memory budget the full build has, spent on a
       # check that should take a minute.
       - name: Core headers are self-contained
-        run: |
-          bash ops/ci/in-builder.sh \
-            "CI_BUILD_JOBS=$CI_BUILD_JOBS bash ops/audit/header-self-containment.sh /build"
+        run: bash ops/ci/in-builder.sh 'bash ops/audit/header-self-containment.sh /build'
 
       # Named test targets, built one at a time so a target that does not exist
       # yet is reported as absent rather than failing the run. The CTest wiring

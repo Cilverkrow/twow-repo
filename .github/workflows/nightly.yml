@@ -371,11 +371,11 @@ jobs:
           push: false
           load: true
           tags: twow/core:nightly-from-source
-          # BUILD_JOBS caps ninja inside the image build. Without it the
-          # Dockerfile falls back to nproc, which on this pod is 20 concurrent
-          # compiles against ~9.2 GiB - the one place in these workflows where
-          # the compile is NOT on the runner and so cannot be capped from the
-          # workflow side.
+          # BUILD_JOBS caps ninja inside the image build - the one compile in
+          # these workflows that is NOT on the runner and so cannot be capped
+          # from the workflow side. The Dockerfile's own default is a safe
+          # number rather than nproc, so forgetting this would be slow rather
+          # than fatal; it is passed anyway so the CI cap is set in one place.
           build-args: |
             BUILD_TYPE=Release
             BUILD_JOBS=${{ vars.CI_BUILD_JOBS || '4' }}

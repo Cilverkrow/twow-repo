@@ -162,10 +162,11 @@ jobs:
           #
           # BUILD_JOBS caps ninja INSIDE the image build. This is the one
           # compile in these workflows that does not happen on the runner, so it
-          # cannot be capped from the workflow side any other way; left to the
-          # Dockerfile's nproc fallback it would run 20 concurrent compiles of
-          # this tree against the pod's ~9.2 GiB and be OOM-killed. See the env
-          # block at the top of ci.yml for the arithmetic.
+          # cannot be capped from the workflow side any other way. The
+          # Dockerfile no longer falls back to nproc - an uncapped -j20 against
+          # the pod's ~9.2 GiB is what killed buildkitd after 139 of 1472
+          # targets - but the cap is still passed from here so CI sets it in one
+          # place. See the env block at the top of ci.yml.
           build-args: |
             BUILD_TYPE=Release
             BUILD_JOBS=${{ vars.CI_BUILD_JOBS || '4' }}

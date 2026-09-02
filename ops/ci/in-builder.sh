@@ -64,7 +64,11 @@
 # owned by the runner and the later upload/artifact steps can read it.
 #
 # Usage:
-#   bash ops/ci/in-builder.sh 'cmake --build /src/build --parallel "$(nproc)"'
+#   bash ops/ci/in-builder.sh 'cmake --build /build --parallel "$CI_BUILD_JOBS"'
+#
+# Note the build tree is /build, not /src/build, and that the example does not
+# say $(nproc). Both are deliberate - see the mount list above and CI_BUILD_JOBS
+# below.
 #
 # Invoked through `bash` rather than by its executable bit for the same reason
 # every other script here is: this repository is developed on Windows and
@@ -98,6 +102,14 @@ docker run --rm --user 0:0 \
     "$BUILDER_IMAGE" \
     chown "$(id -u):$(id -g)" /build
 
+# CI_BUILD_JOBS is forwarded with a conservative default rather than left to each
+# caller to remember, because the thing it guards against is silent: any script
+# that runs in here and falls back to `nproc` sees the NODE's core count, not the
+# memory this pod actually has, and the resulting OOM kill does not mention
+# either. Forwarding it means ops/audit/header-self-containment.sh and anything
+# else added later inherit the cap without the workflow having to pass it by
+# hand at every call site.
+#
 # CCACHE_SLOPPINESS is not optional here. USE_PCH defaults to ON, and ccache
 # refuses to cache a translation unit that includes a precompiled header unless
 # pch_defines is allowed; the revision header also carries __DATE__/__TIME__,
@@ -112,6 +124,7 @@ exec docker run --rm \
     --network host \
     --user "$(id -u):$(id -g)" \
     --env HOME=/tmp \
+    --env CI_BUILD_JOBS="${CI_BUILD_JOBS:-4}" \
     --env CCACHE_DIR=/ccache \
     --env CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-4G}" \
     --env CCACHE_COMPRESS=1 \
