@@ -1,0 +1,70 @@
+# Throwaway probe #2: can this runner do `container:` and `services:`?
+#
+# Probe #1 only proved a self-hosted runner claims jobs -- it ran directly on
+# the runner pod, so it said nothing about job containers. `container:` and
+# `services:` are set up by the runner itself before any step executes, which
+# is a different mechanism from `docker run` inside a step (already known to
+# work via a bind-mount round-trip through the tunnel).
+#
+# ci.yml depends on both: `services: mariadb:11.8` at lines 333 and 807, and
+# the full server build inside debian:trixie.
+#
+# Also reports the REAL cgroup limits. /proc is not namespaced here: the job
+# sees the node's 31Gi and 20 CPUs while the container is capped far lower, so
+# `-j$(nproc)` launches 20 compilers against that cap and gets OOMKilled --
+# surfacing as a hung job, not an out-of-memory error.
+#
+# Delete once answered.
+name: runner probe 2 (container + services)
+on:
+  workflow_dispatch:
+  push:
+    branches: [ci/runner-probe-2]
+
+jobs:
+  in-container:
+    runs-on: [self-hosted]
+    container: debian:trixie
+    services:
+      db:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: probe
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=12
+    timeout-minutes: 10
+    steps:
+      - name: Where am I, and what are the REAL limits
+        run: |
+          echo "hostname     : $(hostname)"
+          echo "container?   : $([ -f /.dockerenv ] && echo yes || echo no)"
+          echo "os           : $(cat /etc/os-release | grep PRETTY | cut -d= -f2-)"
+          echo "--- what /proc claims (NOT namespaced, do not trust) ---"
+          echo "nproc        : $(nproc)"
+          free -h 2>/dev/null | head -2 || echo "free: n/a"
+          echo "--- the real cgroup ceiling ---"
+          for f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+            [ -r "$f" ] && echo "$f = $(cat $f)"
+          done
+          for f in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/cpu/cpu.cfs_quota_us; do
+            [ -r "$f" ] && echo "$f = $(cat $f)"
+          done
+          echo "--- toolchain in THIS image ---"
+          for t in cmake ninja gcc g++ make git; do
+            printf "  %-8s %s\n" "$t" "$(command -v $t || echo MISSING)"
+          done
+          df -h / | tail -1
+
+      - name: Can I reach the services: database
+        run: |
+          apt-get update -qq && apt-get install -y -qq mariadb-client >/dev/null 2>&1
+          for i in $(seq 1 30); do
+            if mariadb -h db -u root -pprobe -e "SELECT VERSION();" 2>/dev/null; then
+              echo "SERVICES_OK: reached mariadb at host 'db'"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "SERVICES_FAIL: could not reach mariadb at host 'db'"
+          exit 1
