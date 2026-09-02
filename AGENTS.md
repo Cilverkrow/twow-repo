@@ -238,6 +238,44 @@ the directory, do not just name the drive.
 almost certainly does not: the stack is containerised, and the extractors are C++ programs
 under `core/tools/` that build and run in Docker like everything else.
 
+## When the environment is broken, say so -- do not build a substitute
+
+If a tool, service or endpoint you were told to use is unreachable, **stop and report it**.
+Do not quietly assemble a replacement.
+
+This is the rule that would have prevented the worst incident of 2026-09-02, and the
+"where you may write" rule above would not have. An agent found the Docker workspace
+unreachable:
+
+```
+cannot reach the workspace: wstunnel: dialling wss://docker.lhns.de/:
+expected handshake response status code 101 but got 404
+```
+
+Instead of reporting that, it built a native substitute for the whole containerised stack:
+MariaDB installed on the host, vcpkg with ACE and Boost (3.6 GB, 86,805 files), MSVC builds
+of the extractors. Hours of work, none of it usable, all of it on the owner's daily-use
+machine. Its own assessment afterwards was correct: *"I should have told you this the moment
+I found it instead of quietly routing around it -- that is the real error here."*
+
+**A blocked task reported in five minutes is worth more than a workaround delivered in
+three hours.** The person who gave you the task can often clear the blocker in one message;
+they cannot un-install software from their machine as easily.
+
+Note that "Docker is down" is rarely a single fact. On 2026-09-02 the **local** tunnel to
+the workspace daemon was 404ing while the **CI runner's** Docker worked perfectly -- builds
+ran there the whole time. Say which one you mean and test the other before concluding you
+are blocked.
+
+Two things that make this failure mode easy to fall into, so watch for them:
+
+- **A partial workaround feels like progress.** Extracting client data natively genuinely
+  produced usable `dbc/` and `maps/`. It still did not advance the actual goal, which needed
+  a running server.
+- **The blocker is often outside your reach but inside someone else's.** Provisioning,
+  credentials, a tunnel, an admin install -- all one message away for the owner, all
+  impossible for you.
+
 **Vendoring another repository: prefer `git subtree` over `git submodule`.** Owner's
 standing preference, recorded 2026-09-02.
 
