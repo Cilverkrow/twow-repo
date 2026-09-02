@@ -1,0 +1,59 @@
+[worldserver]
+
+########################################
+# mod-bot-brain
+#
+# Asks an out-of-process planner (services/bot-brain) where a bot should travel
+# next, and applies the answer through the existing travel-target chooser.
+# See ADR-0012.
+#
+# Two things must both be true for a bot to be planned for:
+#   1. BotBrain.Enable = 1 below, and the startup handshake with the service
+#      succeeded (matching contract major);
+#   2. the bot carries the "bot brain" non-combat strategy -- append
+#      ",+bot brain" to AiPlayerbot.RandomBotNonCombatStrategies.
+#
+# Everything degrades to the stock chooser, silently: no service, a slow
+# service, a version-skewed service, an expired intent or an unknown POI all
+# leave the bot travelling exactly as it does with this module off. Killing the
+# service is a supported operation, not an outage.
+########################################
+
+# Off by default. The core must run with every project feature disabled
+# (ADR-0024 invariant 4).
+BotBrain.Enable = 0
+
+# Scheme, host and port of the planner. It listens on loopback by default and
+# there is no reason to point this off-host without a deliberate decision:
+# snapshots carry character names and positions.
+BotBrain.Endpoint = "http://127.0.0.1:8085"
+
+# How long the worldserver waits for one plan. Sent to the service as
+# deadline_ms so it sheds rather than hangs, and used as the socket timeout so
+# a wedged service costs a worker thread instead of a bot.
+BotBrain.TimeoutMs = 750
+
+# Minimum gap between plan requests for one bot. This is a slow decision loop:
+# seconds, not ticks. Lower values cost one GetPartitions call and one HTTP
+# round trip per bot per interval.
+BotBrain.IntervalMs = 15000
+
+# Per-bot pause after a failed or unusable round trip.
+BotBrain.BackoffMs = 60000
+
+# Ceiling on concurrent worker threads across all bots. A service that stops
+# answering must cost a bounded number of threads.
+BotBrain.MaxInFlight = 8
+
+# How many points of interest one snapshot carries, nearest first.
+BotBrain.MaxPois = 24
+
+# How long a POI table stays resolvable after the snapshot that built it. POI
+# ids are snapshot-scoped by contract; an intent naming an older one is a stale
+# destination and is dropped.
+BotBrain.PoiTableTtlMs = 120000
+
+# Log every applied intent (intent id and POI id) at BASIC level. On by
+# default: "a bot's travel target was set from an intent" is only checkable if
+# it is written down.
+BotBrain.LogAppliedIntents = 1

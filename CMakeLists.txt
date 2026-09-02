@@ -144,6 +144,7 @@ set_property(DIRECTORY APPEND PROPERTY
 # The suite is source-level: it compiles the module's own .cpp files directly,
 # so it needs the sources on disk, not the `modules` library.
 if(BUILD_TESTING)
+  include("${CMAKE_SOURCE_DIR}/modules/mod-bot-brain/tests.cmake")
   include("${CMAKE_SOURCE_DIR}/modules/mod-dungeon-clear/tests.cmake")
   include("${CMAKE_SOURCE_DIR}/modules/mod-playerbots/tests.cmake")
 endif()
