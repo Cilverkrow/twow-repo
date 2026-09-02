@@ -53,6 +53,39 @@ if [ ! -f "$CONF" ]; then
     exit 1
 fi
 
+# Seed the per-module configs a MODULES=static mangosd hard-requires.
+#
+# mangosd resolves each one as <directory of $CONF>/modules/<name>.conf and, on
+# the first one it cannot open, prints
+#
+#     Could not load module configuration file .../modules/mod_bot_brain.conf: file could not be opened.
+#     Could not load module configuration files.
+#
+# and exits before it reaches the database. What `cmake --install` puts in that
+# directory is the template -- `<name>.conf.dist`, see CopyModuleConfig in
+# core/cmake/ConfigureModules.cmake -- and nothing anywhere renames it. So every
+# image built with modules linked in ships the six templates and none of the six
+# files the server actually opens, and will not start.
+#
+# Verified against a MODULES=static build of this tree: with the .conf files
+# absent mangosd prints exactly the two lines above and stops; with them present
+# it proceeds and the next thing it reports is the database connection.
+#
+# Copy, never overwrite: an operator or a bind mount that supplies its own
+# <name>.conf keeps it, the same way $CONF above is left alone when it exists.
+# Every .dist ships its module switched off, so seeding changes no behaviour --
+# it only stops the server dying on a file nothing was ever told to create.
+MODULE_CONF_DIR="$(dirname "$CONF")/modules"
+if [ -d "$MODULE_CONF_DIR" ]; then
+    for dist in "$MODULE_CONF_DIR"/*.conf.dist; do
+        [ -f "$dist" ] || continue
+        conf="${dist%.dist}"
+        [ -f "$conf" ] && continue
+        cp "$dist" "$conf"
+        echo "[entrypoint] seeded $(basename "$conf") from its .dist template" >&2
+    done
+fi
+
 echo "[entrypoint] starting mangosd (console FIFO: $FIFO)" >&2
 "${PREFIX}/bin/mangosd" -c "$CONF" <&3 &
 mangosd_pid=$!
