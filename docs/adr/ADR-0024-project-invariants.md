@@ -44,10 +44,51 @@ explicitly authorized migration, and a config check that flags
 in project-owned schemas.
 *Enforcement:* a CI check on migration file targets.
 
-**3. Migrations are forward-only and replay-safe.**
+**3. Migrations are forward-only and replay-safe, and the ledger is evidence.**
 No editing an applied migration, no down-migrations, real content hashes, never the
-literal `manual` (FG-032, FG-033).
-*Enforcement:* migration lint in CI.
+literal `manual` (FG-032, FG-033). A row in a `migrations` table means the file it
+names ran to completion — it is a record of what happened, not a list of the files
+that were on disk when the bootstrap ran.
+
+That second sentence is new, and it is here because the invariant was asserted for
+months without being enforced anywhere. `deploy/compose/db-init.sh` applied every
+migration with `--force` and `|| true`, then wrote a ledger row per filename in a
+later stage, unconditionally, hashed `manual`. Replay-safety was therefore never
+tested: a migration could fail on every single bootstrap and still be marked done,
+which is what `20260708055500_ai_playerbot_random_bots_index.sql` did. It ran one
+stage before the table it indexes was created, failed with `ERROR 1146`, and was
+recorded as applied every time (OPS-020, #123). Four world migrations failed the
+same way, on a column added by a migration the bootstrap applied after them. The
+same unconditional insert is where the 146 unverifiable `manual` rows of OPS-012
+came from.
+
+*Enforcement:*
+- `deploy/compose/db-init.sh` applies one file per client invocation with no
+  `--force` and no `|| true`, so a failing migration aborts the bootstrap and the
+  stack never comes up on a half-migrated database. A ledger row is written only
+  after that client exits 0, and carries the uppercase SHA-1 of the file's bytes —
+  the digest `AutoUpdater::CalculateFileHash` computes, so the ledger and the files
+  on disk can finally be compared.
+- CI rejects the literal `manual` in any newly added `.sql`
+  (`.github/workflows/ci.yml`, "Reject 'manual' migration hashes"), and
+  `test/smoke/10-migrations.sh` fails on a `manual` row in a live database. Those
+  two now agree; while the bootstrap was writing `manual` on purpose, the smoke
+  check could only warn.
+- `test/smoke/15-schema-effects.sh` asserts the *effects* rather than the ledger:
+  the composite `idx_owner_bot_event` on `ai_playerbot_random_bots`, and
+  `spell_template.script_name` populated. Counting ledger rows cannot catch a row
+  that lies, and both of these were silently absent from every fresh bootstrap.
+- CI applies the roster migration twice against a clean schema
+  (`.github/workflows/ci.yml`, "Apply the roster schema (twice, to prove replay
+  safety)"), which is the only place replay-safety is exercised directly.
+
+Still unenforced: nothing checks that an *already applied* migration file has not
+been edited afterwards. Recording real hashes makes that checkable for the first
+time — a stored hash can now be compared against the file — but no check does it
+yet. Nor is replay-safety *within* a file enforced: several world migrations are a
+sequence of plain `INSERT`s with no `IGNORE`, so a file that dies halfway leaves
+its earlier statements committed and cannot be re-run. Failing loudly at the first
+error is what makes that visible; it does not make it safe.
 
 **4. The core must run with every project feature disabled.**
 Each module and service is individually switchable off, and the server still starts and
@@ -72,7 +113,14 @@ admission rules beyond the LLM bridge.
   logout (see ARCH-002).
 - Invariant 4 constrains how modules may hook the core: a feature that cannot be
   compiled out is not acceptable.
-- Enforcement work is real and belongs to Phase 0, not to a later cleanup.
+- Enforcement work is real and belongs to Phase 0, not to a later cleanup. OPS-020
+  is what that costs when it is deferred: invariant 3 was quotable in review for
+  months while the shipped bootstrap contradicted it on every run.
+- Recording real content hashes changes what `Database.AutoUpdate.Enabled = 1`
+  would do. `manual` matched nothing on disk, so the updater would have replayed
+  every file; a real SHA-1 keyed as `Module + ":" + hash` matches, so the ledger is
+  now something the updater can act on rather than a tombstone that only works
+  while the updater is switched off.
 
 ## Evidence
 
@@ -80,3 +128,7 @@ admission rules beyond the LLM bridge.
 - `docs/FOOTGUNS.md` FG-032, FG-033, FG-044, FG-047
 - `PLAYERBOTS_QUICKSTART.md`
 - `modules/mod-playerbots/src/playerbot/PersistentActiveRoster.h`
+- `deploy/compose/db-init.sh`, `test/smoke/10-migrations.sh`,
+  `test/smoke/15-schema-effects.sh`
+- `docs/issues/40-divergence-findings.md` (OPS-020), and `AutoUpdater.cpp`, which
+  now lives in the `twow-core` submodule at `core/src/shared/Database/AutoUpdater.cpp`
