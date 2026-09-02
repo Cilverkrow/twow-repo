@@ -1,0 +1,47 @@
+# TEMPORARY verification workflow (Agent L).
+#
+# GitHub-hosted runners are billing-blocked, so ci.yml cannot report on anything
+# today. This runs the same Linux compile on the self-hosted runner instead, so
+# a change can be verified before it is merged. It deliberately does NOT touch
+# ci.yml, which is being rewritten in parallel to move CI onto that runner.
+#
+# Delete this file once ci.yml runs on the self-hosted runner.
+name: agent-l verify
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent-l/verify-**]
+
+jobs:
+  build:
+    runs-on: [self-hosted]
+    name: linux build (self-hosted)
+    timeout-minutes: 180
+    env:
+      BUILDER_IMAGE: twow/core-builder:agent-l
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Disk before
+        run: |
+          df -h / || true
+          docker image prune -af || true
+          df -h / || true
+
+      # Build entirely inside BuildKit (Dockerfile.core's `builder` stage does
+      # COPY . /src), NOT through ops/ci/in-builder.sh. in-builder.sh bind-mounts
+      # the runner workspace as /src, and on this k8s runner that workspace is a
+      # network filesystem: the linker dies with
+      #   /usr/bin/ld: cmTC_...: final close failed: Stale file handle
+      # before cmake can even finish its compiler check. Building in the image's
+      # own filesystem sidesteps it.
+      - name: Compile the core (builder stage)
+        run: |
+          docker build --target builder \
+            --build-arg MODULES=static \
+            --build-arg BUILD_TYPE=Release \
+            -f deploy/docker/Dockerfile.core \
+            -t twow/core-builder-verify:agent-l .
