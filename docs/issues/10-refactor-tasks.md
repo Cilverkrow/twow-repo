@@ -737,3 +737,70 @@ body: |
   donation strict-PASS rerun require later explicit authorization; this issue does not
   authorize them.
 ---
+
+---
+id: BRAIN-001
+title: Prove the bot brain drives a bot at runtime (blocked: no extracted client data)
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: docs/issues/10-refactor-tasks.md
+superseded_by: none
+body: |
+  **The out-of-process bot brain is built, linked and unit-tested, but no bot has ever
+  taken an intent from it.** Two acceptance criteria remain unproven:
+
+  1. a bot's travel target is set from an intent (`intent_id` + POI id logged)
+  2. killing the service leaves bots travelling via the stock chooser
+
+  **The blocker is data, not code.** `mangosd` exits at boot:
+
+  ```
+  Check existing of map file '/opt/turtle/data/maps/0004331.map': not exist!
+  Correct *.map files not found in path '/opt/turtle/data/maps' ...
+  ```
+
+  No extracted `dbc/maps/vmaps/mmaps` exists on the development machine. Five drives,
+  `*.MPQ` recursively on C:, and Docker volumes were searched. `docs/EXTERNAL-REQUIREMENTS.md`
+  records client data as a deliberate external prerequisite that is never committed, so
+  this is expected rather than a regression.
+
+  **What the boot gate actually needs is small.** `core/src/game/World.cpp:1915-1921`
+  validates exactly six race start areas, not the whole world:
+
+  | map | coords | zone |
+  |---|---|---|
+  | 0 | -6240.32, 331.03 | Dun Morogh |
+  | 0 | -8949.95, -132.49 | Elwynn Forest |
+  | 0 | 1676.35, 1677.45 | Tirisfal Glades |
+  | 1 | -618.52, -4251.67 | Durotar |
+  | 1 | 10311.3, 832.46 | Teldrassil |
+  | 1 | -2917.58, -257.98 | Mulgore |
+
+  `GridMap::ExistMap` (`core/src/game/Maps/GridMap.cpp:598`) is per-tile and lazy, so
+  beyond those six only tiles where something actually is get loaded. The retained data
+  for this test is therefore small -- six start-area tiles plus vmaps, mmaps wherever the
+  test bot walks, and dbc. **But extracting anything at all requires the client MPQs**,
+  so the source download is the real gate. Extractors are present: `core/tools/extractor`,
+  `core/tools/vmap_extractor`, `core/tools/mmap`.
+
+  **What IS proven, so this is genuinely the last mile:**
+
+  - `git diff --stat modules/mod-playerbots` is empty -- the module attaches from outside
+    the vendored bot tree, via `RegisterAiContextAugmenter` and a `NamedObjectContext<Action>`
+    registered under the stock name `"choose travel target"`. `ChooseTravelTargetAction.cpp`
+    is never touched.
+  - `mangosd` links `libmod_mod_bot_brain.a`; the applier's format string, `BotBrain.Enable`,
+    `/v1/plan` and `/v1/contract` are all present in the binary.
+  - ctest 4/4 including a 72-assertion wire test.
+  - A live `POST /v1/plan` returned real intents (`travel_to poi-quest-783`,
+    `repair poi-repair-9`) with `"unknown_fields":0`.
+
+  **To finish:** obtain a Turtle WoW 1.18.1 client, run the extractors, point
+  `CLIENT_PATH` in `deploy/compose/.env` at the result, bring the stack up, enable
+  `BotBrain.Enable=1` plus the `"bot brain"` strategy, and capture the applier's log line
+  from `bots.log` (not the main log -- `playerbot.h` redefines `sLog`).
+
+  Also untested for the same reason: bot logout with a request in flight (the LLM-012
+  shape), and the fallthrough to `ChooseTravelTargetAction::Execute()` on every failure
+  path -- correct by reading, unobserved in fact.
