@@ -804,3 +804,67 @@ body: |
   Also untested for the same reason: bot logout with a request in flight (the LLM-012
   shape), and the fallthrough to `ChooseTravelTargetAction::Execute()` on every failure
   path -- correct by reading, unobserved in fact.
+
+---
+id: OPS-021
+title: db-init never applies core/sql/database_updates, so a clean bootstrap cannot boot
+workstream: WS-30
+priority: p0
+existing_ot: none
+source: docs/issues/10-refactor-tasks.md
+superseded_by: none
+body: |
+  **A clean `make up` produces a database mangosd refuses to start against.** Observed
+  on a from-scratch bootstrap (empty volumes, `db-init` exit 0, "bootstrap complete",
+  "verified: schema migrated, tw_world.creature has 88859 rows"):
+
+  ```
+  SQL: SELECT `entry`, `effectBonusCoefficient1`, ... FROM `spell_extra`
+  [1146] Table 'tw_world.spell_extra' doesn't exist
+  Your database structure is not up to date. ...
+  /src/core/src/shared/Database/DatabaseMysql.cpp:190: Error: Assertion in HandleMySQLError failed: false
+  mangosd(_ZN8SpellMgr14LoadSpellExtraEv+0x4a)
+  mangosd(_ZN5World23SetInitialWorldSettingsEv+0x433)
+  terminate called after throwing an instance of 'std::runtime_error'
+  ```
+
+  mangosd then crash-loops (observed: 9 restarts before diagnosis).
+
+  **Cause: there are two `database_updates` directories and db-init only sees one.**
+
+  | Directory | Files |
+  |---|---|
+  | `sql/database_updates` (mounted as `/sql`, via `SQL_PATH`) | 27 |
+  | `core/sql/database_updates` (**never mounted**) | 29 |
+
+  The two the core owns and the repo does not carry:
+
+  - `20260611110845_world.sql` — `CREATE TABLE spell_extra` + 27923 rows. This is the
+    one that aborts the boot.
+  - `20260817211652_world.sql` — Northwind quest fixes (PR #390).
+
+  `docker-compose.yml` mounts only `${SQL_PATH}`, `${SQL_BASE_PATH}` and
+  `${PLAYERBOTS_SQL_PATH}`; `db-init.sh`'s `world_migration_stream()` reads only
+  `$SQL_DIR/database_updates` and `$SQL_DIR/database_updates/world`. Nothing in the
+  compose path ever reads `core/sql/`. This is independent of the OPS-020 ordering fix
+  (#154) — that stage runs correctly, over an incomplete file set.
+
+  **Why the verification did not catch it:** db-init's final check counts
+  `tw_world.creature` rows, which stage 20 populates. It asserts nothing about tables
+  created by core migrations, so a missing core migration is invisible to it.
+
+  **Do:**
+  1. Mount `core/sql/database_updates` into db-init (a `CORE_SQL_PATH` alongside the
+     existing three) and include it in `world_migration_stream()`, merged into the same
+     `LC_ALL=C sort` so ordering across both directories stays by filename.
+  2. Decide whether the repo's 27 and the core's 29 are meant to be one set or two —
+     if the repo copy is a stale partial duplicate, delete it rather than merging.
+  3. Extend db-init's verification to assert a table each source owns
+     (`tw_world.spell_extra` for the core stream), so this fails in db-init rather than
+     in a mangosd assertion.
+
+  **Workaround used to unblock BRAIN-001:** applied both files by hand against
+  `tw_world`. Note `20260817211652_world.sql` has no `USE` statement and fails with
+  "No database selected" unless the database is named on the client command line;
+  `20260611110845_world.sql` does carry `USE tw_world;`. That inconsistency is worth
+  fixing in the same pass.
