@@ -154,7 +154,7 @@ doesn't exist` — and it aborts through an assertion, so the message scrolls pa
 in a stack trace rather than telling you plainly what to do.
 
 ```bash
-cd modules/mod-playerbots/data/sql
+cd modules/mod-playerbots/sql
 cat world/*.sql world/classic/*.sql | mysql -u root -p tw_world
 cat characters/*.sql | mysql -u root -p tw_char
 ```

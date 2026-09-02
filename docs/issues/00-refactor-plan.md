@@ -67,7 +67,7 @@ Given "avoid in-repo vendoring" **and** "we want to upstream our fixes":
 | Schema | Owner | Migrations run by |
 |---|---|---|
 | `tw_world`, `tw_char`, `tw_logon`, `tw_logs` | upstream (`twow-core`) | core AutoUpdater, upstream files only |
-| `cv_bots` | `mod-playerbots` | `modules/mod-playerbots/data/sql/` |
+| `cv_bots` | `mod-playerbots` | `modules/mod-playerbots/sql/` |
 | `cv_ops` | `mod-donation`, `mod-worldbuff`, `mod-guildbank` | each module's `data/sql/` |
 
 One schema, exactly one owner. Future services get their own schemas and their own tool (goose) when they arrive — that's in the deferred issues, not here.

@@ -721,7 +721,7 @@ body: |
   2. On a disposable restore, inventory exact row counts and hashes, duplicate
      `(owner,bot,event)` groups and NULL events. Fail closed on either condition.
   3. Add a forward-only, replay-safe `mod-playerbots` migration under
-     `modules/mod-playerbots/data/sql/` which creates project-owned `cv_bots` state and
+     `modules/mod-playerbots/sql/` which creates project-owned `cv_bots` state and
      copies every source row without deleting or rewriting the old table.
   4. Make `event` NOT NULL and enforce `UNIQUE(owner,bot,event)` on the new event table.
      Keep the old table read-only through the verified cutover and rollback window.

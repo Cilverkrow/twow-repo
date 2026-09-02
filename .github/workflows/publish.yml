@@ -197,7 +197,7 @@ jobs:
           COPY deploy/compose/db-init.sh /db-init.sh
           COPY sql /sql
           COPY sql/base /sql-base
-          COPY modules/mod-playerbots/data/sql /sql-playerbots
+          COPY modules/mod-playerbots/sql /sql-playerbots
           RUN chmod +x /db-init.sh
           VOLUME ["/state"]
           ENTRYPOINT ["/bin/bash", "/db-init.sh"]

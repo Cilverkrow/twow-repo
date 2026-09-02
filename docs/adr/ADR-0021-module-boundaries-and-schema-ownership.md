@@ -37,14 +37,18 @@ features do not use the system at all.
 ## Decision
 
 **One module system: `modules/`.** Every project feature is a module there, with
-`src/`, `conf/`, `data/sql/` and `t/` (ADR-0025).
+`src/`, `conf/`, `data/sql/` and `t/` (ADR-0025). `mod-playerbots` is the one
+exception, and deliberately: it tracks `Shyalya/tortoise-wow` as a real upstream,
+so it keeps that upstream's layout (`sql/` at the module root, `botpch.h` and
+`cmangos-compat-shim.h` beside it) rather than paying a rename as merge friction
+on every future merge.
 
 **Schema ownership is exclusive. One schema, exactly one owner.**
 
 | Schema | Owner | Migrations from |
 |---|---|---|
 | `tw_world`, `tw_char`, `tw_logon`, `tw_logs` | upstream (`twow-core`) | core AutoUpdater, upstream files only |
-| `cv_bots` | `mod-playerbots` | `modules/mod-playerbots/data/sql/` |
+| `cv_bots` | `mod-playerbots` | `modules/mod-playerbots/sql/` |
 | `cv_ops` | `mod-donation`, `mod-worldbuff`, `mod-guildbank` | each module's `data/sql/` |
 
 Upstream schemas are read-only to us (ADR-0024 invariant 2). A module migration that
