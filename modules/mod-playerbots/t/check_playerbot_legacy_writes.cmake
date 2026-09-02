@@ -6,9 +6,9 @@ file(GLOB_RECURSE runtime_files
   "${PB_MODULE_DIR}/src/*.cpp"
   "${PB_MODULE_DIR}/src/*.h")
 set(tool_files
-  "${PB_MODULE_DIR}/data/sql/other/delete_randombots.sql"
-  "${PB_MODULE_DIR}/data/sql/other/delete_all_randombots.sql"
-  "${PB_MODULE_DIR}/data/sql/other/reset_randombots.sql")
+  "${PB_MODULE_DIR}/sql/other/delete_randombots.sql"
+  "${PB_MODULE_DIR}/sql/other/delete_all_randombots.sql"
+  "${PB_MODULE_DIR}/sql/other/reset_randombots.sql")
 
 set(legacy_write_pattern
   "(DELETE[ \t\r\n]+FROM|INSERT[ \t\r\n]+INTO|UPDATE|REPLACE[ \t\r\n]+INTO|TRUNCATE([ \t\r\n]+TABLE)?)[ \t\r\n`]*(TW_CHAR[.`]+)?AI_PLAYERBOT_RANDOM_BOTS")

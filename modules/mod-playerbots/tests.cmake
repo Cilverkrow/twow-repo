@@ -48,9 +48,9 @@ add_executable(playerbot_event_store_database_tests
 
 target_include_directories(playerbot_event_store_database_tests PRIVATE
   "${PB_MODULE_DIR}/src/playerbot"
-  "${CMAKE_SOURCE_DIR}/src/shared"
-  "${CMAKE_SOURCE_DIR}/src/framework"
-  "${CMAKE_BINARY_DIR}/src/shared"
+  "${TW_CORE_ROOT}/src/shared"
+  "${TW_CORE_ROOT}/src/framework"
+  "${TW_CORE_BINARY_ROOT}/src/shared"
   "${CMAKE_BINARY_DIR}"
   ${ACE_INCLUDE_DIR}
   ${MYSQL_INCLUDE_DIR})
@@ -62,8 +62,8 @@ target_link_libraries(playerbot_event_store_database_tests PRIVATE
 
 if(WIN32)
   target_include_directories(playerbot_event_store_database_tests PRIVATE
-    "${CMAKE_SOURCE_DIR}/dep/include-windows"
-    "${CMAKE_SOURCE_DIR}/dep/windows/include")
+    "${TW_CORE_ROOT}/dep/include-windows"
+    "${TW_CORE_ROOT}/dep/windows/include")
   target_link_libraries(playerbot_event_store_database_tests PRIVATE
     optimized ${MYSQL_LIBRARY}
     debug ${MYSQL_DEBUG_LIBRARY}
