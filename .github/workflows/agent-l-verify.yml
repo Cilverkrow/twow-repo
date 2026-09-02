@@ -32,15 +32,27 @@ jobs:
           df -h / || true
 
       - name: Toolchain image
-        run: |
-          docker build --target builder-base             -f deploy/docker/Dockerfile.core             -t twow/builder-base:agent-l .
+        run: docker build --target builder-base -f deploy/docker/Dockerfile.core -t twow/builder-base:agent-l .
 
-      # Only the two module targets my PRs touch, at capped parallelism.
-      # Rationale for both choices is in the Dockerfile.
-      - name: Compile the touched modules
+      # THE POINT OF THIS RUN. Three walls were hit on this runner, and only one
+      # arrangement clears all three:
+      #   1. build tree on the NFS workspace bind mount -> ld dies with
+      #      "final close failed: Stale file handle" in cmake's compiler check.
+      #   2. --parallel $(nproc) = 20 jobs on ~9.2 GB available -> buildkitd OOMs.
+      #   3. build tree on the container's writable layer (docker build / COPY)
+      #      -> "No space left on device" at ~405 targets, while the HOST still
+      #      had 33 GB free. The container layer, not the pod, is the limit.
+      # So: source stays on the bind mount (reads survive NFS), the build tree
+      # goes to a NAMED VOLUME on the daemon's local disk, and jobs are capped.
+      # Named volumes behave identically on GitHub-hosted runners.
+      - name: Compile the touched modules (named volume, capped jobs)
         run: |
-          docker build             --build-arg BASE=twow/builder-base:agent-l             --build-arg JOBS=4             -f .github/agent-l-verify.Dockerfile             -t twow/agent-l-verify:latest .
+          docker volume create twow-build-agentl
+          docker volume create twow-ccache-agentl
+          docker run --rm -v "$PWD:/src" -v twow-build-agentl:/build -v twow-ccache-agentl:/ccache -e CCACHE_DIR=/ccache twow/builder-base:agent-l bash -eux -c 'df -h /build /src; cmake -S /src -B /build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/turtle -DTW_ARCH=x86-64-v2 -DMODULES=static -DBUILD_TESTING=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache; cmake --build /build --parallel 4 --target mod_mod_dungeon_clear mod_mod_playerbots; ctest --test-dir /build -R playerbot_legacy_event_write_guard --output-on-failure; df -h /build'
 
       - name: Disk after
         if: always()
-        run: df -h / || true
+        run: |
+          df -h / || true
+          docker volume rm -f twow-build-agentl twow-ccache-agentl || true
