@@ -1529,7 +1529,12 @@ void DcTestRunJob::SweepPartyGeometry()
                     {
                         uint32 const slotKey = slot.guid.GetCounter();
                         uint32 const nowFar = getMSTime();
-                        bool farAway = false;
+                        // NOT `far`: windef.h defines `far` and `near` as EMPTY macros, a
+                        // 16-bit leftover, so `bool far = false;` becomes
+                        // `bool = false;` under MSVC. Reported from a Windows
+                        // build 2026-09-02: C2513 here, then C2059 at each
+                        // later use.
+                        bool isFar = false;
                         // A combat FLAG is not a fight. Live: three resurrected
                         // dps stood at the entrance 250yd from the party, all
                         // flagged in combat with no victim at all, so the
@@ -1546,7 +1551,7 @@ void DcTestRunJob::SweepPartyGeometry()
                             !bot->IsBeingTeleported() && tank->FindMap() == botMap &&
                             !reallyFighting && fenceDist > 120.0f)
                         {
-                            farAway = true;
+                            isFar = true;
                             uint32& since = _farSinceMs[slotKey];
                             if (since == 0)
                                 since = nowFar ? nowFar : 1;
@@ -1573,7 +1578,7 @@ void DcTestRunJob::SweepPartyGeometry()
                                 continue;
                             }
                         }
-                        if (!farAway)
+                        if (!isFar)
                             _farSinceMs[slotKey] = 0;
                     }
 
