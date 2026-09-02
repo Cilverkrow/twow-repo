@@ -13,6 +13,14 @@
 # known to be broken. The baseline is not an approval of the ones in it -- it is
 # a ratchet, so the number can go down and not up.
 #
+# STALE AS OF THE core/ SPLIT (ADR-0020). The baseline's seven entries were
+# re-rooted under core/ so the comparison lines up at all, but they were
+# measured against THIS repository's old copy of src/game. The core is
+# twow-core's now and is 386 upstream commits further on, with 148 more headers
+# and its own history of self-containment fixes. Expect this audit to report new
+# offenders on its first run against the submodule, and settle them with one
+# deliberate `--update-baseline` rather than by editing the list by hand.
+#
 # Usage:
 #   bash ops/audit/header-self-containment.sh <build-dir> [--update-baseline]
 #
