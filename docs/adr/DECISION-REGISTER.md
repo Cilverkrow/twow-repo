@@ -4,7 +4,7 @@ Operational follow-up is maintained in [Open project threads](../OPEN-THREADS.md
 
 ## Accepted decisions
 
-The accepted durable decisions are recorded by **ADR-0001 through ADR-0029**, minus the
+The accepted durable decisions are recorded by **ADR-0001 through ADR-0030**, minus the
 supersessions listed at the bottom of this page.
 
 **ADR-0001 to ADR-0019** cover project governance, evidence authority, chat-history
@@ -13,7 +13,7 @@ database safety, PlayerBot population constraints, persistent roster semantics, 
 external LLM bridge, personalities, donation progress, professions, riding, current
 runbook-evidence retention, and external Windows build inputs.
 
-**ADR-0020 to ADR-0029** were added on 2026-08-31 and 2026-09-01 and were missing from
+**ADR-0020 to ADR-0030** were added on 2026-08-31 and 2026-09-01 and were missing from
 this register until 2026-09-02:
 
 | ADR | Decision | Status |
@@ -26,8 +26,9 @@ this register until 2026-09-02:
 | ADR-0025 | Repository and project structure; folder structure is module structure | Proposed; amended 2026-09-02 |
 | ADR-0026 | **Project lineage and provenance -- the single authority for the fork point, the upstream of record, and which repository may merge from upstream** | **Accepted 2026-09-02** |
 | ADR-0027 | MariaDB 11.8 is the database platform | Proposed |
-| ADR-0028 | Linux and Docker are the deployment platform; Windows is compile-only | Accepted |
+| ADR-0028 | Linux and Docker are the deployment platform; Windows is compile-only | Accepted (amended 2026-09-02: Windows CI disabled) |
 | ADR-0029 | Work tracking: reviewable issue manifests in `docs/issues/` drive the GitHub tracker | Proposed |
+| ADR-0030 | A narrowly bounded local MariaDB loopback plaintext client transport profile | Accepted |
 
 ADR-0026 is load-bearing for the others: no document may restate the fork point, the
 upstream of record or the merge rules. They link to it.
@@ -45,6 +46,8 @@ upstream of record or the merge rules. They link to it.
 - The 28-path persistent-roster integration passed unit tests, two real disposable-database adapter runs, and a clean Windows Release build. Source commit `3c2b931…` is integrated on local `main` without deployment.
 - Relevant sanitized text-only runbooks remain in this repository for the upcoming restructuring; a separate evidence repository is deferred.
 - Binary Windows resource and library inputs remain external, pinned prerequisites under ADR-0019.
+- The legacy local MariaDB endpoint has an explicit loopback-plaintext client profile
+  under ADR-0030. It changes no server setting and grants no query or process authority.
 
 ## Explicitly open or separately gated
 

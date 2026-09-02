@@ -10,8 +10,9 @@
 #
 #   lint ---------------+
 #   integration --------|   (parallel, nothing compiles here)
-#   windows-compile ----|
 #   build-and-test ----> smoke
+#
+#   windows-compile        (DISABLED 2026-09-02 - manual dispatch only)
 #
 # Five job entries. ONE full server compile per push, in the build-and-test job,
 # and smoke consumes the image that build produced instead of building its own.
@@ -73,8 +74,10 @@
 #     matters are commented individually - `git clean` inside actions/checkout
 #     does not reach /state or the docker daemon.
 #
-# windows-compile stays on windows-2022 and therefore stays BROKEN while the
-# billing block is in place. See the comment on that job - it is deliberate.
+# WINDOWS CI IS DISABLED (2026-09-02, ADR-0028). The windows-compile job below is
+# gated behind a workflow_dispatch input and does not run on push, pull_request or
+# schedule. The code keeps its Windows support; only the CI job is off. See the
+# comment on the job itself for why, and ADR-0028 for how to turn it back on.
 name: ci
 
 on:
@@ -107,6 +110,13 @@ on:
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
+    inputs:
+      run_windows_compile:
+        description: >-
+          Also run the MSVC compile-only job. Requires a Windows runner this repo
+          does not currently have - see ADR-0028. Default off.
+        type: boolean
+        default: false
 
 concurrency:
   # Pushes never cancel or queue each other; pull request updates still do.
@@ -739,6 +749,55 @@ jobs:
 
   # ---------------------------------------------------------------- windows
   #
+  # DISABLED 2026-09-02. Deliberate and temporary - not neglect, not rot.
+  #
+  # The decision (ADR-0028, "Windows CI disabled 2026-09-02"): Linux is what this
+  # project deploys, so Windows CI comes out until it can actually run. The code
+  # keeps every bit of its Windows support - dep/windows/lib, mangosd.ico, TW_PI,
+  # the strtok_r shim, the _WIN32 branches and ops/windows/** are all untouched.
+  # This is a CI configuration change and nothing else.
+  #
+  # Why it is safe to switch off: THIS JOB HAS NEVER SUCCESSFULLY RUN. Verified
+  # across the last 25 ci.yml runs - every one of them shows `msvc compile-only:
+  # failure` with ZERO steps executed, completing about two seconds after it
+  # started. That is the signature of a job that never got a runner, not of a
+  # compile that broke. Removing it deletes no coverage, because it never
+  # produced any.
+  #
+  # Every other GitHub-HOSTED job fails the same way on every branch except
+  # agent-k/ci-self-hosted, which moved the Linux jobs to `self-hosted` and is
+  # the only branch with green runs. Two explanations for the hosted-runner
+  # blackout are on record and this change does not depend on which is right:
+  # the owner states twow-repo is private and gets no hosted runners on this
+  # plan; the comment on this job in agent-k/ci-self-hosted attributes it to
+  # blocked hosted billing. Either way the effect is the same and Windows is the
+  # one job with no self-hosted runner to move to.
+  #
+  # Nothing `needs:` this job; `smoke` is the only job with a dependency and it
+  # depends on `build-and-test`.
+  #
+  # NOTE, because it is a real disagreement and not an oversight: the comment on
+  # agent-k/ci-self-hosted argues this job should stay visibly red rather than be
+  # silenced, so that a green run never implies MSVC was checked. That reasoning
+  # is sound and the owner overrode it deliberately - "we do mainly linux anyway".
+  # The visibility it was protecting now lives in ADR-0028 and in this comment
+  # instead of in a red X.
+  #
+  # HOW TO RE-ENABLE. One of two things has to change first:
+  #   * a Windows runner becomes available (a self-hosted `windows-2022` runner
+  #     joins, alongside the self-hosted Linux `k8s-twow-repo` runner), or
+  #   * twow-repo becomes public, which restores GitHub-hosted runners.
+  # Then either flip the `if:` below off, or run the workflow from the Actions
+  # tab with `run_windows_compile` checked to try it once without committing.
+  #
+  # It is GATED rather than deleted on purpose. Deleting it would mean rebuilding
+  # 190 lines of vcpkg/sccache cache plumbing and the reasoning below from git
+  # archaeology when Windows CI comes back. Gating costs one skipped job entry per
+  # run - a skipped job never requests a runner, so it costs nothing on a repo
+  # with none.
+  #
+  # Everything below this line is the original job, unchanged, and still true.
+  #
   # COMPILE ONLY. Never links.
   #
   # Why it exists: MSVC rejects code gcc and clang accept. The forcing example is
@@ -762,34 +821,26 @@ jobs:
   # runs on every push. That is a deliberate trade: one MSVC compile is cheap
   # next to the four full Linux compiles this consolidation removed.
   #
-  # ###################################################################
-  # THIS JOB IS EXPECTED TO FAIL WHILE HOSTED BILLING IS BLOCKED.
-  # ###################################################################
+  # WHY IT IS GATED OFF RATHER THAN LEFT RED (resolved 2026-09-02).
   #
-  # It is the ONLY MSVC coverage this project has, and MSVC is the single
-  # largest unverified gap in the tree. The self-hosted runner that unblocked
-  # every other job is Linux, so this one cannot move to it: there is no
-  # Windows runner to move it to. It therefore keeps `runs-on: windows-2022`
-  # and keeps failing in ~3 seconds with duration_ms 0 and no logs, which is
-  # what the hosted-runner billing block looks like.
+  # This job is the ONLY MSVC coverage this repository has, and the branch that
+  # introduced the self-hosted runner argued it should stay visibly red: the
+  # self-hosted runner is Linux, there is no Windows runner to move it to, and a
+  # job silently skipped means a green run that never checked MSVC.
   #
-  # It is deliberately NOT `continue-on-error: true` and deliberately NOT
-  # removed. Making it non-blocking would turn every run green while the one
-  # thing no Linux job can check goes unchecked - the same failure mode the
-  # "Fail if nothing was tested" gate in build-and-test exists to prevent, and
-  # for the same reason: a green run that proved nothing gets believed. A
-  # visibly red job that names its own cause does not.
+  # That argument was overridden by the owner in #160, and the reason it holds:
+  # MSVC coverage moved. `twow-core` now carries its own Windows CI job and it
+  # passes, so the compile that mattered is being run - just in the repository
+  # that owns the code it compiles. `twow-repo` is Linux-only (ADR-0028), and a
+  # permanently red job on a repository with no Windows runner trains people to
+  # ignore red rather than to read it.
   #
-  # So while the block is in place, "ci is red on windows-compile only" is the
-  # expected state and every other job's result is still trustworthy. Two ways
-  # out, in order of preference:
-  #   1. restore hosted billing - nothing here changes, it simply starts
-  #      passing again;
-  #   2. register a self-hosted Windows runner and change the line below to
-  #      `runs-on: ${{ vars.CI_WINDOWS_RUNNER || 'windows-2022' }}`.
-  # Adding `continue-on-error: true` is the third way and it is a decision
-  # about risk, not a fix - if it is taken, it should be taken loudly.
+  # So while this stays gated, the honest statement is: MSVC is checked in
+  # twow-core, not here, and a green run here never implied otherwise.
   windows-compile:
+    # The gate. `inputs` is null on push, pull_request and schedule, so this is
+    # false everywhere except a workflow_dispatch that ticked the box.
+    if: ${{ inputs.run_windows_compile }}
     runs-on: windows-2022
     name: msvc compile-only
     timeout-minutes: 90

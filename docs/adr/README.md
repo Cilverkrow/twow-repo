@@ -39,8 +39,9 @@ Chat text is provenance, not runtime truth. When evidence conflicts, use the pre
 | [0025](ADR-0025-repository-and-project-structure.md) | Repository layout as a binding, enforced rule | Proposed | WS-00 / WS-80 |
 | [0026](ADR-0026-project-lineage-and-provenance.md) | Record the project's upstream lineage | Proposed | WS-80 / WS-50 |
 | [0027](ADR-0027-database-platform.md) | MariaDB 11.8 as the single database platform | Proposed | WS-20 / WS-30 |
-| [0028](ADR-0028-platform-and-ci-strategy.md) | Linux and Docker deploy; Windows compile-only | Accepted | WS-40 / WS-50 |
+| [0028](ADR-0028-platform-and-ci-strategy.md) | Linux and Docker deploy; Windows compile-only | Accepted (amended 2026-09-02) | WS-40 / WS-50 |
 | [0029](ADR-0029-work-tracking.md) | Issues generated from manifests in Git | Proposed | WS-00 / WS-80 |
+| [0030](ADR-0030-local-mariadb-loopback-transport.md) | Explicit plaintext profile for the legacy local MariaDB endpoint | Accepted | WS-30 / WS-20 |
 
 ADRs 0020 to 0029 record the OT-025 restructuring. ADR-0028 is accepted because its
 Linux/Docker platform contract is both binding in `AGENTS.md` and implemented in the
@@ -48,6 +49,10 @@ landed repository structure; the other entries retain the status shown in the ta
 ADR-0020 supersedes the "keep one tree" half of ADR-0005, and ADR-0028 removes the CI
 half of ADR-0019's provisioning problem without changing that decision for local
 Windows builds.
+
+ADR-0030 is a later accepted operations decision. It permits an explicit plaintext
+client profile only for the verified legacy `127.0.0.1:3307` endpoint and does not
+authorize queries, process control or deployment.
 
 ## Creating later ADRs
 
