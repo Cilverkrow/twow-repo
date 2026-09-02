@@ -38,6 +38,7 @@ PB_SQL_DIR=${PB_SQL_DIR:-/sql-playerbots}
 
 DB_HOST=${DB_HOST:-db}
 DB_PORT=${DB_PORT:-3306}
+BOT_DB=cv_bots
 
 mysql_root() { mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -p"$DB_ROOT_PASSWORD" "$@"; }
 log() { printf '[db-init] %s\n' "$*" >&2; }
@@ -71,6 +72,7 @@ mysql_root -e 'SELECT 1' >/dev/null || { log "cannot reach $DB_HOST:$DB_PORT as 
 stage_schemas() {
     [ -f "$SQL_DIR/create_databases.sql" ] || { log "missing $SQL_DIR/create_databases.sql"; exit 1; }
     mysql_root < "$SQL_DIR/create_databases.sql"
+    mysql_root -e "CREATE DATABASE IF NOT EXISTS \`$BOT_DB\` CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci;"
 }
 
 # ----------------------------------------------------------------- 10 grants
@@ -85,6 +87,7 @@ GRANT ALL PRIVILEGES ON tw_world.*  TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_char.*   TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_logon.*  TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_logs.*   TO '${DB_USER}'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON cv_bots.* TO '${DB_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL
 }
@@ -283,6 +286,20 @@ stage_playerbots() {
     apply_module_sql tw_char  "$PB_SQL_DIR/characters"
 }
 
+# ------------------------------------------------- 45 playerbot migrations
+# cv_bots is this module's own schema (ADR-0021: a module owns its tables), so
+# its migrations are applied to cv_bots and NOT through stage 40 above. They
+# deliberately live in their own directory rather than in characters/: stage 40
+# applies every *.sql under characters/ to tw_char, so a cv_bots migration
+# parked there would be loaded into the wrong database as well as the right one.
+stage_playerbot_migrations() {
+    if [ "${IMPORT_PLAYERBOTS:-ON}" != "ON" ]; then
+        log "IMPORT_PLAYERBOTS is not ON; skipping PlayerBot migrations"
+        return 0
+    fi
+    apply_module_sql "$BOT_DB" "$PB_SQL_DIR/cv_bots"
+}
+
 # -------------------------------------------------------------- 60 realmlist
 # create_databases.sql creates realmlist and leaves it empty, so the realm list
 # is empty until this runs. Two fields decide whether the client works at all:
@@ -305,6 +322,7 @@ stage 10-grants     stage_grants
 stage 20-world-base stage_base
 stage 30-updates    stage_updates
 stage 40-playerbots stage_playerbots
+stage 45-playerbot-migrations stage_playerbot_migrations
 stage 60-realmlist  stage_realmlist
 
 # Verification. Every stage above now fails loudly, so this is no longer the only

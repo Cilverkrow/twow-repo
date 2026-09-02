@@ -9,6 +9,8 @@
 # -- so they need the sources on disk, not the module library.
 
 set(PB_MODULE_DIR "${TW_MODULES_DIR}/mod-playerbots")
+option(BUILD_PLAYERBOT_EVENT_STORE_ADAPTER_TESTS
+  "Build the isolated PlayerBot event-store database adapter test" OFF)
 
 # --------------------------------------------------------------------------
 # persistent_active_roster_tests -- the roster serialiser's unit suite.
@@ -37,6 +39,43 @@ target_include_directories(persistent_active_roster_tests PRIVATE
 if(WIN32)
   target_include_directories(persistent_active_roster_tests PRIVATE
     "${TW_CORE_ROOT}/dep/windows/include")
+endif()
+
+if(BUILD_PLAYERBOT_EVENT_STORE_ADAPTER_TESTS)
+
+add_executable(playerbot_event_store_database_tests
+  "${PB_MODULE_DIR}/t/playerbot_event_store_database_tests.cpp")
+
+target_include_directories(playerbot_event_store_database_tests PRIVATE
+  "${PB_MODULE_DIR}/src/playerbot"
+  "${TW_CORE_ROOT}/src/shared"
+  "${TW_CORE_ROOT}/src/framework"
+  "${TW_CORE_BINARY_ROOT}/src/shared"
+  "${CMAKE_BINARY_DIR}"
+  ${ACE_INCLUDE_DIR}
+  ${MYSQL_INCLUDE_DIR})
+
+target_link_libraries(playerbot_event_store_database_tests PRIVATE
+  shared
+  framework
+  ${ACE_LIBRARIES})
+
+if(WIN32)
+  target_include_directories(playerbot_event_store_database_tests PRIVATE
+    "${TW_CORE_ROOT}/dep/include-windows"
+    "${TW_CORE_ROOT}/dep/windows/include")
+  target_link_libraries(playerbot_event_store_database_tests PRIVATE
+    optimized ${MYSQL_LIBRARY}
+    debug ${MYSQL_DEBUG_LIBRARY}
+    ws2_32)
+else()
+  target_link_libraries(playerbot_event_store_database_tests PRIVATE
+    ${MYSQL_LIBRARY})
+endif()
+
+set_target_properties(playerbot_event_store_database_tests PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/adapter-bin")
+
 endif()
 
 target_compile_definitions(persistent_active_roster_tests PRIVATE
@@ -72,6 +111,24 @@ set_target_properties(persistent_active_roster_tests PROPERTIES
 
 add_test(NAME persistent_active_roster
   COMMAND persistent_active_roster_tests
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+add_test(NAME playerbot_legacy_event_write_guard
+  COMMAND "${CMAKE_COMMAND}"
+    -DPB_MODULE_DIR=${PB_MODULE_DIR}
+    -P "${PB_MODULE_DIR}/t/check_playerbot_legacy_writes.cmake")
+
+add_executable(playerbot_event_store_contract_tests
+  "${PB_MODULE_DIR}/t/playerbot_event_store_contract_tests.cpp")
+
+target_include_directories(playerbot_event_store_contract_tests PRIVATE
+  "${PB_MODULE_DIR}/src/playerbot")
+
+set_target_properties(playerbot_event_store_contract_tests PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+add_test(NAME playerbot_event_store_contract
+  COMMAND playerbot_event_store_contract_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 # --------------------------------------------------------------------------
