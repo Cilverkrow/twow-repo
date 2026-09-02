@@ -131,13 +131,13 @@ assert_semantics() {
             mangosd)
                 rendered="$CONFIG_OUT_DIR/mangosd.conf"
                 baseline="$ROOT/config/examples/mangosd.local.example.conf"
-                template="$ROOT/src/mangosd/mangosd.conf.dist.in"
+                template="$ROOT/core/src/mangosd/mangosd.conf.dist.in"
                 overlay="$CANONICAL/mangosd.overlay.conf"
                 ;;
             realmd)
                 rendered="$CONFIG_OUT_DIR/realmd.conf"
                 baseline="$ROOT/config/examples/realmd.local.example.conf"
-                template="$ROOT/src/realmd/realmd.conf.dist.in"
+                template="$ROOT/core/src/realmd/realmd.conf.dist.in"
                 overlay="$CANONICAL/realmd.overlay.conf"
                 ;;
             aiplayerbot)
@@ -208,7 +208,7 @@ assert_rendered_contract() {
                LFT.BotFill.LevelRangeBelowHealer LFT.BotFill.LevelRangeAbove; do
         assert_key_once "$CONFIG_OUT_DIR/mangosd.conf" "$key"
     done
-    grep -Fq 'LFT/LFTBotFill.cpp' "$ROOT/src/game/CMakeLists.txt"
+    grep -Fq 'LFT/LFTBotFill.cpp' "$ROOT/core/src/game/CMakeLists.txt"
 
     if grep -Eq '@[A-Z0-9_]+@' "$CONFIG_OUT_DIR"/*.conf; then
         echo "ERROR: unresolved configuration token" >&2

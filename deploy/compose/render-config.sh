@@ -9,8 +9,8 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 CANONICAL="$ROOT/config/canonical/compose"
 OUT="${CONFIG_OUT_DIR:-$HERE/config}"
 
-MANGOSD_TEMPLATE="$ROOT/src/mangosd/mangosd.conf.dist.in"
-REALMD_TEMPLATE="$ROOT/src/realmd/realmd.conf.dist.in"
+MANGOSD_TEMPLATE="$ROOT/core/src/mangosd/mangosd.conf.dist.in"
+REALMD_TEMPLATE="$ROOT/core/src/realmd/realmd.conf.dist.in"
 AIPLAYERBOT_TEMPLATE="$ROOT/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in"
 MANGOSD_OVERLAY="$CANONICAL/mangosd.overlay.conf"
 REALMD_OVERLAY="$CANONICAL/realmd.overlay.conf"
@@ -65,7 +65,7 @@ for file in \
     "$MANGOSD_TEMPLATE" "$REALMD_TEMPLATE" "$AIPLAYERBOT_TEMPLATE" \
     "$MANGOSD_OVERLAY" "$REALMD_OVERLAY" "$AIPLAYERBOT_OVERLAY" \
     "$SEMANTIC_MATRIX" "$VERIFIER"; do
-    [[ -f "$file" && ! -L "$file" ]] || { echo "ERROR: required tracked configuration input is missing or unsafe" >&2; exit 1; }
+    [[ -f "$file" && ! -L "$file" ]] || { echo "ERROR: required tracked configuration input is missing or unsafe: $file" >&2; exit 1; }
 done
 
 SOURCE_COMMIT=$(git -C "$ROOT" rev-parse --verify HEAD)
