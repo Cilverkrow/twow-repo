@@ -1,0 +1,31 @@
+# Throwaway probe: does a self-hosted runner exist and claim jobs?
+#
+# Every self-hosted runner carries the `self-hosted` label implicitly, so this
+# needs no knowledge of custom labels. If a runner picks it up, the job runs and
+# prints what it is. If none exists the job sits queued, which is itself the
+# answer -- a queued job means no runner matches, whereas the billing block
+# fails jobs in ~3s with duration_ms 0 and no logs.
+#
+# Delete this file once the question is answered.
+name: runner probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [ci/runner-probe]
+
+jobs:
+  probe:
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    steps:
+      - name: Say what claimed this job
+        run: |
+          echo "runner name : ${RUNNER_NAME:-<unset>}"
+          echo "os          : ${RUNNER_OS:-<unset>}"
+          echo "arch        : ${RUNNER_ARCH:-<unset>}"
+          echo "labels seen : $(echo "${RUNNER_LABELS:-<unset>}")"
+          uname -a || ver
+          echo "docker      : $(docker --version 2>/dev/null || echo 'not present')"
+          echo "cmake       : $(cmake --version 2>/dev/null | head -1 || echo 'not present')"
+          nproc 2>/dev/null && free -h 2>/dev/null | head -2 || true
+          df -h . | tail -1
