@@ -62,12 +62,32 @@ GetModuleProjectName("${TORTOISE_CURRENT_MODULE}" PB_TARGET)
 #                       spell ranges. MANGOSBOT_ONE is TBC, _TWO is WotLK.
 #   ENABLE_PLAYERBOTS - turns the subsystem on inside the vendor's own ifdefs.
 #
-# PRIVATE, which is how the root CMakeLists had it. It is worth knowing that
-# this means mod-dungeon-clear compiles these same headers WITHOUT the three
-# macros, so the two see different definitions of anything behind them. That
-# predates the move and is not changed by it; making them PUBLIC would alter
-# how mod-dungeon-clear compiles and needs its own verification.
-target_compile_definitions(${PB_TARGET} PRIVATE CMANGOS MANGOSBOT_ZERO ENABLE_PLAYERBOTS)
+# PUBLIC, not PRIVATE, and this is a bug fix rather than tidying.
+#
+# These were PRIVATE, inherited from the root CMakeLists. mod-dungeon-clear
+# includes sixteen of this module's headers and therefore compiled them with none
+# of the three macros defined. That is not merely "two views of the same type" --
+# it produces undefined behaviour, because the vendored code is written as:
+#
+#     bool UnitIsDead(Unit *unit)
+#     {
+#     #ifdef MANGOS
+#         return unit->IsDead();
+#     #endif
+#     #ifdef CMANGOS
+#         return unit->IsDead();
+#     #endif
+#     }
+#
+# With neither macro set the body has no return statement at all, and falling off
+# the end of a non-void function is UB -- GCC plants a ud2 there. The REF-005
+# warning inventory found 357 -Wreturn-type emissions in ServerFacade.h alone,
+# roughly one per dungeon-clear translation unit, which is what pointed at this.
+#
+# These macros are a usage requirement of the library, not a private detail:
+# anything compiling these headers must compile them the same way this module
+# does. PUBLIC is what says that, and is the reason a per-module target exists.
+target_compile_definitions(${PB_TARGET} PUBLIC CMANGOS MANGOSBOT_ZERO ENABLE_PLAYERBOTS)
 
 # The module reaches for nine Boost libraries; two of them, filesystem and
 # thread, are compiled rather than header-only. find_package used to run only
