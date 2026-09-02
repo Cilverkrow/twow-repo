@@ -135,22 +135,37 @@ permissions:
   pull-requests: read
 
 env:
-  # Compile parallelism, for every step that compiles anything.
+  # Compile parallelism, for every step that compiles anything. An EXPLICIT
+  # number, deliberately, and this is the part worth reading before changing it.
   #
-  # The self-hosted pod shows 20 cores and has ~9.2 GiB of RAM free. The heavy
-  # translation units in this tree (Player.cpp, the playerbots strategies) peak
-  # around 1.5-2.5 GiB of resident memory each with debug symbols on, and
-  # DEBUG_SYMBOLS defaults to ON, so 20 concurrent compiles want more memory
-  # than the pod has and the kernel resolves that by killing the compiler. The
-  # failure does not look like an OOM either - ninja reports a signal, or the
-  # assembler reports "No such file or directory", the same way running out of
-  # disk does.
+  # `-j$(nproc)` is the obvious form and it is WRONG on this runner. /proc is
+  # not namespaced, so inside the runner pod:
   #
-  # 4 x ~2.3 GiB is about 9 GiB, which is the whole budget, so 4 is the ceiling
-  # rather than a comfortable number. Raise it with the CI_BUILD_JOBS
-  # repository variable once there is evidence the pod has the headroom - and
-  # note that -j bounds compiles, not the single link of mangosd, which wants
-  # several GiB on its own and cannot be split.
+  #     nproc      ->  20      the NODE's CPUs
+  #     free -g    ->  31Gi    the NODE's memory
+  #     cpu.max    ->  max     no CPU limit at all
+  #     memory.max ->  8Gi     the actual ceiling, and the only true number
+  #
+  # A job that sizes itself from nproc or free therefore launches 20 compilers
+  # against an 8 GiB cgroup and is OOM-killed. That does not surface as "out of
+  # memory": it surfaces as ninja reporting a signal, or as the assembler
+  # failing to write an object file - which reads exactly like running out of
+  # disk - or as a job that simply hangs. Every automatic form of this
+  # (`nproc`, `free`, `--parallel` with no argument, ninja's own default) has
+  # the same defect, so the number is pinned here instead.
+  #
+  # Why 4. The heavy translation units in this tree peak around 1.5-2.5 GiB
+  # resident each with debug symbols on, and DEBUG_SYMBOLS defaults to ON. Four
+  # is also exactly what a GitHub-hosted ubuntu-24.04 runner has (4 vCPU,
+  # 16 GB), so the same pinned number is correct in both places and this file
+  # stays portable - which is the requirement. Raise it with the CI_BUILD_JOBS
+  # repository variable only against a measurement, not against `nproc`.
+  #
+  # Two things -j does NOT bound: the single link of mangosd, which wants
+  # several GiB on its own and cannot be split, and any compile that happens
+  # inside `docker build` (nightly's docker-from-source, publish's core) - those
+  # run on the workspace daemon under a different budget and are capped by the
+  # Dockerfile's BUILD_JOBS arg instead.
   CI_BUILD_JOBS: ${{ vars.CI_BUILD_JOBS || '4' }}
 
   # The tag deploy/compose/docker-compose.yml resolves to by default
@@ -202,10 +217,19 @@ jobs:
             echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
           fi
           echo "SUDO=$SUDO" >> "$GITHUB_ENV"
-          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?})"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
           echo "user   : $(id)"
           echo "sudo   : ${SUDO:-<none>}"
-          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} of $(nproc 2>/dev/null || echo '?') cores"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} pinned"
+          # nproc and free report the NODE, not this job's cgroup - see the
+          # env block at the top of this file. The cgroup files are the only
+          # honest numbers, so print those and label the others as untrue.
+          echo "nproc  : $(nproc 2>/dev/null || echo '?') <- NOT a limit, this is the node"
+          memmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo n/a)
+          echo "mem.max: $memmax <- the real ceiling"
+          echo "cpu.max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo n/a)"
           uname -a
           free -h 2>/dev/null | head -2 || true
           df -h . | tail -1
@@ -491,9 +515,18 @@ jobs:
             echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
           fi
           echo "SUDO=$SUDO" >> "$GITHUB_ENV"
-          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?})"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
           echo "user   : $(id)"
-          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} of $(nproc 2>/dev/null || echo '?') cores"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} pinned"
+          # nproc and free report the NODE, not this job's cgroup - see the
+          # env block at the top of this file. The cgroup files are the only
+          # honest numbers, so print those and label the others as untrue.
+          echo "nproc  : $(nproc 2>/dev/null || echo '?') <- NOT a limit, this is the node"
+          memmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo n/a)
+          echo "mem.max: $memmax <- the real ceiling"
+          echo "cpu.max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo n/a)"
           free -h 2>/dev/null | head -2 || true
           df -h . | tail -1
 
@@ -1017,9 +1050,18 @@ jobs:
             echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
           fi
           echo "SUDO=$SUDO" >> "$GITHUB_ENV"
-          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?})"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
           echo "user   : $(id)"
-          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} of $(nproc 2>/dev/null || echo '?') cores"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} pinned"
+          # nproc and free report the NODE, not this job's cgroup - see the
+          # env block at the top of this file. The cgroup files are the only
+          # honest numbers, so print those and label the others as untrue.
+          echo "nproc  : $(nproc 2>/dev/null || echo '?') <- NOT a limit, this is the node"
+          memmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo n/a)
+          echo "mem.max: $memmax <- the real ceiling"
+          echo "cpu.max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo n/a)"
           free -h 2>/dev/null | head -2 || true
           df -h . | tail -1
 
@@ -1048,38 +1090,48 @@ jobs:
       #
       # df on both sides, so the next disk failure is diagnosable from the log.
       #
-      # REWRITTEN FOR A SHARED RUNNER. The original body was two commands and
-      # both are wrong here:
+      # TWO BODIES, because the right answer differs by runner and this
+      # pipeline has to work unchanged on both. RUNNER_ENVIRONMENT is set by
+      # the runner itself to `github-hosted` or `self-hosted`, so the branch
+      # needs no repository variable and cannot drift out of step with where
+      # the job actually landed.
       #
-      #   * `rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android ...`
-      #     names paths that exist only in the GitHub-hosted VM image. On this
-      #     runner they are absent, so it frees nothing. It is kept, guarded by
-      #     a -d test, so the reclaim comes straight back the moment CI_RUNNER
-      #     points at ubuntu-24.04 again.
-      #   * `docker image prune -af` deletes EVERY image not attached to a
-      #     running container on the daemon. On a throwaway VM that costs
-      #     nothing. On a shared pod it deletes other tenants' images and every
-      #     base layer anything else was about to reuse, and it is gone. What
-      #     replaces it touches only what this pipeline owns: its own two tags,
-      #     its own exited containers, dangling layers, and build cache older
-      #     than a day.
+      # On a HOSTED VM the original body is right and is kept verbatim: the
+      # machine is destroyed after the job, the ~25 GB of preinstalled
+      # toolchains are dead weight, and `docker image prune -af` costs nothing.
       #
-      # The disk here is ~28 GB free and shared, against a build tree carrying
-      # debug symbols and a 2.0 GB mangosd. That is tight rather than
-      # comfortable, which is why df is printed on both sides and why "Reclaim
-      # the build tree" below still runs before the image is assembled.
+      # On a SELF-HOSTED runner both halves of it are wrong. Those paths exist
+      # only in the hosted VM image, so removing them frees nothing. And
+      # `docker image prune -af` deletes EVERY image not attached to a running
+      # container - on a shared daemon that is other tenants' images and every
+      # base layer anything else was about to reuse, gone. What runs instead
+      # touches only what this pipeline owns: its own two tags, its own exited
+      # containers, dangling layers, and build cache older than a day.
+      #
+      # The self-hosted disk is shared, against a build tree carrying debug
+      # symbols and a 2.0 GB mangosd. That is tight rather than comfortable,
+      # which is why df is printed on both sides and why "Reclaim the build
+      # tree" below still runs before the image is assembled.
       - name: Free runner disk
         run: |
           df -h .
-          for d in /usr/share/dotnet /opt/ghc /usr/local/lib/android \
-                   /opt/hostedtoolcache/CodeQL /usr/local/share/boost; do
-            if [ -d "$d" ]; then $SUDO rm -rf "$d" && echo "removed $d"; fi
-          done
-          # Only this pipeline's own leftovers from a previous job on this pod.
-          docker image rm -f "$CORE_IMAGE" "$BUILDER_IMAGE" 2>/dev/null || true
-          docker container prune -f || true
-          docker image prune -f || true
-          docker builder prune -f --filter until=24h || true
+          if [ "${RUNNER_ENVIRONMENT:-}" = "github-hosted" ]; then
+            # A hosted VM is destroyed after the job, so nothing here is shared
+            # and the aggressive form is free. This is the original body,
+            # unchanged, and it is what reclaims the ~25 GB of preinstalled
+            # toolchains this build never touches.
+            $SUDO rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                         /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+            $SUDO docker image prune -af || true
+          else
+            # A self-hosted runner is shared and persistent. Only this
+            # pipeline's own leftovers are removed; the hosted-VM paths above
+            # do not exist here, so deleting them would free nothing anyway.
+            docker image rm -f "$CORE_IMAGE" "$BUILDER_IMAGE" 2>/dev/null || true
+            docker container prune -f || true
+            docker image prune -f || true
+            docker builder prune -f --filter until=24h || true
+          fi
           df -h .
 
       # The only toolchain the runner itself still needs. Everything that
@@ -1492,7 +1544,7 @@ jobs:
             echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
           fi
           echo "SUDO=$SUDO" >> "$GITHUB_ENV"
-          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?})"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
           echo "user   : $(id)"
           free -h 2>/dev/null | head -2 || true
           df -h . | tail -1

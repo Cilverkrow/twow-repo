@@ -38,10 +38,17 @@ permissions:
 # the one-variable way back, are in the header of ci.yml: set the repository
 # variable CI_RUNNER to `ubuntu-24.04` and all three workflows move at once.
 env:
-  # Same reasoning as ci.yml: ~9.2 GiB free on a 20-core shared pod, and the
-  # heavy translation units in this tree peak at 1.5-2.5 GiB each. Both builds
-  # below are FULL from-scratch compiles of the whole server, so this is the
-  # job most likely to prove the pod cannot carry it.
+  # An EXPLICIT number, for the reason spelled out at length in ci.yml: on the
+  # self-hosted runner nproc reports 20 and free reports 31Gi, and both are the
+  # NODE's numbers, while the job's actual cgroup ceiling is 8 GiB. `-j$(nproc)`
+  # there is 20 compilers against 8 GiB and an OOM kill that does not say it is
+  # one. 4 is also what a hosted ubuntu-24.04 runner has, so the same pinned
+  # number is right in both places.
+  #
+  # The two builds below are FULL from-scratch compiles of the whole server on
+  # the runner itself - not in a container on the workspace daemon, the way
+  # ci.yml's build is - so they are the jobs that actually test whether the pod
+  # can carry a compile at all.
   CI_BUILD_JOBS: ${{ vars.CI_BUILD_JOBS || '4' }}
 
 jobs:
@@ -71,8 +78,12 @@ jobs:
             echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
           fi
           echo "SUDO=$SUDO" >> "$GITHUB_ENV"
-          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?})"
-          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} of $(nproc 2>/dev/null || echo '?') cores"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} pinned (nproc reports the NODE here, not a limit)"
+          memmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo n/a)
+          echo "mem.max: $memmax"
           free -h 2>/dev/null | head -2 || true
           df -h . | tail -1
 
@@ -154,8 +165,12 @@ jobs:
             echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
           fi
           echo "SUDO=$SUDO" >> "$GITHUB_ENV"
-          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?})"
-          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} of $(nproc 2>/dev/null || echo '?') cores"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} pinned (nproc reports the NODE here, not a limit)"
+          memmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo n/a)
+          echo "mem.max: $memmax"
           free -h 2>/dev/null | head -2 || true
           df -h . | tail -1
 
@@ -326,21 +341,23 @@ jobs:
         with:
           submodules: recursive
 
-      # Same reclaim ci.yml needs, and rewritten for the same reason: those
-      # paths exist only on the hosted VM image (so they are guarded rather than
-      # assumed), and `docker image prune -af` on a SHARED daemon deletes other
-      # tenants' images. See the long note on the equivalent step in ci.yml.
+      # Same reclaim ci.yml needs, and split the same way and for the same
+      # reason: on a hosted VM the aggressive form is free, and on a shared
+      # self-hosted daemon `docker image prune -af` would delete other tenants'
+      # images. See the long note on the equivalent step in ci.yml.
       - name: Free runner disk
         run: |
           df -h .
-          for d in /usr/share/dotnet /opt/ghc /usr/local/lib/android \
-                   /opt/hostedtoolcache/CodeQL /usr/local/share/boost; do
-            if [ -d "$d" ]; then $SUDO rm -rf "$d" && echo "removed $d"; fi
-          done
-          docker image rm -f twow/core:nightly-from-source 2>/dev/null || true
-          docker container prune -f || true
-          docker image prune -f || true
-          docker builder prune -f --filter until=24h || true
+          if [ "${RUNNER_ENVIRONMENT:-}" = "github-hosted" ]; then
+            $SUDO rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                         /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+            $SUDO docker image prune -af || true
+          else
+            docker image rm -f twow/core:nightly-from-source 2>/dev/null || true
+            docker container prune -f || true
+            docker image prune -f || true
+            docker builder prune -f --filter until=24h || true
+          fi
           df -h .
 
       - uses: docker/setup-buildx-action@v3
