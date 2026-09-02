@@ -177,3 +177,46 @@ example, since it changes code generation and nothing else.
 
 Verified: with `PUBLIC`, `-Wreturn-type` emissions go 357 -> 0 and `mod_mod_dungeon_clear`
 still builds and links.
+
+## Update 2026-09-02: slots are upstream's compile-time enum, not a runtime claim
+
+For a while `twow-core` diverged here. `src/game/ModuleSlots.h` was rewritten to hand out
+slot ids at **runtime, by name**, backed by an extra `src/game/ModuleSlots.cpp` (a mutex, a
+name array, `ClaimModuleSlot`, `GetModuleSlotOwner`, `GetClaimedModuleSlotCount`), and
+`modules/mod-playerbots/src/playerbot/BotSlots.h` claimed `"playerbots.ai"` and
+`"playerbots.mgr"` through it. The stated gain was that adding a module cost no core edit.
+
+**That divergence is reverted.** `twow-core` now carries upstream's `ModuleSlots.h`
+verbatim and `ModuleSlots.cpp` is gone; `BotSlots.h` uses `MODULE_SLOT_BOT_AI` and
+`MODULE_SLOT_BOT_MGR` directly. The decision above — the one this file has stated since it
+was written — is therefore the one in force, and the paragraph under "Decision" describes
+the code again rather than describing something we had replaced.
+
+Why: `ModuleSlots.h` is a file **upstream owns**, and upstream's enum already contained
+exactly the two slots this project uses. Keeping our own version bought nothing we were
+using and cost two files of fork delta on the integration seam that is meant to be the
+smallest divergent part of the core.
+
+**What it costs, so the next person does not have to rediscover it.** Adding a slot for a
+*new* module now means:
+
+- editing `core/src/game/ModuleSlots.h`, which is a **submodule** — a pull request in
+  `twow-core`, then a pin bump here, not a commit in this repository;
+- a rebuild of roughly **1,060 of 1,171 translation units**, because `ModuleSlots.h` is
+  included by `Player.h`;
+- taking care with the numbers by hand. Upstream's own comment is explicit: *"Claiming a
+  slot is the one thing that needs a line in the core, so keep the list short… Two modules
+  must never share a number — there is no runtime check."*
+
+**This is acceptable today and not permanently.** Of the seven modules, `mod-playerbots` is
+the only one that uses a slot at all, so the cost is paid zero times a year. If a second
+module ever needs per-player state, that is the trigger to revisit — either raise the slot
+count upstream or reopen the runtime-claim design, but as a decision taken again rather
+than a divergence reintroduced quietly.
+
+Recorded in `modules/mod-playerbots/src/playerbot/BotSlots.h` as well, because that is
+where somebody adding a slot will actually be looking.
+
+Not affected: `GetBotAI()` / `GetBotMgr()` / `SetBotAI()` / `SetBotMgr()` keep their
+signatures and their cost (one load from a fixed offset in `Player`). 442 references across
+85 files were untouched.

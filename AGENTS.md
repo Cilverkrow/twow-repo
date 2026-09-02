@@ -316,7 +316,7 @@ not a change you make:
 | File | Why |
 |---|---|
 | `core/src/game/ScriptObjects.h`, `core/src/game/ScriptMgr.{h,cpp}` | every hook lands here; enum tails conflict textually |
-| `core/src/game/ModuleSlots.h` | slot capacity is core; **claim a slot by name at runtime instead** |
+| `core/src/game/ModuleSlots.h` | upstream owns this file; a slot is a line in it, so it is a `twow-core` PR plus a pin bump, and it rebuilds ~1060 of 1171 TUs. Read ADR-0021 "Update 2026-09-02" first |
 | `modules/CMakeLists.txt`, `core/cmake/ConfigureModules.cmake` | the framework itself |
 | `core/src/game/World.h` config enums | values are indices into config arrays |
 | anything under `core/` | it is a submodule: a change there is a twow-core pull request, not a commit here |
