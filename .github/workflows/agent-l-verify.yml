@@ -31,17 +31,16 @@ jobs:
           docker image prune -af || true
           df -h / || true
 
-      # Build entirely inside BuildKit (Dockerfile.core's `builder` stage does
-      # COPY . /src), NOT through ops/ci/in-builder.sh. in-builder.sh bind-mounts
-      # the runner workspace as /src, and on this k8s runner that workspace is a
-      # network filesystem: the linker dies with
-      #   /usr/bin/ld: cmTC_...: final close failed: Stale file handle
-      # before cmake can even finish its compiler check. Building in the image's
-      # own filesystem sidesteps it.
-      - name: Compile the core (builder stage)
+      - name: Toolchain image
         run: |
-          docker build --target builder \
-            --build-arg MODULES=static \
-            --build-arg BUILD_TYPE=Release \
-            -f deploy/docker/Dockerfile.core \
-            -t twow/core-builder-verify:agent-l .
+          docker build --target builder-base             -f deploy/docker/Dockerfile.core             -t twow/builder-base:agent-l .
+
+      # Only the two module targets my PRs touch, at capped parallelism.
+      # Rationale for both choices is in the Dockerfile.
+      - name: Compile the touched modules
+        run: |
+          docker build             --build-arg BASE=twow/builder-base:agent-l             --build-arg JOBS=4             -f .github/agent-l-verify.Dockerfile             -t twow/agent-l-verify:latest .
+
+      - name: Disk after
+        if: always()
+        run: df -h / || true
