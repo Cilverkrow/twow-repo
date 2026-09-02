@@ -1,0 +1,71 @@
+# What this platform is built on top of, and where that came from.
+#
+# ADR-0020 splits the tree in two: this repository is the platform (modules,
+# deploy, docs, tests, project SQL, ops) and the server core is the `core/`
+# submodule. Three questions have to have written answers, and this file is
+# where they live:
+#
+#   1. which core commit is this platform pinned to?            -> CORE_COMMIT
+#   2. which upstream is that core a fork of?          -> UPSTREAM_URL/BRANCH
+#   3. which upstream commit does the fork delta sit on?        -> UPSTREAM_BASE
+#
+# Question 1 is also answered by the gitlink in the tree, and THAT is the
+# authority -- this file is the human- and shell-readable copy of it.
+# Questions 2 and 3 cannot be answered from this repository at all: its history
+# was rewritten with git-filter-repo to strip binaries, so its hashes
+# correspond to nothing upstream (docs/PROVENANCE.md, FG-005/FG-006).
+#
+# FORMAT: POSIX shell assignments, no spaces around `=`, values unquoted or
+# single-quoted, so that a workflow can `. ./UPSTREAM.lock` directly. Anything
+# that is not a valid assignment breaks that sourcing rather than being
+# ignored. core/UPSTREAM.lock uses a different, prose-friendly layout and is
+# NOT sourceable; it is the core's own record and nothing here reads it.
+
+# ---------------------------------------------------------------------------
+# The core submodule.
+CORE_URL=https://github.com/Cilverkrow/twow-core.git
+
+# The branch the submodule tracks. Recorded here as well as in .gitmodules so
+# `git submodule update --remote` and this file cannot disagree silently.
+#
+# TEMPORARY, and the one thing to fix first when reading this file: it points
+# at the twow-core pull request this split depends on
+# (Cilverkrow/twow-core "build: make the core consumable by a platform
+# repository"), because the platform cannot build from twow-core `main` --
+# every path in that build is spelled ${CMAKE_SOURCE_DIR}/..., which under
+# add_subdirectory(core) resolves to THIS repository. Once that PR is merged,
+# set this and .gitmodules back to `main` and advance CORE_COMMIT to the merge.
+CORE_BRANCH=agent-e/platform-consumable-core
+
+# The pinned commit. Must equal `git -C core rev-parse HEAD` on a clean
+# checkout; a mismatch means somebody moved the submodule without recording it,
+# which is how a build stops being reproducible from a tag.
+CORE_COMMIT=e9ff42cfefd88445aacfd27b438c8f6c730ce684
+
+# The core's own nested submodule, recorded so that "did the checkout go deep
+# enough?" has a written answer. BUILD_ELUNA defaults ON and FATAL_ERRORs
+# without it, so every checkout of this repository has to be recursive to two
+# levels.
+CORE_SUBMODULE_ELUNA_PATH=core/src/modules/Eluna
+CORE_SUBMODULE_ELUNA_URL=https://github.com/ElunaLuaEngine/Eluna.git
+
+# ---------------------------------------------------------------------------
+# What the core is a fork of. Read by the nightly upstream-drift job.
+UPSTREAM_URL=https://github.com/Shyalya/tortoise-wow.git
+UPSTREAM_BRANCH=playerbots-integration-gh
+
+# The upstream commit the fork's delta applies to -- "Merge pull request #404
+# from Penqle/1181dev".
+#
+# ADR-0020 originally recorded db5fb2a here and called it the upstream tip. It
+# is not an upstream hash at all: it is a post-filter-repo commit in THIS
+# repository, so `git fetch upstream db5fb2a` fails and always did. The mapping
+# to 61a8269 was confirmed by content rather than by hash -- every file under
+# src/game was byte-identical between the two, the only difference being the
+# 146 warden .cr/.key binaries filter-repo stripped from here and a genuine
+# fork gets back.
+UPSTREAM_BASE=61a8269151721f6467eddb05e7bed37704d0fc0b
+
+# Kept only so the old value is greppable when somebody finds it in an ADR or a
+# workflow and wonders which of the two is wrong.
+UPSTREAM_BASE_SUPERSEDED=db5fb2a197f05611ad9d243568122c6be466ab8a

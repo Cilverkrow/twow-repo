@@ -135,7 +135,7 @@ target_include_directories(dungeon_clear_tests_fast PRIVATE
     "${DC_MOD_PATH}/t"
     # Log.h -> Util.h -> "fmt/format.h". dep/fmt is a real target in the server
     # build; the tests need only its headers.
-    "${CMAKE_SOURCE_DIR}/dep/fmt/include"
+    "${TW_CORE_ROOT}/dep/fmt/include"
     ${Boost_INCLUDE_DIRS}
 )
 
@@ -223,7 +223,7 @@ if(BUILD_DUNGEON_CLEAR_FULL_TESTS AND TARGET game)
         "${DC_MOD_PATH}/src/compat"
         "${DC_MOD_PATH}/src/Ai/Dungeon/DungeonClear/Util"
         "${DC_MOD_PATH}/t"
-        "${CMAKE_SOURCE_DIR}/dep/fmt/include"
+        "${TW_CORE_ROOT}/dep/fmt/include"
         ${Boost_INCLUDE_DIRS}
     )
 

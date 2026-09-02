@@ -38,7 +38,7 @@ Four rules follow from it, and getting them wrong has already cost a day:
 - **Linux + Docker is the deployment platform.** All operational tooling targets it.
 - **Windows is a compile target only.** No quality-of-life work, no CI full-link job.
   `ops/windows/**` is retained as historical evidence and is not extended.
-- A clean clone **builds fully on Linux and cannot on Windows**: `dep/windows/lib` and
+- A clean clone **builds fully on Linux and cannot on Windows**: `core/dep/windows/lib` and
   `src/mangosd/mangosd.ico` are deliberately not in Git (`docs/adr/ADR-0019-*`).
 - See `docs/adr/ADR-0028-platform-and-ci-strategy.md`.
 
@@ -197,11 +197,11 @@ not a change you make:
 
 | File | Why |
 |---|---|
-| `src/game/ScriptObjects.h`, `src/game/ScriptMgr.{h,cpp}` | every hook lands here; enum tails conflict textually |
-| `src/game/ModuleSlots.h` | slot capacity is core; **claim a slot by name at runtime instead** |
-| `modules/CMakeLists.txt`, `cmake/ConfigureModules.cmake` | the framework itself |
-| `src/game/World.h` config enums | values are indices into config arrays |
-| root `CMakeLists.txt` | every option lands twice, 400 lines apart |
+| `core/src/game/ScriptObjects.h`, `core/src/game/ScriptMgr.{h,cpp}` | every hook lands here; enum tails conflict textually |
+| `core/src/game/ModuleSlots.h` | slot capacity is core; **claim a slot by name at runtime instead** |
+| `modules/CMakeLists.txt`, `core/cmake/ConfigureModules.cmake` | the framework itself |
+| `core/src/game/World.h` config enums | values are indices into config arrays |
+| anything under `core/` | it is a submodule: a change there is a twow-core pull request, not a commit here |
 
 **In `modules/<name>/<name>.cmake`, only ever touch `mod_<sanitized_name>`.** Never
 `target_link_libraries(modules ...)` or `target_include_directories(modules ...)` — that

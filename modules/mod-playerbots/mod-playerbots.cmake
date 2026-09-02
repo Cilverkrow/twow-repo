@@ -99,15 +99,15 @@ target_include_directories(${PB_TARGET} PUBLIC
   # named explicitly or nothing can resolve "botpch.h".
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/src/cmangos-compat-stubs
-  ${CMAKE_SOURCE_DIR}/src/game/MapNodes
-  ${CMAKE_SOURCE_DIR}/src/game/PacketBroadcast
-  ${CMAKE_SOURCE_DIR}/src/shared/Config
-  ${CMAKE_SOURCE_DIR}/src/shared/Database
-  ${CMAKE_SOURCE_DIR}/src/shared/Log
-  ${CMAKE_SOURCE_DIR}/src/shared/Util
-  ${CMAKE_SOURCE_DIR}/dep/recastnavigation
-  ${CMAKE_SOURCE_DIR}/dep/include
-  ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
+  ${TW_CORE_ROOT}/src/game/MapNodes
+  ${TW_CORE_ROOT}/src/game/PacketBroadcast
+  ${TW_CORE_ROOT}/src/shared/Config
+  ${TW_CORE_ROOT}/src/shared/Database
+  ${TW_CORE_ROOT}/src/shared/Log
+  ${TW_CORE_ROOT}/src/shared/Util
+  ${TW_CORE_ROOT}/dep/recastnavigation
+  ${TW_CORE_ROOT}/dep/include
+  ${TW_CORE_ROOT}/dep/include/g3dlite
   # ACE_ROOT and BOOST_ROOT are only the hints a builder may pass in; the paths
   # find_package actually resolved are ACE_INCLUDE_DIR and Boost_INCLUDE_DIRS.
   # Without the resolved ones this target gets no ACE include path whenever ACE
@@ -121,8 +121,8 @@ target_include_directories(${PB_TARGET} PUBLIC
 
 if(WIN32)
   target_include_directories(${PB_TARGET} PUBLIC
-    ${CMAKE_SOURCE_DIR}/dep/windows/include
-    ${CMAKE_SOURCE_DIR}/dep/windows/include/mysql
+    ${TW_CORE_ROOT}/dep/windows/include
+    ${TW_CORE_ROOT}/dep/windows/include/mysql
   )
 endif()
 

@@ -283,8 +283,13 @@ if ($BuildPlayerbots) {
 # 5. Clone or update the source
 # ---------------------------------------------------------------------------------------
 Step "Getting the tortoise-wow source ($Branch)"
+# --recurse-submodules, and it has to reach two levels. The server core is the
+# core/ submodule (ADR-0020) and the core carries the Eluna Lua engine as a
+# submodule of its own; BUILD_ELUNA defaults ON. A plain clone produces a
+# working tree that looks complete and then fails at configure time with a
+# FATAL_ERROR about an empty core/ - or, one level in, about a missing Eluna.
 if (-not (Test-Path $SourceDir)) {
-    git clone --branch $Branch $RepoUrl $SourceDir
+    git clone --recurse-submodules --branch $Branch $RepoUrl $SourceDir
     if ($LASTEXITCODE -ne 0) { Fail "Could not clone $RepoUrl." }
 } else {
     Warn "Source folder already exists at $SourceDir - pulling latest instead of re-cloning."
@@ -292,6 +297,10 @@ if (-not (Test-Path $SourceDir)) {
     git fetch origin
     git checkout $Branch
     git pull origin $Branch
+    # An existing checkout from before the split has no core/ at all, and one
+    # from before this pull has a stale pin. Both are this one command.
+    git submodule update --init --recursive
+    if ($LASTEXITCODE -ne 0) { Fail "Could not update the core/ submodule." }
     Pop-Location
 }
 Ok "Source ready at $SourceDir"

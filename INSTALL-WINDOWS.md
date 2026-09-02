@@ -22,8 +22,8 @@ a game client — see step 4. You need a **Turtle WoW 1.18.1 client, build
 | MariaDB or MySQL | the server, plus its command line client on `PATH` — the installer's "add to PATH" box is easy to miss |
 | **ACE 7.x or 8.x** | **not** bundled — install it and pass `-DACE_ROOT=` if CMake cannot find it |
 
-MySQL, OpenSSL and zlib are bundled under `dep/windows`, and Recast, G3D,
-libmpq and fmt under `dep/`. Those need no separate install. ACE is the one
+MySQL, OpenSSL and zlib are bundled under `core/dep/windows`, and Recast, G3D,
+libmpq and fmt under `core/dep/`. Those need no separate install. ACE is the one
 dependency you have to supply yourself.
 
 Installing ACE through vcpkg is fine — just point at it directly instead of
@@ -101,7 +101,7 @@ pick the variable up.
 
 > **Do not add the vcpkg toolchain file.** The `if(WIN32)` branch of the
 > top-level `CMakeLists.txt` deliberately pins MySQL, OpenSSL and zlib to the
-> copies under `dep/windows` — `find_package(OpenSSL)` is only called on UNIX.
+> copies under `core/dep/windows` — `find_package(OpenSSL)` is only called on UNIX.
 > Passing `-DCMAKE_TOOLCHAIN_FILE=...vcpkg.cmake` puts vcpkg's OpenSSL 3.x
 > headers ahead of the bundled 1.1.1 ones while the hard-coded 1.1.1 import
 > libraries still win at link time. The result is exactly two unresolved
@@ -148,7 +148,7 @@ the client crashes with *"interface corrupt"* the moment you enter the world.
 
 If the link fails on `World::FinalizePlayerbotsPostPlayerInfo` or
 `Player_DispatchBotChatCommand`, the checkout predates the stub fix — pull, or
-see `src/game/PlayerbotStubs.cpp`. Those two only ever surface with
+see `core/src/game/PlayerbotStubs.cpp`. Those two only ever surface with
 `MODULE_MOD_PLAYERBOTS=disabled`, the one configuration nobody builds on Linux.
 
 ## 3. Install into one folder

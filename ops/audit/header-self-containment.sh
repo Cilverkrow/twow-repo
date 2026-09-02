@@ -13,6 +13,14 @@
 # known to be broken. The baseline is not an approval of the ones in it -- it is
 # a ratchet, so the number can go down and not up.
 #
+# STALE AS OF THE core/ SPLIT (ADR-0020). The baseline's seven entries were
+# re-rooted under core/ so the comparison lines up at all, but they were
+# measured against THIS repository's old copy of src/game. The core is
+# twow-core's now and is 386 upstream commits further on, with 148 more headers
+# and its own history of self-containment fixes. Expect this audit to report new
+# offenders on its first run against the submodule, and settle them with one
+# deliberate `--update-baseline` rather than by editing the list by hand.
+#
 # Usage:
 #   bash ops/audit/header-self-containment.sh <build-dir> [--update-baseline]
 #
@@ -64,7 +72,12 @@ failed="$TMP/failed.txt"
 jobs="$(nproc 2>/dev/null || echo 4)"
 
 headers="$TMP/headers.txt"
-find "$REPO_ROOT/src/game" -name '*.h' | sort > "$headers"
+# core/src/game, not src/game: the core is the core/ submodule now (ADR-0020)
+# and this repository has no src/ of its own. The audit still belongs here
+# rather than in twow-core because it is driven off THIS build's
+# compile_commands.json - the flags a header has to be self-contained under are
+# the platform's flags, modules included, not a standalone core's.
+find "$REPO_ROOT/core/src/game" -name '*.h' | sort > "$headers"
 total=$(wc -l < "$headers")
 mkdir -p "$TMP/probes"
 

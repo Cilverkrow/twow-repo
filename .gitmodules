@@ -1,0 +1,4 @@
+[submodule "core"]
+	path = core
+	url = https://github.com/Cilverkrow/twow-core.git
+	branch = main

@@ -25,6 +25,12 @@ compile_commands.json
 # never committed and CI could not build the image.
 core
 core.[0-9]*
+# ...but not the submodule. ADR-0025 puts twow-core at `core/`, and the bare
+# `core` above matches a directory just as happily as a file, so without this
+# negation `git submodule add ... core` is refused outright and every later
+# `git status` pretends the submodule is not there. The parent (the repository
+# root) is not excluded, so re-including this path is allowed.
+!/core/
 
 # Compiled or otherwise binary artifacts
 *.exe

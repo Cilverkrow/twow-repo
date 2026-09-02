@@ -164,15 +164,32 @@ jobs:
       - name: Fetch upstream and measure the drift
         run: |
           set -eu
-          # UPSTREAM.lock is ADR-0020's home for these values. It does not exist
-          # yet; when it does, prefer it over the env defaults above so this job
-          # never disagrees with the pinned submodule.
+          # UPSTREAM.lock is ADR-0020's home for these values, and it exists
+          # now. It wins over the env defaults above so this job cannot
+          # disagree with the pinned submodule. The defaults stay as a fallback
+          # for a branch cut before the file landed.
           if [ -f UPSTREAM.lock ]; then
             . ./UPSTREAM.lock
             UPSTREAM_URL="${UPSTREAM_URL:?}"
             UPSTREAM_BRANCH="${UPSTREAM_BRANCH:?}"
             UPSTREAM_BASE="${UPSTREAM_BASE:?}"
             echo "read UPSTREAM.lock"
+
+            # The gitlink in the tree is the authority on which core commit
+            # this platform is pinned to; UPSTREAM.lock is the readable copy.
+            # If the two disagree somebody moved the submodule without
+            # recording it, and a tag stops reproducing its own build.
+            # `rev-parse HEAD:core` reads the gitlink out of the tree object,
+            # so this needs no submodule checkout.
+            linked=$(git rev-parse HEAD:core 2>/dev/null || echo "")
+            if [ -z "$linked" ]; then
+              echo "::error::no gitlink at core/ - the submodule is not in the tree"
+              exit 1
+            elif [ "$linked" != "${CORE_COMMIT:-}" ]; then
+              echo "::error::core/ gitlink is $linked but UPSTREAM.lock says ${CORE_COMMIT:-<unset>}"
+              exit 1
+            fi
+            echo "core pin agrees  : $linked"
           fi
 
           # A bare mirror of the branch only. Cloning the working tree would pull
@@ -240,7 +257,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
+      # recursive, and it has to reach two levels: the server core is the core/
+      # submodule (ADR-0020) and the core carries the Eluna engine as a
+      # submodule of its own. Without this the build stops at the root
+      # CMakeLists' FATAL_ERROR about an empty core/, and with only one level it
+      # stops at the core's FATAL_ERROR about a missing Eluna.
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # Same reclaim ci.yml needs: the runner ships ~25 GB of toolchains this
       # build never touches, and a from-scratch compile of the whole tree plus a

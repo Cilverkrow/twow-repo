@@ -23,7 +23,7 @@ checkout; consult a MaNGOS/CMaNGOS extraction guide if you don't already have th
 ## 2. Build
 
 ```
-git clone <this-repo-url> tortoise-wow
+git clone --recurse-submodules <this-repo-url> tortoise-wow
 cd tortoise-wow
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DALLOW_TURTLE_ADDONS=ON
 cmake --build build --target mangosd -j$(nproc)
@@ -34,7 +34,7 @@ cmake --build build --target mangosd -j$(nproc)
 
 The bot module is `modules/mod-playerbots` and builds by default.
 `-DMODULE_MOD_PLAYERBOTS=disabled` leaves it out, and the core still links: the
-call sites fall back to the no-op stubs in `src/game/PlayerbotStubs.cpp`.
+call sites fall back to the no-op stubs in `core/src/game/PlayerbotStubs.cpp`.
 
 ## 3. Database setup
 
