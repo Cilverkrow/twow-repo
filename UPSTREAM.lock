@@ -40,7 +40,7 @@ CORE_BRANCH=agent-e/platform-consumable-core
 # The pinned commit. Must equal `git -C core rev-parse HEAD` on a clean
 # checkout; a mismatch means somebody moved the submodule without recording it,
 # which is how a build stops being reproducible from a tag.
-CORE_COMMIT=ecd394d7ef67134006334fad3898c2ca0874945b
+CORE_COMMIT=e9ff42cfefd88445aacfd27b438c8f6c730ce684
 
 # The core's own nested submodule, recorded so that "did the checkout go deep
 # enough?" has a written answer. BUILD_ELUNA defaults ON and FATAL_ERRORs
