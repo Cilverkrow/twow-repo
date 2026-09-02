@@ -1,0 +1,23 @@
+-- Companion to ai_playerbot_random_bots.sql, and it has to sit beside it rather
+-- than in sql/character_updates/ where it started life. That file opens with
+-- DROP TABLE IF EXISTS and is replayed by the playerbot stage of the bootstrap,
+-- so an index added by an earlier stage is dropped again a minute later. It was
+-- worse than that in practice: the bootstrap applied character_updates BEFORE
+-- creating the playerbot tables at all, so on a fresh database this never
+-- applied once -- ERROR 1146, table doesn't exist -- and was recorded as applied
+-- anyway (OPS-020). deploy/compose/db-init.sh now applies this directory in
+-- LC_ALL=C order, which puts the CREATE first and this immediately after.
+--
+-- IF NOT EXISTS keeps it replay-safe (ADR-0024 invariant 3): re-running the
+-- stage over a database that already has the index is a no-op, not an error.
+-- ai_playerbot_random_bots only has single-column indexes on owner/bot/event
+-- individually, so `DELETE FROM ai_playerbot_random_bots WHERE owner = ? AND
+-- bot = ? AND event = ?` (RandomPlayerbotMgr::SetEventValue) resolves via a
+-- non-unique secondary index and gap-locks a range under InnoDB's default
+-- REPEATABLE READ. A mass bot logout (e.g. RandomBotLoginWithPlayer=1 kicking
+-- ~1000+ bots at once, spread across CharacterDatabase.WorkerThreads
+-- concurrent connections) hits overlapping ranges across many bot IDs and
+-- deadlocks (ER_LOCK_DEADLOCK / 1213), which isn't retried and repeats every
+-- tick. A composite index turns that DELETE into a precise point-lookup, so
+-- concurrent deletes for different bot IDs no longer overlap.
+ALTER TABLE `ai_playerbot_random_bots` ADD INDEX IF NOT EXISTS `idx_owner_bot_event` (`owner`, `bot`, `event`);
