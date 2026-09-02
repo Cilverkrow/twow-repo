@@ -35,7 +35,7 @@ jobs:
           --health-interval=5s --health-timeout=5s --health-retries=12
     timeout-minutes: 10
     steps:
-      - name: Where am I, and what are the REAL limits
+      - name: Where am I and what are the real limits
         run: |
           echo "hostname     : $(hostname)"
           echo "container?   : $([ -f /.dockerenv ] && echo yes || echo no)"
@@ -56,7 +56,7 @@ jobs:
           done
           df -h / | tail -1
 
-      - name: Can I reach the services: database
+      - name: Can I reach the services database
         run: |
           apt-get update -qq && apt-get install -y -qq mariadb-client >/dev/null 2>&1
           for i in $(seq 1 30); do
