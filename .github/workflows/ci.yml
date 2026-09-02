@@ -10,8 +10,9 @@
 #
 #   lint ---------------+
 #   integration --------|   (parallel, nothing compiles here)
-#   windows-compile ----|
 #   build-and-test ----> smoke
+#
+#   windows-compile        (DISABLED 2026-09-02 - manual dispatch only)
 #
 # Five job entries. ONE full server compile per push, in the build-and-test job,
 # and smoke consumes the image that build produced instead of building its own.
@@ -36,6 +37,11 @@
 # A clean clone CANNOT link on Windows - dep/windows/lib and mangosd.ico are
 # pinned external inputs kept out of Git (ADR-0019). There is no Windows link job
 # and there must never be one.
+#
+# WINDOWS CI IS DISABLED (2026-09-02, ADR-0028). The windows-compile job below is
+# gated behind a workflow_dispatch input and does not run on push, pull_request or
+# schedule. The code keeps its Windows support; only the CI job is off. See the
+# comment on the job itself for why, and ADR-0028 for how to turn it back on.
 name: ci
 
 on:
@@ -68,6 +74,13 @@ on:
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
+    inputs:
+      run_windows_compile:
+        description: >-
+          Also run the MSVC compile-only job. Requires a Windows runner this repo
+          does not currently have - see ADR-0028. Default off.
+        type: boolean
+        default: false
 
 concurrency:
   # Pushes never cancel or queue each other; pull request updates still do.
@@ -542,6 +555,36 @@ jobs:
 
   # ---------------------------------------------------------------- windows
   #
+  # DISABLED 2026-09-02. Deliberate and temporary - not neglect, not rot.
+  #
+  # The decision (ADR-0028, "Windows CI disabled 2026-09-02"): Linux is what this
+  # project deploys, so Windows CI comes out until it can actually run. The code
+  # keeps every bit of its Windows support - dep/windows/lib, mangosd.ico, TW_PI,
+  # the strtok_r shim, the _WIN32 branches and ops/windows/** are all untouched.
+  # This is a CI configuration change and nothing else.
+  #
+  # Why it is safe to switch off: THIS JOB HAS NEVER SUCCESSFULLY RUN. twow-repo
+  # is a private repository, and a private repository on this plan gets no
+  # GitHub-hosted runners at all - so every run of it failed in about two seconds
+  # with zero steps executed. Removing it deletes no coverage, because it never
+  # produced any. Nothing `needs:` it either; `smoke` is the only job with a
+  # dependency and it depends on `build-and-test`.
+  #
+  # HOW TO RE-ENABLE. One of two things has to change first:
+  #   * a Windows runner becomes available (a self-hosted `windows-2022` runner
+  #     joins, alongside the self-hosted Linux `k8s-twow-repo` runner), or
+  #   * twow-repo becomes public, which restores GitHub-hosted runners.
+  # Then either flip the `if:` below off, or run the workflow from the Actions
+  # tab with `run_windows_compile` checked to try it once without committing.
+  #
+  # It is GATED rather than deleted on purpose. Deleting it would mean rebuilding
+  # 190 lines of vcpkg/sccache cache plumbing and the reasoning below from git
+  # archaeology when Windows CI comes back. Gating costs one skipped job entry per
+  # run - a skipped job never requests a runner, so it costs nothing on a repo
+  # with none.
+  #
+  # Everything below this line is the original job, unchanged, and still true.
+  #
   # COMPILE ONLY. Never links.
   #
   # Why it exists: MSVC rejects code gcc and clang accept. The forcing example is
@@ -565,6 +608,9 @@ jobs:
   # runs on every push. That is a deliberate trade: one MSVC compile is cheap
   # next to the four full Linux compiles this consolidation removed.
   windows-compile:
+    # The gate. `inputs` is null on push, pull_request and schedule, so this is
+    # false everywhere except a workflow_dispatch that ticked the box.
+    if: ${{ inputs.run_windows_compile }}
     runs-on: windows-2022
     name: msvc compile-only
     timeout-minutes: 90

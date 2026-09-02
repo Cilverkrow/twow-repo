@@ -1,6 +1,6 @@
 # ADR-0028: Linux and Docker are the deployment platform; Windows is compile-only
 
-- Status: Accepted
+- Status: Accepted (amended 2026-09-02: Windows CI disabled - see amendment below)
 - Date: 2026-08-31
 - Primary: WS-40 / WS-50
 - Relates to: ADR-0019 (external Windows build inputs), ADR-0023 (containerization)
@@ -62,6 +62,58 @@ The release build baseline changes from `-march=native` to `-march=x86-64-v2`, e
 the `TW_ARCH` cache variable and skipped on non-x86 hosts. `native` bakes the build
 host's exact CPU into the binary: correct for a hand-built server, fatal for a container
 image.
+
+## Amendment 2026-09-02: Windows CI is disabled, temporarily and reversibly
+
+The "CI Windows compile-only MSVC smoke job" decided above is **switched off**. Owner's
+call: *"can we just skip windows-compile for now? we do mainly linux anyway. we can
+disable windows in the core and main repo for now completely."*
+
+**What was disabled.** Exactly one thing: the `windows-compile` job in
+`.github/workflows/ci.yml`. It is gated behind a `workflow_dispatch` input
+(`run_windows_compile`, default `false`) rather than deleted, so the job body and the
+190 lines of vcpkg/sccache cache reasoning behind it survive and re-enabling is a
+one-line flip instead of git archaeology. A gated job is skipped, and a skipped job
+never requests a runner.
+
+**Nothing else changed.** No `.cpp`, `.h` or `CMakeLists.txt` was touched. The code
+keeps its full Windows support: `core/dep/windows/lib/`, `core/src/mangosd/mangosd.ico`
+(pinned under ADR-0019), `TW_PI` in `SharedDefines.h`, the `#define strtok_r strtok_s`
+shim in `Common.h`, the `_WIN32` branches such as the `localtime_s`/`localtime_r` split
+in `mod-dungeon-clear`, and `ops/windows/**` are all as they were. Windows remains a
+supported compile target; it is only no longer *verified* on every push.
+
+**Why removing it costs no coverage: the job had never once run.** `twow-repo` is a
+**private** repository, and a private repository on this plan gets no GitHub-hosted
+runners at all — so every invocation failed in roughly two seconds having executed zero
+steps. This is a plan/visibility property, not lapsed billing and not a flaky job. The
+MSVC coverage this ADR argued for was therefore aspirational from the day the job was
+written; disabling it makes the pipeline honest rather than losing a signal. No other
+job `needs:` it (`smoke` → `build-and-test` is the only dependency in the file), so no
+gate silently turns into a pass. `nightly.yml` and `publish.yml` contain no Windows jobs.
+
+**`twow-core` was checked and needed no change.** Its only Windows-adjacent workflow,
+`.github/workflows/msvc-portability.yml` (*MSVC-Portabilität*), runs on
+`ubuntu-latest`. It is a static grep for POSIX-only calls in module code, driven by
+`modules/mod-dungeon-clear/tools/check_msvc_portability.py`, and it never invokes MSVC.
+`twow-core` is public, so it has free hosted runners and the check is green and free.
+It is **kept**: it costs nothing and catches the exact class of break that motivated it
+(the `strtok_r` and `dirent.h`/`localtime_r` incidents in PR #8). `twow-core` has no job
+on a Windows runner, so "disable Windows in the core" had nothing to act on there.
+
+**What has to happen to re-enable.** One of:
+
+- a Windows runner becomes available — a self-hosted `windows-2022` runner registered
+  alongside the self-hosted Linux runner (`k8s-twow-repo`) that `twow-repo` CI now uses; or
+- `twow-repo` becomes public, which restores GitHub-hosted runners.
+
+Then untick the `if:` gate on the job, or run the workflow from the Actions tab with
+`run_windows_compile` checked to try it once before committing to it.
+
+**Risk accepted while it is off.** MSVC-only breakage (the `M_PI` class of error this
+ADR was written around) reaches `main` uncaught in `twow-repo`. Given the job never ran,
+that risk is unchanged from what it has been all along — but it is now recorded rather
+than assumed away. `twow-core`'s POSIX grep still covers module code.
 
 ## Consequences
 
