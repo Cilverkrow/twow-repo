@@ -200,6 +200,44 @@ Note that a squash-merged branch is **not** an ancestor of the target, so
 `git merge-base --is-ancestor` will say "not merged" for work that is merged. Check the PR
 state instead.
 
+## Where you may write
+
+**This is somebody's daily-use machine, not a dev box for this project.** The owner's
+`git/` directory holds ~75 unrelated repositories, and `C:\` root sits next to the Windows
+system folders. Treat everything outside the list below as off limits.
+
+**You may write to exactly three places:**
+
+| | |
+|---|---|
+| your own git worktree | code, commits, build output that belongs to the repo |
+| the session scratchpad | anything transient -- archives, extracted data, scratch scripts, logs |
+| Docker volumes / containers | services, databases, build trees |
+
+The scratchpad path is given in your environment. Everything temporary goes **under one
+directory inside it**, not scattered.
+
+**Never:**
+- create directories at `C:\` root, or any other drive root
+- write to `V:`, `X:`, `Y:`, `Z:` -- these are network shares
+- install software on the host: no MariaDB, no toolchains, no services, no PATH changes
+- touch `C:\temp`, `C:\tmp`, `C:\xampp` or anything else you did not create
+
+**Run services in containers.** `deploy/compose/docker-compose.yml` already defines
+`mariadb:11.8` with a `db-data` volume and a `db-init` bootstrap. A native database on the
+host is not just untidy -- it is a *second, divergent* database, and every later test
+becomes ambiguous about which one it hit.
+
+This happened: one agent created `C:\mariadb` (442 MB, a full native install), plus
+`C:\wow-build`, `C:\wow-data`, `C:\wow-dbstate`, `C:\wow-extract` (9.2 GB) and `C:\wow-work`
+at the drive root. The instruction it was given said "extract to local disk, C: has 241 GB
+free" and never named a path -- so **whoever writes the task prompt owns this too**: name
+the directory, do not just name the drive.
+
+**If a step genuinely requires something on the host, stop and ask**, and say why. It
+almost certainly does not: the stack is containerised, and the extractors are C++ programs
+under `core/tools/` that build and run in Docker like everything else.
+
 **Vendoring another repository: prefer `git subtree` over `git submodule`.** Owner's
 standing preference, recorded 2026-09-02.
 
