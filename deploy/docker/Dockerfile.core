@@ -73,6 +73,15 @@ ARG TW_ARCH=x86-64-v2
 # mod-playerbots included.
 ARG MODULES=static
 ARG BUILD_TYPE=Release
+# Ninja parallelism for the compile below. Empty means "use every core", which
+# is what this always did and what a machine with memory to spare should keep.
+# It is an ARG because CI now runs on a shared Kubernetes pod with ~9.2 GiB of
+# RAM free and 20 cores visible: the heavy translation units in this tree peak
+# around 1.5-2.5 GiB each, so an unbounded -j20 gets OOM-killed. This is the one
+# compile in the pipeline that happens inside BuildKit rather than on the
+# runner, where the workflow could otherwise have capped it from outside. See
+# the env block at the top of .github/workflows/ci.yml.
+ARG BUILD_JOBS=
 
 WORKDIR /src
 # The whole context, core/ submodule included. There is no separate COPY for it
@@ -100,7 +109,7 @@ RUN --mount=type=cache,target=/ccache \
       -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
 RUN --mount=type=cache,target=/ccache \
-    CCACHE_DIR=/ccache cmake --build /build --parallel "$(nproc)" \
+    CCACHE_DIR=/ccache cmake --build /build --parallel "${BUILD_JOBS:-$(nproc)}" \
     && cmake --install /build
 
 # ------------------------------------------------------------ runtime-base

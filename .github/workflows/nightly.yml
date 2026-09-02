@@ -33,18 +33,52 @@ concurrency:
 permissions:
   contents: read
 
+# Every job here is Linux, so every job here follows ci.yml onto the self-hosted
+# runner while GitHub-hosted runners are billing-blocked. The full rationale, and
+# the one-variable way back, are in the header of ci.yml: set the repository
+# variable CI_RUNNER to `ubuntu-24.04` and all three workflows move at once.
+env:
+  # Same reasoning as ci.yml: ~9.2 GiB free on a 20-core shared pod, and the
+  # heavy translation units in this tree peak at 1.5-2.5 GiB each. Both builds
+  # below are FULL from-scratch compiles of the whole server, so this is the
+  # job most likely to prove the pod cannot carry it.
+  CI_BUILD_JOBS: ${{ vars.CI_BUILD_JOBS || '4' }}
+
 jobs:
   # A second toolchain. clang and gcc disagree about enough - unused-but-set
   # variables, out-of-line template definitions, the shadowing warnings - that a
   # tree building under only one of them is a tree that will surprise someone.
   clang:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: clang full build
     timeout-minutes: 120
     env:
       CC: clang
       CXX: clang++
     steps:
+      # Resolves $SUDO and prints which runner claimed the job. The self-hosted
+      # runner is usually root with no sudo binary, so a bare `sudo apt-get` is
+      # a command-not-found there. See the long note in ci.yml's lint job.
+      - name: Runner preflight
+        run: |
+          set -eu
+          if [ "$(id -u)" -eq 0 ]; then
+            SUDO=""
+          elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+            SUDO="sudo"
+          else
+            SUDO=""
+            echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
+          fi
+          echo "SUDO=$SUDO" >> "$GITHUB_ENV"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?})"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} of $(nproc 2>/dev/null || echo '?') cores"
+          free -h 2>/dev/null | head -2 || true
+          df -h . | tail -1
+
+      # recursive reaches two levels: core/ is the server core (ADR-0020) and it
+      # carries Eluna as a submodule of its own. One level short of that and the
+      # build dies in the core's FATAL_ERROR about a missing Eluna.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -53,16 +87,21 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          # Only the Boost components actually linked (thread, filesystem,
-          # system) plus headers. libboost-all-dev pulls ~230 packages
-          # including OpenMPI and adds several minutes for nothing.
-          sudo apt-get install -y --no-install-recommends \
-            build-essential cmake ninja-build ccache \
+          $SUDO apt-get update
+          # `clang` is listed explicitly. It is preinstalled on the
+          # ubuntu-24.04 hosted image and is NOT on the self-hosted runner, so
+          # leaving it implicit made the whole point of this job - a second
+          # toolchain - depend on which machine claimed it. Only the Boost
+          # components actually linked (thread, filesystem, system) plus
+          # headers: libboost-all-dev pulls ~230 packages including OpenMPI and
+          # adds several minutes for nothing.
+          $SUDO apt-get install -y --no-install-recommends \
+            clang build-essential cmake ninja-build ccache \
             libace-dev default-libmysqlclient-dev \
             libssl-dev zlib1g-dev libbz2-dev \
             libboost-dev libboost-thread-dev libboost-filesystem-dev \
             libboost-system-dev libboost-stacktrace-dev
+          clang --version
 
       # Its own cache key. Sharing gcc's would thrash both: ccache keys on the
       # compiler binary, so every object would miss on alternating runs.
@@ -81,8 +120,9 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
+      # CI_BUILD_JOBS, not nproc - see the env block at the top of this file.
       - name: Build
-        run: cmake --build build --parallel "$(nproc)"
+        run: cmake --build build --parallel "$CI_BUILD_JOBS"
 
       - name: Verify binaries exist
         run: |
@@ -95,10 +135,30 @@ jobs:
   # compiled out - and the cheapest is still a full compile, which is why it is
   # here rather than on the push path.
   no-modules:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: all features off
     timeout-minutes: 120
     steps:
+      # Resolves $SUDO and prints which runner claimed the job. The self-hosted
+      # runner is usually root with no sudo binary, so a bare `sudo apt-get` is
+      # a command-not-found there. See the long note in ci.yml's lint job.
+      - name: Runner preflight
+        run: |
+          set -eu
+          if [ "$(id -u)" -eq 0 ]; then
+            SUDO=""
+          elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+            SUDO="sudo"
+          else
+            SUDO=""
+            echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
+          fi
+          echo "SUDO=$SUDO" >> "$GITHUB_ENV"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?})"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} of $(nproc 2>/dev/null || echo '?') cores"
+          free -h 2>/dev/null | head -2 || true
+          df -h . | tail -1
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -106,10 +166,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
+          $SUDO apt-get update
           # No thread/filesystem/system/stacktrace Boost runtimes here: with
           # every feature off, only the Boost headers are reached.
-          sudo apt-get install -y --no-install-recommends \
+          $SUDO apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build ccache \
             libace-dev default-libmysqlclient-dev \
             libssl-dev zlib1g-dev libbz2-dev libboost-dev
@@ -127,7 +187,7 @@ jobs:
             -DMODULES=disabled \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel "$(nproc)"
+          cmake --build build --parallel "$CI_BUILD_JOBS"
           test -x build/src/mangosd/mangosd
 
   # How far has upstream moved, and into which of our files?
@@ -147,7 +207,7 @@ jobs:
   # When ADR-0020's split lands and UPSTREAM.lock exists, the recorded base below
   # should be read from that file instead of being spelled here.
   upstream-drift:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: upstream drift
     timeout-minutes: 30
     env:
@@ -254,7 +314,7 @@ jobs:
   # build does.
   docker-from-source:
     name: docker image builds from source
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     timeout-minutes: 120
     steps:
       # recursive, and it has to reach two levels: the server core is the core/
@@ -266,15 +326,22 @@ jobs:
         with:
           submodules: recursive
 
-      # Same reclaim ci.yml needs: the runner ships ~25 GB of toolchains this
-      # build never touches, and a from-scratch compile of the whole tree plus a
-      # 2.0 GB mangosd does not fit without it.
+      # Same reclaim ci.yml needs, and rewritten for the same reason: those
+      # paths exist only on the hosted VM image (so they are guarded rather than
+      # assumed), and `docker image prune -af` on a SHARED daemon deletes other
+      # tenants' images. See the long note on the equivalent step in ci.yml.
       - name: Free runner disk
         run: |
-          df -h /
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost
-          sudo docker image prune -af || true
-          df -h /
+          df -h .
+          for d in /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                   /opt/hostedtoolcache/CodeQL /usr/local/share/boost; do
+            if [ -d "$d" ]; then $SUDO rm -rf "$d" && echo "removed $d"; fi
+          done
+          docker image rm -f twow/core:nightly-from-source 2>/dev/null || true
+          docker container prune -f || true
+          docker image prune -f || true
+          docker builder prune -f --filter until=24h || true
+          df -h .
 
       - uses: docker/setup-buildx-action@v3
 
@@ -287,8 +354,14 @@ jobs:
           push: false
           load: true
           tags: twow/core:nightly-from-source
+          # BUILD_JOBS caps ninja inside the image build. Without it the
+          # Dockerfile falls back to nproc, which on this pod is 20 concurrent
+          # compiles against ~9.2 GiB - the one place in these workflows where
+          # the compile is NOT on the runner and so cannot be capped from the
+          # workflow side.
           build-args: |
             BUILD_TYPE=Release
+            BUILD_JOBS=${{ vars.CI_BUILD_JOBS || '4' }}
 
       # The failure this is really guarding against is a binary that builds and
       # then cannot start, so check the loader too, not just the file mode.

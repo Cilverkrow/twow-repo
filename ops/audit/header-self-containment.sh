@@ -69,7 +69,12 @@ failed="$TMP/failed.txt"
 # collated afterwards in `find | sort` order. The report is therefore identical
 # whatever order the compilers happen to finish in - same baseline comparison,
 # same ::error annotations, same exit codes.
-jobs="$(nproc 2>/dev/null || echo 4)"
+# CI_BUILD_JOBS overrides nproc. Every probe is a -fsyntax-only compile of a
+# game header: cheap in time and NOT cheap in resident memory, so on the shared
+# CI pod (~9.2 GiB free, 20 cores visible) one probe per core is the same memory
+# demand as the full build. The workflow passes the same cap it gives ninja;
+# nproc stays the default for anyone running this by hand.
+jobs="${CI_BUILD_JOBS:-$(nproc 2>/dev/null || echo 4)}"
 
 headers="$TMP/headers.txt"
 # core/src/game, not src/game: the core is the core/ submodule now (ADR-0020)
