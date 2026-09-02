@@ -50,6 +50,22 @@ namespace
 
         void OnStartup() override
         {
+            // Load the config here as well as in OnAfterConfigLoad.
+            //
+            // WORLDHOOK_ON_AFTER_CONFIG_LOAD never reaches a module on a cold
+            // boot: World::SetInitialWorldSettings() fires it from
+            // LoadConfigSettings() (World.cpp:1920), and module scripts are not
+            // registered until sScriptMgr.Initialize() (World.cpp:2302), ~380
+            // lines later. So on a cold start LoadConfig() was never called,
+            // GetSettings() returned a default-constructed Settings, and the
+            // module reported "BotBrain.Enable = 0" no matter what the config
+            // said -- it could only be switched on by a later `reload config`.
+            //
+            // This hook does run, so loading here makes the module
+            // configurable at boot. LoadConfig() is idempotent, so the
+            // reload path is unaffected.
+            botbrain::LoadConfig();
+
             // Register unconditionally: the augmenter is what puts the travel
             // override in front of the stock one, and the override falls
             // through to stock behaviour whenever the feature is off. Doing it
