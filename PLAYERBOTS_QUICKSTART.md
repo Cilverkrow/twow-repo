@@ -46,13 +46,13 @@ mysql -u mangos -p < sql/create_databases.sql        # creates tw_logon/tw_char/
 for f in sql/base/*.sql; do mysql -u mangos -p tw_world < "$f"; done
 
 # Playerbot-specific tables (not part of the base dump above):
-for f in modules/mod-playerbots/data/sql/world/ai_playerbot_indexes.sql \
-         modules/mod-playerbots/data/sql/world/ai_playerbot_rpg_races.sql \
-         modules/mod-playerbots/data/sql/world/ai_playerbot_texts.sql \
-         modules/mod-playerbots/data/sql/world/classic/*.sql; do
+for f in modules/mod-playerbots/sql/world/ai_playerbot_indexes.sql \
+         modules/mod-playerbots/sql/world/ai_playerbot_rpg_races.sql \
+         modules/mod-playerbots/sql/world/ai_playerbot_texts.sql \
+         modules/mod-playerbots/sql/world/classic/*.sql; do
   mysql -u mangos -p tw_world < "$f"
 done
-for f in modules/mod-playerbots/data/sql/characters/*.sql; do
+for f in modules/mod-playerbots/sql/characters/*.sql; do
   mysql -u mangos -p tw_char < "$f"
 done
 ```

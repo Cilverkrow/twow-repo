@@ -42,6 +42,7 @@
 #include "Ai/Dungeon/DungeonClear/Util/DungeonClearApproachIo.h"
 #include "Ai/Dungeon/DungeonClear/Settings/DcSettings.h"
 #include "Ai/Dungeon/DungeonClear/Data/DungeonClearRouteRegistry.h"
+#include "Ai/Dungeon/DungeonClear/Util/DcRouteRecorder.h"
 #include "Ai/Dungeon/DungeonClear/Data/DungeonEventRegistry.h"
 #include "Ai/Dungeon/DungeonClear/Overrides/ObjectiveHookRegistry.h"
 #include "Ai/Dungeon/DungeonClear/Util/DungeonEventExecutor.h"
@@ -669,6 +670,22 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::TryLootYield(AdvanceS
     // relevance, above the loot pipeline — means stock can't re-pick a skipped
     // corpse this tick, so the flags below and the timeout's give-up stay in
     // sync and the yield doesn't re-arm on something we just abandoned.
+    // Nothing to wait for when this party is not allowed to loot at all.
+    // The gate strips the stock "loot" strategy for a clear (DcStrategyGate),
+    // and the yield below arms on VALUES - HasAvailableLoot / CanLoot - not on
+    // whether anybody is going to act on them. Leaving it armed made things
+    // strictly worse than before the strip: previously someone took the loot
+    // and the yield released early, afterwards nobody did and every corpse
+    // burned the full fifteen seconds (89 timeouts in ten minutes, against 88
+    // in twenty-three before). The yield exists so the party does not walk off
+    // without a member standing at a corpse; with no loot strategy in play,
+    // that member cannot exist.
+    if (!botAI->HasStrategy("loot", BOT_STATE_NON_COMBAT))
+    {
+        context->GetValue<DcApproachState&>(DcKey::ApproachState)->Get().lootYieldStartMs = 0;
+        return Step::Continue;
+    }
+
     DcLootPolicy::StripSkippedLoot(botAI);
     // Proactively skip a corpse with nothing takeable for us (un-finishable
     // group-roll/reserved loot, or below DungeonClear.LootMinQuality) BEFORE we
@@ -769,7 +786,8 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::TryBetweenPullsRest(A
 
     if (IsBetweenPullsReady(bot, context))
     {
-        appr.partyNotReadyTicks = 0;
+        appr.partyNotReadyTicks  = 0;
+        appr.partyYieldStartedMs = 0;
         return Step::Continue;
     }
 
@@ -810,6 +828,59 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::TryBetweenPullsRest(A
     // DIAG(vis): run 32's tank stood in THIS gate for whole route TTLs with
     // the limiting member named only on debug. First halt past the debounce
     // logs at info, then every ~20 ticks.
+    // --- the hold is now BOUNDED ------------------------------------------
+    // Past the debounce this used to be log / StopBot(Hold) / ReturnFalse with
+    // nothing to end it: partyNotReadyTicks counted up and the tank stood until
+    // the run froze at 420s. One member who never became ready cost the run.
+    // Ticks cannot bound it (the ladder has no fixed rate), so stamp a clock.
+    if (!appr.partyYieldStartedMs)
+        appr.partyYieldStartedMs = WorldTimer::getMSTime();
+    uint32 const heldMs =
+        WorldTimer::getMSTimeDiff(appr.partyYieldStartedMs, WorldTimer::getMSTime());
+
+    // B) SOMEBODY IS FIGHTING. Then this gate has no business holding: it is the
+    //    BETWEEN-pulls gate and we are not between pulls. Hand back to the
+    //    ladder and let relevance decide - AssistCamp (29) and LeaderAssist (24)
+    //    both outrank Advance (15), so the party joins the fight rather than
+    //    walking on, which is what the symmetry rule above wants anyway.
+    //    Deliberately broader than DcLeaderSignal::IsLeaderShouldAssistFight:
+    //    that one also demands the tank see no target of its own, which is the
+    //    right question for driving it into a fight and the wrong one for
+    //    whether standing still is defensible.
+    {
+        std::string who;
+        if (DcPartyState::IsAnyMemberInCombat(bot, &who))
+        {
+            if (appr.partyNotReadyTicks > DC_PARTY_YIELD_DEBOUNCE_TICKS + 1)
+                LOG_INFO("playerbots.dungeonclear",
+                         "[DC:{}] yield released after {}ms held: {} is in combat "
+                         "-> not between pulls, handing back to the ladder",
+                         bot->GetName(), heldMs, who);
+            appr.partyNotReadyTicks  = 0;
+            appr.partyYieldStartedMs = 0;
+            return Step::Continue;
+        }
+    }
+
+    // A) SAFETY NET. Nobody is fighting and the party still will not come ready.
+    //    Release once per budget instead of standing here until the freeze. The
+    //    clock restarts, so a party that stays unready pays the full budget
+    //    again before the next release - this reopens the travel window the
+    //    ratchet above closes, and once a minute is the price for not deadlocking.
+    if (heldMs >= DC_PARTY_YIELD_MAX_MS)
+    {
+        DcPartyState::SpreadGate const gate = DcPartyState::GetSpreadGate(bot, context);
+        DcPartyState::RestGate const rest = DcPartyState::GetRestGate(bot, context);
+        std::string const why = DcPartyState::DescribePartyNotReady(
+            bot, rest.minHp, rest.minMp, gate.maxSpread, gate.anchor, gate.maxTankGap);
+        LOG_INFO("playerbots.dungeonclear",
+                 "[DC:{}] yield budget spent after {}ms -> releasing once ({})",
+                 bot->GetName(), heldMs, why.empty() ? std::string("resting") : why);
+        appr.partyNotReadyTicks  = 0;
+        appr.partyYieldStartedMs = 0;
+        return Step::Continue;
+    }
+
     if (appr.partyNotReadyTicks == DC_PARTY_YIELD_DEBOUNCE_TICKS + 1 ||
         appr.partyNotReadyTicks % 20 == 0)
     {
@@ -819,8 +890,8 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::TryBetweenPullsRest(A
             bot, rest.minHp, rest.minMp,
             gate.maxSpread, gate.anchor, gate.maxTankGap);
         LOG_INFO("playerbots.dungeonclear",
-                 "[DC:{}] advance yielding after {} ticks: party not ready / resting{}",
-                 bot->GetName(), appr.partyNotReadyTicks,
+                 "[DC:{}] advance yielding after {} ticks ({}ms held): party not ready / resting{}",
+                 bot->GetName(), appr.partyNotReadyTicks, heldMs,
                  why.empty() ? " (resting)" : (" — " + why));
     }
     DcMovement::StopBot(bot, DcMovement::Stop::Hold);
@@ -1045,6 +1116,26 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::DoStuckRecover(Advanc
             DcStatusPublisher::SendAddonMessage(botAI, "CHAT\tRepathing around " + next->name + " \xe2\x80\x94 nudging onto the navmesh.");
             return Step::ReturnTrue;
         }
+        // Before giving up: was this route a REGISTERED one? Anchors are
+        // walked in a straight line with no pathfinding between them, so a
+        // single anchor behind a wall blocks everything past it and no amount
+        // of nudging helps. Drop the route and let the router have the leg;
+        // the recorder can learn it again from whoever gets through.
+        if (Map* stuckMap = bot->FindMap())
+        {
+            if (DungeonClearRouteRegistry::Forget(next->mapId, stuckMap->GetDifficulty(),
+                                                  next->entry))
+            {
+                DcRouteRecorder::DiscardRoute(next->mapId, next->entry);
+                LOG_INFO("playerbots.dungeonclear",
+                         "[DC:{}] stuck ladder exhausted near {} on a recorded route "
+                         "-> dropped that route, replanning without it",
+                         bot->GetName(), next->name);
+                appr.nudgeAttempts = 0;
+                appr.longPathExpiresMs = 0;
+                return Step::ReturnTrue;
+            }
+        }
         LOG_INFO("playerbots.dungeonclear",
                  "[DC:{}] stuck ladder exhausted near {} ({} nudge(s) bought no ground) -> stalling",
                  bot->GetName(), next->name, appr.nudgeAttempts);
@@ -1180,11 +1271,23 @@ void DungeonClearAdvanceAction::FillPathObs(AdvanceState& st, DungeonClearApproa
     {
         st.offPathTicks = follower.offPathTicks;  // Resnap zeroes it; carry for the log
         if (!DungeonPathFollower::Resnap(bot, path, follower))
+        {
             obs.offPath = true;
+            // Carry the spend so the ladder can stop rung 4 once rebuilding has
+            // demonstrably failed to bring us back to the line.
+            obs.offPathRebuilds = DcRun::Of(context).offPathRebuilds;
+        }
         else
+        {
             LOG_DEBUG("playerbots.dungeonclear",
                       "[DC:{}] off-path {} ticks -> Resnapped to seg {} pt {}",
                       bot->GetName(), st.offPathTicks, follower.segmentIdx, follower.pointIdx);
+            // No reset here. A successful resnap is NOT evidence that we are
+            // unwedged - in the loop this rung exists to break, successes and
+            // failures alternate, and zeroing on every success kept the counter
+            // pinned at 1 forever. The budget is aged out by time instead, in
+            // DoOffPathRebuild.
+        }
     }
 }
 
@@ -1288,9 +1391,18 @@ DungeonClearAdvanceAction::Step DungeonClearAdvanceAction::DoOffPathRebuild(Adva
     DcApproachState& appr = *st.appr;
     DungeonFollowerState& follower = *st.follower;
 
+    // Fresh episode? Only if nothing needed rebuilding for a while.
+    DcRunState& run = DcRun::Of(context);
+    uint32 const nowMs = WorldTimer::getMSTime();
+    if (run.offPathRebuildLastMs &&
+        WorldTimer::getMSTimeDiff(run.offPathRebuildLastMs, nowMs) > DC_OFFPATH_EPISODE_GAP_MS)
+        run.offPathRebuilds = 0;
+    run.offPathRebuildLastMs = nowMs;
+    ++run.offPathRebuilds;
     LOG_INFO("playerbots.dungeonclear",
-             "[DC:{}] off-path {} ticks, Resnap FAILED (>{}yd) -> rebuild",
-             bot->GetName(), st.offPathTicks, DungeonPathFollower::RESNAP_RADIUS);
+             "[DC:{}] off-path {} ticks, Resnap FAILED (>{}yd) -> rebuild #{}",
+             bot->GetName(), st.offPathTicks, DungeonPathFollower::RESNAP_RADIUS,
+             run.offPathRebuilds);
     SetPhase(context, "recovering");
     DcMovement::ResolveEscortConflict(bot);
     appr.longPathExpiresMs = 0;

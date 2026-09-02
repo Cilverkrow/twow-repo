@@ -1,9 +1,3 @@
-> **In this repository.** This is ike3's cmangos playerbots tree, vendored as
-> `modules/mod-playerbots`. It builds like any other module and there is no
-> `BUILD_PLAYERBOTS` checkbox: modules are on by default, and
-> `-DMODULE_MOD_PLAYERBOTS=disabled` turns this one off. Everything below is the
-> upstream project's own README, kept as it was.
-
 # Playerbots
 Bot AI Core from ike3 for cmangos classic, tbc and wotlk
 

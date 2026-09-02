@@ -82,7 +82,14 @@ struct DcApproachState
     // zero nudge or stall reaching the player. Same failure shape as the
     // recoveryProgressWatch comment above, one rung higher up.
     uint32 nudgeAttempts       = 0;
+    // Consecutive OffPathRebuild verdicts without regaining the route. Bounds
+    // ladder rung 4, which otherwise rebuilds the same anchor route forever when
+    // the bot drifts past RESNAP_RADIUS - 81 rebuilds in one window, live.
     uint32 partyNotReadyTicks  = 0;  // consecutive between-pulls not-ready ticks (yield debounce)
+    // WorldTimer ms at the first HELD tick (0 = not holding). Ticks alone cannot
+    // bound the wait: the advance ladder does not run at a fixed rate, so the
+    // same tick count is a different number of seconds under load.
+    uint32 partyYieldStartedMs = 0;
 
     // --- approach bookkeeping ---------------------------------------------
     Position lastPos;                // previous-tick world pos; (0,0,0) = not yet sampled
@@ -252,6 +259,7 @@ struct DcApproachState
         resnapAttempts      = 0;
         nudgeAttempts       = 0;
         partyNotReadyTicks  = 0;
+        partyYieldStartedMs = 0;
         lastPos             = Position();
         skirtOrbitDir       = 0;
         skirtOrbitTarget.Clear();

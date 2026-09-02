@@ -353,7 +353,7 @@ jobs:
       # mounts; here they are the tree itself.
       SQL_DIR: sql
       SQL_BASE_DIR: sql/base
-      PB_SQL_DIR: modules/mod-playerbots/data/sql
+      PB_SQL_DIR: modules/mod-playerbots/sql
       MYSQL_PWD: ci-root
 
     steps:

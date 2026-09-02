@@ -92,6 +92,12 @@ target_include_directories(${PB_TARGET} PUBLIC
   # root. That is the general shape of the trap: a module whose includes are
   # subdirectory-qualified has to name the directory those paths are relative
   # to.
+  # The module ROOT, which holds botpch.h and cmangos-compat-shim.h. They sit
+  # here rather than under src/ because upstream keeps them here, and every
+  # needless difference is a conflict on every future merge. The framework's
+  # CollectModuleIncludeDirectories only walks src/, so the root has to be
+  # named explicitly or nothing can resolve "botpch.h".
+  ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/src/cmangos-compat-stubs
   ${CMAKE_SOURCE_DIR}/src/game/MapNodes
   ${CMAKE_SOURCE_DIR}/src/game/PacketBroadcast
@@ -151,7 +157,7 @@ if(MSVC)
 endif()
 
 if(USE_PCH)
-  target_precompile_headers(${PB_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/botpch.h)
+  target_precompile_headers(${PB_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/botpch.h)
 endif()
 
 set_target_properties(${PB_TARGET} PROPERTIES PROJECT_LABEL "PlayerBots")
