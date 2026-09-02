@@ -189,6 +189,71 @@ back, with the other agent's branch pointer restored by hand.
 Never run `git checkout`, `git switch`, `git stash` or `git reset` in the shared checkout
 while others are working. Uncommitted changes have no reflog.
 
+**Remove your worktree when your PR merges.** `git worktree remove --force ../twow-<task>`,
+then `git worktree prune`. Nineteen worktrees accumulated across `twow-repo` and `twow-core`
+in a single day because every agent created one and none removed it. A worktree shares the
+object store, so it does not duplicate history -- but it is a full checkout of the working
+tree, and the owner's `git/` directory holds ~75 other projects. Leaving yours behind is
+clutter in somebody else's workspace.
+
+Note that a squash-merged branch is **not** an ancestor of the target, so
+`git merge-base --is-ancestor` will say "not merged" for work that is merged. Check the PR
+state instead.
+
+## Where you may write
+
+**This is somebody's daily-use machine, not a dev box for this project.** The owner's
+`git/` directory holds ~75 unrelated repositories, and `C:\` root sits next to the Windows
+system folders. Treat everything outside the list below as off limits.
+
+**You may write to exactly three places:**
+
+| | |
+|---|---|
+| your own git worktree | code, commits, build output that belongs to the repo |
+| the session scratchpad | anything transient -- archives, extracted data, scratch scripts, logs |
+| Docker volumes / containers | services, databases, build trees |
+
+The scratchpad path is given in your environment. Everything temporary goes **under one
+directory inside it**, not scattered.
+
+**Never:**
+- create directories at `C:\` root, or any other drive root
+- write to `V:`, `X:`, `Y:`, `Z:` -- these are network shares
+- install software on the host: no MariaDB, no toolchains, no services, no PATH changes
+- touch `C:\temp`, `C:\tmp`, `C:\xampp` or anything else you did not create
+
+**Run services in containers.** `deploy/compose/docker-compose.yml` already defines
+`mariadb:11.8` with a `db-data` volume and a `db-init` bootstrap. A native database on the
+host is not just untidy -- it is a *second, divergent* database, and every later test
+becomes ambiguous about which one it hit.
+
+This happened: one agent created `C:\mariadb` (442 MB, a full native install), plus
+`C:\wow-build`, `C:\wow-data`, `C:\wow-dbstate`, `C:\wow-extract` (9.2 GB) and `C:\wow-work`
+at the drive root. The instruction it was given said "extract to local disk, C: has 241 GB
+free" and never named a path -- so **whoever writes the task prompt owns this too**: name
+the directory, do not just name the drive.
+
+**If a step genuinely requires something on the host, stop and ask**, and say why. It
+almost certainly does not: the stack is containerised, and the extractors are C++ programs
+under `core/tools/` that build and run in Docker like everything else.
+
+**Vendoring another repository: prefer `git subtree` over `git submodule`.** Owner's
+standing preference, recorded 2026-09-02.
+
+`core/` is currently a **submodule** pointing at `Cilverkrow/twow-core`. That was chosen
+because `twow-repo`'s history was rewritten by `git-filter-repo` at creation and so shares
+no ancestry with upstream, making `git merge` impossible -- and the conclusion drawn was
+"therefore a second repository is needed". **That conclusion was not fully examined.**
+`git subtree pull` does not require shared ancestry; merging an unrelated history into a
+subdirectory is exactly what it is for, so a subtree would have avoided the second
+repository, the submodule pin, and `--recurse-submodules` entirely.
+
+The submodule stays for now -- it is built, verified and green, and `twow-core` has its own
+CI which caught real defects. But **new vendoring uses subtree**, and if the two-repo shape
+becomes painful in practice, migrating `core/` to a subtree is the direction to move, not
+further submodules.
+
 **Commit by path, never by index.** Inside your worktree this still matters:
 
 ```bash
