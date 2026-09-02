@@ -93,7 +93,10 @@ BUILD_VOLUME="${BUILD_VOLUME:-twow-build}"
 # (it is on the self-hosted pod; it is not on a GitHub-hosted VM) and this has to
 # work in both places. It is idempotent and costs one container start.
 docker volume create "$BUILD_VOLUME" >/dev/null
-docker run --rm --user 0:0     --volume "$BUILD_VOLUME:/build"     "$BUILDER_IMAGE"     chown "$(id -u):$(id -g)" /build
+docker run --rm --user 0:0 \
+    --volume "$BUILD_VOLUME:/build" \
+    "$BUILDER_IMAGE" \
+    chown "$(id -u):$(id -g)" /build
 
 # CCACHE_SLOPPINESS is not optional here. USE_PCH defaults to ON, and ccache
 # refuses to cache a translation unit that includes a precompiled header unless
