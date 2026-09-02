@@ -18,6 +18,7 @@ This repository is a source-controlled project view, not a self-contained server
 - [Decision register](adr/DECISION-REGISTER.md)
 - [Reconstruction sources](adr/SOURCES.md)
 - [Repository boundaries](REPOSITORY-BOUNDARIES.md)
+- [Configuration as code and provenance](CONFIGURATION-AS-CODE.md)
 - [Repository provenance](PROVENANCE.md)
 - [Modularization roadmap](MODULARIZATION-ROADMAP.md)
 - [Security policy](SECURITY.md)

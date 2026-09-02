@@ -55,7 +55,10 @@ The source includes migrations, not a current private database snapshot. Histori
 
 ## Active configuration and secrets
 
-Files under `config/examples` are sanitized examples. A real environment needs separately managed active versions of at least:
+Files under `config/examples` are sanitized historical snapshots. Shared Compose
+configuration comes from the complete templates and reviewed overlays under
+`config/canonical`; a real environment still needs protected machine inputs and
+generated active versions of at least:
 
 - Worldserver configuration;
 - PlayerBot configuration;
@@ -64,7 +67,11 @@ Files under `config/examples` are sanitized examples. A real environment needs s
 - network/realm addresses and ports;
 - optional LLM enablement, package, model, and limit settings.
 
-Do not store database passwords, API keys, access tokens, private hostnames, personal paths, or live account data in Git. Generate active configuration from reviewed templates plus a secret store or protected local input. Hash active files in deployment evidence without printing secret values.
+Do not store database passwords, API keys, access tokens, private hostnames,
+personal paths, or live account data in Git. Generate active configuration with
+`make config`, verify it with `make config-verify`, and retain its secret-free
+provenance record in the authorized deployment evidence. Do not copy a live
+configuration back into Git.
 
 ## LLM runtime and package
 
@@ -128,7 +135,8 @@ Before claiming the environment is ready:
 2. Select a new build/work directory; do not point tools at a live workspace by accident.
 3. Install and record the build toolchain and dependency versions.
 4. Supply game-derived server data and runtime binaries outside Git.
-5. Create active configuration from sanitized examples and protected secrets.
+5. Generate active configuration from the canonical templates/overlays and
+   protected machine inputs; verify its source and hashes.
 6. Provision or restore compatible databases and verify schema/migration state read-only.
 7. Configure backup and disposable restore locations.
 8. Build in isolation and record full provenance.

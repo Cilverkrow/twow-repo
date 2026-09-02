@@ -4,7 +4,7 @@ Operational follow-up is maintained in [Open project threads](../OPEN-THREADS.md
 
 ## Accepted decisions
 
-The accepted durable decisions are recorded by **ADR-0001 through ADR-0030**, minus the
+The accepted durable decisions are recorded by **ADR-0001 through ADR-0030** and **ADR-0038**, minus the
 supersessions listed at the bottom of this page.
 
 **ADR-0001 to ADR-0019** cover project governance, evidence authority, chat-history
@@ -13,7 +13,7 @@ database safety, PlayerBot population constraints, persistent roster semantics, 
 external LLM bridge, personalities, donation progress, professions, riding, current
 runbook-evidence retention, and external Windows build inputs.
 
-**ADR-0020 to ADR-0030** were added on 2026-08-31 and 2026-09-01 and were missing from
+**ADR-0020 to ADR-0030 and ADR-0038** were added on 2026-08-31 and 2026-09-01 and were missing from
 this register until 2026-09-02:
 
 | ADR | Decision | Status |
@@ -29,6 +29,7 @@ this register until 2026-09-02:
 | ADR-0028 | Linux and Docker are the deployment platform; Windows is compile-only | Accepted (amended 2026-09-02: Windows CI disabled) |
 | ADR-0029 | Work tracking: reviewable issue manifests in `docs/issues/` drive the GitHub tracker | Proposed |
 | ADR-0030 | A narrowly bounded local MariaDB loopback plaintext client transport profile | Accepted |
+| ADR-0038 | Version shared server configuration and deploy it with provenance | Accepted |
 
 ADR-0026 is load-bearing for the others: no document may restate the fork point, the
 upstream of record or the merge rules. They link to it.
@@ -48,6 +49,9 @@ upstream of record or the merge rules. They link to it.
 - Binary Windows resource and library inputs remain external, pinned prerequisites under ADR-0019.
 - The legacy local MariaDB endpoint has an explicit loopback-plaintext client profile
   under ADR-0030. It changes no server setting and grants no query or process authority.
+- ADR-0038 has a repository-only Compose renderer, verifier, complete sanitized
+  semantic-baseline matrix, unique-key contract, and synthetic drift-detection
+  test. No live configuration adoption or deployment was performed.
 
 ## Explicitly open or separately gated
 
@@ -65,6 +69,7 @@ upstream of record or the merge rules. They link to it.
 | Historic `manual` migration hashes | Names/order can match while content provenance is absent | retain the limitation; never treat `manual` as a cryptographic file hash |
 | Roster expansion to 250/500 | Generic persistence supports it; only 50→100 has named unit and real-adapter proof | add isolated 100→250 and 250→500 persistence tests plus separate capacity measurements |
 | Later evidence repository | No split now | reconsider only after restructuring with stable IDs and link/access/retention/sync contracts |
+| ADR-0038 runtime adoption | Canonical source and verification tooling exist in Git; live state is unchanged | approve a target-specific deployment and capture its runtime evidence separately |
 
 ## Superseded or rejected approaches
 

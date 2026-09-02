@@ -18,7 +18,7 @@ HELM_CHART   := deploy/helm/twow
 # resolves it; the guard below resolves it the same way rather than guessing.
 DATA_PATH ?= ./data
 
-.PHONY: help up down restart logs ps console smoke test build extract clean config check-env check-core check-data helm-lint
+.PHONY: help up down restart logs ps console smoke test build extract clean config config-verify check-env check-core check-data helm-lint
 
 help: ## Show this help
 	@echo "Tortoise-WoW -- make targets"
@@ -61,8 +61,12 @@ check-data: check-env
 
 # ------------------------------------------------------------------ lifecycle
 
-config: check-env ## Render server configs from config/examples + .env
+config: check-env ## Render canonical server configs and provenance
 	@set -a; . ./$(ENV_FILE); set +a; bash $(COMPOSE_DIR)/render-config.sh
+	@bash $(COMPOSE_DIR)/verify-config.sh
+
+config-verify: ## Verify rendered config hashes and source provenance
+	@bash $(COMPOSE_DIR)/verify-config.sh
 
 # The core is the core/ submodule (ADR-0020) and it carries the Eluna engine as
 # a submodule of its own. A non-recursive clone gets a working tree that looks
@@ -136,6 +140,8 @@ test: ## Validate compose and helm definitions (no running stack needed)
 	@docker compose -f $(COMPOSE_FILE) config --quiet
 	@echo "==> shell syntax"
 	@for f in $(COMPOSE_DIR)/*.sh; do bash -n "$$f"; done
+	@echo "==> configuration provenance"
+	@bash ops/config/test-config-provenance.sh
 	@$(MAKE) --no-print-directory helm-lint
 
 helm-lint: ## Lint and render the Helm chart
@@ -153,5 +159,5 @@ clean: ## Remove containers, volumes and rendered configs (DESTROYS the database
 	@echo "This deletes the database volume and every character on it."
 	@read -r -p "Type 'yes' to continue: " a; [ "$$a" = "yes" ] || { echo "aborted"; exit 1; }
 	@$(COMPOSE) --profile tools --profile dev down -v --remove-orphans
-	@rm -f $(COMPOSE_DIR)/config/*.conf
+	@rm -f $(COMPOSE_DIR)/config/*.conf $(COMPOSE_DIR)/config/config-provenance.txt
 	@echo "Removed. Client data under DATA_PATH was left alone."

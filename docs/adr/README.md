@@ -42,6 +42,7 @@ Chat text is provenance, not runtime truth. When evidence conflicts, use the pre
 | [0028](ADR-0028-platform-and-ci-strategy.md) | Linux and Docker deploy; Windows compile-only | Accepted (amended 2026-09-02) | WS-40 / WS-50 |
 | [0029](ADR-0029-work-tracking.md) | Issues generated from manifests in Git | Proposed | WS-00 / WS-80 |
 | [0030](ADR-0030-local-mariadb-loopback-transport.md) | Explicit plaintext profile for the legacy local MariaDB endpoint | Accepted | WS-30 / WS-20 |
+| [0038](ADR-0038-configuration-as-code-and-provenance.md) | Version shared server configuration and deploy it with provenance | Accepted | WS-30 / WS-40 / WS-50 / WS-60 / WS-80 |
 
 ADRs 0020 to 0029 record the OT-025 restructuring. ADR-0028 is accepted because its
 Linux/Docker platform contract is both binding in `AGENTS.md` and implemented in the
@@ -53,6 +54,11 @@ Windows builds.
 ADR-0030 is a later accepted operations decision. It permits an explicit plaintext
 client profile only for the verified legacy `127.0.0.1:3307` endpoint and does not
 authorize queries, process control or deployment.
+
+ADR-0038 was accepted separately on 2026-09-01. Its repository-only Compose
+implementation and formal OPS-009 drift closure are documented in
+[`CONFIGURATION-AS-CODE.md`](../CONFIGURATION-AS-CODE.md); deployment remains a
+separate authorization gate.
 
 ## Creating later ADRs
 
