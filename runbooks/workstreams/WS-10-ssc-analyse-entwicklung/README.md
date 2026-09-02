@@ -60,6 +60,27 @@ Neue fachliche Evidenz unter WS-10 ablegen (z. B. neue LLM-Bridge-Funde, technis
 - Ergebnis: `PHASE_B_RESULT=BLOCKED`; Implementierung, zwei reproduzierbare Tests, Post-Build-Scope-Gate und Clean Build sind `PASS`. Ausschließlicher Blocker ist der nicht ausführbare Create-/Rollback-Nachweis gegen eine disposable MariaDB (`127.0.0.1:3307`, Verbindungsfehler 10061). Es wurde keine aktive Datenbank gelesen oder verändert.
 - Phase C: `AWAIT_SEPARATE_PACKAGE_AUDIT`; kein Deployment, kein Kandidatenstart und keine reale Roster-Version.
 
+## Aktueller, supersedierender Routingstand (2026-09-02)
+
+Der vorstehende Phase-B-Block bleibt als historische Evidenz unverändert. Für neue Arbeit gilt dieser neuere Stand:
+
+- Phase B-R1: `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/RNDBOT-PERSISTENT-ACTIVE-ROSTER-IMPLEMENTATION-01-PHASE-B-R1-20260831-005014.zip.audit.json`
+- Phase B-R2: `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/rndbot-persistent-active-roster-implementation-01-phase-b-r2-20260831-131938/`
+- Phase C0: `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/rndbot-persistent-active-roster-implementation-01-phase-c0-20260831-135717/`
+- OT-001 Integrationslauf: `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-20260831T192201Z/`
+- OT-001 Abschluss: `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-repository-integration-closure-20260831T205652Z/`
+- OT-001 Recovery-/Provenienznachweis: `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/ot-001-r1-provenance-aware-source-integration-recovery-20260831T220000Z/`
+
+Bestätigter Status:
+
+- Der frühere Disposable-MariaDB-Blocker wurde in Phase B-R1 und B-R2 aufgehoben.
+- Phase C0 ist technisch abgeschlossen; der validierte 50-GUID-Antrag wurde nicht angewendet.
+- OT-001 ist im Commit `3c2b93102d2106cc7c4f9170598b56de060b41d3` enthalten.
+- Das aktuelle Gate lautet `AWAIT_SEPARATE_USER_APPROVAL_AND_TASK`; Phase C, Migration, Deployment und Serverstart sind nicht durch diese README autorisiert.
+- GitHub-Abgleich: #99, #100, #101, #102, #137 und #138 sind geschlossen; #119, #135, #136 und #31 sind offen.
+- LFT und LFT-Bot-Fill bleiben im `mangosd`/Core; sie werden nicht über einen Container- oder Netzwerkvertrag ausgelagert.
+- Die in WS-80 als Accepted gemeldeten ADR-0034 bis ADR-0041 sind vor nachgelagerten Implementierungen als fachliche Grenzen zu berücksichtigen. Diese README ersetzt nicht ihre separate Versionierung im Repository.
+
 ## Verfahrensregel
 - Keine Inhalte fremder Workstreams verschieben, kopieren, überschreiben oder per Merge einfügen.
 - Neue fachliche Evidenz nur als neue Dateien innerhalb dieses Workstream-Verzeichnisses anlegen.
