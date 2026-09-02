@@ -563,12 +563,31 @@ jobs:
   # the strtok_r shim, the _WIN32 branches and ops/windows/** are all untouched.
   # This is a CI configuration change and nothing else.
   #
-  # Why it is safe to switch off: THIS JOB HAS NEVER SUCCESSFULLY RUN. twow-repo
-  # is a private repository, and a private repository on this plan gets no
-  # GitHub-hosted runners at all - so every run of it failed in about two seconds
-  # with zero steps executed. Removing it deletes no coverage, because it never
-  # produced any. Nothing `needs:` it either; `smoke` is the only job with a
-  # dependency and it depends on `build-and-test`.
+  # Why it is safe to switch off: THIS JOB HAS NEVER SUCCESSFULLY RUN. Verified
+  # across the last 25 ci.yml runs - every one of them shows `msvc compile-only:
+  # failure` with ZERO steps executed, completing about two seconds after it
+  # started. That is the signature of a job that never got a runner, not of a
+  # compile that broke. Removing it deletes no coverage, because it never
+  # produced any.
+  #
+  # Every other GitHub-HOSTED job fails the same way on every branch except
+  # agent-k/ci-self-hosted, which moved the Linux jobs to `self-hosted` and is
+  # the only branch with green runs. Two explanations for the hosted-runner
+  # blackout are on record and this change does not depend on which is right:
+  # the owner states twow-repo is private and gets no hosted runners on this
+  # plan; the comment on this job in agent-k/ci-self-hosted attributes it to
+  # blocked hosted billing. Either way the effect is the same and Windows is the
+  # one job with no self-hosted runner to move to.
+  #
+  # Nothing `needs:` this job; `smoke` is the only job with a dependency and it
+  # depends on `build-and-test`.
+  #
+  # NOTE, because it is a real disagreement and not an oversight: the comment on
+  # agent-k/ci-self-hosted argues this job should stay visibly red rather than be
+  # silenced, so that a green run never implies MSVC was checked. That reasoning
+  # is sound and the owner overrode it deliberately - "we do mainly linux anyway".
+  # The visibility it was protecting now lives in ADR-0028 and in this comment
+  # instead of in a red X.
   #
   # HOW TO RE-ENABLE. One of two things has to change first:
   #   * a Windows runner becomes available (a self-hosted `windows-2022` runner

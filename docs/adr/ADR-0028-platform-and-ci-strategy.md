@@ -83,14 +83,32 @@ shim in `Common.h`, the `_WIN32` branches such as the `localtime_s`/`localtime_r
 in `mod-dungeon-clear`, and `ops/windows/**` are all as they were. Windows remains a
 supported compile target; it is only no longer *verified* on every push.
 
-**Why removing it costs no coverage: the job had never once run.** `twow-repo` is a
-**private** repository, and a private repository on this plan gets no GitHub-hosted
-runners at all — so every invocation failed in roughly two seconds having executed zero
-steps. This is a plan/visibility property, not lapsed billing and not a flaky job. The
-MSVC coverage this ADR argued for was therefore aspirational from the day the job was
-written; disabling it makes the pipeline honest rather than losing a signal. No other
-job `needs:` it (`smoke` → `build-and-test` is the only dependency in the file), so no
-gate silently turns into a pass. `nightly.yml` and `publish.yml` contain no Windows jobs.
+**Why removing it costs no coverage: the job had never once run.** Verified over the
+last 25 `ci.yml` runs — every one shows `msvc compile-only: failure` with **zero steps
+executed**, completing about two seconds after it started. That is a job that never got
+a runner, not a compile that broke. The MSVC coverage this ADR argued for was therefore
+aspirational from the day the job was written; disabling it makes the pipeline honest
+rather than losing a signal.
+
+The same zero-step, two-second failure hits every **GitHub-hosted** job on every branch
+except `agent-k/ci-self-hosted`, which moved the Linux jobs to `self-hosted` and is the
+only branch producing green runs. Two explanations for that blackout are on record and
+this decision does not depend on which is correct: the owner states `twow-repo` is
+private and gets no hosted runners on this plan; the comment on the job in
+`agent-k/ci-self-hosted` attributes it to blocked hosted billing. The effect is
+identical, and Windows is the one job with no self-hosted runner to move to.
+
+No other job `needs:` the Windows job (`smoke` → `build-and-test` is the only dependency
+in the file), so no gate silently turns into a pass. `nightly.yml` and `publish.yml`
+contain no Windows jobs.
+
+**A dissent, recorded rather than buried.** The comment on `agent-k/ci-self-hosted`
+argues this job should stay *visibly red* rather than be silenced, so that a green run
+never implies MSVC was checked — the same reasoning behind the "Fail if nothing was
+tested" gate. That argument is sound. The owner overrode it deliberately ("we do mainly
+linux anyway"), and the visibility it protected now lives in this ADR and in the comment
+on the job instead of in a red X. If the red X is worth more than the noise, reverting
+this amendment is a one-line change.
 
 **`twow-core` was checked and needed no change.** Its only Windows-adjacent workflow,
 `.github/workflows/msvc-portability.yml` (*MSVC-Portabilität*), runs on
