@@ -173,8 +173,23 @@ entry instead of growing the original.
 
 An agent owns **`modules/<name>/**` and nothing else.**
 
-**Commit by path, never by index.** When anyone else is working in the same tree, this
-is the rule that matters most, and it is not "be careful":
+**Work in your own git worktree.** This is the rule that actually protects you, and it
+supersedes the one below:
+
+```bash
+git worktree add ../twow-<task> <your-branch> origin/refactor/modular-platform
+```
+
+Committing by path is not enough on its own. Several agents share one checkout, and a
+concurrent `git checkout` moves the *branch* under you — so a correctly-scoped
+`git commit -- <paths>` still lands on somebody else's branch. That happened: one agent's
+two commits went onto another's branch and had to be cherry-picked out and force-pushed
+back, with the other agent's branch pointer restored by hand.
+
+Never run `git checkout`, `git switch`, `git stash` or `git reset` in the shared checkout
+while others are working. Uncommitted changes have no reflog.
+
+**Commit by path, never by index.** Inside your worktree this still matters:
 
 ```bash
 git commit -- path/one path/two      # right
