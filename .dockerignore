@@ -1,11 +1,26 @@
 # Build context trimming. The core build needs source, cmake, deps and .git
 # (for the revision header); it does not need 189MB of SQL, 24MB of runbook
 # evidence, or any local build tree.
+#
+# Every pattern here is anchored at the context root -- `sql/` matches ./sql and
+# nothing else. That mattered the moment the core moved into the core/
+# submodule (ADR-0020): upstream's world data went with it, so the 130MB this
+# file exists to keep out of the context came back as core/sql/ and had to be
+# named again. The same trap waits for anything added below: check whether the
+# core has one too.
 runbooks/
 sql/
+core/sql/
 docs/
+core/docs/
 patches/
 ops/
+
+# NOT ignored, and easy to add here by mistake: core/ itself, and .git. The
+# builder stage does COPY . /src and configures the platform root, which
+# FATAL_ERRORs if core/CMakeLists.txt is absent; and the revision header is
+# produced by running git inside core/, which needs both core/.git (a file
+# pointing into .git/modules/core) and .git itself.
 **/build/
 **/.vs/
 **/CMakeCache.txt

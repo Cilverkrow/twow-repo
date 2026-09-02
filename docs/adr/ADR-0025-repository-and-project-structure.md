@@ -1,7 +1,8 @@
 # ADR-0025: Repository and project structure
 
-- Status: Proposed; amended 2026-09-02 (stale bot-tree paths; CI file corrected;
-  `core/` is not yet a submodule)
+- Status: Accepted for the `core/` split as of 2026-09-02: `core/` IS the twow-core
+  submodule, and `src/`, `dep/`, `tools/` and `cmake/` are gone from this repository.
+  The rest of the target layout below is still Proposed.
 - Date: 2026-09-01
 - Primary: WS-00 / WS-80
 - Relates to: ADR-0020 (two-repo split), ADR-0021 (module boundaries), ADR-0018 (runbook retention), ADR-0028 (Windows is compile-only)
@@ -24,8 +25,10 @@ code, config, migrations and tests live inside it, and nothing of it lives outsi
 
 ```
 twow-repo/                     the platform  (target layout; not all of it exists yet)
-├── core/                      → submodule: twow-core @ pinned SHA  (PLANNED,
-│                              not present: no .gitmodules exists yet)
+├── core/                      → submodule: twow-core @ pinned SHA  (PRESENT;
+│                              see .gitmodules and UPSTREAM.lock. Carries a
+│                              submodule of its own at core/src/modules/Eluna,
+│                              so every checkout must be recursive.)
 ├── core-patches/              generated review artifact (0001-*.patch), never hand-edited
 ├── modules/
 │   ├── mod-playerbots/        src/  conf/  data/sql/  t/

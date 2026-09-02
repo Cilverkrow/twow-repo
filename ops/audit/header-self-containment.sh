@@ -64,7 +64,12 @@ failed="$TMP/failed.txt"
 jobs="$(nproc 2>/dev/null || echo 4)"
 
 headers="$TMP/headers.txt"
-find "$REPO_ROOT/src/game" -name '*.h' | sort > "$headers"
+# core/src/game, not src/game: the core is the core/ submodule now (ADR-0020)
+# and this repository has no src/ of its own. The audit still belongs here
+# rather than in twow-core because it is driven off THIS build's
+# compile_commands.json - the flags a header has to be self-contained under are
+# the platform's flags, modules included, not a standalone core's.
+find "$REPO_ROOT/core/src/game" -name '*.h' | sort > "$headers"
 total=$(wc -l < "$headers")
 mkdir -p "$TMP/probes"
 

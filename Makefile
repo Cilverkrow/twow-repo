@@ -18,7 +18,7 @@ HELM_CHART   := deploy/helm/twow
 # resolves it; the guard below resolves it the same way rather than guessing.
 DATA_PATH ?= ./data
 
-.PHONY: help up down restart logs ps console smoke test build extract clean config check-env check-data helm-lint
+.PHONY: help up down restart logs ps console smoke test build extract clean config check-env check-core check-data helm-lint
 
 help: ## Show this help
 	@echo "Tortoise-WoW -- make targets"
@@ -64,10 +64,24 @@ check-data: check-env
 config: check-env ## Render server configs from config/examples + .env
 	@set -a; . ./$(ENV_FILE); set +a; bash $(COMPOSE_DIR)/render-config.sh
 
-build: check-env ## Build the server image
+# The core is the core/ submodule (ADR-0020) and it carries the Eluna engine as
+# a submodule of its own. A non-recursive clone gets a working tree that looks
+# complete, and the failure lands ten minutes into a container build as a CMake
+# FATAL_ERROR. Fail here instead, with the command to run.
+check-core:
+	@test -f core/CMakeLists.txt || { \
+		echo "ERROR: core/ is empty -- the server core is a git submodule."; \
+		echo "  git submodule update --init --recursive"; \
+		exit 1; }
+	@test -f core/src/modules/Eluna/LuaEngine.h || { \
+		echo "ERROR: core/src/modules/Eluna is empty. The checkout stopped one level short:"; \
+		echo "  git submodule update --init --recursive"; \
+		exit 1; }
+
+build: check-env check-core ## Build the server image
 	@$(COMPOSE) build mangosd
 
-up: check-env check-data config ## Start the whole stack (the one command)
+up: check-env check-core check-data config ## Start the whole stack (the one command)
 	@$(COMPOSE) up -d --build
 	@echo
 	@echo "Stack starting. The first start imports ~130 MB of world data and builds the"

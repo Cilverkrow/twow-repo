@@ -75,6 +75,19 @@ ARG MODULES=static
 ARG BUILD_TYPE=Release
 
 WORKDIR /src
+# The whole context, core/ submodule included. There is no separate COPY for it
+# and there must not be: the submodule is an ordinary directory on disk once the
+# checkout is recursive, and `COPY core /src/core` would only paper over a
+# non-recursive one. What a non-recursive checkout gets instead is the
+# FATAL_ERROR in the root CMakeLists, which names the command to run.
+#
+# Recursive has to mean two levels here: core/ carries the Eluna engine as a
+# submodule of its own at core/src/modules/Eluna, and BUILD_ELUNA defaults ON,
+# so a one-level checkout dies in the core's own FATAL_ERROR instead.
+#
+# .git comes along too, and is needed: the revision header is produced by
+# running git inside /src/core, whose .git is a file pointing at
+# /src/.git/modules/core.
 COPY . /src
 
 RUN --mount=type=cache,target=/ccache \
