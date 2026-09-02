@@ -1,0 +1,150 @@
+# bot-brain: the out-of-process bot planning service (ARCH-001).
+#
+# DELIBERATELY A SEPARATE FILE from docker-compose.yml. The server stack must
+# keep starting and playing with this service absent -- that is ADR-0024
+# invariant 4 -- and the cleanest way to guarantee it is that the main compose
+# file does not mention it at all. Nothing here is a dependency of anything
+# there, and nothing there is a dependency of anything here: as of today the
+# C++ side does not call this service, so bot-brain has no link to mangosd, no
+# database credentials and no volume in common with the stack.
+#
+# Run it on its own:
+#
+#   docker compose -f deploy/compose/bot-brain.yml up -d --build
+#   curl localhost:8085/healthz
+#   curl localhost:8085/v1/contract
+#
+# Or alongside the server stack, as a second file:
+#
+#   docker compose -f deploy/compose/docker-compose.yml \
+#                  -f deploy/compose/bot-brain.yml up -d
+#
+# The project name below matches docker-compose.yml's `name: twow` so the two
+# land in the same compose project when run together.
+
+name: twow
+
+services:
+  bot-brain:
+    build:
+      # Context is the service directory, not the repo root: this service shares
+      # no source with the C++ tree, and a small context is why it builds in
+      # seconds rather than minutes.
+      context: ../../services/bot-brain
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${BOT_BRAIN_VERSION:-dev}
+        COMMIT: ${BOT_BRAIN_COMMIT:-unknown}
+    image: ${IMAGE_REPO:-twow/core}-bot-brain:${IMAGE_TAG:-dev}
+    restart: unless-stopped
+
+    environment:
+      BOT_BRAIN_LISTEN: ":8085"
+      BOT_BRAIN_LOG_LEVEL: ${BOT_BRAIN_LOG_LEVEL:-info}
+
+      # How many bot snapshots one call may carry. The worldserver is expected
+      # to send a few large batches per planning tick, never one call per bot:
+      # at 1000 bots, per-bot round trips spend more time in HTTP than planning.
+      BOT_BRAIN_MAX_BATCH: ${BOT_BRAIN_MAX_BATCH:-2048}
+
+      # Used when the caller sends no deadline_ms of its own. The caller should
+      # always send one, because the caller is the side that knows how long it
+      # can wait without missing a tick.
+      BOT_BRAIN_DEFAULT_DEADLINE: ${BOT_BRAIN_DEFAULT_DEADLINE:-2s}
+
+      # How long an intent stays valid, in the *worldserver's* clock. Short on
+      # purpose: a plan computed from a snapshot taken seconds ago should expire
+      # rather than be applied late.
+      BOT_BRAIN_INTENT_TTL: ${BOT_BRAIN_INTENT_TTL:-30s}
+
+      # --- deterministic planner thresholds -----------------------------------
+      # These are the whole reason this service exists: changing bot policy here
+      # is an environment variable and a restart, where changing it in
+      # modules/mod-playerbots is 326 seconds of C++ rebuild and relink.
+      BOT_BRAIN_RULE_REST_BELOW_HP_PCT: ${BOT_BRAIN_RULE_REST_BELOW_HP_PCT:-45}
+      BOT_BRAIN_RULE_REPAIR_BELOW_DUR_PCT: ${BOT_BRAIN_RULE_REPAIR_BELOW_DUR_PCT:-25}
+      BOT_BRAIN_RULE_VENDOR_FREE_SLOTS: ${BOT_BRAIN_RULE_VENDOR_FREE_SLOTS:-1}
+      BOT_BRAIN_RULE_MAX_TRAVEL_YARDS: ${BOT_BRAIN_RULE_MAX_TRAVEL_YARDS:-1500}
+
+      # --- inference backend (ARCH-003) ---------------------------------------
+      # OFF by default. With it off the service plans with rules only, which is
+      # a fully working brain; turning it on is a deliberate act.
+      #
+      # Any OpenAI-compatible endpoint works, selected by URL and provider:
+      #   vLLM (the production default where a GPU exists):
+      #     BASE_URL=http://vllm:8000/v1   PROVIDER=openai   API_KEY=
+      #   llama.cpp server / Ollama (dev boxes, CPU):
+      #     BASE_URL=http://host.docker.internal:11434/v1    API_KEY=
+      #   OpenAI:
+      #     BASE_URL=https://api.openai.com/v1  PROVIDER=openai  API_KEY=sk-...
+      #   Azure OpenAI:
+      #     BASE_URL=https://<res>.openai.azure.com/openai/deployments/<dep>
+      #     PROVIDER=azure
+      #   Anthropic-compatible gateway:
+      #     PROVIDER=anthropic
+      BOT_BRAIN_LLM_ENABLED: ${BOT_BRAIN_LLM_ENABLED:-false}
+      BOT_BRAIN_LLM_BASE_URL: ${BOT_BRAIN_LLM_BASE_URL:-}
+      BOT_BRAIN_LLM_MODEL: ${BOT_BRAIN_LLM_MODEL:-}
+      BOT_BRAIN_LLM_PROVIDER: ${BOT_BRAIN_LLM_PROVIDER:-openai}
+
+      # The key comes from deploy/compose/.env, which is gitignored. It must
+      # never be written into a rendered .conf and never committed (ADR-0024
+      # invariant 5, ADR-0004). Leave it empty for a local endpoint that wants
+      # no auth; an empty value sends no Authorization header at all.
+      BOT_BRAIN_LLM_API_KEY: ${BOT_BRAIN_LLM_API_KEY:-}
+
+      # An allowlist so a typo cannot silently switch a realm onto a different
+      # or more expensive model. Empty means no allowlist, which is fine for a
+      # local endpoint and is not fine for a metered one.
+      BOT_BRAIN_LLM_ALLOWED_MODELS: ${BOT_BRAIN_LLM_ALLOWED_MODELS:-}
+
+      # Must stay shorter than BOT_BRAIN_DEFAULT_DEADLINE or the deterministic
+      # fallback has no budget to answer in -- the service refuses to start if
+      # it is not. A local 7B on CPU takes about 8 s (LLM-011), so with this
+      # default such a backend simply never wins the race and every batch falls
+      # back to rules. That is the correct visible outcome, not a hidden stall.
+      BOT_BRAIN_LLM_TIMEOUT: ${BOT_BRAIN_LLM_TIMEOUT:-1500ms}
+      BOT_BRAIN_LLM_MAX_TOKENS: ${BOT_BRAIN_LLM_MAX_TOKENS:-1024}
+      BOT_BRAIN_LLM_TEMPERATURE: ${BOT_BRAIN_LLM_TEMPERATURE:-0}
+      BOT_BRAIN_LLM_MAX_BOTS_PER_CALL: ${BOT_BRAIN_LLM_MAX_BOTS_PER_CALL:-16}
+
+    ports:
+      # Loopback by default. This endpoint takes unauthenticated POSTs that
+      # drive bot behaviour; it belongs on a private network, not on a public
+      # interface. BOT_BRAIN_BIND_ADDR exists for the case where mangosd runs on
+      # a different host, and that case needs a firewall rule, not just a bind.
+      - "${BOT_BRAIN_BIND_ADDR:-127.0.0.1}:${BOT_BRAIN_PORT:-8085}:8085"
+
+    healthcheck:
+      # The image is scratch, so the binary is its own probe. See the Dockerfile.
+      test: ["CMD", "/bot-brain", "healthcheck"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    # The service holds no state between requests, so a hard stop loses nothing
+    # in progress except the batch being planned -- and a lost batch just means
+    # those bots run in-core AI for one tick. 15s is generous.
+    stop_grace_period: 15s
+
+    # Hardening. Nothing here writes to disk or needs a privilege.
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    deploy:
+      resources:
+        limits:
+          # Planning 1000 bots with the rule planner is cheap; the ceiling is
+          # here to make a runaway visible rather than to constrain normal use.
+          cpus: ${BOT_BRAIN_CPUS:-2.0}
+          memory: ${BOT_BRAIN_MEMORY:-512M}
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"

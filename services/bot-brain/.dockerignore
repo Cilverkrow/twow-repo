@@ -1,0 +1,6 @@
+# The build needs go.mod, the packages and cmd/. Nothing else belongs in the
+# context: a smaller context is why this image builds in seconds.
+README.md
+Dockerfile
+.dockerignore
+*.exe
