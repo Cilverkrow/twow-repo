@@ -1,0 +1,45 @@
+# TEMPORARY verification workflow (Agent L).
+#
+# GitHub-hosted runners are billing-blocked, so ci.yml cannot report on anything
+# today. This runs the same Linux compile on the self-hosted runner instead, so
+# a change can be verified before it is merged. It deliberately does NOT touch
+# ci.yml, which is being rewritten in parallel to move CI onto that runner.
+#
+# Delete this file once ci.yml runs on the self-hosted runner.
+name: agent-l verify
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent-l/verify-**]
+
+jobs:
+  build:
+    runs-on: [self-hosted]
+    name: linux build (self-hosted)
+    timeout-minutes: 180
+    env:
+      BUILDER_IMAGE: twow/core-builder:agent-l
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Toolchain image
+        run: |
+          docker build --target builder-base \
+            -f deploy/docker/Dockerfile.core \
+            -t "$BUILDER_IMAGE" .
+
+      - name: Configure
+        run: |
+          bash ops/ci/in-builder.sh 'cmake -S /src -B /src/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/opt/turtle \
+            -DTW_ARCH=x86-64-v2 \
+            -DMODULES=static \
+            -DBUILD_TESTING=ON \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
+
+      - name: Build
+        run: bash ops/ci/in-builder.sh 'cmake --build /src/build --parallel "$(nproc)"'
