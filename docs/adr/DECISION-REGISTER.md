@@ -26,7 +26,7 @@ this register until 2026-09-02:
 | ADR-0025 | Repository and project structure; folder structure is module structure | Proposed; amended 2026-09-02 |
 | ADR-0026 | **Project lineage and provenance -- the single authority for the fork point, the upstream of record, and which repository may merge from upstream** | **Accepted 2026-09-02** |
 | ADR-0027 | MariaDB 11.8 is the database platform | Proposed |
-| ADR-0028 | Linux and Docker are the deployment platform; Windows is compile-only | Accepted |
+| ADR-0028 | Linux and Docker are the deployment platform; Windows is compile-only | Accepted (amended 2026-09-02: Windows CI disabled) |
 | ADR-0029 | Work tracking: reviewable issue manifests in `docs/issues/` drive the GitHub tracker | Proposed |
 | ADR-0030 | A narrowly bounded local MariaDB loopback plaintext client transport profile | Accepted |
 
