@@ -4,6 +4,7 @@
  */
 
 #include "StridedPathfinder.h"
+#include <limits>
 
 #include <algorithm>
 #include <cmath>
@@ -285,9 +286,60 @@ StridedPathfinder::Result StridedPathfinder::Build(Player* bot, uint32 mapId, ui
     if (bossEntry)
     {
         Difficulty const difficulty = map->GetDifficulty();
-        if (std::vector<WaypointHint> const* hints = DungeonClearRouteRegistry::Get(mapId, difficulty, bossEntry))
+        std::vector<WaypointHint> hintStore;
+        if (DungeonClearRouteRegistry::TryGet(mapId, difficulty, bossEntry, hintStore))
         {
-            for (WaypointHint const& h : *hints)
+            // JOIN THE ROUTE WHERE WE STAND. A route is keyed by boss, but it
+            // only describes the walk it was recorded on. Change what comes
+            // before that boss and the anchors point the wrong way: live, a
+            // party 62yd from Verdan followed his route from the days when he
+            // was the FIRST boss and it walked them back toward the entrance -
+            // "route=ok/39seg dev=314.5 dist=62.7", seven minutes of that
+            // until the watchdog killed the run.
+            //
+            // Anchors before the nearest one are ground already behind us, so
+            // start there. And if even the nearest anchor is a long way off,
+            // this route belongs to a different approach entirely: skip it and
+            // let the router have the leg (the recorder then learns the real
+            // one from whoever gets through).
+            std::size_t joinAt = 0;
+            float joinDist = std::numeric_limits<float>::max();
+            for (std::size_t i = 0; i < hintStore.size(); ++i)
+            {
+                float const d = bot->GetExactDist(hintStore[i].x, hintStore[i].y, hintStore[i].z);
+                if (d < joinDist)
+                {
+                    joinDist = d;
+                    joinAt = i;
+                }
+            }
+            // 150, not 100: at 100 the guard was throwing away routes the
+            // party could perfectly well have joined - live, "boss 3653 starts
+            // 107yd away", 3669 at 113 and 127. It then searched by hand for a
+            // leg it already knew, which is exactly the walking time the route
+            // was there to save. A route pointing the wrong way is still
+            // hundreds of yards off, so the guard keeps its teeth.
+            constexpr float kRouteJoinRadius = 150.0f;
+            if (joinDist > kRouteJoinRadius)
+            {
+                LOG_INFO("playerbots",
+                         "[dungeon-clear] route for map {} boss {} starts {}yd away from here "
+                         "— that is somebody else's approach, ignoring it",
+                         mapId, bossEntry, static_cast<uint32>(joinDist));
+                hintStore.clear();
+            }
+            else if (joinAt > 0)
+            {
+                hintStore.erase(hintStore.begin(), hintStore.begin() + joinAt);
+            }
+
+            // Walk-from position for the leg probes below: the bot itself for the
+            // first anchor, then each anchor in turn.
+            float legFromX = bot->GetPositionX();
+            float legFromY = bot->GetPositionY();
+            float legFromZ = bot->GetPositionZ();
+
+            for (WaypointHint const& h : hintStore)
             {
                 NavmeshSnap::Result const snapped = NavmeshSnap::Snap(map, h.x, h.y, h.z, STRIDE_SNAP_RADIUS);
                 if (!snapped.ok)
@@ -311,10 +363,33 @@ StridedPathfinder::Result StridedPathfinder::Build(Player* bot, uint32 mapId, ui
                 seg.jumpDown = HasFlag(h.flags, AnchorFlag::JUMP_DOWN);
                 seg.jumpGap = HasFlag(h.flags, AnchorFlag::JUMP_GAP);
                 seg.doorGoEntry = HasFlag(h.flags, AnchorFlag::DOOR_AHEAD) ? h.doorGoEntry : 0u;
-                // Anchored segments collapse to a single polyline point —
-                // no PathGenerator ran for this leg. The follower walks
-                // straight to the anchor.
-                seg.polyline.push_back(G3D::Vector3(snapped.x, snapped.y, snapped.z));
+                // PATH the leg instead of collapsing it to one point. The old
+                // behaviour left a single polyline entry per anchor, so the
+                // follower walked ANCHOR TO ANCHOR IN A STRAIGHT LINE with no
+                // pathfinding in between. Fine across a room; on a narrow or
+                // curving stretch the chord leaves the walkable strip, and where
+                // that strip is a submerged ledge (Blackfathom Deeps, the run-up
+                // to Twilight Lord Kelris) the party ends up in deep water it
+                // cannot climb out of. Anchors now say WHICH WAY to go; the
+                // PathGenerator handles the metres.
+                std::vector<G3D::Vector3> legPoints;
+                uint32 legType = 0;
+                if (TryProbe(bot, mapId, legFromX, legFromY, legFromZ,
+                             snapped.x, snapped.y, snapped.z, legPoints, legType) &&
+                    !legPoints.empty())
+                {
+                    seg.polyline = std::move(legPoints);
+                }
+                else
+                {
+                    // Probe failed (off-mesh leg, no mmap, a gap the anchor is
+                    // there to bridge): keep the old single point. That is the
+                    // previous behaviour exactly, so this can only ever match it.
+                    seg.polyline.push_back(G3D::Vector3(snapped.x, snapped.y, snapped.z));
+                }
+                legFromX = snapped.x;
+                legFromY = snapped.y;
+                legFromZ = snapped.z;
                 result.segments.push_back(seg);
             }
             // If every anchor was off-mesh the route is unusable — fall
@@ -326,7 +401,14 @@ StridedPathfinder::Result StridedPathfinder::Build(Player* bot, uint32 mapId, ui
                 goal.ey = ty;
                 goal.ez = tz;
                 goal.arriveRadius = ARRIVE_RADIUS;
-                goal.polyline.push_back(G3D::Vector3(tx, ty, tz));
+                // Same for the last leg, from the final anchor to the boss.
+                std::vector<G3D::Vector3> goalPoints;
+                uint32 goalType = 0;
+                if (TryProbe(bot, mapId, legFromX, legFromY, legFromZ, tx, ty, tz,
+                             goalPoints, goalType) && !goalPoints.empty())
+                    goal.polyline = std::move(goalPoints);
+                else
+                    goal.polyline.push_back(G3D::Vector3(tx, ty, tz));
                 result.segments.push_back(goal);
                 result.reachable = true;
                 result.complete = true;

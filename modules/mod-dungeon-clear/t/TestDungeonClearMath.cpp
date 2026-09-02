@@ -1356,12 +1356,15 @@ TEST(DungeonClearWalkTrailBackTest, HorizontalSeamStopsWalk)
     trail.emplace_back(0.0f, 0.0f, 0.0f, 0.0f);    // 0
     trail.emplace_back(4.0f, 0.0f, 0.0f, 0.0f);    // 1
     trail.emplace_back(8.0f, 0.0f, 0.0f, 0.0f);    // 2
-    trail.emplace_back(25.0f, 0.0f, 0.0f, 0.0f);   // 3 (17yd gap from crumb 2)
-    Position const anchor(25.0f, 0.0f, 0.0f, 0.0f);
+    trail.emplace_back(100.0f, 0.0f, 0.0f, 0.0f);  // 3 (92yd gap from crumb 2)
+    Position const anchor(100.0f, 0.0f, 0.0f, 0.0f);
     std::vector<std::size_t> visited;
     WalkTrailBack(trail, anchor, TrailJumpGuard,
         [&](TrailStep const& s) -> bool { visited.push_back(s.index); return true; });
-    // Only the newest crumb is contiguous with the anchor; the 17yd gap is a seam.
+    // Only the newest crumb is contiguous with the anchor; the 92yd gap is a seam.
+    // The gap is sized off TrailJumpGuard, which the recorder's relocation bound
+    // moved from 12 to 60 on 2026-08-31; this case was still written for 12 and
+    // silently stopped testing a seam at all once a 17yd gap became legal ground.
     ASSERT_EQ(visited.size(), 1u);
     EXPECT_EQ(visited[0], 3u);
 }
@@ -1374,12 +1377,14 @@ TEST(DungeonClearWalkTrailBackTest, VerticalSeamStopsWalkEvenWhen2DContiguous)
     std::vector<Position> trail;
     trail.emplace_back(0.0f, 0.0f, 0.0f, 0.0f);    // 0
     trail.emplace_back(4.0f, 0.0f, 0.0f, 0.0f);    // 1  (lower floor)
-    trail.emplace_back(6.0f, 0.0f, 20.0f, 0.0f);   // 2  (2yd in 2D, +20yd Z: upper floor)
-    Position const anchor(6.0f, 0.0f, 20.0f, 0.0f);
+    trail.emplace_back(6.0f, 0.0f, 80.0f, 0.0f);   // 2  (2yd in 2D, +80yd Z: upper floor)
+    Position const anchor(6.0f, 0.0f, 80.0f, 0.0f);
     std::vector<std::size_t> visited;
     WalkTrailBack(trail, anchor, TrailJumpGuard,
         [&](TrailStep const& s) -> bool { visited.push_back(s.index); return true; });
-    // crumb 2 -> crumb 1 is ~20yd in 3D (> guard) though only 2yd in 2D: the walk
+    // Same TrailJumpGuard 12 -> 60 move as the horizontal case above: the drop has
+    // to clear the new guard for this to still be testing a seam.
+    // crumb 2 -> crumb 1 is ~80yd in 3D (> guard) though only 2yd in 2D: the walk
     // stops, so nothing on the lower floor is treated as "behind" the upper camp.
     ASSERT_EQ(visited.size(), 1u);
     EXPECT_EQ(visited[0], 2u);
