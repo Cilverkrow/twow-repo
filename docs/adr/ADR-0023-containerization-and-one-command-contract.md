@@ -27,6 +27,32 @@ this same fork, using the same FIFO pattern for the console.
 A container built from Debian trixie with gcc 14.2.0, CMake 3.31.6, ACE 8.0.2 and
 Boost 1.83.0 configures and compiles this tree, and `realmd` links successfully.
 
+### A fifth blocker, found the first time CI actually ran the stack
+
+Everything below was originally written against a stack that had never come up.
+The `compose up + smoke` job is what proves the one-command contract, and it had
+been *skipped* in every run since it was written — something upstream in the DAG
+failed first each time — so its first real execution was also its first failure:
+`twow-realmd-1 ... Restarting (1)`, with three copies of
+`Could not find configuration file /opt/turtle/etc/realmd.conf` in the compose
+log.
+
+The file was there. `render-config.sh` writes it and the compose file mounts it
+read-only at exactly that path. What was wrong is that the file was mode 600
+owned by whichever account ran the render step (uid 1001 on the GitHub runner,
+the developer's own uid on a workstation), while the container process was
+`turtle` — a uid `useradd --system` picked at image build time, which nothing on
+the host had ever heard of and which no host-side command had granted anything.
+Mangos opens its config and, on any failure, prints that it could not *find* it:
+a permission error wearing a missing-file message, which sends you looking for a
+broken bind mount instead of a mode bit. The same trap applied to `mangosd.conf`
+and `aiplayerbot.conf`; realmd was only the first container to hit it, because
+it is the only one CI starts.
+
+So the honest statement of the position before this ADR was amended: the
+containerization work was sound, the one-command run described below did not
+work as written, and no test had ever said so.
+
 ## Decision
 
 **The stack ships as containers, and the entry point is three commands.**
@@ -55,6 +81,20 @@ Concretely:
 - **`deploy/compose/`** — `db`, `db-init`, `realmd`, `mangosd`, health checks on all four,
   a `dev` profile, and **MariaDB pinned to 11.8** per ADR-0027. Note the divergence to
   fix: `ops/windows/build/compile-tortoise-wow.ps1:49` pins 11.4.10.
+- **The container user and the rendered configs are a single contract.** `turtle`
+  is uid **10001**, gid 10001, pinned in `Dockerfile.core`, and
+  `render-config.sh` grants that uid read access to every file it renders. The
+  uid has to be a fixed, known number precisely because host-side code must be
+  able to name it before the container exists; 10001 sits above both Debian's
+  system range and the 1000-1999 band that logins and CI runners occupy.
+  Credentials stay off other accounts: the rendered directory is 0700, and
+  within it the files stay 0600 with an ACL entry for uid 10001 (a file's owner
+  may grant an ACL to a foreign uid without being root, which is what makes this
+  work unprivileged for both the CI runner and a developer). Where ACLs are
+  unavailable — a filesystem mounted without them, a host with no `setfacl` —
+  the files fall back to 0644, still inside the 0700 directory, so nothing but
+  root and the owner can reach them. World-readable password files were rejected
+  as the fix; so was `chown`, which neither environment can perform.
 - **Client data (`dbc`, `maps`, `vmaps`, `mmaps`) is never in an image** — legally and
   practically. It is volume-mounted. The extractors (`mapextractor`, `vmapextractor` +
   `vmap_assembler`, `MoveMapGen`) run from a `tools` profile against a mounted client;
@@ -87,6 +127,22 @@ Concretely:
   rather than done here.
 - Migrating the existing live Windows server onto this stack is a real cutover with its
   own plan (ADR-0028), not a side effect of this decision.
+- **Pinning the uid orphans an existing `server-logs` volume.** Docker takes a named
+  volume's ownership from the image directory the first time it is mounted, so a volume
+  created by an image whose `turtle` was uid 999 stays owned by 999 and uid 10001 cannot
+  write logs into it. `docker volume rm twow_server-logs`, or `make clean`, is the fix and
+  costs only logs. In practice this bites nobody yet, because the stack it would bite has
+  never successfully come up.
+- `deploy/helm/twow/values.yaml` still carries a `podSecurityContext` comment saying no
+  `runAsUser` may be pinned because the image's uid is assigned at build time. That
+  reasoning no longer holds — the uid is now a fixed 10001 and pinning it is safe. The
+  chart never had the config-permission problem (its init container renders into an
+  `emptyDir` inside the pod, so no host file is ever mounted), which is why nothing there
+  is broken; the comment is simply out of date and should be corrected the next time the
+  chart is touched.
+- The one-command contract is now claimed on evidence rather than on construction. The
+  standing rule this cost us: a job that has only ever been *skipped* has proved nothing,
+  and a green pipeline containing one is not the same as a green pipeline.
 
 ## Evidence
 
@@ -97,3 +153,12 @@ Concretely:
 - `ops/windows/build/compile-tortoise-wow.ps1:49` (MariaDB 11.4.10 divergence)
 - `Nescabir/tortoise-docker`; verified container toolchain: gcc 14.2.0, CMake 3.31.6,
   ACE 8.0.2, Boost 1.83.0 on Debian trixie
+- Blocker 5: the `compose up + smoke` job's first non-skipped run — `twow-realmd-1 ...
+  Restarting (1)` and three `Could not find configuration file
+  /opt/turtle/etc/realmd.conf` lines in `smoke-logs/compose.log`
+- Blocker 5, reproduced and fixed under Docker outside CI: with the rendered config at
+  0600 owned by uid 1000, `/opt/turtle/bin/realmd -c /opt/turtle/etc/realmd.conf` prints
+  exactly `Could not find configuration file /opt/turtle/etc/realmd.conf.`; with the same
+  file at 0600 plus `setfacl -m u:10001:r`, the same binary parses it and proceeds to the
+  database. The mode bits and the owner are identical in both runs — the ACL is the only
+  difference, which is what identifies the failure as a permission one.
