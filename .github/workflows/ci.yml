@@ -38,6 +38,42 @@
 # pinned external inputs kept out of Git (ADR-0019). There is no Windows link job
 # and there must never be one.
 #
+# WHERE THIS RUNS, AND WHY IT IS NOT ubuntu-24.04.
+#
+# GitHub-HOSTED runners are billing-blocked on this repository. The symptom is
+# not a queue and not a red step: every job fails in about three seconds with
+# duration_ms 0 and no logs at all, because GitHub refuses to dispatch it. No
+# amount of workflow editing fixes that; it is an account-level block.
+#
+# A self-hosted runner (`k8s-twow-repo`, Debian x64, docker 29.7.2, 20 cores)
+# is registered and DOES claim jobs, so every Linux job below runs there:
+#
+#     runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+#
+# The repository variable is the flip-back switch. When hosted billing is
+# restored, set the repository variable CI_RUNNER to `ubuntu-24.04` in
+# Settings -> Secrets and variables -> Actions -> Variables, and every Linux
+# job in ci.yml, nightly.yml and publish.yml moves back in one edit with no
+# commit. Deleting the variable puts them back on the self-hosted runner.
+# `self-hosted` is the implicit label every self-hosted runner carries, so this
+# needs no knowledge of custom labels.
+#
+# WHAT THAT RUNNER IS NOT. It is a shared Kubernetes pod, not a fresh VM:
+#
+#   * ~9.2 GiB of RAM free of 31 GiB, with 20 cores visible. An unbounded
+#     `ninja -j20` over ~1500 targets with debug symbols will OOM the pod and
+#     take whatever else is on it down. Everything that compiles is capped at
+#     CI_BUILD_JOBS (below).
+#   * ~28 GiB of free disk, shared. The docker daemon is shared too, so the old
+#     `docker image prune -af` in "Free runner disk" would delete other
+#     tenants' images. It has been narrowed to this pipeline's own tags plus
+#     dangling layers.
+#   * NOT clean between jobs. The workspace, /state, the docker daemon and any
+#     named volumes all survive. Every job below starts by putting the parts of
+#     that it depends on back into a known state, and the places where that
+#     matters are commented individually - `git clean` inside actions/checkout
+#     does not reach /state or the docker daemon.
+#
 # WINDOWS CI IS DISABLED (2026-09-02, ADR-0028). The windows-compile job below is
 # gated behind a workflow_dispatch input and does not run on push, pull_request or
 # schedule. The code keeps its Windows support; only the CI job is off. See the
@@ -109,6 +145,48 @@ permissions:
   pull-requests: read
 
 env:
+  # Compile parallelism, for every step that compiles anything. An EXPLICIT
+  # number, deliberately, and this is the part worth reading before changing it.
+  #
+  # `-j$(nproc)` is the obvious form and it is WRONG on this runner. /proc is
+  # not namespaced, so inside the runner pod:
+  #
+  #     nproc      ->  20      the NODE's CPUs
+  #     free -g    ->  31Gi    the NODE's memory
+  #     cpu.max    ->  max     no CPU limit at all
+  #     memory.max ->  8Gi     the actual ceiling, and the only true number
+  #
+  # A job that sizes itself from nproc or free therefore launches 20 compilers
+  # against an 8 GiB cgroup and is OOM-killed. That does not surface as "out of
+  # memory": it surfaces as ninja reporting a signal, or as the assembler
+  # failing to write an object file - which reads exactly like running out of
+  # disk - or as a job that simply hangs. Every automatic form of this
+  # (`nproc`, `free`, `--parallel` with no argument, ninja's own default) has
+  # the same defect, so the number is pinned here instead.
+  #
+  # Why 4. The heavy translation units in this tree peak around 1.5-2.5 GiB
+  # resident each with debug symbols on, and DEBUG_SYMBOLS defaults to ON. Four
+  # is also exactly what a GitHub-hosted ubuntu-24.04 runner has (4 vCPU,
+  # 16 GB), so the same pinned number is correct in both places and this file
+  # stays portable - which is the requirement. Raise it with the CI_BUILD_JOBS
+  # repository variable only against a measurement, not against `nproc`.
+  #
+  # Where the cap has to be repeated, because one setting cannot reach
+  # everything that compiles:
+  #
+  #   * steps that call ops/ci/in-builder.sh pass it on the command line, and
+  #     the script also forwards CI_BUILD_JOBS into the container so anything
+  #     running in there inherits it without a call site having to remember;
+  #   * compiles inside `docker build` (nightly's docker-from-source,
+  #     publish's core) are on the workspace daemon, out of this file's reach
+  #     entirely, and are capped by Dockerfile.core's BUILD_JOBS arg - whose
+  #     own default is a number, not nproc, so a caller that forgets is slow
+  #     rather than OOM-killed.
+  #
+  # One thing -j does NOT bound at all: the single link of mangosd, which wants
+  # several GiB on its own and cannot be split.
+  CI_BUILD_JOBS: ${{ vars.CI_BUILD_JOBS || '4' }}
+
   # The tag deploy/compose/docker-compose.yml resolves to by default
   # (${IMAGE_REPO:-twow/core}:${IMAGE_TAG:-dev}). build-and-test tags the image
   # it produces with exactly this, so `compose up` in the smoke job finds it
@@ -126,12 +204,63 @@ jobs:
   # Each runs regardless of what failed before it, and the job still reports
   # failure, because a failed step fails its job even when later steps succeed.
   lint:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: lint
     timeout-minutes: 20
     steps:
+      # The runner is shared and NOT clean between jobs. Two things about it
+      # differ from a GitHub-hosted VM, and most of the steps below depend on
+      # one of them:
+      #
+      #   * privilege. A hosted VM runs as a passwordless-sudo user. A runner
+      #     in a container is usually already root and frequently has no sudo
+      #     binary at all, so a bare `sudo apt-get` is a command-not-found
+      #     rather than a permission error. $SUDO is resolved once, here, and
+      #     used by every step below that needs privilege.
+      #   * state. Whatever a previous job left in the workspace, on the disk,
+      #     in the docker daemon or in a named volume is still there. Each
+      #     place that matters is dealt with where it matters and says so.
+      #
+      # It also prints which runner claimed the job, which is the single line
+      # that distinguishes "this ran on the self-hosted pod" from "this ran
+      # somewhere else" when reading a log later.
+      - name: Runner preflight
+        run: |
+          set -eu
+          if [ "$(id -u)" -eq 0 ]; then
+            SUDO=""
+          elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+            SUDO="sudo"
+          else
+            SUDO=""
+            echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
+          fi
+          echo "SUDO=$SUDO" >> "$GITHUB_ENV"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
+          echo "user   : $(id)"
+          echo "sudo   : ${SUDO:-<none>}"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} pinned"
+          # nproc and free report the NODE, not this job's cgroup - see the
+          # env block at the top of this file. The cgroup files are the only
+          # honest numbers, so print those and label the others as untrue.
+          echo "nproc  : $(nproc 2>/dev/null || echo '?') <- NOT a limit, this is the node"
+          memmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo n/a)
+          echo "mem.max: $memmax <- the real ceiling"
+          echo "cpu.max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo n/a)"
+          uname -a
+          free -h 2>/dev/null | head -2 || true
+          df -h . | tail -1
+
       # fetch-depth: 0 because gitleaks scans history and the added-file checks
       # diff against a base commit.
+      #
+      # No submodules: nothing this job reads lives under core/. `clean` is left
+      # at its default of true on purpose - on a self-hosted runner the
+      # workspace is reused, and the `git clean -ffdx` that checkout does is the
+      # only thing removing a previous job's build tree, /tmp droppings and
+      # stray artefacts from this directory.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -208,10 +337,18 @@ jobs:
           echo "checked $(wc -l < /tmp/links.txt) links"
           exit $fail
 
+      # Installed only if missing. On a hosted VM shellcheck is absent every
+      # time; on the self-hosted runner it survives between jobs, and paying for
+      # an apt-get update on a shared box to reinstall a package that is already
+      # there is pure latency.
       - name: shellcheck
         if: always()
         run: |
-          sudo apt-get update && sudo apt-get install -y shellcheck
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            $SUDO apt-get update
+            $SUDO apt-get install -y --no-install-recommends shellcheck
+          fi
+          shellcheck --version
           find ops deploy sql -name '*.sh' -print0 2>/dev/null \
             | xargs -0 -r shellcheck --severity=warning
 
@@ -237,10 +374,23 @@ jobs:
           # every security update.
           ignore: DL3008
 
+      # pipx is preinstalled on ubuntu-24.04 and is NOT on a plain Debian
+      # runner image, so this cannot assume it. Order: an already-installed
+      # yamllint, then pipx, then a throwaway venv - the last of which needs
+      # only python3 and works anywhere.
       - name: yamllint
         if: always()
         run: |
-          pipx install yamllint
+          if ! command -v yamllint >/dev/null 2>&1; then
+            if command -v pipx >/dev/null 2>&1; then
+              pipx install yamllint
+            else
+              python3 -m venv /tmp/yamllint-venv
+              /tmp/yamllint-venv/bin/pip install --quiet yamllint
+              echo "/tmp/yamllint-venv/bin" >> "$GITHUB_PATH"
+              export PATH="/tmp/yamllint-venv/bin:$PATH"
+            fi
+          fi
           yamllint -d '{extends: relaxed, rules: {line-length: {max: 120}}}' \
             .github/workflows deploy 2>&1 | tee /tmp/yamllint.txt
           ! grep -q ' error ' /tmp/yamllint.txt
@@ -332,7 +482,7 @@ jobs:
   # No `needs:` on purpose - it touches no compiled artefact, so making it wait
   # behind a 25-minute build would only delay the answer.
   integration:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: bootstrap from empty
     timeout-minutes: 90
 
@@ -370,14 +520,48 @@ jobs:
       MYSQL_PWD: ci-root
 
     steps:
+      # Resolves $SUDO and prints which runner claimed the job. See the long
+      # note on the same step in the lint job.
+      - name: Runner preflight
+        run: |
+          set -eu
+          if [ "$(id -u)" -eq 0 ]; then
+            SUDO=""
+          elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+            SUDO="sudo"
+          else
+            SUDO=""
+            echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
+          fi
+          echo "SUDO=$SUDO" >> "$GITHUB_ENV"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
+          echo "user   : $(id)"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} pinned"
+          # nproc and free report the NODE, not this job's cgroup - see the
+          # env block at the top of this file. The cgroup files are the only
+          # honest numbers, so print those and label the others as untrue.
+          echo "nproc  : $(nproc 2>/dev/null || echo '?') <- NOT a limit, this is the node"
+          memmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo n/a)
+          echo "mem.max: $memmax <- the real ceiling"
+          echo "cpu.max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo n/a)"
+          free -h 2>/dev/null | head -2 || true
+          df -h . | tail -1
+
+      # No submodules: this job reads sql/, modules/mod-playerbots/sql and
+      # deploy/compose, none of which is under core/.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Install the MariaDB client
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends mariadb-client
+          if ! command -v mariadb >/dev/null 2>&1; then
+            $SUDO apt-get update
+            $SUDO apt-get install -y --no-install-recommends mariadb-client
+          fi
+          mariadb --version
 
       # The dump opens with a /*M!999999 ... */ sandbox directive that only the
       # MariaDB client understands, so `mariadb` is used throughout rather than
@@ -397,11 +581,21 @@ jobs:
       # STATE is hardcoded to /state in db-init.sh (it is a named volume in the
       # container). Creating it here rather than patching the script keeps this
       # job running the shipped file byte for byte.
+      #
+      # EMPTIED, not just created. /state is where db-init.sh writes its stage
+      # markers, and on a self-hosted runner it is a real directory on a shared
+      # pod that outlives the job - so the second run of this workflow would
+      # find yesterday's markers, skip every stage, and then assert that a
+      # database nobody bootstrapped looks bootstrapped. On a hosted VM /state
+      # never existed, which is exactly why nothing here removed it. The
+      # database is fresh every run (it is a service container), so the markers
+      # must be too, or the two disagree and the job proves nothing.
       - name: Run the shipped bootstrap
         run: |
           set -eu
-          sudo mkdir -p /state
-          sudo chown "$(id -u):$(id -g)" /state
+          $SUDO rm -rf /state
+          $SUDO mkdir -p /state
+          $SUDO chown "$(id -u):$(id -g)" /state
           time bash deploy/compose/db-init.sh
 
       # Invariant 3 from the operator's side: running the bootstrap twice must
@@ -626,6 +820,23 @@ jobs:
   # a consolidated workflow without adding a sixth job to compute it, so this now
   # runs on every push. That is a deliberate trade: one MSVC compile is cheap
   # next to the four full Linux compiles this consolidation removed.
+  #
+  # WHY IT IS GATED OFF RATHER THAN LEFT RED (resolved 2026-09-02).
+  #
+  # This job is the ONLY MSVC coverage this repository has, and the branch that
+  # introduced the self-hosted runner argued it should stay visibly red: the
+  # self-hosted runner is Linux, there is no Windows runner to move it to, and a
+  # job silently skipped means a green run that never checked MSVC.
+  #
+  # That argument was overridden by the owner in #160, and the reason it holds:
+  # MSVC coverage moved. `twow-core` now carries its own Windows CI job and it
+  # passes, so the compile that mattered is being run - just in the repository
+  # that owns the code it compiles. `twow-repo` is Linux-only (ADR-0028), and a
+  # permanently red job on a repository with no Windows runner trains people to
+  # ignore red rather than to read it.
+  #
+  # So while this stays gated, the honest statement is: MSVC is checked in
+  # twow-core, not here, and a green run here never implied otherwise.
   windows-compile:
     # The gate. `inputs` is null on push, pull_request and schedule, so this is
     # false everywhere except a workflow_dispatch that ticked the box.
@@ -857,7 +1068,7 @@ jobs:
   # full build starts, so a broken test reports in minutes instead of waiting
   # for a link of the whole server.
   build-and-test:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: build + test
     # Down from 150. The 150 existed to cover a cold from-scratch compile inside
     # BuildKit on every run; a warm ccache and one compile do not need it, and a
@@ -883,8 +1094,48 @@ jobs:
       # The toolchain container every compile step below runs in. Local to this
       # runner and never pushed.
       BUILDER_IMAGE: twow/core-builder:ci
+      # The named docker volume holding the build tree. Spelled here as well as
+      # defaulted in ops/ci/in-builder.sh so the two cannot drift: the workflow
+      # is what removes it, the script is what mounts it, and a disagreement
+      # would leave a multi-gigabyte volume behind on a shared daemon every run.
+      BUILD_VOLUME: twow-build
 
     steps:
+      # Resolves $SUDO and prints which runner claimed the job. See the long
+      # note on the same step in the lint job.
+      - name: Runner preflight
+        run: |
+          set -eu
+          if [ "$(id -u)" -eq 0 ]; then
+            SUDO=""
+          elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+            SUDO="sudo"
+          else
+            SUDO=""
+            echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
+          fi
+          echo "SUDO=$SUDO" >> "$GITHUB_ENV"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
+          echo "user   : $(id)"
+          echo "jobs   : ${CI_BUILD_JOBS:-<unset>} pinned"
+          # nproc and free report the NODE, not this job's cgroup - see the
+          # env block at the top of this file. The cgroup files are the only
+          # honest numbers, so print those and label the others as untrue.
+          echo "nproc  : $(nproc 2>/dev/null || echo '?') <- NOT a limit, this is the node"
+          memmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo n/a)
+          echo "mem.max: $memmax <- the real ceiling"
+          echo "cpu.max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo n/a)"
+          free -h 2>/dev/null | head -2 || true
+          df -h . | tail -1
+
+      # recursive, and it has to reach two levels: the server core is the core/
+      # submodule (ADR-0020) and the core carries the Eluna engine as a
+      # submodule of its own at core/src/modules/Eluna. Without this the build
+      # stops at the root CMakeLists' FATAL_ERROR about an empty core/; with
+      # only one level it stops at the core's own FATAL_ERROR about a missing
+      # Eluna. `submodules: recursive` covers both.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -903,20 +1154,66 @@ jobs:
       # it scrolls past.
       #
       # df on both sides, so the next disk failure is diagnosable from the log.
+      #
+      # TWO BODIES, because the right answer differs by runner and this
+      # pipeline has to work unchanged on both. RUNNER_ENVIRONMENT is set by
+      # the runner itself to `github-hosted` or `self-hosted`, so the branch
+      # needs no repository variable and cannot drift out of step with where
+      # the job actually landed.
+      #
+      # On a HOSTED VM the original body is right and is kept verbatim: the
+      # machine is destroyed after the job, the ~25 GB of preinstalled
+      # toolchains are dead weight, and `docker image prune -af` costs nothing.
+      #
+      # On a SELF-HOSTED runner both halves of it are wrong. Those paths exist
+      # only in the hosted VM image, so removing them frees nothing. And
+      # `docker image prune -af` deletes EVERY image not attached to a running
+      # container - on a shared daemon that is other tenants' images and every
+      # base layer anything else was about to reuse, gone. What runs instead
+      # touches only what this pipeline owns: its own two tags, its own exited
+      # containers, dangling layers, and build cache older than a day.
+      #
+      # The self-hosted disk is shared, against a build tree carrying debug
+      # symbols and a 2.0 GB mangosd. That is tight rather than comfortable,
+      # which is why df is printed on both sides and why "Reclaim the build
+      # tree" below still runs before the image is assembled.
       - name: Free runner disk
         run: |
-          df -h /
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost
-          sudo docker image prune -af || true
-          df -h /
+          df -h .
+          if [ "${RUNNER_ENVIRONMENT:-}" = "github-hosted" ]; then
+            # A hosted VM is destroyed after the job, so nothing here is shared
+            # and the aggressive form is free. This is the original body,
+            # unchanged, and it is what reclaims the ~25 GB of preinstalled
+            # toolchains this build never touches.
+            $SUDO rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                         /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+            $SUDO docker image prune -af || true
+          else
+            # A self-hosted runner is shared and persistent. Only this
+            # pipeline's own leftovers are removed; the hosted-VM paths above
+            # do not exist here, so deleting them would free nothing anyway.
+            docker image rm -f "$CORE_IMAGE" "$BUILDER_IMAGE" 2>/dev/null || true
+            docker container prune -f || true
+            docker image prune -f || true
+            docker builder prune -f --filter until=24h || true
+          fi
+          # A build tree left by a run that died before its reclaim step. It is
+          # removed rather than reused: the checkout is fresh, so the tree would
+          # be reconfigured from scratch anyway, and a stale one is only a
+          # multi-gigabyte hold on a shared daemon's disk.
+          docker volume rm -f "$BUILD_VOLUME" 2>/dev/null || true
+          df -h .
 
       # The only toolchain the runner itself still needs. Everything that
       # compiles happens in the container; this is for the step that applies the
       # roster migration against the service database.
       - name: Install the MariaDB client
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends mariadb-client
+          if ! command -v mariadb >/dev/null 2>&1; then
+            $SUDO apt-get update
+            $SUDO apt-get install -y --no-install-recommends mariadb-client
+          fi
+          mariadb --version
 
       - uses: docker/setup-buildx-action@v3
 
@@ -956,6 +1253,19 @@ jobs:
           load: true
           tags: ${{ env.BUILDER_IMAGE }}
 
+      # THE BUDGET THAT ACTUALLY CONSTRAINS THE BUILD, and it is not the one
+      # `df -h .` prints anywhere else in this job. That is the runner pod's
+      # filesystem. The build tree lives on a named volume on the DOCKER
+      # DAEMON's data root - a different disk, with a different amount of room -
+      # and a 1,533-target build with debug symbols has to fit in it. Printed
+      # rather than assumed, and placed here because it is the first step at
+      # which BUILDER_IMAGE exists to run it with.
+      - name: How much room the build tree actually has
+        run: |
+          docker system df || true
+          docker run --rm --volume "$BUILD_VOLUME:/build" "$BUILDER_IMAGE" \
+            df -h /build /tmp || true
+
       # ONE configure, and it is the release configuration plus the tests.
       #
       # Two settings changed when this became the configure the image is built
@@ -969,9 +1279,16 @@ jobs:
       # TW_ARCH is spelled out at the Dockerfile's default rather than left to
       # CMake's, so the two cannot drift. `native` would bake this runner's CPU
       # into the artefact (ADR-0028).
+      #
+      # -B /build, NOT /src/build. The build tree is a named docker volume on
+      # the daemon's local disk; /src is a bind mount that on the self-hosted
+      # runner is served over a network filesystem, and `ld` cannot write there
+      # (it dies at its final close() with ESTALE - see the long note in
+      # ops/ci/in-builder.sh). Sources may live on the network mount; the things
+      # the linker writes may not.
       - name: Configure
         run: |
-          bash ops/ci/in-builder.sh 'cmake -S /src -B /src/build -G Ninja \
+          bash ops/ci/in-builder.sh 'cmake -S /src -B /build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
             -DTW_ARCH=x86-64-v2 \
@@ -997,8 +1314,15 @@ jobs:
       #
       # In the container because compile_commands.json names container paths and
       # the flags in it are trixie's include paths, not the runner's.
+      #
+      # The probe fan-out is capped by CI_BUILD_JOBS, which in-builder.sh
+      # forwards into the container - so this call site does not have to pass it
+      # and, more to the point, cannot forget to. Uncapped, the script falls
+      # back to nproc and starts 20 concurrent -fsyntax-only compiles over the
+      # game headers: the same memory budget the full build has, spent on a
+      # check that should take a minute.
       - name: Core headers are self-contained
-        run: bash ops/ci/in-builder.sh 'bash ops/audit/header-self-containment.sh /src/build'
+        run: bash ops/ci/in-builder.sh 'bash ops/audit/header-self-containment.sh /build'
 
       # Named test targets, built one at a time so a target that does not exist
       # yet is reported as absent rather than failing the run. The CTest wiring
@@ -1013,7 +1337,7 @@ jobs:
         id: testbuild
         run: |
           set -eu
-          known=$(bash ops/ci/in-builder.sh 'ninja -C /src/build -t targets all' 2>/dev/null | sed 's/:.*//' || true)
+          known=$(bash ops/ci/in-builder.sh 'ninja -C /build -t targets all' 2>/dev/null | sed 's/:.*//' || true)
           built=0
           for t in persistent_active_roster_database_tests \
                    dungeon_clear_tests_fast \
@@ -1021,7 +1345,7 @@ jobs:
                    persistent_active_roster_tests; do
             if printf '%s\n' "$known" | grep -qxF "$t"; then
               echo "::group::building $t"
-              bash ops/ci/in-builder.sh "cmake --build /src/build --target $t --parallel \"\$(nproc)\""
+              bash ops/ci/in-builder.sh "cmake --build /build --target $t --parallel $CI_BUILD_JOBS"
               echo "::endgroup::"
               built=$((built + 1))
             else
@@ -1055,12 +1379,19 @@ jobs:
       # The binary is a trixie binary, so it runs in the container. The service
       # database is published on the runner's 127.0.0.1:3306 and in-builder.sh
       # uses --network host, so the connection string below is unchanged.
+      #
+      # The existence check has to happen INSIDE the container now. The build
+      # tree is a named volume, so `test -x build/adapter-bin/...` on the runner
+      # would look at a path that no longer exists and report "not in this
+      # configuration" for a binary that was built perfectly well - turning a
+      # real test into a silent skip, which is the one outcome the gate below
+      # exists to prevent.
       - name: Run the adapter suite
         id: adapter
         shell: bash
         run: |
-          bin=build/adapter-bin/persistent_active_roster_database_tests
-          if [ ! -x "$bin" ]; then
+          bin=/build/adapter-bin/persistent_active_roster_database_tests
+          if ! bash ops/ci/in-builder.sh "test -x $bin"; then
             echo "::notice::$bin was not built - the adapter suite is not in this configuration"
             echo "ran=0" >> "$GITHUB_OUTPUT"
             exit 0
@@ -1071,7 +1402,7 @@ jobs:
           # the usage line in persistent_active_roster_database_tests.cpp.
           set +e
           bash ops/ci/in-builder.sh \
-            "/src/$bin '127.0.0.1;3306;root;ci-root;roster_ci'" 2>&1 | tee "$log"
+            "$bin '127.0.0.1;3306;root;ci-root;roster_ci'" 2>&1 | tee "$log"
           rc=${PIPESTATUS[0]}
           set -e
           # STAGE=COMPLETE is printed only after the last scenario. Without this
@@ -1097,7 +1428,7 @@ jobs:
           # -N lists without running. The count is recorded either way for the
           # gate below - hence `|| true`: with no tests registered ctest exits
           # non-zero, and the default shell runs with -e and pipefail.
-          raw=$(bash ops/ci/in-builder.sh 'ctest --test-dir /src/build -N' 2>/dev/null || true)
+          raw=$(bash ops/ci/in-builder.sh 'ctest --test-dir /build -N' 2>/dev/null || true)
           found=$(printf '%s\n' "$raw" | sed -n 's/^Total Tests: //p' | tail -n1)
           found=${found:-0}
           echo "found=$found" >> "$GITHUB_OUTPUT"
@@ -1107,8 +1438,12 @@ jobs:
             exit 0
           fi
           mkdir -p test-results
+          # An ABSOLUTE output path. `../test-results` was relative to the
+          # build tree, which used to be /src/build and so resolved into the
+          # checkout; from /build it would resolve to /test-results inside the
+          # container and be thrown away with it.
           bash ops/ci/in-builder.sh \
-            'ctest --test-dir /src/build --output-on-failure --output-junit ../test-results/ctest.xml'
+            'ctest --test-dir /build --output-on-failure --output-junit /src/test-results/ctest.xml'
 
       - name: Upload test results
         if: always()
@@ -1148,22 +1483,38 @@ jobs:
       # ccache statistics are printed on purpose. If the hit rate collapses, the
       # cache key or the compile line moved and this step is back to being an
       # hour; that would still be green, and this line is the only warning.
+      #
+      # --parallel is CI_BUILD_JOBS rather than nproc. See the workflow env
+      # block for the arithmetic: the pod shows 20 cores and has ~9.2 GiB free,
+      # and 20 concurrent compiles of this tree with debug symbols do not fit in
+      # that. An OOM here does not print the words "out of memory" - it shows up
+      # as ninja reporting a signal, or as the assembler failing to write an
+      # object file, which reads exactly like running out of disk.
       - name: Build the server and stage the install
         run: |
-          bash ops/ci/in-builder.sh 'cmake --build /src/build --parallel "$(nproc)" \
-            && cmake --install /src/build \
-            && ccache --show-stats'
+          bash ops/ci/in-builder.sh "cmake --build /build --parallel $CI_BUILD_JOBS \
+            && cmake --install /build \
+            && ccache --show-stats"
           du -sh stage
           ls -la stage/bin
 
       # The build tree is the largest thing on the disk and nothing after this
       # reads it. Removing it before the image build leaves room for the context
       # transfer and for `docker save`.
+      #
+      # It is a named volume now, so `rm -rf build` on the runner would remove
+      # nothing and quietly leave the space occupied. The volume is emptied
+      # from inside a container instead, and then removed outright - a build
+      # tree that survived into the next run would only be reconfigured from
+      # scratch anyway (checkout wipes the source tree), so keeping it buys
+      # nothing and costs the daemon's disk, which is shared.
       - name: Reclaim the build tree
         run: |
-          df -h /
-          rm -rf build
-          df -h /
+          df -h .
+          docker run --rm --user 0:0 --volume "${BUILD_VOLUME:-twow-build}:/build" \
+            "$BUILDER_IMAGE" sh -c 'du -sh /build 2>/dev/null; rm -rf /build/* /build/.[!.]* || true'
+          docker volume rm -f "${BUILD_VOLUME:-twow-build}" || true
+          df -h .
 
       # `ci-staged` is `runtime-base` plus a COPY of ./stage - the same base
       # image, apt list, entrypoint, user and directory layout as the `runtime`
@@ -1274,7 +1625,7 @@ jobs:
   # naming rather than papering over.
   smoke:
     needs: build-and-test
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: compose up + smoke
     # Minutes, not hours: the compile already happened upstream in the DAG. The
     # old 150-minute budget existed only to cover `up --build`.
@@ -1286,10 +1637,65 @@ jobs:
       TWOW_DB_PASSWORD: ci-root
 
     steps:
+      # Resolves $SUDO and prints which runner claimed the job. See the long
+      # note on the same step in the lint job.
+      - name: Runner preflight
+        run: |
+          set -eu
+          if [ "$(id -u)" -eq 0 ]; then
+            SUDO=""
+          elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+            SUDO="sudo"
+          else
+            SUDO=""
+            echo "::warning::not root and no usable sudo - any step needing apt-get will fail"
+          fi
+          echo "SUDO=$SUDO" >> "$GITHUB_ENV"
+          echo "runner : ${RUNNER_NAME:-<unset>} (${RUNNER_OS:-?}/${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-unknown})"
+          echo "user   : $(id)"
+          free -h 2>/dev/null | head -2 || true
+          df -h . | tail -1
+
+      # submodules: recursive is not needed by anything this job reads
+      # (deploy/compose and test/smoke are both in this repository, and the
+      # server comes from an image), but it is kept so that the workspace this
+      # job checks out is the same shape as build-and-test's. On a self-hosted
+      # runner both jobs can land in the SAME reused workspace directory, and a
+      # non-recursive checkout there would deinitialise core/ underneath a
+      # subsequent build.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 1
+
+      # WHAT A PREVIOUS RUN LEAVES BEHIND. The teardown at the bottom of this
+      # job removes the stack and its volumes, but it only runs if the job got
+      # that far - a cancelled run, a runner restart or an OOM kill leaves the
+      # containers and, worse, the `db` named volume in place. On a hosted VM
+      # that never mattered because the VM was destroyed. Here the next run
+      # would inherit an already-bootstrapped database plus its /state stage
+      # markers, and "the bootstrap works from empty" is precisely the thing
+      # that must not be inherited: db-init would skip every stage and the
+      # smoke suite would pass against last week's database.
+      #
+      # A leftover realmd also holds port 3724, so `compose up` would fail with
+      # a port conflict that reads like a bug in the compose file.
+      #
+      # This needs the .env that the next step generates, so it is done with
+      # `docker compose ... --project-name` free arguments only: the project
+      # name is derived from the directory, which is stable, and `down` does not
+      # need the env file to resolve variables when given -v --remove-orphans
+      # against an existing project. Falling back to a container-name sweep
+      # keeps it working even if the compose file cannot be parsed at all.
+      - name: Reclaim state a previous run may have left
+        run: |
+          set -eu
+          proj="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')"
+          echo "compose project: $proj"
+          docker compose -p "$proj" down -v --remove-orphans || true
+          docker container prune -f || true
+          docker volume ls
+          $SUDO rm -rf /state || true
 
       # deploy/compose is the contract for the Helm chart and the publish
       # pipeline (ADR-0023). If it is missing, this job has nothing to smoke and

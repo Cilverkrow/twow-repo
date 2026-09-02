@@ -73,6 +73,32 @@ ARG TW_ARCH=x86-64-v2
 # mod-playerbots included.
 ARG MODULES=static
 ARG BUILD_TYPE=Release
+# Ninja parallelism for the compile below.
+#
+# THE DEFAULT IS A NUMBER, NOT `nproc`, AND THAT IS THE POINT. This line used to
+# be `--parallel "$(nproc)"`, and an earlier attempt at capping it left `nproc`
+# as the fallback for an unset ARG - which is the same bug with an extra step,
+# because the fallback is what actually runs whenever a caller forgets to pass
+# the arg.
+#
+# `nproc` is not cgroup-aware. On the CI pod it returns the NODE's 20 CPUs while
+# the memory actually available is ~9.2 GiB, and the heavy translation units in
+# this tree peak at 1.5-2.5 GiB each. 20 concurrent g++ against that ceiling is
+# an OOM kill, and BuildKit reports it as
+#
+#     failed to receive status: rpc error: code = Unavailable
+#     desc = error reading from server: EOF
+#
+# i.e. buildkitd itself disappearing - which names neither memory nor this line.
+# That is exactly what happened after 139 of 1472 targets.
+#
+# This is the one compile in the pipeline that happens inside BuildKit rather
+# than on the runner, so the workflow cannot cap it from outside; the cap has to
+# be here. nightly.yml and publish.yml pass BUILD_JOBS explicitly.
+#
+# Building this by hand on a machine with memory to spare? Ask for it:
+#     docker build --build-arg BUILD_JOBS=$(nproc) ...
+ARG BUILD_JOBS=4
 
 WORKDIR /src
 # The whole context, core/ submodule included. There is no separate COPY for it
@@ -100,7 +126,7 @@ RUN --mount=type=cache,target=/ccache \
       -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
 RUN --mount=type=cache,target=/ccache \
-    CCACHE_DIR=/ccache cmake --build /build --parallel "$(nproc)" \
+    CCACHE_DIR=/ccache cmake --build /build --parallel "${BUILD_JOBS}" \
     && cmake --install /build
 
 # ------------------------------------------------------------ runtime-base

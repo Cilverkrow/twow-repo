@@ -39,6 +39,19 @@ permissions:
   id-token: write
   attestations: write
 
+# Every job here is Linux, so every job here follows ci.yml onto the
+# self-hosted runner while GitHub-hosted runners are billing-blocked. The full
+# rationale and the one-variable way back are in the header of ci.yml: set the
+# repository variable CI_RUNNER to `ubuntu-24.04` and all three workflows move
+# back at once.
+#
+# This is the workflow with write credentials, so it is worth being explicit
+# about what moving it means: a self-hosted runner executes with the repository
+# GITHUB_TOKEN's packages:write and the workflow's OIDC identity on a machine
+# this project does not exclusively own. That is a real trust change from a
+# hosted ephemeral VM and it should be revisited when hosted billing returns -
+# it is not a reason to leave the release path unable to run at all, but it is a
+# reason not to leave it here permanently.
 env:
   REGISTRY: ghcr.io
   OWNER: cilverkrow
@@ -48,7 +61,7 @@ jobs:
   # deploy/helm/twow). Rather than fail on their absence, the pipeline discovers
   # what exists and publishes that - and says in the log what it skipped.
   discover:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: what is publishable
     outputs:
       db_init: ${{ steps.check.outputs.db_init }}
@@ -84,7 +97,7 @@ jobs:
   # contract. The second build is a cache hit, not a second compile.
   core:
     needs: discover
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: ${{ matrix.image }}
     strategy:
       fail-fast: false
@@ -95,11 +108,27 @@ jobs:
           - image: realmd
             dockerfile: deploy/docker/Dockerfile.core
     steps:
+      # recursive reaches two levels: core/ (ADR-0020) and the Eluna submodule
+      # inside it. Anything less and the Dockerfile's `COPY . /src` copies an
+      # empty core/ and the build stops at a CMake FATAL_ERROR.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           # Full history: the build stamps a revision header from git.
           fetch-depth: 0
+
+      # The self-hosted runner is a shared pod with ~28 GB free, not a fresh VM
+      # with 70. A from-source build of this tree plus two published images does
+      # not fit next to whatever the last job left behind. Only this pipeline's
+      # own leftovers and dangling layers are removed - `docker image prune -af`
+      # would take other tenants' images with it.
+      - name: Reclaim disk
+        run: |
+          df -h .
+          docker container prune -f || true
+          docker image prune -f || true
+          docker builder prune -f --filter until=24h || true
+          df -h .
 
       - uses: docker/setup-buildx-action@v3
 
@@ -130,8 +159,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           # TW_ARCH stays at the Dockerfile default (x86-64-v2). `native` would
           # bake this runner's CPU into a published image (ADR-0028).
+          #
+          # BUILD_JOBS caps ninja INSIDE the image build. This is the one
+          # compile in these workflows that does not happen on the runner, so it
+          # cannot be capped from the workflow side any other way. The
+          # Dockerfile no longer falls back to nproc - an uncapped -j20 against
+          # the pod's ~9.2 GiB is what killed buildkitd after 139 of 1472
+          # targets - but the cap is still passed from here so CI sets it in one
+          # place. See the env block at the top of ci.yml.
           build-args: |
             BUILD_TYPE=Release
+            BUILD_JOBS=${{ vars.CI_BUILD_JOBS || '4' }}
           # Attached to the image in the registry: provenance mode=max records
           # the full build definition, sbom records what is inside it. Both are
           # part of the artifact, so a promoted digest carries them along.
@@ -159,7 +197,7 @@ jobs:
   db-init:
     needs: discover
     if: needs.discover.outputs.db_init == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: db-init
     steps:
       - uses: actions/checkout@v4
@@ -253,7 +291,7 @@ jobs:
   helm:
     needs: discover
     if: needs.discover.outputs.helm == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: helm chart
     steps:
       - uses: actions/checkout@v4
