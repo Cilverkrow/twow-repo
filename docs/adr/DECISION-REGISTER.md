@@ -4,7 +4,7 @@ Operational follow-up is maintained in [Open project threads](../OPEN-THREADS.md
 
 ## Accepted decisions
 
-The accepted durable decisions are recorded by ADR-0001 through ADR-0019. They cover project governance, evidence authority, chat-history policy, repository boundaries, provenance, modularization, operational ownership, database safety, PlayerBot population constraints, persistent roster semantics, the external LLM bridge, personalities, donation progress, professions, riding, current runbook-evidence retention, and external Windows build inputs.
+The accepted durable decisions are recorded by ADR-0001 through ADR-0020. They cover project governance, evidence authority, chat-history policy, repository boundaries, provenance, modularization, operational ownership, database safety, PlayerBot population constraints, persistent roster semantics, the external LLM bridge, personalities, donation progress, professions, riding, current runbook-evidence retention, external Windows build inputs, and the Windows-first operational baseline.
 
 ## Implemented but not automatically deployable
 
@@ -34,6 +34,7 @@ The accepted durable decisions are recorded by ADR-0001 through ADR-0019. They c
 | Historic `manual` migration hashes | Names/order can match while content provenance is absent | retain the limitation; never treat `manual` as a cryptographic file hash |
 | Roster expansion to 250/500 | Generic persistence supports it; only 50→100 has named unit and real-adapter proof | add isolated 100→250 and 250→500 persistence tests plus separate capacity measurements |
 | Later evidence repository | No split now | reconsider only after restructuring with stable IDs and link/access/retention/sync contracts |
+| Linux/container runtime | Deferred | first complete the Windows operational baseline under ADR-0020; then approve a separate platform, migration, rollback, and service-ownership decision |
 
 ## Superseded or rejected approaches
 
@@ -47,3 +48,4 @@ The accepted durable decisions are recorded by ADR-0001 through ADR-0019. They c
 - Letting the Core parse/extract bridge ZIPs: rejected; deployment tooling owns package verification and extraction.
 - Broadly changing every level-40/60 item for early riding: rejected; manifest-driven coverage is required.
 - Treating an unproven trainer event as authorization for repair: rejected.
+- Treating Docker/Linux containerization as the automatic next step: rejected; Windows-first delivery is binding under ADR-0020.

@@ -31,6 +31,7 @@ Chat text is provenance, not runtime truth. When evidence conflicts, use the pre
 | [0017](ADR-0017-profession-and-riding-targets.md) | Player/bot profession split and early-riding target | Accepted, implementation pending | WS-10 / WS-20 / WS-30 |
 | [0018](ADR-0018-runbook-evidence-retention-before-restructuring.md) | Keep sanitized runbook evidence in the main repository for now | Accepted | WS-00 / WS-80 |
 | [0019](ADR-0019-external-windows-build-inputs.md) | Keep binary Windows build inputs external and pinned | Accepted | WS-10 / WS-50 |
+| [0020](ADR-0020-windows-first-operational-baseline.md) | Windows-first operation; defer containerization until the playable baseline is proven | Accepted | WS-80 |
 
 ## Creating later ADRs
 
