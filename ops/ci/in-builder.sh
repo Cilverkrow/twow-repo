@@ -125,6 +125,8 @@ exec docker run --rm \
     --user "$(id -u):$(id -g)" \
     --env HOME=/tmp \
     --env CI_BUILD_JOBS="${CI_BUILD_JOBS:-4}" \
+    --env CI_DB_PORT \
+    --env MARIADB_ROOT_PASSWORD \
     --env CCACHE_DIR=/ccache \
     --env CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-4G}" \
     --env CCACHE_COMPRESS=1 \

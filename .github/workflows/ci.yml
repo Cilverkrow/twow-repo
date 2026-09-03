@@ -8,13 +8,13 @@
 #
 # This file is that pipeline collapsed into one DAG:
 #
-#   lint ---------------+
-#   integration --------|   (parallel, nothing compiles here)
-#   build-and-test ----> smoke
+#   capacity ---> integration   (nothing compiles here)
+#          +----> build-and-test ---> smoke
+#   lint -----------------------+
 #
 #   windows-compile        (DISABLED 2026-09-02 - manual dispatch only)
 #
-# Five job entries. ONE full server compile per push, in the build-and-test job,
+# Six job entries. ONE full server compile per push, in the build-and-test job,
 # and smoke consumes the image that build produced instead of building its own.
 #
 # That claim was not true for a while and the numbers said so: build-and-test
@@ -194,6 +194,44 @@ env:
   CORE_IMAGE: twow/core:dev
 
 jobs:
+  # A normal job's service containers start before its first step. Capacity
+  # therefore has to be its own dependency if a full disk is to stop MariaDB,
+  # BuildKit and the compiler before any of them allocate more space.
+  capacity:
+    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    name: capacity preflight
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Measure runner workspace capacity
+        env:
+          CI_MIN_WORKSPACE_FREE_GIB: ${{ vars.CI_MIN_WORKSPACE_FREE_GIB || '8' }}
+        run: |
+          bash ops/ci/check-capacity.sh \
+            --label runner-workspace \
+            --path "$GITHUB_WORKSPACE" \
+            --minimum-gib "$CI_MIN_WORKSPACE_FREE_GIB"
+
+      - name: Measure Docker data-root capacity
+        env:
+          # Run 115 started with 19 GiB on the daemon disk and exhausted it at
+          # 1349/1369 objects. Twenty-two GiB is the measured lower gate, not a
+          # percentage of an unrelated runner filesystem.
+          CI_MIN_DOCKER_FREE_GIB: ${{ vars.CI_MIN_DOCKER_FREE_GIB || '22' }}
+        run: |
+          set -eu
+          docker info >/dev/null
+          docker_free_kib=$(docker run --rm --pull=missing alpine:3.22 \
+            sh -c "df -Pk / | awk 'END { print \$4 }'")
+          bash ops/ci/check-capacity.sh \
+            --label docker-data-root \
+            --minimum-gib "$CI_MIN_DOCKER_FREE_GIB" \
+            --available-kib "$docker_free_kib"
+          docker system df
+
   # ---------------------------------------------------------------- lint
   #
   # Everything that is not a compiler, in ONE job.
@@ -270,6 +308,10 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The security verdict remains mandatory. Only the optional artifact
+          # upload is disabled because this runner's HOME and workspace do not
+          # share a parent path and the uploader rejects that topology.
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
 
       # .gitleaksignore holds exactly one audited false positive. Broadening it
       # is how a real secret gets waved through, so the file's size is checked
@@ -366,21 +408,21 @@ jobs:
 
       - name: hadolint
         if: always()
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: deploy/docker/Dockerfile.core
-          # DL3008 (pin apt versions) is deliberately ignored: Debian point
-          # releases move and pinning every package would break the image on
-          # every security update.
-          ignore: DL3008
+        run: |
+          # A container action tries to mount /var/run/docker.sock, which does
+          # not exist on the remote-docker runner. Invoke the binary explicitly:
+          # the pinned Alpine image has no entrypoint on this daemon.
+          docker run --rm -i hadolint/hadolint:v2.12.0-alpine \
+            hadolint --ignore DL3008 - < deploy/docker/Dockerfile.core
 
       # pipx is preinstalled on ubuntu-24.04 and is NOT on a plain Debian
       # runner image, so this cannot assume it. Order: an already-installed
       # yamllint, then pipx, then a throwaway venv - the last of which needs
       # only python3 and works anywhere.
-      - name: yamllint
+      - name: Validate ordinary YAML
         if: always()
         run: |
+          set -eu
           if ! command -v yamllint >/dev/null 2>&1; then
             if command -v pipx >/dev/null 2>&1; then
               pipx install yamllint
@@ -391,9 +433,43 @@ jobs:
               export PATH="/tmp/yamllint-venv/bin:$PATH"
             fi
           fi
-          yamllint -d '{extends: relaxed, rules: {line-length: {max: 120}}}' \
-            .github/workflows deploy 2>&1 | tee /tmp/yamllint.txt
+          # Raw Helm Go templates are not YAML. Lint ordinary YAML here and
+          # validate the chart only after Helm has rendered it below.
+          find .github/workflows deploy -type f \( -name '*.yml' -o -name '*.yaml' \) \
+            ! -path 'deploy/helm/*/templates/*' -print0 \
+            | xargs -0 -r yamllint \
+                -d '{extends: relaxed, rules: {line-length: {max: 120}}}' \
+                2>&1 | tee /tmp/yamllint.txt
           ! grep -q ' error ' /tmp/yamllint.txt
+
+      - name: Render and validate Helm templates
+        if: always()
+        run: |
+          set -eu
+          render_once() {
+            tar -C deploy/helm -cf - twow \
+              | docker run --rm -i --entrypoint sh alpine/helm:3.18.6 -c '
+                  set -eu
+                  mkdir -p /work
+                  tar -xf - -C /work
+                  helm template ci /work/twow --namespace twow-ci \
+                    --values /work/twow/values-dev.yaml'
+          }
+          tar -C deploy/helm -cf - twow \
+            | docker run --rm -i --entrypoint sh alpine/helm:3.18.6 -c '
+                set -eu
+                mkdir -p /work
+                tar -xf - -C /work
+                helm lint /work/twow --values /work/twow/values-dev.yaml'
+          render_once > /tmp/twow-rendered-1.yaml
+          render_once > /tmp/twow-rendered-2.yaml
+          cmp /tmp/twow-rendered-1.yaml /tmp/twow-rendered-2.yaml
+          # Rendered manifests may contain harmless whitespace emitted by Go
+          # templates. This pass is intentionally syntax-only; ordinary source
+          # YAML above retains the full lint policy.
+          yamllint -d '{extends: relaxed, rules: {trailing-spaces: disable, indentation: disable, line-length: disable}}' \
+            /tmp/twow-rendered-1.yaml
+          echo "helm rendered deterministically: $(sha256sum /tmp/twow-rendered-1.yaml | cut -d' ' -f1)"
 
       # Module isolation. `modules` is the shared loader library, so anything
       # PUBLIC on it lands on every other module's compile line.
@@ -423,12 +499,12 @@ jobs:
         if: always()
         run: |
           fail=0
-          for f in $(find modules -path '*/data/sql/*' -name '*.sql' 2>/dev/null); do
+          while IFS= read -r -d '' f; do
             if grep -qiE '\b(tw_world|tw_char|tw_logon|tw_logs)\.' "$f"; then
               echo "::error file=$f::module migration references an upstream schema (ADR-0024 invariant 2)"
               fail=1
             fi
-          done
+          done < <(find modules -path '*/data/sql/*' -name '*.sql' -print0 2>/dev/null)
           exit $fail
 
       # Invariant 3: 'manual' is a literal string, not a digest. It made 146
@@ -479,9 +555,10 @@ jobs:
   # is whatever db-init.sh recorded, and that is exactly what the assertions below
   # examine.
   #
-  # No `needs:` on purpose - it touches no compiled artefact, so making it wait
-  # behind a 25-minute build would only delay the answer.
+  # It waits only for the capacity preflight. It does not wait for compiled
+  # artefacts, so bootstrap and build can still proceed in parallel afterwards.
   integration:
+    needs: capacity
     runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: bootstrap from empty
     timeout-minutes: 90
@@ -1064,31 +1141,17 @@ jobs:
   # merges, by publish.yml, which is the last gate before a registry push -
   # that is the trade, and it is a Dockerfile edit's author who should know it.
   #
-  # Ordering: tests first, still. The test targets are built and run before the
-  # full build starts, so a broken test reports in minutes instead of waiting
-  # for a link of the whole server.
+  # Ordering: configure and header contracts first, then the complete default
+  # build graph, then every registered CTest plus the disposable-DB adapter.
+  # Building the graph before CTest prevents a green subset caused by a missing
+  # or forgotten hand-maintained test-target list.
   build-and-test:
+    needs: capacity
     runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: build + test
-    # Down from 150. The 150 existed to cover a cold from-scratch compile inside
-    # BuildKit on every run; a warm ccache and one compile do not need it, and a
-    # cold cache still fits.
-    timeout-minutes: 120
-
-    services:
-      # MariaDB 11.8 per ADR-0027, matching what the stack deploys. The adapter
-      # suite drives a real database on purpose - its subject is transaction
-      # behaviour under concurrency, which a mock cannot show.
-      mariadb:
-        image: mariadb:11.8
-        env:
-          MARIADB_ROOT_PASSWORD: ci-root
-          MARIADB_DATABASE: roster_ci
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=5s --health-timeout=5s --health-retries=20
+    # A cold cache exceeded 120 minutes in run 115 and was killed before it
+    # could save the cache, making the next run repeat the same cold build.
+    timeout-minutes: 150
 
     env:
       # The toolchain container every compile step below runs in. Local to this
@@ -1099,6 +1162,10 @@ jobs:
       # is what removes it, the script is what mounts it, and a disagreement
       # would leave a multi-gigabyte volume behind on a shared daemon every run.
       BUILD_VOLUME: twow-build
+      # This is a throwaway credential for the per-run container below. It is
+      # passed by environment name and is never echoed or uploaded.
+      MARIADB_ROOT_PASSWORD: ci-root
+      CI_DB_CONTAINER: twow-ci-mariadb-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
       # Resolves $SUDO and prints which runner claimed the job. See the long
@@ -1189,13 +1256,10 @@ jobs:
                          /opt/hostedtoolcache/CodeQL /usr/local/share/boost
             $SUDO docker image prune -af || true
           else
-            # A self-hosted runner is shared and persistent. Only this
-            # pipeline's own leftovers are removed; the hosted-VM paths above
-            # do not exist here, so deleting them would free nothing anyway.
+            # A self-hosted runner is shared and persistent. Remove only tags
+            # and the named volume owned by this pipeline. Global container,
+            # image or builder pruning could delete another tenant's cache.
             docker image rm -f "$CORE_IMAGE" "$BUILDER_IMAGE" 2>/dev/null || true
-            docker container prune -f || true
-            docker image prune -f || true
-            docker builder prune -f --filter until=24h || true
           fi
           # A build tree left by a run that died before its reclaim step. It is
           # removed rather than reused: the checkout is fresh, so the tree would
@@ -1203,17 +1267,6 @@ jobs:
           # multi-gigabyte hold on a shared daemon's disk.
           docker volume rm -f "$BUILD_VOLUME" 2>/dev/null || true
           df -h .
-
-      # The only toolchain the runner itself still needs. Everything that
-      # compiles happens in the container; this is for the step that applies the
-      # roster migration against the service database.
-      - name: Install the MariaDB client
-        run: |
-          if ! command -v mariadb >/dev/null 2>&1; then
-            $SUDO apt-get update
-            $SUDO apt-get install -y --no-install-recommends mariadb-client
-          fi
-          mariadb --version
 
       - uses: docker/setup-buildx-action@v3
 
@@ -1324,61 +1377,85 @@ jobs:
       - name: Core headers are self-contained
         run: bash ops/ci/in-builder.sh 'bash ops/audit/header-self-containment.sh /build'
 
-      # Named test targets, built one at a time so a target that does not exist
-      # yet is reported as absent rather than failing the run. The CTest wiring
-      # (ADR-0022) is landing in parallel with this file: a target missing today
-      # must not turn the pipeline red, but a target that exists and does not
-      # compile absolutely must.
-      #
-      # These are CMake target names, not ctest test names. The Ninja generator
-      # emits a phony alias per target, so `ninja -t targets all` is an accurate
-      # existence check and costs nothing.
-      - name: Build the test targets
+      # Build CMake's complete default target once. Every normal executable
+      # registered with add_test() belongs to that graph, so this replaces the
+      # incomplete hand-maintained target list. The following inventory reads
+      # CTest's generated JSON and fails if any registered executable is absent.
+      - name: Build the server and all registered test executables
+        run: |
+          bash ops/ci/in-builder.sh \
+            "cmake --build /build --parallel $CI_BUILD_JOBS"
+
+      - name: Inventory registered tests and built executables
         id: testbuild
         run: |
           set -eu
-          known=$(bash ops/ci/in-builder.sh 'ninja -C /build -t targets all' 2>/dev/null | sed 's/:.*//' || true)
-          built=0
-          for t in persistent_active_roster_database_tests \
-                   dungeon_clear_tests_fast \
-                   dungeon_clear_tests_full \
-                   persistent_active_roster_tests; do
-            if printf '%s\n' "$known" | grep -qxF "$t"; then
-              echo "::group::building $t"
-              bash ops/ci/in-builder.sh "cmake --build /build --target $t --parallel $CI_BUILD_JOBS"
-              echo "::endgroup::"
-              built=$((built + 1))
-            else
-              echo "::notice::target '$t' is not in this configuration - skipping (ADR-0022 wiring pending)"
-            fi
+          summary=$(bash ops/ci/in-builder.sh \
+            'python3 ops/ci/registered-tests.py inventory /build')
+          printf '%s\n' "$summary"
+          registered=$(printf '%s\n' "$summary" | sed -n 's/^registered=//p')
+          built=$(printf '%s\n' "$summary" | sed -n 's/^executable_targets=//p')
+          missing=$(printf '%s\n' "$summary" | sed -n 's/^missing_executables=//p')
+          {
+            echo "registered=${registered:-0}"
+            echo "built=${built:-0}"
+            echo "missing=${missing:-0}"
+          } >> "$GITHUB_OUTPUT"
+
+      # Start a run-unique database explicitly after the capacity gate and the
+      # compile. GitHub service containers start before step 1, which prevents
+      # an early disk gate, and their host port is ambiguous on remote-docker.
+      - name: Start the disposable adapter database
+        id: adapterdb
+        run: |
+          set -eu
+          docker rm -f "$CI_DB_CONTAINER" 2>/dev/null || true
+          docker run -d --name "$CI_DB_CONTAINER" \
+            --env MARIADB_ROOT_PASSWORD \
+            --publish 127.0.0.1::3306 \
+            --health-cmd='healthcheck.sh --connect --innodb_initialized' \
+            --health-interval=5s --health-timeout=5s --health-retries=20 \
+            mariadb:11.8 >/dev/null
+          health=starting
+          for _ in $(seq 1 60); do
+            health=$(docker inspect -f '{{.State.Health.Status}}' "$CI_DB_CONTAINER")
+            [ "$health" = healthy ] && break
+            [ "$health" = unhealthy ] && break
+            sleep 2
           done
-          echo "built=$built" >> "$GITHUB_OUTPUT"
-          echo "built $built test target(s)"
+          [ "$health" = healthy ] || {
+            echo "::error::disposable MariaDB did not become healthy: $health"
+            exit 1
+          }
+          endpoint=$(docker port "$CI_DB_CONTAINER" 3306/tcp | head -1)
+          db_port=${endpoint##*:}
+          bash ops/ci/validate-ci-db-port.sh "$db_port"
+          docker exec --env MYSQL_PWD="$MARIADB_ROOT_PASSWORD" \
+            "$CI_DB_CONTAINER" mariadb -u root \
+            -e 'CREATE DATABASE roster_ci CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;'
+          echo "CI_DB_PORT=$db_port" >> "$GITHUB_ENV"
+          echo "port=$db_port" >> "$GITHUB_OUTPUT"
+          echo "disposable database ready on published port $db_port"
 
       # The adapter suite does not create its own schema; the roster migration
       # IS the schema. Applied twice on purpose - forward-only migrations must be
       # replay-safe (ADR-0024 invariant 3), and this is the cheapest place that
       # gets checked at all.
       - name: Apply the roster schema (twice, to prove replay safety)
-        # MYSQL_PWD rather than -p on the command line: the password would
-        # otherwise appear in the process list and in any `set -x` output.
-        env:
-          MYSQL_PWD: ci-root
         run: |
           set -eu
           mig=sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql
           # utf8mb4_bin, matching what the roster tables declare - a differently
           # collated schema is the "Illegal mix of collations" trap.
-          mariadb -h 127.0.0.1 -P 3306 -u root \
-            -e "CREATE DATABASE IF NOT EXISTS roster_ci CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;"
           for pass in 1 2; do
             echo "apply pass $pass"
-            mariadb -h 127.0.0.1 -P 3306 -u root roster_ci < "$mig"
+            docker exec --env MYSQL_PWD="$MARIADB_ROOT_PASSWORD" -i \
+              "$CI_DB_CONTAINER" mariadb -u root roster_ci < "$mig"
           done
 
-      # The binary is a trixie binary, so it runs in the container. The service
-      # database is published on the runner's 127.0.0.1:3306 and in-builder.sh
-      # uses --network host, so the connection string below is unchanged.
+      # The binary is a trixie binary, so it runs in the container. The database
+      # publishes an ephemeral port on the remote daemon; in-builder.sh joins
+      # that daemon's host network and receives the validated port explicitly.
       #
       # The existence check has to happen INSIDE the container now. The build
       # tree is a named volume, so `test -x build/adapter-bin/...` on the runner
@@ -1398,11 +1475,12 @@ jobs:
           fi
           mkdir -p test-results
           log=test-results/persistent_active_roster_database_tests.log
-          # Connection string format is host;port;user;password;database - see
-          # the usage line in persistent_active_roster_database_tests.cpp.
+          # The connection string is assembled inside the toolchain container,
+          # so the disposable password value is never printed by Actions.
           set +e
           bash ops/ci/in-builder.sh \
-            "$bin '127.0.0.1;3306;root;ci-root;roster_ci'" 2>&1 | tee "$log"
+            "$bin \"127.0.0.1;\${CI_DB_PORT};root;\${MARIADB_ROOT_PASSWORD};roster_ci\"" \
+            2>&1 | tee "$log"
           rc=${PIPESTATUS[0]}
           set -e
           # STAGE=COMPLETE is printed only after the last scenario. Without this
@@ -1425,25 +1503,22 @@ jobs:
         if: always()
         id: ctest
         run: |
-          # -N lists without running. The count is recorded either way for the
-          # gate below - hence `|| true`: with no tests registered ctest exits
-          # non-zero, and the default shell runs with -e and pipefail.
-          raw=$(bash ops/ci/in-builder.sh 'ctest --test-dir /build -N' 2>/dev/null || true)
-          found=$(printf '%s\n' "$raw" | sed -n 's/^Total Tests: //p' | tail -n1)
-          found=${found:-0}
-          echo "found=$found" >> "$GITHUB_OUTPUT"
-          echo "ctest discovered $found tests"
-          if [ "$found" -eq 0 ]; then
-            echo "::warning::ctest discovered 0 tests: enable_testing()/add_test() have not landed yet (ADR-0022)"
-            exit 0
-          fi
+          set -u
           mkdir -p test-results
-          # An ABSOLUTE output path. `../test-results` was relative to the
-          # build tree, which used to be /src/build and so resolved into the
-          # checkout; from /build it would resolve to /test-results inside the
-          # container and be thrown away with it.
+          set +e
           bash ops/ci/in-builder.sh \
             'ctest --test-dir /build --output-on-failure --output-junit /src/test-results/ctest.xml'
+          ctest_rc=$?
+          summary=$(bash ops/ci/in-builder.sh \
+            'python3 ops/ci/registered-tests.py junit /src/test-results/ctest.xml' 2>&1)
+          summary_rc=$?
+          set -e
+          printf '%s\n' "$summary"
+          for key in executed passed failed skipped; do
+            value=$(printf '%s\n' "$summary" | sed -n "s/^${key}=//p")
+            echo "$key=${value:-0}" >> "$GITHUB_OUTPUT"
+          done
+          [ "$ctest_rc" -eq 0 ] && [ "$summary_rc" -eq 0 ]
 
       - name: Upload test results
         if: always()
@@ -1459,22 +1534,45 @@ jobs:
       - name: Fail if nothing was tested
         if: always()
         env:
-          CTEST_FOUND: ${{ steps.ctest.outputs.found }}
+          REGISTERED_TESTS: ${{ steps.testbuild.outputs.registered }}
+          CTEST_EXECUTED: ${{ steps.ctest.outputs.executed }}
+          CTEST_PASSED: ${{ steps.ctest.outputs.passed }}
           ADAPTER_RAN: ${{ steps.adapter.outputs.ran }}
           TARGETS_BUILT: ${{ steps.testbuild.outputs.built }}
+          TARGETS_MISSING: ${{ steps.testbuild.outputs.missing }}
         run: |
-          echo "test targets built     : ${TARGETS_BUILT:-0}"
-          echo "ctest tests discovered : ${CTEST_FOUND:-0}"
-          echo "adapter suite executed : ${ADAPTER_RAN:-0}"
-          if [ "${CTEST_FOUND:-0}" -eq 0 ] && [ "${ADAPTER_RAN:-0}" -eq 0 ]; then
-            echo "::error::zero tests executed. A green run that tested nothing is worse than a red one."
+          set -eu
+          echo "registered tests        : ${REGISTERED_TESTS:-0}"
+          echo "test executables built  : ${TARGETS_BUILT:-0}"
+          echo "test executables missing: ${TARGETS_MISSING:-0}"
+          echo "ctest tests executed    : ${CTEST_EXECUTED:-0}"
+          echo "ctest tests passed      : ${CTEST_PASSED:-0}"
+          echo "adapter suite executed  : ${ADAPTER_RAN:-0}"
+          [ "${REGISTERED_TESTS:-0}" -gt 0 ] || {
+            echo "::error::CTest registered zero tests"
             exit 1
-          fi
+          }
+          [ "${TARGETS_MISSING:-0}" -eq 0 ] || {
+            echo "::error::one or more registered test executables were not built"
+            exit 1
+          }
+          [ "${CTEST_EXECUTED:-0}" -eq "${REGISTERED_TESTS:-0}" ] || {
+            echo "::error::CTest did not execute every registered test"
+            exit 1
+          }
+          [ "${CTEST_PASSED:-0}" -eq "${CTEST_EXECUTED:-0}" ] || {
+            echo "::error::not every executed CTest passed"
+            exit 1
+          }
+          [ "${ADAPTER_RAN:-0}" -eq 1 ] || {
+            echo "::error::the disposable database adapter suite did not complete"
+            exit 1
+          }
 
       # ------------------------------------------------------------- the image
       #
-      # The full server compile and link, once, out of the same build tree the
-      # tests just ran from. `cmake --install` writes to /opt/turtle inside the
+      # The server and tests were compiled together before CTest. Install that
+      # already-built tree now. `cmake --install` writes to /opt/turtle inside the
       # container, which in-builder.sh has bind-mounted to ./stage on the
       # runner - the prefix must be the real one because it is compiled into the
       # binary as SYSCONFDIR, so a DESTDIR here would produce a server that
@@ -1490,13 +1588,16 @@ jobs:
       # that. An OOM here does not print the words "out of memory" - it shows up
       # as ninja reporting a signal, or as the assembler failing to write an
       # object file, which reads exactly like running out of disk.
-      - name: Build the server and stage the install
+      - name: Stage the verified install
         run: |
-          bash ops/ci/in-builder.sh "cmake --build /build --parallel $CI_BUILD_JOBS \
-            && cmake --install /build \
+          bash ops/ci/in-builder.sh "cmake --install /build \
             && ccache --show-stats"
           du -sh stage
           ls -la stage/bin
+
+      - name: Remove the disposable adapter database
+        if: always()
+        run: docker rm -f "$CI_DB_CONTAINER" 2>/dev/null || true
 
       # The build tree is the largest thing on the disk and nothing after this
       # reads it. Removing it before the image build leaves room for the context
@@ -1509,12 +1610,24 @@ jobs:
       # scratch anyway (checkout wipes the source tree), so keeping it buys
       # nothing and costs the daemon's disk, which is shared.
       - name: Reclaim the build tree
+        if: always()
         run: |
           df -h .
-          docker run --rm --user 0:0 --volume "${BUILD_VOLUME:-twow-build}:/build" \
-            "$BUILDER_IMAGE" sh -c 'du -sh /build 2>/dev/null; rm -rf /build/* /build/.[!.]* || true'
+          if docker image inspect "$BUILDER_IMAGE" >/dev/null 2>&1; then
+            docker run --rm --user 0:0 --volume "${BUILD_VOLUME:-twow-build}:/build" \
+              "$BUILDER_IMAGE" sh -c 'du -sh /build 2>/dev/null; rm -rf /build/* /build/.[!.]* || true'
+          fi
           docker volume rm -f "${BUILD_VOLUME:-twow-build}" || true
           df -h .
+
+      - name: Record post-build capacity
+        if: always()
+        run: |
+          echo "runner workspace after build:"
+          df -h .
+          echo "Docker data root after build:"
+          docker run --rm --pull=missing alpine:3.22 df -h / || true
+          docker system df || true
 
       # `ci-staged` is `runtime-base` plus a COPY of ./stage - the same base
       # image, apt list, entrypoint, user and directory layout as the `runtime`
