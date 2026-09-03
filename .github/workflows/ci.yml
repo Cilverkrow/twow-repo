@@ -270,6 +270,16 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The scan works - it reports "no leaks found". What fails is the
+          # action's SARIF artifact upload, which crashes with
+          #   The rootDirectory: /root is not a parent directory of the file:
+          #   /_work/k8s-twow-repo/twow-repo/twow-repo/results.sarif
+          # because on this self-hosted runner HOME is /root while the workspace
+          # is under /_work, and the upload helper requires one to contain the
+          # other. The scan verdict is what gates this job; the artifact is a
+          # convenience. Turning the upload off keeps the security check and
+          # drops a crash that has nothing to do with the repository contents.
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
 
       # .gitleaksignore holds exactly one audited false positive. Broadening it
       # is how a real secret gets waved through, so the file's size is checked
@@ -364,15 +374,22 @@ jobs:
         if: always()
         run: bash ops/audit/issue-tooling-guard.sh
 
+      # Run the hadolint image directly rather than through hadolint-action.
+      # The action is a Docker container action, and the runner mounts
+      # /var/run/docker.sock into every container action. This runner's daemon
+      # is Rancher Desktop at /run/rd/docker.sock, so that path does not exist
+      # and the mount fails before hadolint ever starts:
+      #   nfsserve: cannot export /var/run/docker.sock: no such file or directory
+      # Piping the Dockerfile in on stdin needs no socket and no bind mount.
+      #
+      # DL3008 (pin apt versions) is deliberately ignored: Debian point releases
+      # move and pinning every package would break the image on every security
+      # update.
       - name: hadolint
         if: always()
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: deploy/docker/Dockerfile.core
-          # DL3008 (pin apt versions) is deliberately ignored: Debian point
-          # releases move and pinning every package would break the image on
-          # every security update.
-          ignore: DL3008
+        run: |
+          docker run --rm -i hadolint/hadolint:latest \
+            hadolint --ignore DL3008 - < deploy/docker/Dockerfile.core
 
       # pipx is preinstalled on ubuntu-24.04 and is NOT on a plain Debian
       # runner image, so this cannot assume it. Order: an already-installed
