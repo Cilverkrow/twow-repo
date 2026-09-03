@@ -10,8 +10,8 @@ The complete source for the Compose configuration is:
 
 | Service | Complete versioned base | Reviewed non-secret overlay |
 |---|---|---|
-| Worldserver | `src/mangosd/mangosd.conf.dist.in` | `config/canonical/compose/mangosd.overlay.conf` |
-| Realmserver | `src/realmd/realmd.conf.dist.in` | `config/canonical/compose/realmd.overlay.conf` |
+| Worldserver | `core/src/mangosd/mangosd.conf.dist.in` | `config/canonical/compose/mangosd.overlay.conf` |
+| Realmserver | `core/src/realmd/realmd.conf.dist.in` | `config/canonical/compose/realmd.overlay.conf` |
 | PlayerBots | `modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in` | `config/canonical/compose/aiplayerbot.overlay.conf` |
 
 [`semantic-baseline.tsv`](../config/canonical/compose/semantic-baseline.tsv)
