@@ -43,7 +43,7 @@ CORE_BRANCH=main
 # this line still named e9ff42cf, the pre-merge tip of the branch that became
 # it. nightly.yml compares the two and errors on a difference, so that had been
 # a standing red. Both are now d1fc00c.
-CORE_COMMIT=d1fc00c43669701a7b86d09c18c4ce6131c430a7
+CORE_COMMIT=7c63d8c4e05167fabb576f9cd95afb8556b64a29
 
 # The core's own nested submodule, recorded so that "did the checkout go deep
 # enough?" has a written answer. BUILD_ELUNA defaults ON and FATAL_ERRORs
