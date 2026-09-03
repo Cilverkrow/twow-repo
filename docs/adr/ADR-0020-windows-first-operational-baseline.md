@@ -45,6 +45,10 @@ Existing container findings, including db-init migration safety work, are
 retained as future-platform evidence. They do not authorize a change to the
 Windows server and must not displace the Windows validation sequence.
 
+The non-binding follow-on product ideas and discovery gates are recorded in
+[`docs/BOT-PROGRESSION-SIDEQUESTS.md`](../BOT-PROGRESSION-SIDEQUESTS.md). That
+backlog does not amend this decision or authorize implementation.
+
 ## Consequences
 
 - Current effort stays focused on the server the operator can play and inspect
