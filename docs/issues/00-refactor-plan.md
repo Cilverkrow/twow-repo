@@ -212,7 +212,29 @@ Each phase is a PR into `refactor/modular-platform`, each ends green in CI, each
    | `upstream-smoke.yml` | nightly | build against upstream tip to catch API drift early |
    | `publish.yml` | tag, main | build + push images to GHCR, package + push Helm chart |
 
-   `lint.yml` covers everything that isn't a compiler: `clang-format`/`clang-tidy`, `buf lint` (once protos exist), `sqlfluff` on migrations, `hadolint`, `shellcheck` and `PSScriptAnalyzer`, `yamllint`, `markdownlint` + a dead-link check across `docs/` (the 46 runbook citations must resolve), `gitleaks` (respecting the one audited `.gitleaksignore` entry and failing on any broadening), `helm lint`/`helm template`, a **binary/size gate**, a **boundary check** failing a PR that touches `core/` without the `core-change` label, and a **schema-ownership check** rejecting a migration targeting a schema its module doesn't own.
+   The lint workflow covers everything that isn't a compiler: `clang-format`/`clang-tidy`, `buf lint` (once protos exist), `sqlfluff` on migrations, `hadolint`, `shellcheck` and `PSScriptAnalyzer`, `yamllint`, `markdownlint` + a dead-link check across `docs/` (the 46 runbook citations must resolve), `gitleaks` (respecting the one audited `.gitleaksignore` entry and failing on any broadening), `helm lint`/`helm template`, a **binary/size gate**, a **boundary check** failing a PR that touches `core/` without the `core-change` label, and a **schema-ownership check** rejecting a migration targeting a schema its module doesn't own.
+
+   > **Correction 2026-09-03: this eight-workflow layout was not built, and
+   > `lint.yml` does not exist.** CI was consolidated into three workflows:
+   > `.github/workflows/ci.yml` (jobs `lint`, `build-and-test`, `windows-compile`,
+   > `integration`, `smoke`), `nightly.yml` (upstream drift, submodule-pin check)
+   > and `publish.yml`. The `lint` job carries the row above and explains the
+   > merge in its own header comment: seven one-check jobs meant seven runners and
+   > seven checkouts for a few minutes of shell, and `if: always()` on every step
+   > preserves the only property the split was buying -- a failing check does not
+   > hide the ones after it. Anywhere this plan names `lint.yml`, read **the
+   > `lint` job in `.github/workflows/ci.yml`**.
+   >
+   > Of the checks the paragraph above lists, these run today: `gitleaks` (with the broadened-
+   > suppression guard), the binary/size gate, the `docs/` dead-link check,
+   > `shellcheck`, `hadolint`, `yamllint`, the module-boundary check and the
+   > schema-ownership check. These were planned and are **not** implemented:
+   > `clang-format`/`clang-tidy`, `buf lint`, `sqlfluff`, `PSScriptAnalyzer`,
+   > `markdownlint`, `helm lint`/`helm template`, and the `core-change`-label gate
+   > on `core/` changes. That gap is the plan's, not the workflow's, and it is
+   > recorded here rather than left to be inferred from a workflow file that does
+   > not exist.
+
 5. **Rewrite `AGENTS.md`** (see below) — governance kept, engineering section added, paths normalized.
 6. **Smoke tests in `test/smoke/`**: compose up → realmd accepts a connection on 3724 → worldserver listens on 8090 → `migrations` table has the expected count → console responds → a bot logs in → clean shutdown leaves no dirty state. The gate every later phase must keep green.
 7. **Set up issue tracking** (see below) and import four sources as issues: this plan's deferred work, `docs/OPEN-THREADS.md` (OT-001…OT-022), your friend's task markdown, and — per his point — **a fresh sweep of `runbooks/` for still-open tasks**. That sweep is a real analysis job, not a copy: `runbooks/` is 1,299 files across 49 top-level directories, many of them superseded or blocked runs, so the work is separating live open threads from closed evidence. It must run **against a freshly pulled `main`**, because `main` will have advanced past this planning session. Deliverable: a reviewed manifest under `docs/issues/` before any issue is created.
@@ -485,7 +507,7 @@ Added in Phase 0 so later phases have something to fail against.
 | Characterization | extracted features behave identically to the spliced originals | written *before* each extraction in Phase 3 |
 | Integration | migrations apply cleanly from empty; module tables land in the right schema | compose-driven, ephemeral MariaDB, in CI |
 | Smoke | is it alive: ports, migrations count, bot login, clean shutdown, bot persistence across restart | `make smoke`, local + CI, the gate for every phase |
-| Lint | everything non-compiling, incl. boundary and schema-ownership rules | `lint.yml` |
+| Lint | everything non-compiling, incl. boundary and schema-ownership rules | the `lint` job in `.github/workflows/ci.yml` (the plan called this `lint.yml`; see the correction in Phase 0) |
 
 End-to-end acceptance, the thing that says this worked:
 
