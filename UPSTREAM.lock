@@ -42,8 +42,8 @@ CORE_BRANCH=main
 # It was mismatched: the gitlink said e898d338 (twow-core #10 as merged) while
 # this line still named e9ff42cf, the pre-merge tip of the branch that became
 # it. nightly.yml compares the two and errors on a difference, so that had been
-# a standing red. Both are now d1fc00c.
-CORE_COMMIT=d1fc00c43669701a7b86d09c18c4ce6131c430a7
+# a standing red. Both are now e3ab7b0d.
+CORE_COMMIT=e3ab7b0d7e77fc32009c664618d7ec7e58c511de
 
 # The core's own nested submodule, recorded so that "did the checkout go deep
 # enough?" has a written answer. BUILD_ELUNA defaults ON and FATAL_ERRORs
