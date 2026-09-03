@@ -140,3 +140,11 @@ Thumbs.db
 /.ci/
 /image/
 /test-results/
+
+# Agent and audit scratch. `.audit/` is written by ops/audit tooling and by
+# investigation runs; it has held a full second checkout of this repository
+# (303 MB) while being untracked AND unignored, which is one `git add -A` away
+# from committing the tree into itself. `.claude/` is per-session agent state.
+/.audit/
+/.claude/
+bash.exe.stackdump

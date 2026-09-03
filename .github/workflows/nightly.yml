@@ -297,9 +297,13 @@ jobs:
           # upstream touching them is what turns a merge into a conflict day.
           echo
           echo "Upstream changes in the files that carry our delta:"
+          # These paths must match UPSTREAM's layout, not ours. Two of them were
+          # 'src/game/World/World.*' and 'src/game/Server/WorldSession.cpp', which
+          # match nothing upstream - both files sit flat in src/game/ there, so drift
+          # on the two busiest files in the tree was invisible.
           git -C upstream.git diff --stat "$UPSTREAM_BASE..$tip" -- \
-            'src/game/Objects/Player.*' 'src/game/World/World.*' \
-            'src/game/Objects/Unit.*' 'src/game/Server/WorldSession.cpp' \
+            'src/game/Objects/Player.*' 'src/game/World.*' \
+            'src/game/Objects/Unit.*' 'src/game/WorldSession.cpp' \
             'src/game/Handlers/CharacterHandler.cpp' \
             || echo "  (none of the tracked hot files changed)"
 

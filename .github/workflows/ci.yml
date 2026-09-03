@@ -419,11 +419,18 @@ jobs:
 
       # Invariant 2 (ADR-0024): upstream schemas are read-only to us. A module
       # migration that writes an upstream table is the failure this catches.
+      #
+      # The path filter used to be `-path '*/data/sql/*'`, which matched exactly
+      # one file in the tree: mod-donation's. mod-playerbots keeps its 24 SQL
+      # files under `modules/mod-playerbots/sql/`, not `data/sql/`, so the module
+      # that owns 24 of the 25 module migrations was never inspected and the
+      # invariant was unenforced where it mattered most. Modules do not agree on
+      # a SQL directory name, so match on the extension and let the grep decide.
       - name: Migrations respect schema ownership
         if: always()
         run: |
           fail=0
-          for f in $(find modules -path '*/data/sql/*' -name '*.sql' 2>/dev/null); do
+          for f in $(find modules -name '*.sql' 2>/dev/null); do
             if grep -qiE '\b(tw_world|tw_char|tw_logon|tw_logs)\.' "$f"; then
               echo "::error file=$f::module migration references an upstream schema (ADR-0024 invariant 2)"
               fail=1
