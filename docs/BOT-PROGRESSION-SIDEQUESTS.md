@@ -168,3 +168,54 @@ another bot can offer a recipe, and the group can choose to gather together.
 7. Only after the prior capabilities are proven: cooperative gathering, crafting,
    trading, and event behavior.
 
+## 6. Player AddOns and possible bot-facing adapters
+
+### Boundary
+
+WoW AddOns execute in a human player's client UI. Server-side PlayerBots do not
+run a WoW client, do not load Lua AddOns, and must not be represented as though
+they do. Installing a third-party AddOn therefore improves the player
+experience; it does not grant a bot quest tracking, boss timers, TurtleRP
+profile, or game authority.
+
+Any later bot-facing display is a separate, narrow server-to-client adapter. It
+must expose approved profile facts or encounter state as value data, not allow a
+client AddOn or an LLM to control bot, group, guild, inventory, trade, or
+database state.
+
+### Candidate client AddOn shortlist
+
+| Candidate | Intended player value | Decision status |
+| --- | --- | --- |
+| pfQuest + pfQuest-turtle | Quest, world-object, item, and Turtle-specific database/map context | Evaluate together as one version-pinned client stack |
+| ImmersiveDialogUI | Player-side quest/gossip presentation | Evaluate as a cosmetic UI option; no bot integration implied |
+| TurtleRP | Visible player RP profiles and profile communication | Evaluate for normal player RP first; investigate its message/profile protocol only as future adapter evidence |
+| BigWigs | Player-side encounter alerts and timers | Evaluate for raid usability; use encounter modules only as a reference when designing deterministic bot tactics |
+| Atlas-CFM | Dungeon maps, loot-panel, and quest browsing | Evaluate as a player reference tool |
+| ShaguDPS | Lightweight player-visible combat measurement | Evaluate as an observational tool, not bot control |
+| pfUI-turtle | Broad UI replacement | Choose deliberately against a default-UI-plus-tweaks stack; do not install overlapping UI frameworks indiscriminately |
+| ShaguTweaks + extras | Selected default-UI enhancements | Evaluate individual modules only, after choosing the UI stack |
+| ActionButtonUtils | Action-button visual feedback | Low-priority cosmetic option; listed once despite duplicate discovery input |
+
+### Future adapter experiments
+
+- **TurtleRP-like bot profiles:** a project-owned companion adapter could render
+  approved bot name, description, profession, and limited at-a-glance traits in
+  the player's UI. It must not impersonate an installed TurtleRP client on a
+  bot, scrape private profile data, or create a hidden command channel.
+- **Encounter assistance:** BigWigs remains an aid for the human player. Bot
+  responses to boss phases belong in deterministic server-side tactics, with
+  encounter modules usable only as a researched reference and subject to their
+  license/provenance.
+- **Quest/profession context:** player UI data can improve what the player sees;
+  bot pathing and gathering must rely on independently validated server/client
+  world data, not on a player's local AddOn database.
+
+### Required intake gate before client installation or distribution
+
+For every selected AddOn, record source URL, exact commit/release, license,
+SHA-256 of the downloaded archive, target client version, folder name, required
+dependencies, default modules, saved-variable behavior, memory/load impact, and
+an enable/disable test on the Windows client. Keep third-party AddOn sources and
+archives out of the server-source repository unless a later licensing and
+provenance decision explicitly permits vendoring.
