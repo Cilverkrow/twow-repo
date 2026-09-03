@@ -1333,6 +1333,14 @@ jobs:
       # These are CMake target names, not ctest test names. The Ninja generator
       # emits a phony alias per target, so `ninja -t targets all` is an accurate
       # existence check and costs nothing.
+      #
+      # THE LIST MUST COVER EVERY add_test() IN THE TREE. ctest below runs out
+      # of this same build tree and nothing else builds before it, so a test
+      # that is registered but whose executable is not named here is reported
+      # as "***Not Run" and fails the run - which is what bot_brain_wire,
+      # playerbot_event_store_contract and eluna.lua-runtime did the first time
+      # this job got far enough to reach ctest at all. Registrations live in
+      # modules/*/tests.cmake and core/dep/lualib/CMakeLists.txt.
       - name: Build the test targets
         id: testbuild
         run: |
@@ -1342,7 +1350,10 @@ jobs:
           for t in persistent_active_roster_database_tests \
                    dungeon_clear_tests_fast \
                    dungeon_clear_tests_full \
-                   persistent_active_roster_tests; do
+                   persistent_active_roster_tests \
+                   bot_brain_wire_tests \
+                   playerbot_event_store_contract_tests \
+                   eluna_lua_smoke; do
             if printf '%s\n' "$known" | grep -qxF "$t"; then
               echo "::group::building $t"
               bash ops/ci/in-builder.sh "cmake --build /build --target $t --parallel $CI_BUILD_JOBS"
