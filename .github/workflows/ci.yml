@@ -377,7 +377,7 @@ jobs:
       # Run the hadolint image directly rather than through hadolint-action.
       # The action is a Docker container action, and the runner mounts
       # /var/run/docker.sock into every container action. This runner's daemon
-      # is Rancher Desktop at /run/rd/docker.sock, so that path does not exist
+      # is lhns/remote-docker at /run/rd/docker.sock, so that path does not exist
       # and the mount fails before hadolint ever starts:
       #   nfsserve: cannot export /var/run/docker.sock: no such file or directory
       # Piping the Dockerfile in on stdin needs no socket and no bind mount.
