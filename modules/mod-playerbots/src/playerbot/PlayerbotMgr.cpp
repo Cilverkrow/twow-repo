@@ -279,6 +279,24 @@ void PlayerbotHolder::NotePlayerDestroyed(Player const* player)
     if (!player)
         return;
     uint32 const guid = player->GetGUIDLow();
+
+    // MEASUREMENT. 37 Dragonmaw runs overnight 2026-09-01 died on "leader tank
+    // left the world", always that and never "lost its bot AI", after 14-33
+    // minutes (median 22). That window matches the rotation's count-change
+    // interval (RandomBotCountChangeMinInterval 1800), but ProcessBot already
+    // refuses to touch an externally-managed login - so either something else
+    // removes them, or the tank is not among the marked slots. This says which:
+    // it fires at the one moment that is certain, the destructor, and reports
+    // whether the Player being destroyed belonged to a run.
+    //
+    // Quiet by construction: only run bots are marked, so an ordinary rotation
+    // logout says nothing.
+    if (sRandomPlayerbotMgr.IsExternallyManaged(guid))
+        sLog.outString("[DC-BOTLIFE] run bot %s (guid %u) is being DESTROYED — "
+                       "still marked externally-managed, so the run has not torn "
+                       "it down; something else took it",
+                       player->GetName(), guid);
+
     std::lock_guard<std::mutex> lock(HolderRegistryLock());
     for (PlayerbotHolder* holder : HolderRegistry())
     {
