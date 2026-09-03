@@ -1070,10 +1070,20 @@ jobs:
   build-and-test:
     runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
     name: build + test
-    # Down from 150. The 150 existed to cover a cold from-scratch compile inside
-    # BuildKit on every run; a warm ccache and one compile do not need it, and a
-    # cold cache still fits.
-    timeout-minutes: 120
+    # Back to 150. It was cut to 120 on the reasoning that "a warm ccache and
+    # one compile do not need it, and a cold cache still fits". The second half
+    # of that turned out to be false, and the way it fails is a trap: a run that
+    # invalidates the cache - restoring 17 widely-included headers did exactly
+    # that - needs a near-from-scratch compile, which took over 100 minutes here
+    # at CI_BUILD_JOBS=4. The job is then killed before actions/cache can save,
+    # so the NEXT run restores the same stale cache and times out identically.
+    # One run with room to finish saves a warm cache and puts the rest back
+    # under budget.
+    #
+    # Raising CI_BUILD_JOBS instead is not the fix: the comment at the top of
+    # this file records that more parallelism gets OOM-killed against the 8 GiB
+    # cgroup.
+    timeout-minutes: 150
 
     services:
       # MariaDB 11.8 per ADR-0027, matching what the stack deploys. The adapter
@@ -1415,8 +1425,8 @@ jobs:
           # --network host, on the theory that the service container's published port
           # is reachable there. That holds on a GitHub-hosted runner, where the runner
           # and the daemon share one network namespace. It does not hold here: this
-          # runner's daemon is Rancher Desktop (unix:///run/rd/docker.sock), so
-          # --network host is the Rancher VM's namespace, and an explicit -p 3306:3306
+          # runner's daemon is REMOTE - lhns/remote-docker on unix:///run/rd/
+          # docker.sock - so --network host is not the runner's namespace, and -p 3306:3306
           # is reported by the daemon as 0.0.0.0:32770. Connecting to 127.0.0.1:3306
           # from inside the builder then TIMES OUT - errno 115, EINPROGRESS, a timeout
           # and not a refusal - while the mariadb client on the runner pod reaches 3306
