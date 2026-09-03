@@ -140,7 +140,7 @@ prerequisite for this split.
   fork point, the upstream of record, and which repository may merge from upstream are
   stated there and are not restated here.
 - `docs/PROVENANCE.md`, `docs/FOOTGUNS.md` (FG-005, FG-006, FG-007, FG-072, FG-076)
-- `docs/history/source-commit-map.tsv` maps `0af2567` to `1af237d`; both resolve the
+- `ops/history/source-commit-map.tsv` maps `0af2567` to `1af237d`; both resolve the
   vendored bot tree to `9bd691ccdccf88ebdbe362d293337068ec01a636`.
 - Counting the output of `git diff --name-only` between `0af2567` and `ed32ae41`,
   restricted to the vendored bot tree at its pre-promotion path, gives 255 paths;

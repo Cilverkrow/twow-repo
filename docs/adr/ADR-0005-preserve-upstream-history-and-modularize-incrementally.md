@@ -33,7 +33,7 @@ Deep modularization is not a prerequisite for the initial import:
 
 - `docs/PROVENANCE.md`
 - `docs/MODULARIZATION-ROADMAP.md`
-- `docs/history/source-commit-map.tsv`
+- `ops/history/source-commit-map.tsv`
 
 ## Superseded 2026-09-02
 
