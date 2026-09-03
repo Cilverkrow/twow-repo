@@ -57,18 +57,17 @@ CORE_SUBMODULE_ELUNA_URL=https://github.com/ElunaLuaEngine/Eluna.git
 UPSTREAM_URL=https://github.com/Shyalya/tortoise-wow.git
 UPSTREAM_BRANCH=playerbots-integration-gh
 
-# The upstream commit the fork's delta applies to -- "Merge pull request #404
-# from Penqle/1181dev".
-#
-# ADR-0020 originally recorded db5fb2a here and called it the upstream tip. It
-# is not an upstream hash at all: it is a post-filter-repo commit in THIS
-# repository, so `git fetch upstream db5fb2a` fails and always did. The mapping
-# to 61a8269 was confirmed by content rather than by hash -- every file under
-# src/game was byte-identical between the two, the only difference being the
-# 146 warden .cr/.key binaries filter-repo stripped from here and a genuine
-# fork gets back.
+# The upstream commit the fork's delta applies to. This is the machine-readable
+# projection of docs/adr/ADR-0026-project-lineage-and-provenance.md, which is the
+# one document that states the fork point and the evidence for it. This file
+# carries the value because the nightly drift job sources it; it deliberately
+# makes no argument of its own, and if the two ever disagree, resolve against the
+# upstream remote rather than against either file.
 UPSTREAM_BASE=61a8269151721f6467eddb05e7bed37704d0fc0b
 
-# Kept only so the old value is greppable when somebody finds it in an ADR or a
-# workflow and wonders which of the two is wrong.
+# The value UPSTREAM_BASE used to hold, kept ONLY so it stays greppable when
+# somebody finds it in an old branch, a workflow or a chat log and needs to know
+# which of the two is wrong. It is a post-filter-repo commit in THIS repository
+# and not an upstream hash at all -- `git fetch upstream db5fb2a` fails and
+# always did (FG-076). Nothing reads this; it is not an alternative base.
 UPSTREAM_BASE_SUPERSEDED=db5fb2a197f05611ad9d243568122c6be466ab8a
