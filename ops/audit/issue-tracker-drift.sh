@@ -15,6 +15,27 @@
 #     passed the body in double quotes, so the escape landed in the text. 32 of
 #     117 issues rendered every apostrophe as a four-character mess.
 #
+# KNOWN GAP -- this check is one-way, and its final line overstates what it
+# proves. It walks the manifest entries and asks "does this one have an issue?".
+# It never walks the tracker and asks "which issues does no manifest entry
+# explain?", so an issue filed by hand on GitHub -- bypassing the manifest that
+# docs/issues/README.md calls the source of truth -- passes silently forever.
+# Two do today: CORE-11 (#144) and CORE-12 (#145). 89 distinct ids exist on the
+# tracker; 87 exist in the manifests.
+#
+# The header line does not reveal it either: "issues with an id" counts issues,
+# not ids, so closed duplicates inflate it (122 against 87) and it has never
+# looked like it should reconcile.
+#
+# Fixing the detection is a few lines -- iterate by_id, report ids absent from
+# man. Fixing the DATA is what is actually blocked: backfilling CORE-11 and
+# CORE-12 into docs/issues/ makes this script compare their manifest titles
+# against their tracker titles, and CORE-11's tracker title states something
+# about upstream that ADR-0026 records as false. Correcting it is a write to the
+# tracker (the documented re-sync below), not a documentation change. Until that
+# is done deliberately, the detection would report a problem nobody can close
+# from inside a commit. See FG-082 in docs/FOOTGUNS.md.
+#
 # Usage: bash ops/audit/issue-tracker-drift.sh [--repo owner/name]
 
 set -euo pipefail
