@@ -28,20 +28,24 @@ namespace
         return static_cast<uint64>(std::time(nullptr)) * 1000;
     }
 
+    bool ToLocalTime(std::time_t const now, std::tm& tmBuf)
+    {
+#if defined(_MSC_VER)
+        return localtime_s(&tmBuf, &now) == 0;
+#else
+        return localtime_r(&now, &tmBuf) != nullptr;
+#endif
+    }
+
     std::string MakePlanId()
     {
         static uint32 counter = 0;
+        static uint32 fallbackCounter = 0;
         std::time_t const now = std::time(nullptr);
         std::tm tmBuf{};
-        // localtime_s nimmt (tm*, time_t*), localtime_r (time_t*, tm*) - die
-        // Reihenfolge ist vertauscht, ein #define-Alias waere hier falsch.
-#if defined(_MSC_VER)
-        localtime_s(&tmBuf, &now);
-#else
-        localtime_r(&now, &tmBuf);
-#endif
-        char buf[32];
-        std::strftime(buf, sizeof(buf), "tp-%Y%m%d-%H%M%S", &tmBuf);
+        char buf[32]{};
+        if (!ToLocalTime(now, tmBuf) || std::strftime(buf, sizeof(buf), "tp-%Y%m%d-%H%M%S", &tmBuf) == 0)
+            return "tp-time-unavailable-" + std::to_string(++fallbackCounter);
         return std::string(buf) + "-" + std::to_string(++counter);
     }
 

@@ -196,18 +196,19 @@ namespace DcMovement
             bool const logRefusal = nowRef - s_lastSplineRefusalMs > 4000;
             if (logRefusal)
                 s_lastSplineRefusalMs = nowRef;
-            LOG_INFO_IF(logRefusal, "playerbots.dungeonclear",
-                      "[DC:{}] spline REFUSED: {} pts, {:.1f}yd -> gen={} finalized={} "
-                      "dur={} disableMove={} root={} stun={} bot=({:.1f},{:.1f},{:.1f}) "
-                      "end=({:.1f},{:.1f},{:.1f})",
-                      bot->GetName(), pts.size(), windowLen, uint32(gen),
-                      bot->movespline ? bot->movespline->Finalized() : true,
-                      bot->movespline ? bot->movespline->Duration() : -1,
-                      bot->HasUnitFlag(UNIT_FLAG_DISABLE_MOVE),
-                      bot->HasUnitState(UNIT_STATE_ROOT),
-                      bot->HasUnitState(UNIT_STATE_STUNNED),
-                      bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
-                      pts.back().x, pts.back().y, pts.back().z);
+            if (logRefusal)
+                LOG_INFO("playerbots.dungeonclear",
+                         "[DC:{}] spline REFUSED: {} pts, {:.1f}yd -> gen={} finalized={} "
+                         "dur={} disableMove={} root={} stun={} bot=({:.1f},{:.1f},{:.1f}) "
+                         "end=({:.1f},{:.1f},{:.1f})",
+                         bot->GetName(), pts.size(), windowLen, uint32(gen),
+                         bot->movespline ? bot->movespline->Finalized() : true,
+                         bot->movespline ? bot->movespline->Duration() : -1,
+                         bot->HasUnitFlag(UNIT_FLAG_DISABLE_MOVE),
+                         bot->HasUnitState(UNIT_STATE_ROOT),
+                         bot->HasUnitState(UNIT_STATE_STUNNED),
+                         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
+                         pts.back().x, pts.back().y, pts.back().z);
             // Report the truth. The caller's contract is "did I issue movement",
             // and a refused spline is not movement — Advance must fall through to
             // its per-point MoveTo fallback (which walks, slowly) instead of
