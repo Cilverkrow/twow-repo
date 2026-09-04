@@ -39,7 +39,8 @@ Four rules follow from it, and getting them wrong has already cost a day:
 - **Windows is a compile target only.** No quality-of-life work, no CI full-link job.
   `ops/windows/**` is retained as historical evidence and is not extended.
 - A clean clone **builds fully on Linux and cannot on Windows**: `core/dep/windows/lib` and
-  `src/mangosd/mangosd.ico` are deliberately not in Git (`docs/adr/ADR-0019-*`).
+  `core/src/mangosd/mangosd.ico` are committed in twow-core, which builds and links on
+  Windows in its own CI. twow-repo does not build for Windows at all.
 - See `docs/adr/ADR-0028-platform-and-ci-strategy.md`.
 
 ## Build and run
@@ -82,7 +83,7 @@ Do not use `libboost-all-dev`: it pulls ~230 packages including OpenMPI. Only `t
 
 | Path | Contents |
 |---|---|
-| `src/` | Server source: `game/`, `shared/`, `framework/`, `mangosd/`, `realmd/` |
+| `core/` | The server, as a submodule: `core/src/game`, `core/src/shared`, `core/sql`. Not ours to edit here - changes go to twow-core and come back as a pin bump. |
 | `modules/` | Every module (`mod-*`), each with its own `src/`, `conf/`, `data/sql/`, `t/`. The vendored bot tree is one of them: `mod-playerbots`. |
 | `sql/` | Schema and migrations |
 | `deploy/` | `docker/`, `compose/`, `helm/` |
@@ -117,9 +118,37 @@ Binding on every module, service, migration and script. Full text in
 
 ### Working with issues
 
+**The backlog serves the project, not the other way round.** An issue records that
+something *was* worth doing when it was written. It is not authorization, and it is not
+evidence that the problem still exists.
+
+**Verify the premise before doing the work.** Manifest bodies are written in the present
+tense and are often months old, so they read as statements of current fact when they are
+not. REF-001 still opens "the repo has 196 test assertions and runs none of them ... no
+`enable_testing()`, no `add_test()`, no CTest registration anywhere" - `ctest` runs six
+suites today. Re-check the claim against the tree as it is now. **If the premise is false,
+the issue is finished**: say what you actually found and close it.
+
+**Check `core/` first.** twow-core absorbed a large amount of what this tracker still
+describes. If core already does it, the issue is done here no matter what the body says.
+
+**ADRs outrank issues.** `docs/adr/` holds the decisions of record. An issue that re-opens
+a settled decision is invalid on its face - close it citing the ADR, do not "evaluate" it.
+Eluna is the standing example: it is decided, and it ships in core. A title beginning
+**Decide**, **Evaluate** or **Restate** is the tell; check it against the tree before
+touching it.
+
+**Closing as no-longer-wanted is a normal outcome**, equal in standing to closing as done.
+Record which it was and why. Removing work from the plan is progress, not failure.
+
+**Do not file work you are not going to do.** Prefer growing an existing issue over adding
+a manifest entry.
+
+#### The mechanics
+
 Issues are a **projection of `docs/issues/*.md`**, not the source of truth. Edit the
-manifest and re-run the importer; do not hand-edit an issue body, because the next
-import will overwrite it.
+manifest and re-run the importer; do not hand-edit an issue body, because the next import
+overwrites it.
 
 ```bash
 ops/issues/import-issues.sh                    # dry run (default)
@@ -127,6 +156,12 @@ ops/issues/import-issues.sh --apply            # create anything missing
 ops/issues/import-issues.sh --apply --update   # push manifest edits into existing issues
 ops/issues/import-issues.sh --apply --only REF-002
 ```
+
+**`status:` is how an entry retires.** `open` (default) | `done` | `obsolete`. A non-`open`
+entry is never created, and `--apply --update` closes an existing issue with the recorded
+reason. Without this the tracker cannot represent "we decided not to" and every triage
+decision evaporates on the next import - which is exactly how solved work keeps coming
+back. `superseded_by:` is prose for humans; it has no effect on the importer.
 
 **Filing new work.** Add a block to the right manifest, then import:
 
@@ -136,39 +171,23 @@ ops/issues/import-issues.sh --apply --only REF-002
 | `20/21/22-runbook-sweep*.md` | items recovered from `runbooks/` |
 | `30-deferred-architecture.md` | designed but deliberately out of scope (`ARCH-*`) |
 
-The `id` is the stable key and prefixes the issue title. **The importer matches on that
-id prefix, never on the title** — matching on titles once created 27 duplicate issues the
+The `id` is the stable key and prefixes the issue title. **The importer matches on that id
+prefix, never on the title** - matching on titles once created 27 duplicate issues the
 moment titles were reworded.
 
 It matches against issues in **every state**, open and closed. Deduplicating against open
-issues only was the first attempted fix for those 27 duplicates, and it aimed at the wrong
+issues only was the first attempted fix for those 27 duplicates and aimed at the wrong
 cause: with the id as the key, ignoring closed issues means finishing a task and closing
 its issue makes the next run file it again. REF-001 and REF-002 came back as #85 and #86
 that way.
 
-**Priorities are `p0`, `p1` or `p2`.** There is no `p3` label, and the importer creates
-the issue anyway when it cannot apply a label — so a typo here costs you a
-correctly-titled issue with no priority on it.
+**Priorities are `p0`, `p1` or `p2`.** There is no `p3` label, and the importer creates the
+issue anyway when it cannot apply a label - so a typo costs you a correctly-titled issue
+with no priority on it.
 
-**Reading comments.** Check periodically:
-
-```bash
-gh issue list --repo Cilverkrow/twow-repo --state open --limit 100 --json number --jq '.[].number' \
-  | while read n; do
-      c=$(gh issue view "$n" --repo Cilverkrow/twow-repo --json comments --jq '.comments|length')
-      [ "$c" -gt 0 ] && echo "#$n has $c comment(s)"
-    done
-```
-
-A comment saying something is fixed is a lead, not a verdict. **Verify against the source
-before closing** — a fix may live in the live workspace and never have been committed
-here, and the repo is what CI and the container build from. Say which it is.
-
-**Updating and closing.** Close with evidence: the commit, the file and line, or the CI
-run. If a claim turns out to be stale, comment with what you actually found rather than
-silently editing the body. If new work falls out of an issue, file it as its own manifest
-entry instead of growing the original.
-
+**Closing.** Close with evidence: the commit, the file and line, or the CI run. A comment
+saying something is fixed is a lead, not a verdict - verify against the source. If a claim
+turns out to be stale, say what you found rather than silently editing the body.
 ### Ownership when several agents work in parallel
 
 An agent owns **`modules/<name>/**` and nothing else.**
@@ -177,7 +196,9 @@ An agent owns **`modules/<name>/**` and nothing else.**
 supersedes the one below:
 
 ```bash
-git worktree add ../twow-<task> <your-branch> origin/refactor/modular-platform
+# Branch from the default branch, whatever it currently is - do not hardcode it.
+base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)
+git worktree add ../twow-<task> <your-branch> "$base"
 ```
 
 Committing by path is not enough on its own. Several agents share one checkout, and a
@@ -346,96 +367,32 @@ Other rules:
 
 # Governance
 
-The canonical collaboration hub policy follows. It is mandatory and unchanged. The
-byte-identical local snapshot is preserved at `docs/history/AGENTS.local-snapshot.md`.
+## `runbooks/` is frozen evidence, not an input
 
-BEGIN_CANONICAL_COLLAB_HUB_POLICY_V1
+`runbooks/` holds 976 files of historical evidence from before the core split. It is
+kept so decisions can be traced, and it is **never a prerequisite for current work**.
+Do not read it to start a task, do not gate a task on it, and do not report against it.
 
-## 3.1 Kanonischer Hub
+This replaces a mandatory pre-task ceremony (`3.1`-`3.6` of the collaboration hub
+policy) that required reading a registry JSON, a hub README, a workstream README and a
+SHA-256 manifest **before any analysis, planning, mutation or execution**, and stopping
+with `HUB_PREFLIGHT_RESULT=BLOCKED` if the responsible workstream could not be
+determined. It made 976 files of dead evidence a blocking gate on every task, and it
+outranked reading the code. The full policy is preserved byte-identically at
+`docs/history/AGENTS.local-snapshot.md`; nothing is lost, it is simply no longer
+mandatory.
 
-Der verbindliche Collaboration Hub für alle Arbeiten in dieser Repository-Kopie liegt unter:
-`runbooks\workstreams` relativ zum Repository-Root.
+## When sources disagree
 
-Die technische Workstream-ID `WS-00` bis `WS-80` ist der dauerhafte Primärschlüssel.
-Sichtbare Chat-Titel sind keine technischen Identitäten.
+This ordering is worth keeping, and it survives from that policy unchanged:
 
-## 3.2 Pflicht-Preflight für jeden Auftrag
+1. current, reproducibly verified state of the running system
+2. an explicitly approved current technical baseline
+3. the repository as it is on disk - files, hashes, `git` output
+4. project documentation
+5. chat history and session memory
 
-Vor jeder Analyse, Planung, Mutation oder Ausführung prüft der lokale Agent:
-
-1. `canonical-workstream-registry-v1.json` vollständig lesen.
-2. `runbooks\workstreams\README.md` vollständig lesen.
-3. Den zuständigen Workstream anhand der Registry und des Auftragsziels bestimmen.
-4. Die zugehörige Workstream-`README.md` vollständig lesen.
-5. Für den Auftrag relevante, dort referenzierte Artefakte direkt verifizieren.
-6. Den Hub-Manifeststatus (`runbooks\workstreams\sha256-manifest.txt`) prüfen.
-7. Widersprüche oder fehlende Informationen feststellen und dokumentieren.
-
-Kein Chatgedächtnis oder frühere Zusammenfassung darf eine aktuelle lokale Datei,
-einen Hash oder eine reproduzierbare Verifikation ersetzen.
-
-## 3.3 Prioritätsordnung
-
-Bei widersprüchlichen Informationen gilt in dieser Reihenfolge:
-
-1. aktuell und reproduzierbar verifizierter Produktionszustand  
-2. ausdrücklich freigegebene aktuelle technische Baseline  
-3. `canonical-workstream-registry-v1.json`  
-4. Hub-`README.md` des zuständigen Workstreams  
-5. direkt referenzierte Reports, Handoffs und Manifeste  
-6. übrige lokale Dokumentation  
-7. Chatverlauf und Projektgedächtnis  
-
-Ein niedriger priorisierter Eintrag darf einen höher priorisierten Befund nicht stillschweigend ersetzen.
-
-## 3.4 Stop-Regel
-
-Vor jeder Mutation wird mit `HUB_PREFLIGHT_RESULT=BLOCKED` sofort gestoppt, wenn:
-
-- der zuständige Workstream nicht eindeutig bestimmbar ist;
-- eine erforderliche Datei fehlt oder nicht lesbar ist;
-- ein vorgeschriebener Hash nicht stimmt;
-- Registry, Workstream-README und überprüfter Ist-Zustand widersprüchlich sind;
-- eine benötigte Referenz nur im Chatgedächtnis behauptet wird;
-- eine Mutation mehrere Workstreams betrifft ohne eindeutigen primären Eigentümer;
-- Berechtigungen für die beabsichtigte Mutation fehlen.
-
-Keine eigenmächtige Reparatur oder Erweiterung des Auftrags.
-
-## 3.5 Schreibregeln
-
-Der Collaboration Hub ist kein allgemeiner Ort für ungeprüfte Zwischenstände.
-Neue Ergebnisse müssen zuerst als eigenständige, reproduzierbare Artefakte im vorgesehenen
-Runbook- oder Workstream-Kontext abgelegt werden.
-
-Änderungen an folgenden Hub-Dateien sind nur durch ausdrücklich autorisierte Hub-Aktualisierungsaufträge zulässig:
-
-- `canonical-workstream-registry-v1.json`
-- globale Hub-`README.md`
-- Workstream-`README.md`
-- Hub-`sha256-manifest.txt`
-
-Bestehende Artefakte dürfen nicht kopiert, verschoben, gelöscht oder physisch zusammengeführt werden, sofern dies nicht gesondert autorisiert wurde.
-
-## 3.6 Abschlussnachweis
-
-Jeder lokale Abschlussbericht enthält mindestens:
-
-- `HUB_PREFLIGHT_RESULT=PASS|BLOCKED`
-- `CANONICAL_REGISTRY_READ=YES|NO`
-- `GLOBAL_HUB_README_READ=YES|NO`
-- `WORKSTREAM_ID=...`
-- `WORKSTREAM_README_READ=YES|NO`
-- `HUB_MANIFEST_VERIFIED=YES|NO`
-- `REFERENCED_ARTIFACTS_VERIFIED_COUNT=...`
-- `SOURCE_OF_TRUTH_CONFLICT_COUNT=...`
-- `UNRESOLVED_REFERENCE_COUNT=...`
-- `HUB_MUTATIONS_PERFORMED=...`
-- `NEXT_TASK_AUTHORIZED=NO`
-
-Bei mehreren beteiligten Workstreams zusätzlich:
-
-- `PRIMARY_WORKSTREAM_ID=...`
-- `DEPENDENT_WORKSTREAM_IDS=...`
-
-END_CANONICAL_COLLAB_HUB_POLICY_V1
+**A lower-ranked source never silently overrides a higher-ranked finding.** In
+particular: no chat memory and no earlier summary may stand in for a current local
+file, a hash, or a reproducible verification. If documentation and the tree disagree,
+the tree wins and the documentation is wrong - say so and fix it.

@@ -89,6 +89,8 @@ priority: p0
 existing_ot: OT-016
 source: docs/adr/ADR-0020-two-repo-upstream-split.md
 superseded_by: none
+status: done
+status_note: The split landed in c55d8387. src/game and src/shared are gone from this repository and core/ is a pinned submodule. Remaining sql/ dedup is tracked separately.
 body: |
   **Goal: make upstream merges routine and let our bug fixes go home.**
 
