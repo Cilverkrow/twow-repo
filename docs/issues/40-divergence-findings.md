@@ -259,6 +259,8 @@ priority: p2
 existing_ot: none
 source: docs/adr/ADR-0020-two-repo-upstream-split.md
 superseded_by: none
+status: done
+status_note: Eluna is vendored and default-ON in twow-core (core/src/modules/Eluna, core/src/game/Eluna/, docs/ELUNA.md, commit aa0b2be8). The decision is made and shipped; this entry re-opened it.
 body: |
   `Shyalya/tortoise-wow@aa0b2be` integrates the Eluna Lua engine. Adopting that
   integration as-is would be a mistake, and the reasons are worth stating because

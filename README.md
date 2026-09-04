@@ -76,7 +76,7 @@ All off by default, all in `mangosd.conf`:
 | Keep navmesh tiles loaded | `MMapTileUnload` | off by default; `removeTile` zeroes `tile->polys` and Detour reads it unvalidated, so a surviving polyRef resolves to `nullptr + index` |
 
 Playerbot keys live in `modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in`, the
-rest in `src/mangosd/mangosd.conf.dist.in`. A config generated from an older checkout
+rest in `core/src/mangosd/mangosd.conf.dist.in`. A config generated from an older checkout
 will not contain them — regenerate it or copy the blocks across.
 
 ### Class, spell and item fixes
@@ -113,7 +113,7 @@ Ship as migrations, so a fresh setup gets them automatically:
 Two are deliberately manual, in `sql/tools/`, because both depend on per-server data:
 
 - `graveyards_turtle_dungeons.sql` — the five Turtle-built dungeons with no graveyard on
-  their map. Run `tools/dbc/add_worldsafelocs.py` first; it references WorldSafeLocs ids a
+  their map. Run `core/tools/dbc/add_worldsafelocs.py` first; it references WorldSafeLocs ids a
   stock DBC does not have, which stops at 174
 - `playerbot_bypass_crossroads.sql` — routes bots around a guard 21 yards from a travel
   node. Rewrites travel graph links by id, so check your own node ids first
@@ -132,7 +132,7 @@ listed here so it is not mistaken for work done in this repository.
   crash dump
 - The **world database is in this repository** — `sql/base` holds 186 files, 131 MB, plus
   the migrations under `sql/database_updates`. Only client data (maps, DBC, vmaps, mmaps)
-  has to be extracted from a game client, with the tools under `tools/`
+  has to be extracted from a game client, with the tools under `core/tools/`
 
 Several of the fixes below are also kept as standalone patches, each one
 self-contained, so they can be lifted onto any compatible tree without taking
@@ -205,9 +205,18 @@ This will be streamlined once the core is more up to date
 > migration files by hand, recording each one afterwards:
 >
 > ```sql
+> -- The hash is the file's real SHA-1, uppercase hex, of its exact bytes:
+> --   sha1sum 20260726112016_world.sql | cut -d' ' -f1 | tr 'a-f' 'A-F'
+> -- This is what AutoUpdater::CalculateFileHash computes, so a later run
+> -- recognises the file as applied instead of re-applying it.
 > INSERT INTO migrations (Name, Hash, AppliedAt)
-> VALUES ('20260726112016_world', 'manual', NOW());
+> VALUES ('20260726112016_world', '<SHA1-OF-THE-FILE>', NOW());
 > ```
+>
+> **Never record the literal string `manual`.** ADR-0024 invariant 3 forbids it and
+> FG-032/FG-033 exist because of it: a `manual` row asserts a file was applied while
+> proving nothing about which bytes, so replay-safety silently stops working. It made
+> 146 world migrations unverifiable once already.
 
 ## Contributing
 

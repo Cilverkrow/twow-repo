@@ -187,19 +187,25 @@ import_file() {
         /^existing_ot: / { ot=substr($0,14); next }
         /^source: / { src=substr($0,9); next }
         /^superseded_by: / { next }
+        # status: retires an entry. open (default) | done | obsolete. A non-open
+        # entry is never created, and --update closes an existing issue instead
+        # of rewriting it. Without this a triage decision evaporates on the next
+        # run, which is how solved work keeps coming back.
+        /^status: / { status=substr($0,9); next }
+        /^status_note: / { note=substr($0,14); next }
         /^body: \|$/ { inbody=1; next }
         inbody==1 { sub(/^  /,""); body = body $0 "\n"; next }
         END { if (id != "") emit() }
-        function reset() { id=""; title=""; ws=""; prio=""; ot=""; src=""; body="" }
+        function reset() { id=""; title=""; ws=""; prio=""; ot=""; src=""; body=""; status=""; note="" }
         function emit() {
             # Deliberately no shell-escaping of the body here. It travels through a
             # variable and is passed as --body "$full_body" -- inside double quotes,
             # where single quotes need no escaping at all. Nothing ever consumed it, so
             # the escape sequence simply landed in the issue text: every apostrophe in
             # 32 of 117 imported issues rendered as a four-character mess on GitHub.
-            printf "%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1e", id, title, ws, prio, ot, src, body
+            printf "%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1e", id, title, ws, prio, ot, src, status, note, body
         }
-    ' "$file" | while IFS=$'\x1f' read -r -d $'\x1e' id title ws prio ot src body; do
+    ' "$file" | while IFS=$'\x1f' read -r -d $'\x1e' id title ws prio ot src status note body; do
         [ -n "${id:-}" ] || continue
         [ -z "${ONLY:-}" ] || [ "${ONLY}" = "$id" ] || continue
 
@@ -210,6 +216,34 @@ import_file() {
         # produced 27 duplicate issues.
         exists=0
         printf '%s\n' "$KNOWN_TITLES" | grep -q "^${id}: " && exists=1
+        # A retired entry never becomes an issue, and an existing one is closed
+        # rather than rewritten. This is what makes a triage decision stick: without
+        # it, deciding "we are not doing this" is invisible to the importer and the
+        # entry is presented as live work again on the next run.
+        case "${status:-open}" in
+            done|obsolete)
+                if [ "$exists" -eq 0 ]; then
+                    say "  . $id (status=${status}, not created)"
+                    continue
+                fi
+                if [ "$UPDATE" -eq 1 ]; then
+                    say "  x $id (status=${status}, closing)"
+                    if [ "$APPLY" -eq 1 ]; then
+                        num="$(resolve_issue_number "$id")"
+                        if [ -n "$num" ]; then
+                            reason="${note:-retired in the manifest as ${status}}"
+                            gh issue close "$num" --repo "$REPO" \
+                                --comment "Closed as ${status}: ${reason}" >/dev/null 2>&1 \
+                                || say "    ! could not close #$num"
+                            sleep 1
+                        else
+                            say "    ! could not resolve issue number for $id"
+                        fi
+                    fi
+                fi
+                continue
+                ;;
+        esac
         if [ "$exists" -eq 1 ] && [ "$UPDATE" -eq 0 ]; then
             say "  = $id (exists)"
             continue
