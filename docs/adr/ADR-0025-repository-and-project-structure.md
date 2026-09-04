@@ -52,14 +52,18 @@ Rules:
   `src/` (code), `conf/` (its own `.conf`), `data/sql/{auth,character,world}/` (its
   migrations, which `AutoUpdater.cpp` already discovers), `t/` (its tests). A module
   never writes a schema it does not own (ADR-0021).
-- **`core/` is to be a submodule**, pinned by SHA, with `UPSTREAM.lock` recording the
-  URL, the pinned SHA and the fork point (ADR-0026 states the fork point; `UPSTREAM.lock`
-  is its machine-readable copy). Clones will then need `--recursive`.
-  **Not done as of 2026-09-02: there is no `.gitmodules` in this repository and no
-  `core/` directory.** The tree above is the target layout, not the current one; the
-  submodule arrives with ADR-0020's split, and REF-017 records the private-submodule CI
-  blocker in the way. Do not write tooling, CI or documentation that assumes a submodule
-  is already there.
+- **`core/` is a submodule**, pinned by SHA, with `UPSTREAM.lock` recording the URL, the
+  pinned SHA and the fork point (ADR-0026 states the fork point; `UPSTREAM.lock` is its
+  machine-readable copy). Clones need `--recursive`.
+  **Landed in `c55d8387`**: `.gitmodules` exists, `core/` is checked out at the recorded
+  pin, and `src/game` and `src/shared` were deleted from this repository. Write tooling,
+  CI and documentation against the submodule, because it is there.
+
+  > This bullet previously said the opposite - "there is no `.gitmodules` in this
+  > repository and no `core/` directory ... Do not write tooling, CI or documentation
+  > that assumes a submodule is already there" - while contradicting this ADR's own
+  > Status line. It was the single most direct cause of agents redoing finished work,
+  > and of refusing correct work on the grounds that the submodule was not there yet.
 - **`core-patches/` is a generated artifact**, produced in CI from `twow-core`'s branch so
   a reviewer can see the whole core delta at a glance. The source of truth is commits in
   `twow-core`, never these files.

@@ -34,7 +34,9 @@ These identify the **import**, not the fork point. The fork point is in ADR-0026
 
 The history was rewritten only in the independent repository copy so that binary files are absent from every reachable commit. The rewrite removes compiled libraries, executables, symbols, archives, images, Warden binary modules, client/server data files, and any other blob detected as binary. Commit topology, authorship, dates, messages, and text changes are otherwise retained.
 
-`docs/history/source-commit-map.tsv` records the original-to-filtered commit mapping produced by `git-filter-repo`. It is generated evidence: it is the proof that a given local hash corresponds to a given upstream one, and it is the only place filtered-side hashes are written down. Do not hand-edit it, and do not read a filtered-side hash out of it and then quote it as upstream.
+`ops/history/source-commit-map.tsv` records the original-to-filtered commit mapping produced by `git-filter-repo`. It is generated evidence: it is the proof that a given local hash corresponds to a given upstream one, and it is the only place filtered-side hashes are written down. Do not hand-edit it, and do not read a filtered-side hash out of it and then quote it as upstream.
+
+It sits under `ops/` rather than under `docs/` for exactly that last reason. This file is where a filtered-side identity was first copied out of that lookup and written up as an upstream merge-base, and two ADRs then quoted it from here (FG-076). Keeping the mapping out of the prose tree makes that copy impossible to make by accident: no document under `docs/` carries a filtered-side identity for the fork point. See `ops/history/README.md`.
 
 Uncommitted PlayerBot/LLM changes from the live source tree are imported in a separate new commit after the cleaned baseline. Operations files and runbooks are likewise imported in later commits so their ownership remains visible.
 

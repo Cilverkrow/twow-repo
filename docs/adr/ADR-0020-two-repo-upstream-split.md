@@ -37,8 +37,11 @@ Split into two repositories joined by a submodule.
 real history with upstream and `git pull upstream` is an ordinary operation. The
 project's core delta is re-applied there as small, single-purpose, individually
 reviewable commits, each classified as either an upstream-worthy fix or an integration
-hook a module needs. Upstream-worthy fixes are ordered first so they can be offered as
-pull requests immediately.
+hook a module needs. **`twow-core` is the terminus:** we merge FROM upstream and carry
+the delta permanently. Nothing is sent to `Shyalya/tortoise-wow` or to `Penqle`.
+Classifying a fix as upstream-worthy is still useful - it says the change is general
+rather than fork-specific, and so should survive a catch-up merge unchanged - but it
+is not a queue for outbound pull requests.
 
 **`twow-repo`** — this repository — becomes the platform: modules, deployment, docs,
 tests and project-authored SQL. It references `twow-core` as a submodule pinned by
@@ -140,7 +143,7 @@ prerequisite for this split.
   fork point, the upstream of record, and which repository may merge from upstream are
   stated there and are not restated here.
 - `docs/PROVENANCE.md`, `docs/FOOTGUNS.md` (FG-005, FG-006, FG-007, FG-072, FG-076)
-- `docs/history/source-commit-map.tsv` maps `0af2567` to `1af237d`; both resolve the
+- `ops/history/source-commit-map.tsv` maps `0af2567` to `1af237d`; both resolve the
   vendored bot tree to `9bd691ccdccf88ebdbe362d293337068ec01a636`.
 - Counting the output of `git diff --name-only` between `0af2567` and `ed32ae41`,
   restricted to the vendored bot tree at its pre-promotion path, gives 255 paths;

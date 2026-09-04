@@ -1,6 +1,17 @@
 # ADR-0019: Keep binary Windows build inputs external and pinned
 
-- Status: Accepted
+- Status: **Superseded 2026-09-03.** twow-core commits its own Windows link inputs.
+
+  > This ADR required `mangosd.ico` and `dep/windows/lib` to be kept **out** of Git and
+  > provisioned per build via junctions. That is no longer true and following it now does
+  > damage: twow-core commits both (`core/src/mangosd/mangosd.ico`, 36 files under
+  > `core/dep/windows/lib/`) and links `mangosd.exe` on `windows-latest` in its own CI.
+  > An agent obeying this ADR would delete committed core files, or build junction
+  > scaffolding for inputs that are already in the tree. twow-repo does not build for
+  > Windows at all, so it needs neither.
+  >
+  > The reasoning below is kept because it explains how the icon was identified and why
+  > the boundary mattered when the server source lived in this repository.
 - Date: 2026-08-31
 - Primary: WS-10 / WS-50
 
