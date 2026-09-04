@@ -1,27 +1,60 @@
 # Repository boundaries
 
-This repository is the source-controlled project view of the private TWoW server. It is deliberately separated from the live workspace at `C:\TW\ComTW`.
+There are two repositories, and the split is the point. Putting something in the wrong one is
+how `virtual ~Spell` ended up fixed in one copy of the server and broken in the other.
 
-The live workspace remains the runtime and agent-working tree. This repository must never become an implicit deployment target, database directory, log sink, build output directory, or secret store.
+## Which repository owns what
+
+| | |
+|---|---|
+| **`twow-core`** — the server | Upstream's code and our delta to it: `src/game`, `src/shared`, `sql/base`, `sql/database_updates`, `dep/`, `tools/`, the vendored bot modules, the migration machinery. It merges from `Shyalya/tortoise-wow` and is the **terminus** — nothing is sent upstream of it (ADR-0020, ADR-0026). |
+| **`twow-repo`** — this repository, the platform | Everything upstream will never have: our own modules under `modules/`, plus `services/`, `deploy/`, `ops/`, `docs/`, `test/`, `config/`, and SQL this project authors. |
+
+`core/` here is a **submodule pinned by SHA**, not a copy. `UPSTREAM.lock` records the pin and
+the fork point, `.gitmodules` records the URL, and clones need `--recursive`.
+
+**The invariant: this repository contains no copy of anything core owns.** To change the
+server, change it in `twow-core` and bump the pin. A fix applied here to a file core owns is a
+fix that will be silently lost.
 
 ## Layout
 
-- `src/`, `modules/`, `sql/`, `cmake/`, `dep/`, and `tools/`: server source inherited from the Tortoise-WoW source baseline. Compiled dependencies and other binary assets are intentionally absent.
-- `ops/windows/`: project-owned build, transfer, deployment, start, stop, and diagnostic helper scripts copied from the live workspace.
-- `config/canonical/`: authoritative complete-template plus reviewed non-secret
-  overlay contract for generated shared server configuration.
-- `config/examples/`: sanitized historical configuration snapshots. Every
-  credential-bearing value is replaced by a placeholder; these files are not
-  deployment input.
-- `runbooks/`: text-only project history, evidence, decisions, scripts, and handoffs. Packaged deliverables, executables, symbols, database files, runtime logs, and other binaries are excluded.
-- `docs/`: repository provenance, boundaries, and the modularization roadmap.
+- `modules/`: our own modules (`mod-*`), each with its own `src/`, `conf/`, `data/sql/`, `t/`.
+- `services/`: out-of-process services, e.g. the Go `bot-brain`.
+- `deploy/`: compose and Helm — how the stack is built and run.
+- `ops/`: helper scripts, audits and the issue tooling.
+- `test/`: cross-cutting integration and smoke suites; per-module unit tests stay in `t/`.
+- `config/canonical/`: authoritative complete-template plus the reviewed non-secret overlay
+  contract for generated shared server configuration.
+- `config/examples/`: sanitized historical snapshots. Every credential-bearing value is a
+  placeholder; these are not deployment input.
+- `docs/`: ADRs, footguns, provenance, issue manifests.
+- `runbooks/`: frozen historical evidence, described below.
+
+## What must never be here
+
+Compiled binaries, symbols, archives, database files, live logs, caches, MPQ or other client
+game data, live credentials, secret-bearing configuration, runtime state — **and a second copy
+of the server source.**
+
+This repository is public. Credential-bearing values are placeholders or are marked
+`MACHINE_SECRET` in `config/canonical/compose/semantic-baseline.tsv` and injected at deploy
+time (ADR-0038).
+
+## `runbooks/`
+
+Frozen historical evidence from before the core split, kept so decisions can be traced. It is
+**never an input to current work** — do not read it to start a task, and do not gate a task on
+it. Historical runbooks contain absolute paths from the original Windows workstation; those
+are evidence, not portable instructions. New documentation and automation use repository-relative
+paths.
 
 ## Source of truth
 
-Observed runtime state remains authoritative for what is currently running.
-Under ADR-0038, the repository is authoritative for intended shared
-configuration, while a runtime `.conf` is a generated deployment artifact.
-Neither the presence of canonical configuration nor a merged change authorizes
+Observed runtime state is authoritative for what is currently running. Under ADR-0038 the
+repository is authoritative for *intended* shared configuration, while a runtime `.conf` is a
+generated deployment artifact. Neither canonical configuration nor a merged change authorizes
 deployment, database mutation, process control, or rollback.
 
-Historical runbooks can contain absolute paths from the original workstation. Those paths are evidence, not portable instructions. New repository documentation and automation should use paths relative to the repository root.
+When documentation and the tree disagree, **the tree wins** and the documentation is wrong.
+Say so and fix it rather than working around it.
