@@ -37,8 +37,11 @@ Split into two repositories joined by a submodule.
 real history with upstream and `git pull upstream` is an ordinary operation. The
 project's core delta is re-applied there as small, single-purpose, individually
 reviewable commits, each classified as either an upstream-worthy fix or an integration
-hook a module needs. Upstream-worthy fixes are ordered first so they can be offered as
-pull requests immediately.
+hook a module needs. **`twow-core` is the terminus:** we merge FROM upstream and carry
+the delta permanently. Nothing is sent to `Shyalya/tortoise-wow` or to `Penqle`.
+Classifying a fix as upstream-worthy is still useful - it says the change is general
+rather than fork-specific, and so should survive a catch-up merge unchanged - but it
+is not a queue for outbound pull requests.
 
 **`twow-repo`** — this repository — becomes the platform: modules, deployment, docs,
 tests and project-authored SQL. It references `twow-core` as a submodule pinned by

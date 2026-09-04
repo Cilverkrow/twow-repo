@@ -60,6 +60,7 @@ mangosd	BattleGround.Rate.Reputation.SV	KEEP	mangosd.overlay.conf	verified-sanit
 mangosd	BattleGround.Rate.Reputation.WS	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	Bones.ExpireMinutes	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	CharacterDatabase.Info	MACHINE_SECRET	protected-machine-overlay	secret-not-versioned
+mangosd	Database.AutoUpdate.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	reviewed-db-init-owns-application
 mangosd	Database.AutoUpdate.Path	INTENTIONAL_CHANGE	mangosd.overlay.conf	reviewed-compose-path
 mangosd	DataDir	INTENTIONAL_CHANGE	mangosd.overlay.conf	reviewed-compose-path
 mangosd	Death.Ghost.RunSpeed.World	KEEP	mangosd.overlay.conf	verified-sanitized-baseline

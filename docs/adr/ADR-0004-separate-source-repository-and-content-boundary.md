@@ -14,13 +14,16 @@ Maintain an independent repository copy for source control. The live workspace r
 
 The repository may contain:
 
-- server source and text migrations;
-- project-owned helper scripts under `ops/windows`;
+- platform code: `modules/` (our own modules), `services/`, `deploy/`, `ops/`, `test/`,
+  `config/`, and SQL this project authors;
+- the `core/` submodule reference - a pinned SHA, not a copy;
 - sanitized configuration examples under `config/examples`;
 - text-only runbooks and documentation;
 - root `AGENTS.md`.
 
-It must not contain compiled binaries, symbols, archives, database files, live logs, caches, large MPQ/client game data, live credentials, secret-bearing configuration, or runtime state. Historical absolute paths are evidence only; new portable material uses repository-relative paths.
+It must **not** contain a copy of the server source. That belongs to `twow-core` and is
+consumed through the `core/` submodule; duplicating it is what left `virtual ~Spell`
+fixed in one repository and broken in the other. Nor may it contain compiled binaries, symbols, archives, database files, live logs, caches, large MPQ/client game data, live credentials, secret-bearing configuration, or runtime state. Historical absolute paths are evidence only; new portable material uses repository-relative paths.
 
 ## Consequences
 

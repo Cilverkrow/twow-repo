@@ -95,8 +95,9 @@ Shyalya is an unrelated third party: not a co-developer, not a second team worki
 one shared project, and their branch is not a co-developed sibling of ours. Their
 commits carry a `Co-Authored-By: Claude` trailer only because they also use Claude; that
 was once
-misread as evidence of shared work. Offering our fixes to Penqle or to Shyalya is an
-ordinary pull request and needs nobody's agreement.
+misread as evidence of shared work. Nothing follows from that about direction: we merge
+FROM Shyalya into `twow-core` and carry our delta there permanently. We do not send
+changes to Penqle or to Shyalya.
 
 Two consequences of record:
 
