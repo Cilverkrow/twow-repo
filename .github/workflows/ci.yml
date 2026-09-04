@@ -1675,6 +1675,16 @@ jobs:
             set -eu
             test -x /opt/turtle/bin/mangosd
             test -x /opt/turtle/bin/realmd
+            module_dir=/opt/turtle/etc/modules
+            module_dist="$module_dir/mod_bot_brain.conf.dist"
+            module_conf="${module_dist%.dist}"
+            test -d "$module_dir"
+            test -f "$module_dist"
+            test "$(stat -c %u "$module_dir")" = 10001
+            test ! -e "$module_conf"
+            cp "$module_dist" "$module_conf"
+            cmp "$module_dist" "$module_conf"
+            rm "$module_conf"
             ls -la /opt/turtle/bin
             missing=0
             for b in /opt/turtle/bin/mangosd /opt/turtle/bin/realmd; do
