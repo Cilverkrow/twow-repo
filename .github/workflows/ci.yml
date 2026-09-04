@@ -38,25 +38,34 @@
 # pinned external inputs kept out of Git (ADR-0019). There is no Windows link job
 # and there must never be one.
 #
-# WHERE THIS RUNS, AND WHY IT IS NOT ubuntu-24.04.
+# WHERE THIS RUNS.
 #
-# GitHub-HOSTED runners are billing-blocked on this repository. The symptom is
-# not a queue and not a red step: every job fails in about three seconds with
-# duration_ms 0 and no logs at all, because GitHub refuses to dispatch it. No
-# amount of workflow editing fixes that; it is an account-level block.
+# GitHub-hosted. This repository is public, so Actions minutes on standard
+# hosted runners are free and the billing block that forced a self-hosted
+# runner no longer applies.
 #
-# A self-hosted runner (`k8s-twow-repo`, Debian x64, docker 29.7.2, 20 cores)
-# is registered and DOES claim jobs, so every Linux job below runs there:
+#     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
 #
-#     runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+# The repository variable is still the override: set CI_RUNNER to `self-hosted`
+# (the implicit label every self-hosted runner carries) and every Linux job in
+# ci.yml, nightly.yml and publish.yml moves in one edit with no commit.
 #
-# The repository variable is the flip-back switch. When hosted billing is
-# restored, set the repository variable CI_RUNNER to `ubuntu-24.04` in
-# Settings -> Secrets and variables -> Actions -> Variables, and every Linux
-# job in ci.yml, nightly.yml and publish.yml moves back in one edit with no
-# commit. Deleting the variable puts them back on the self-hosted runner.
-# `self-hosted` is the implicit label every self-hosted runner carries, so this
-# needs no knowledge of custom labels.
+# History worth keeping, because it explains code elsewhere in this file. While
+# the Linux jobs ran on `k8s-twow-repo` they failed in ways that had nothing to
+# do with this repository's contents, and each cost hours to diagnose:
+#
+#   * `no space left on device`, repeatedly - at container creation, and later
+#     mid-link with `ar: unable to copy file 'libmod_mod_dungeon_clear.a'`.
+#   * A service container published with `-p 3306:3306` was reachable from the
+#     runner pod but not from a `--network host` container, because the daemon
+#     was remote (lhns/remote-docker on /run/rd/docker.sock) and had actually
+#     published it on :32770.
+#   * Container actions that bind-mount /var/run/docker.sock could not start:
+#     `nfsserve: cannot export /var/run/docker.sock`.
+#
+# None of that recurs on hosted runners, where the runner and the daemon share
+# one namespace and the disk is a fresh VM. Workarounds added for those
+# symptoms are safe to remove once this has run green a few times.
 #
 # WHAT THAT RUNNER IS NOT. It is a shared Kubernetes pod, not a fresh VM:
 #
@@ -198,7 +207,7 @@ jobs:
   # therefore has to be its own dependency if a full disk is to stop MariaDB,
   # BuildKit and the compiler before any of them allocate more space.
   capacity:
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: capacity preflight
     timeout-minutes: 10
     steps:
@@ -242,7 +251,7 @@ jobs:
   # Each runs regardless of what failed before it, and the job still reports
   # failure, because a failed step fails its job even when later steps succeed.
   lint:
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: lint
     timeout-minutes: 20
     steps:
@@ -559,7 +568,7 @@ jobs:
   # artefacts, so bootstrap and build can still proceed in parallel afterwards.
   integration:
     needs: capacity
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: bootstrap from empty
     timeout-minutes: 90
 
@@ -1147,7 +1156,7 @@ jobs:
   # or forgotten hand-maintained test-target list.
   build-and-test:
     needs: capacity
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: build + test
     # A cold cache exceeded 120 minutes in run 115 and was killed before it
     # could save the cache, making the next run repeat the same cold build.
@@ -1738,7 +1747,7 @@ jobs:
   # naming rather than papering over.
   smoke:
     needs: build-and-test
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: compose up + smoke
     # Minutes, not hours: the compile already happened upstream in the DAG. The
     # old 150-minute budget existed only to cover `up --build`.

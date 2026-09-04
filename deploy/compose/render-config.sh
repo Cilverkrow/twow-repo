@@ -76,7 +76,11 @@ else
     SOURCE_DIRTY=NO
 fi
 if [[ "$SOURCE_DIRTY" == YES && "${ALLOW_DIRTY_CONFIG_SOURCE:-0}" != 1 ]]; then
+    # Say WHICH paths, or this is undiagnosable. It failed once in CI with no
+    # indication of what was dirty, on a checkout that should have been pristine.
     echo "ERROR: refusing to render configuration from a dirty source checkout" >&2
+    echo "dirty paths (git status --porcelain --untracked-files=all):" >&2
+    git -C "$ROOT" status --porcelain --untracked-files=all >&2
     exit 1
 fi
 
