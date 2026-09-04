@@ -61,7 +61,7 @@ jobs:
   # deploy/helm/twow). Rather than fail on their absence, the pipeline discovers
   # what exists and publishes that - and says in the log what it skipped.
   discover:
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: what is publishable
     outputs:
       db_init: ${{ steps.check.outputs.db_init }}
@@ -97,7 +97,7 @@ jobs:
   # contract. The second build is a cache hit, not a second compile.
   core:
     needs: discover
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: ${{ matrix.image }}
     strategy:
       fail-fast: false
@@ -197,7 +197,7 @@ jobs:
   db-init:
     needs: discover
     if: needs.discover.outputs.db_init == 'true'
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: db-init
     steps:
       - uses: actions/checkout@v4
@@ -291,7 +291,7 @@ jobs:
   helm:
     needs: discover
     if: needs.discover.outputs.helm == 'true'
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: helm chart
     steps:
       - uses: actions/checkout@v4

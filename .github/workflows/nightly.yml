@@ -56,7 +56,7 @@ jobs:
   # variables, out-of-line template definitions, the shadowing warnings - that a
   # tree building under only one of them is a tree that will surprise someone.
   clang:
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: clang full build
     timeout-minutes: 120
     env:
@@ -146,7 +146,7 @@ jobs:
   # compiled out - and the cheapest is still a full compile, which is why it is
   # here rather than on the push path.
   no-modules:
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: all features off
     timeout-minutes: 120
     steps:
@@ -222,7 +222,7 @@ jobs:
   # When ADR-0020's split lands and UPSTREAM.lock exists, the recorded base below
   # should be read from that file instead of being spelled here.
   upstream-drift:
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: upstream drift
     timeout-minutes: 30
     env:
@@ -329,7 +329,7 @@ jobs:
   # build does.
   docker-from-source:
     name: docker image builds from source
-    runs-on: ${{ vars.CI_RUNNER || 'self-hosted' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 120
     steps:
       # recursive, and it has to reach two levels: the server core is the core/
