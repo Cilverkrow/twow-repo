@@ -1798,7 +1798,7 @@ jobs:
       # `docker compose ... --project-name` free arguments only: the project
       # name is derived from the directory, which is stable, and `down` does not
       # need the env file to resolve variables when given -v --remove-orphans
-      # against an existing project. Falling back to a container-name sweep
+      # against an existing project. Falling back to a project-label sweep
       # keeps it working even if the compose file cannot be parsed at all.
       - name: Reclaim state a previous run may have left
         run: |
@@ -1806,7 +1806,8 @@ jobs:
           proj="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')"
           echo "compose project: $proj"
           docker compose -p "$proj" down -v --remove-orphans || true
-          docker container prune -f || true
+          docker ps -aq --filter "label=com.docker.compose.project=$proj" \
+            | xargs -r docker rm -f
           docker volume ls
           $SUDO rm -rf /state || true
 
