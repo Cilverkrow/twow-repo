@@ -591,3 +591,59 @@ body: |
 
   **Prerequisite for:** OT-026 (evidence repository decision).
 ---
+id: OPS-021
+title: Prove the full local Linux Compose runtime with extracted client data
+workstream: WS-50
+priority: p1
+existing_ot: none
+source: docs/adr/ADR-0023-containerization-and-one-command-contract.md
+superseded_by: none
+body: |
+  **Goal:** reproduce the complete modular Linux runtime locally on Docker Desktop
+  from the proven platform and core revisions, using externally held extracted
+  client data as a read-only mount.
+
+  **Pinned starting point:**
+  - Platform merge: `a31dce250f2e585c6729cc613b3d1153bf96fba0`
+  - Core pin: `e3ab7b0d7e77fc32009c664618d7ec7e58c511de`
+  - PR #173 CI run 131: capacity, lint, empty bootstrap, build/test and Compose
+    smoke passed.
+
+  **What remains unproven:** CI intentionally does not start `mangosd` because it
+  has no client data. The local test must prove MariaDB, db-init, realmd and
+  mangosd together with existing `dbc`, `maps`, `vmaps` and `mmaps`.
+
+  **Required execution contract:**
+  1. Work from an isolated Y: worktree and Y: build directory.
+  2. Verify Docker and physical host capacity before building.
+  3. Discover only already extracted client-data directories. Do not scan or copy
+     large MPQs and do not commit client data.
+  4. Bind client data read-only.
+  5. Use a task-specific Compose project, network, configuration directory and
+     disposable database volume.
+  6. Do not use or mutate the pre-existing Docker volume `TwWoW`.
+  7. Observe existing Windows server processes and listeners but never stop,
+     reconfigure or replace them. Use non-conflicting task-local host ports.
+  8. Build or retrieve an image only if its exact platform/core provenance is
+     verified.
+  9. Start db, db-init, realmd and mangosd; verify revisions, schemas, health,
+     listeners and at least ten minutes of stability.
+  10. Perform one controlled graceful restart and verify successful recovery.
+  11. Stop only task-owned containers. Do not broadly prune images, volumes or
+      caches.
+  12. Do not apply the persistent roster, run Phase C, enable the LLM bridge or
+      access the production database.
+
+  **Acceptance:**
+  - exact platform/core revisions verified;
+  - PlayerBots and Dungeon Clear present;
+  - config render and provenance verification pass;
+  - db-init, realmd and mangosd start successfully;
+  - realm and world listeners respond on task-local ports;
+  - client data stays external and read-only;
+  - stability observation and graceful restart pass;
+  - Windows server and production database remain unchanged.
+
+  **Dependencies:** ADR-0023, ADR-0024, PR #173, and the completed standalone
+  twow-core Docker reproduction.
+---
