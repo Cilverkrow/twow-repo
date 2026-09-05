@@ -72,8 +72,15 @@ worldserver's, untouched.
 
 `cv_brain` is created and granted the way `cv_bots` already is in `deploy/compose/db-init.sh` —
 `:115` creates it, `:130` grants a set narrower than the `GRANT ALL` the four `tw_*` schemas get.
-The brain gets **its own database user** with rights to `cv_brain` and nothing else; the
-worldserver's user gets no access to `cv_brain`. Its migrations run through core's `AutoUpdater`
+`cv_brain` has **two writers, and that is deliberate**: `mod-bot-brain` runs inside the
+worldserver and mints the identity row on first sight of a bot, while the Go service writes
+the brain-derived tables. Per ADR-0021 a schema has exactly one owning module -
+`mod-bot-brain` - and a table has exactly one owning writer, which is how these two stay
+apart without needing separate schemas.
+
+Each gets its own database user, and neither gets rights outside `cv_brain`. In particular the
+worldserver's existing `${DB_USER}` is not the brain's user: a compromise or a bug on one side
+cannot reach the other's tables. Its migrations run through core's `AutoUpdater`
 like every other schema (ADR-0007 as amended).
 
 ### 3. The statelessness invariant is amended, not abandoned

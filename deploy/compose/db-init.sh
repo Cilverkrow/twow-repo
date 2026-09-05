@@ -36,10 +36,17 @@ SQL_DIR=${SQL_DIR:-/sql}
 CORE_SQL_DIR=${CORE_SQL_DIR:-/sql-core}
 SQL_BASE_DIR=${SQL_BASE_DIR:-/sql-base}
 PB_SQL_DIR=${PB_SQL_DIR:-/sql-playerbots}
+# mod-bot-brain's own schema (ADR-0039). Optional: the directory is only mounted
+# where the brain is deployed, and its absence must not fail a bootstrap.
+BRAIN_SQL_DIR=${BRAIN_SQL_DIR:-/sql-bot-brain}
 
 DB_HOST=${DB_HOST:-db}
 DB_PORT=${DB_PORT:-3306}
 BOT_DB=cv_bots
+# The bot-brain's own schema (ADR-0039). Separate from cv_bots because that one
+# is mod-playerbots' event store - data varchar(255) - and cannot hold a persona
+# or a memory. mod-bot-brain owns cv_brain (ADR-0021).
+BRAIN_DB=cv_brain
 
 mysql_root() { mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -p"$DB_ROOT_PASSWORD" "$@"; }
 log() { printf '[db-init] %s\n' "$*" >&2; }
@@ -113,6 +120,9 @@ mysql_root -e 'SELECT 1' >/dev/null || { log "cannot reach $DB_HOST:$DB_PORT as 
 stage_schemas() {
     mysql_root < "$CORE_SQL_DIR/create_databases.sql"
     mysql_root -e "CREATE DATABASE IF NOT EXISTS \`$BOT_DB\` CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci;"
+    # utf8mb4, not utf8mb3: cv_bots inherited utf8mb3 from the upstream table it
+    # was moved out of, and there is no reason to carry that into a new schema.
+    mysql_root -e "CREATE DATABASE IF NOT EXISTS \`$BRAIN_DB\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
 }
 
 # ----------------------------------------------------------------- 10 grants
@@ -128,6 +138,32 @@ GRANT ALL PRIVILEGES ON tw_char.*   TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_logon.*  TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_logs.*   TO '${DB_USER}'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON cv_bots.* TO '${DB_USER}'@'%';
+-- mod-bot-brain runs inside the worldserver and mints the identity row on first
+-- sight of a bot, so ${DB_USER} needs cv_brain. It gets the same narrow set as
+-- cv_bots: enough to create its tables and maintain rows, not enough to DROP the
+-- schema if a script goes wrong.
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON cv_brain.* TO '${DB_USER}'@'%';
+FLUSH PRIVILEGES;
+SQL
+}
+
+# The brain's own database user (ADR-0039). Optional on purpose: the worldserver
+# runs perfectly well with the brain absent, and a deployment that has not
+# configured one must not fail here. set -u would otherwise abort the whole
+# bootstrap over a service nobody asked for.
+#
+# Rights to cv_brain and nothing else, so a bug or a compromise on the brain side
+# cannot reach tw_char, and the worldserver's user cannot be reused by accident.
+stage_brain_user() {
+    if [ -z "${BRAIN_DB_USER:-}" ] || [ -z "${BRAIN_DB_PASSWORD:-}" ]; then
+        log "brain db user: not configured (BRAIN_DB_USER/BRAIN_DB_PASSWORD unset) - skipping"
+        return 0
+    fi
+    log "brain db user: ${BRAIN_DB_USER} on ${BRAIN_DB}"
+    mysql_root <<SQL
+CREATE USER IF NOT EXISTS '${BRAIN_DB_USER}'@'%' IDENTIFIED BY '${BRAIN_DB_PASSWORD}';
+ALTER USER '${BRAIN_DB_USER}'@'%' IDENTIFIED BY '${BRAIN_DB_PASSWORD}';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON \`${BRAIN_DB}\`.* TO '${BRAIN_DB_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL
 }
@@ -351,12 +387,27 @@ UPDATE realmlist SET address = '${REALM_ADDRESS}', port = ${WORLD_PORT}, realmfl
 SQL
 }
 
+# ------------------------------------------------------------- 46 bot-brain
+# cv_brain holds the bot-brain's identity mapping and, later, its derived state
+# (ADR-0039). Skipped entirely when the directory is not mounted, because the
+# worldserver runs perfectly well with the brain absent and a bootstrap must not
+# fail over a service nobody deployed.
+stage_bot_brain() {
+    if [ ! -d "$BRAIN_SQL_DIR/cv_brain" ]; then
+        log "bot-brain sql: $BRAIN_SQL_DIR/cv_brain not mounted - skipping"
+        return 0
+    fi
+    apply_module_sql "$BRAIN_DB" "$BRAIN_SQL_DIR/cv_brain"
+}
+
 stage 00-schemas    stage_schemas
 stage 10-grants     stage_grants
+stage 11-brain-user stage_brain_user
 stage 20-world-base stage_base
 stage 30-updates    stage_updates
 stage 40-playerbots stage_playerbots
 stage 45-playerbot-migrations stage_playerbot_migrations
+stage 46-bot-brain  stage_bot_brain
 stage 60-realmlist  stage_realmlist
 
 # Verification. Every stage above now fails loudly, so this is no longer the only
