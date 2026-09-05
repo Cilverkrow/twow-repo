@@ -80,7 +80,7 @@ body: |
 
   | Asset | What it gives |
   |---|---|
-  | `runbooks/personality-context-contract-v1.md` §8 | ~120 traits, each with a behavioural instruction. The most valuable asset here. Needs translation + extension only. |
+  | `docs/contracts/personality-context-contract-v1.md` §8 | ~120 traits, each with a behavioural instruction. The most valuable asset here. Needs translation + extension only. |
   | Same doc §4.1 | Deterministic selection: `SHA-256(profile_version \| seed \| source_type \| source_key \| trait_key)`, highest values win per quota. No language RNG dependency. |
   | Same doc §9 | Duplicate rules (strength = **max** of origins, never summed) + 6 hard conflict pairs, priority `locked manual > race variant > class > race > profession`. |
   | Same doc §10, §12 | Max 3 active traits per reply; intent whitelist (suggestions only, server validates). |
