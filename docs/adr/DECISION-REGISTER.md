@@ -31,7 +31,7 @@ this register until 2026-09-02:
 | ADR-0030 | A narrowly bounded local MariaDB loopback plaintext client transport profile | Accepted |
 | ADR-0038 | Version shared server configuration and deploy it with provenance | Accepted |
 | ADR-0039 | Out-of-process bot planning, with a stored-UUID identity and a `cv_brain` store | Accepted |
-| ADR-0040 | Module ownership: core is the upstream engine, our modules live in the platform | Accepted |
+| ADR-0040 | Module ownership: upstream-tracked modules stay in core; only code we wrote lives in the platform | Accepted |
 
 ADR-0026 is load-bearing for the others: no document may restate the fork point, the
 upstream of record or the merge rules. They link to it.
