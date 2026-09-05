@@ -61,7 +61,7 @@ func exactObject(raw []byte, required, optional []string) (map[string]json.RawMe
 // The PoC accepts one explicitly specified chat-completions projection, not
 // prose, fences, first-object extraction, tool calls, or multiple choices.
 func pocContent(raw []byte) (string, error) {
-	fields, err := exactObject(raw, []string{"choices"}, nil)
+	fields, err := exactObject(raw, []string{"choices"}, []string{"usage"})
 	if err != nil {
 		return "", err
 	}

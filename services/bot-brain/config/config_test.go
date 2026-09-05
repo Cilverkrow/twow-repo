@@ -25,6 +25,26 @@ func TestDefaultsProduceAWorkingRulesOnlyService(t *testing.T) {
 	if cfg.ListenAddr == "" || cfg.MaxBatch <= 0 || cfg.IntentTTL <= 0 {
 		t.Errorf("defaults are not usable: %+v", cfg)
 	}
+	if cfg.LLM.TokenBudget == nil || cfg.LLM.TokenBudget.Limits() != llm.DefaultTokenLimits() {
+		t.Fatal("default token budget missing")
+	}
+}
+
+func TestTokenBudgetConfiguration(t *testing.T) {
+	for _, key := range []string{"BOT_BRAIN_LLM_INPUT_TOKEN_BUDGET", "BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET", "BOT_BRAIN_LLM_HOURLY_TOKEN_BUDGET", "BOT_BRAIN_LLM_DAILY_TOKEN_BUDGET", "BOT_BRAIN_LLM_MAX_TOKENS"} {
+		for _, value := range []string{"0", "-1", "garbage", "9223372036854775808"} {
+			if _, err := config.Load(env(map[string]string{key: value})); err == nil {
+				t.Errorf("accepted %s=%s", key, value)
+			}
+		}
+	}
+	if _, err := config.Load(env(map[string]string{"BOT_BRAIN_LLM_MAX_TOKENS": "1025"})); err == nil {
+		t.Fatal("output ceiling not enforced")
+	}
+	c, err := config.Load(env(map[string]string{"BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET": "2048", "BOT_BRAIN_LLM_MAX_TOKENS": "2048"}))
+	if err != nil || c.LLM.TokenBudget.Limits().OutputPerRequest != 2048 || c.LLM.Enabled {
+		t.Fatal("explicit limit config", err)
+	}
 }
 
 func TestLoad(t *testing.T) {

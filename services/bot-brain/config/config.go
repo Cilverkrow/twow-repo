@@ -82,6 +82,13 @@ func Load(getenv func(string) string) (Config, error) {
 		getenv = os.Getenv
 	}
 	e := &env{getenv: getenv}
+	defaults := llm.DefaultTokenLimits()
+	limits := llm.TokenLimits{
+		InputPerRequest:  int64(e.num("BOT_BRAIN_LLM_INPUT_TOKEN_BUDGET", int(defaults.InputPerRequest))),
+		OutputPerRequest: int64(e.num("BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET", int(defaults.OutputPerRequest))),
+		PerHour:          int64(e.num("BOT_BRAIN_LLM_HOURLY_TOKEN_BUDGET", int(defaults.PerHour))),
+		PerDay:           int64(e.num("BOT_BRAIN_LLM_DAILY_TOKEN_BUDGET", int(defaults.PerDay))),
+	}
 	c := Config{
 		ListenAddr:      e.str("BOT_BRAIN_LISTEN", "127.0.0.1:8085"),
 		MaxBatch:        e.num("BOT_BRAIN_MAX_BATCH", contract.DefaultMaxBatch),
@@ -119,6 +126,16 @@ func Load(getenv func(string) string) (Config, error) {
 	// typo is a bad way to spend an afternoon.
 	if len(e.bad) > 0 {
 		return c, fmt.Errorf("unparseable configuration: %s", strings.Join(e.bad, "; "))
+	}
+	// One budget for this service configuration, shared by all callers using it.
+	// Never load configuration or construct a fresh budget per request.
+	var err error
+	c.LLM.TokenBudget, err = llm.NewTokenBudget(limits, nil)
+	if err != nil {
+		return c, err
+	}
+	if c.LLM.MaxTokens <= 0 || int64(c.LLM.MaxTokens) > limits.OutputPerRequest {
+		return c, fmt.Errorf("BOT_BRAIN_LLM_MAX_TOKENS must be positive and within BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET")
 	}
 	return c, c.validate()
 }

@@ -93,6 +93,10 @@ func (p *PoC) PlanOne(ctx context.Context, req planner.Request) (contract.Intent
 	}
 	r.Header.Set("Content-Type", "application/json")
 	p.backend.applyAuth(r)
+	reservation, err := p.backend.reserveTokens(ctx, body)
+	if err != nil {
+		return zero, err
+	}
 	// Forbid redirects as well as application retries: one destination only.
 	client := *p.backend.client
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
@@ -103,7 +107,13 @@ func (p *PoC) PlanOne(ctx context.Context, req planner.Request) (contract.Intent
 	defer resp.Body.Close()
 	const maxResponse = 64 << 10
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxResponse+1))
-	if err != nil || len(raw) > maxResponse || resp.StatusCode != http.StatusOK {
+	if err != nil || len(raw) > maxResponse {
+		return zero, errors.New("poc: invalid response")
+	}
+	if err := reservation.observeUsage(raw); err != nil {
+		return zero, err
+	}
+	if resp.StatusCode != http.StatusOK {
 		return zero, errors.New("poc: invalid response")
 	}
 	content, err := pocContent(raw)

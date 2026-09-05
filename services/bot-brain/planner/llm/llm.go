@@ -9,9 +9,9 @@
 //
 // What is NOT real: the prompt is a first draft and has had no evaluation; the
 // model is asked for JSON and trusted only as far as [validate] allows; there is
-// no batching strategy beyond "one call per batch"; there are no token budgets,
-// no cost caps and no rate-limit handling. ARCH-003 requires all three before
-// this points at a metered cloud endpoint, and none of them exist yet.
+// no batching strategy beyond "one call per batch"; token accounting is local
+// and estimated (TOKEN-BUDGET.md), not a metered-endpoint guarantee. Cost caps
+// and rate-limit handling are still separate ARCH-003 prerequisites.
 //
 // # Why OpenAI-compatible rather than a provider SDK
 //
@@ -114,6 +114,10 @@ type Config struct {
 	// HTTPClient allows tests to inject a transport. Nil means a client built
 	// from Timeout.
 	HTTPClient *http.Client
+	// TokenBudget is shared local admission state. Nil uses a finite process-
+	// shared default, never unlimited. Share the same pointer between custom
+	// planners and PoCs; constructing one per request defeats window limits.
+	TokenBudget *TokenBudget `json:"-"`
 }
 
 // Redacted returns a copy safe to log.
@@ -121,6 +125,7 @@ func (c Config) Redacted() Config {
 	if c.APIKey != "" {
 		c.APIKey = "***"
 	}
+	c.TokenBudget = nil // do not serialize mutable accounting internals
 	return c
 }
 
@@ -174,8 +179,17 @@ func New(cfg Config) (*Planner, error) {
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = 3 * time.Second
 	}
-	if cfg.MaxTokens <= 0 {
+	if cfg.MaxTokens < 0 {
+		return nil, errors.New("llm: max_tokens must not be negative")
+	}
+	if cfg.MaxTokens == 0 {
 		cfg.MaxTokens = 1024
+	}
+	if cfg.TokenBudget == nil {
+		cfg.TokenBudget = defaultTokenBudget
+	}
+	if cfg.TokenBudget.limits.validate() != nil || int64(cfg.MaxTokens) > cfg.TokenBudget.limits.OutputPerRequest {
+		return nil, errors.New("llm: max_tokens exceeds token budget or budget is invalid")
 	}
 	if cfg.MaxBotsPerCall <= 0 {
 		cfg.MaxBotsPerCall = 16
@@ -282,8 +296,15 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	p.applyAuth(httpReq)
+	reservation, err := p.reserveTokens(ctx, body)
+	if err != nil {
+		return nil, err
+	}
 
-	resp, err := p.client.Do(httpReq)
+	// One admitted destination: redirects are not another budgeted call.
+	client := *p.client
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	resp, err := client.Do(httpReq)
 	if err != nil {
 		p.recordFailure()
 		return nil, fmt.Errorf("llm: %w", err)
@@ -296,6 +317,10 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 	if err != nil {
 		p.recordFailure()
 		return nil, fmt.Errorf("llm: reading response: %w", err)
+	}
+	if err := reservation.observeUsage(raw); err != nil {
+		p.recordFailure()
+		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
 		p.recordFailure()
