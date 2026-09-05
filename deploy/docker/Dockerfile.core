@@ -199,6 +199,17 @@ FROM runtime-base AS runtime
 ARG PREFIX
 COPY --from=builder ${PREFIX} ${PREFIX}
 
+# The unprivileged entrypoint seeds each required module .conf next to its
+# root-owned .conf.dist template on first start.  Keep the installed payload
+# immutable, but hand ownership of that one directory to the runtime account so
+# creating the missing files does not crash-loop mangosd before it reaches the
+# database.
+USER root
+RUN if [ -d "${PREFIX}/etc/modules" ]; then \
+      chown turtle:turtle "${PREFIX}/etc/modules"; \
+    fi
+USER turtle
+
 # --------------------------------------------------------------- ci-staged
 #
 # CI ONLY. Never published, never referenced by publish.yml or nightly.yml.
@@ -219,3 +230,10 @@ ARG PREFIX
 # Relative to the build context. ci.yml stages into ./stage.
 ARG STAGE=stage
 COPY ${STAGE} ${PREFIX}
+
+# Keep the staged CI image's runtime contract identical to the released image.
+USER root
+RUN if [ -d "${PREFIX}/etc/modules" ]; then \
+      chown turtle:turtle "${PREFIX}/etc/modules"; \
+    fi
+USER turtle
