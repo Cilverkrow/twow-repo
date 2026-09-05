@@ -130,7 +130,16 @@ exec docker run --rm \
     --env CCACHE_DIR=/ccache \
     --env CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-4G}" \
     --env CCACHE_COMPRESS=1 \
-    --env CCACHE_COMPRESSLEVEL=1 \
+    # zstd level 6, not 1. Level 1 is the fastest and weakest setting, and the
+    # cost it avoids is on the STORE side only - zstd decompresses at
+    # essentially the same speed whatever level compressed it, so a warm
+    # restore is not slowed by this.
+    #
+    # Size is what matters: the repository shares a 10 GB Actions cache
+    # budget, and a compiler cache that does not fit inside it is evicted
+    # before the next run can restore it - which showed up as a warm build
+    # coming out cold, not as anything that mentioned the cache.
+    --env CCACHE_COMPRESSLEVEL="${CCACHE_COMPRESSLEVEL:-6}" \
     --env CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime \
     --env GIT_CONFIG_COUNT=1 \
     --env GIT_CONFIG_KEY_0=safe.directory \
