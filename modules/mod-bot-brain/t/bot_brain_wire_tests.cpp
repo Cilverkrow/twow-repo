@@ -16,6 +16,16 @@
  * encoder is checked against the REAL service (`go run ./cmd/bot-brain`, then
  * POST the dump to /v1/plan), which is the only check that can catch a name
  * this file and the encoder agree on but the Go struct does not.
+ *
+ * Run with `--check-response` and the binary reads a PlanResponse body from
+ * stdin, decodes it with the REAL decoder (the same DecodePlanResponse the
+ * worldserver calls), and prints one line per decoded intent/error plus a
+ * final DECODE_OK/DECODE_FAIL verdict, exiting 1 on a decode failure. This is
+ * the other half of the live-service check: --dump-request proves the encoder
+ * against the real service's INPUT side, --check-response proves the decoder
+ * against its OUTPUT side. See test/integration/bot-brain-live.sh, which pipes
+ * one into the other through a live `go run ./cmd/bot-brain` over a real
+ * socket.
  */
 
 #include "BotBrainWire.h"
@@ -23,6 +33,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -496,6 +507,62 @@ namespace
     }
 }
 
+namespace
+{
+    // Reads all of stdin, unmodified. The live-service script pipes a real
+    // HTTP response body in here; nothing about that body is trusted, which is
+    // exactly what DecodePlanResponse is for.
+    std::string ReadStdin()
+    {
+        std::ostringstream buffer;
+        buffer << std::cin.rdbuf();
+        return buffer.str();
+    }
+
+    // Decodes a PlanResponse from stdin with the REAL decoder and prints what
+    // it found, one line per fact, so a shell script can grep for the exact
+    // shape it expects without this file having to know what that is. Exit
+    // code is the verdict: 0 only if the body decoded.
+    //
+    // This is deliberately dumb: it does not decide whether the intents are
+    // the RIGHT ones for the sample request. That judgment belongs to the
+    // script driving the live service, which knows what request it sent.
+    int CheckResponse()
+    {
+        std::string const body = ReadStdin();
+
+        botbrain::PlanResponse response;
+        std::string error;
+        if (!botbrain::DecodePlanResponse(body, response, error))
+        {
+            std::printf("DECODE_FAIL: %s\n", error.c_str());
+            return 1;
+        }
+
+        std::printf("DECODE_OK request_id=%s intents=%zu errors=%zu plan_ms=%lld degraded=%s\n",
+            response.requestId.c_str(), response.intents.size(), response.errors.size(),
+            static_cast<long long>(response.planMs),
+            response.degradedReason.empty() ? "-" : response.degradedReason.c_str());
+
+        for (std::size_t i = 0; i < response.intents.size(); ++i)
+        {
+            botbrain::Intent const& in = response.intents[i];
+            std::printf("INTENT bot_realm=%u bot_guid=%llu intent_id=%s kind=%s has_travel=%d "
+                "travel_poi_id=%s confidence=%.3f source=%s\n",
+                in.bot.realm, static_cast<unsigned long long>(in.bot.guid), in.intentId.c_str(),
+                in.kind.c_str(), in.hasTravel ? 1 : 0, in.travelPoiId.c_str(), in.confidence,
+                in.source.c_str());
+        }
+        for (std::size_t i = 0; i < response.errors.size(); ++i)
+        {
+            botbrain::PlanError const& e = response.errors[i];
+            std::printf("ERROR bot_realm=%u bot_guid=%llu code=%s\n",
+                e.bot.realm, static_cast<unsigned long long>(e.bot.guid), e.code.c_str());
+        }
+        return 0;
+    }
+}
+
 int main(int argc, char** argv)
 {
     if (argc > 1 && std::strcmp(argv[1], "--dump-request") == 0)
@@ -504,6 +571,9 @@ int main(int argc, char** argv)
         std::fwrite(json.data(), 1, json.size(), stdout);
         return 0;
     }
+
+    if (argc > 1 && std::strcmp(argv[1], "--check-response") == 0)
+        return CheckResponse();
 
     TestEncodedFieldNames();
     TestPercentagesAreOutOfOneHundred();
