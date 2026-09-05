@@ -59,10 +59,32 @@ namespace botbrain
             PartitionedTravelList list;
         };
 
-        struct PlanExchange
+        // Batching is not an optimisation, it is the design
+        // (services/bot-brain/contract/wire.go:16-20): one HTTP round trip
+        // must serve many bots, not one per bot per interval. This exchange
+        // is shared by every bot whose snapshot rode in the same request, so
+        // it carries the decoded response rather than the raw body -- decoding
+        // once in the worker, before `done` is set, means every bot's map
+        // thread can read `response` lock-free afterwards without racing
+        // another bot's thread to parse the same JSON.
+        struct BatchExchange
         {
             std::atomic<bool> done{false};
             HttpResult result;
+            bool decoded = false;
+            std::string decodeError;
+            PlanResponse response;
+        };
+
+        // Snapshots waiting to go out together. Filled under g_statesMutex as
+        // each bot finishes phase B; flushed either when it reaches the
+        // negotiated max batch size or when g_pendingBatch's flush deadline
+        // elapses, whichever comes first.
+        struct PendingBatch
+        {
+            std::vector<Snapshot> snapshots;
+            std::vector<uint64> guids;   // g_states keys, parallel to snapshots
+            uint32 flushDeadlineMs = 0;
         };
 
         // The handshake retry uses the same shape as the two above for the same
@@ -92,7 +114,13 @@ namespace botbrain
             uint32 nextRequestMs = 0;
 
             std::shared_ptr<DestinationExchange> destinations;
-            std::shared_ptr<PlanExchange> plan;
+
+            // Null while this bot's snapshot sits in g_pendingBatch waiting to
+            // be sent; set to the shared exchange once that batch is
+            // dispatched. AwaitingPlan covers both: "not dispatched yet" and
+            // "dispatched, waiting on the peer" are the same wait from this
+            // bot's point of view.
+            std::shared_ptr<BatchExchange> batch;
 
             std::vector<ResolvedPoi> poiTable;
             uint32 poiTableAtMs = 0;
@@ -107,9 +135,22 @@ namespace botbrain
         std::mutex g_statesMutex;
         std::unordered_map<uint64, BotPlanState> g_states;   // keyed by ObjectGuid raw value
 
+        // The batch currently accumulating snapshots, or null between batches.
+        // Guarded by g_statesMutex, same as g_states: a bot joins this and
+        // transitions its own phase in the same critical section, so the two
+        // can never disagree about whether a snapshot was queued.
+        std::shared_ptr<PendingBatch> g_pendingBatch;
+
         std::atomic<uint32> g_inFlight{0};
         std::atomic<bool> g_shuttingDown{false};
         std::atomic<bool> g_admitted{false};
+
+        // Max snapshots per request, negotiated at handshake (contract
+        // max_batch). Defaults to 1 -- i.e. no batching -- until a handshake
+        // has actually told us otherwise, so a build that somehow starts
+        // admitting before ReportHandshake runs cannot batch on a made-up
+        // number.
+        std::atomic<uint32> g_maxBatch{1};
 
         // Handshake retry state. The handshake used to run only at
         // WORLDHOOK_ON_STARTUP, so a bot-brain that started after the
@@ -417,7 +458,13 @@ namespace botbrain
             }).detach();
         }
 
-        void SpawnPlanWorker(std::shared_ptr<PlanExchange> const& exchange,
+        // Posts one batch and decodes the reply, all before `done` is set.
+        // Decoding here rather than back on a map thread is what lets many
+        // bots' Tick() calls -- each on its own map thread -- read
+        // exchange->response afterwards without a lock: by the time any of
+        // them can observe `done`, the response is already fully written and
+        // nothing will write it again.
+        void SpawnBatchWorker(std::shared_ptr<BatchExchange> const& exchange,
             std::string const& endpoint, std::string const& body, uint32 timeoutMs)
         {
             g_inFlight.fetch_add(1);
@@ -425,7 +472,21 @@ namespace botbrain
             // way to name a Player, a session or a bot from in here.
             std::thread([exchange, endpoint, body, timeoutMs]()
             {
-                exchange->result = PostPlan(endpoint, body, timeoutMs);
+                try
+                {
+                    exchange->result = PostPlan(endpoint, body, timeoutMs);
+                    if (exchange->result.ok)
+                        exchange->decoded = DecodePlanResponse(exchange->result.body, exchange->response, exchange->decodeError);
+                }
+                catch (...)
+                {
+                    // An escaping exception on a detached thread is
+                    // std::terminate for the whole worldserver. Every bot in
+                    // this batch simply sees a failed round trip and keeps the
+                    // stock chooser.
+                    exchange->decoded = false;
+                    exchange->decodeError = "batch worker threw";
+                }
                 exchange->done.store(true, std::memory_order_release);
                 g_inFlight.fetch_sub(1);
             }).detach();
@@ -437,6 +498,43 @@ namespace botbrain
         {
             std::unordered_map<uint64, BotPlanState>::iterator it = g_states.find(raw);
             return it == g_states.end() ? nullptr : &it->second;
+        }
+
+        // Sends one batch and hands every bot in it the exchange to wait on.
+        // Called with `batch` already detached from g_pendingBatch by the
+        // caller, so nobody else can mutate it out from under this call.
+        //
+        // The encode + spawn happen without g_statesMutex held, same reason
+        // phase B builds a snapshot before taking the lock: this can take
+        // however long std::string serialisation and a thread launch take, and
+        // it must not stall every other bot's Tick() in the meantime.
+        void DispatchBatch(std::shared_ptr<PendingBatch> const& batch, Settings const& cfg)
+        {
+            PlanRequest request;
+            request.contractVersion = kContractVersion;
+            // No single bot owns this request id -- it is not "ws-<a bot's
+            // guid>-N" the way a solo request's was, because that would read
+            // as if the batch belonged to whichever bot happened to be first.
+            request.requestId = MakeRequestId(0);
+            request.sentAtMs = NowUnixMs();
+            request.deadlineMs = cfg.timeoutMs;
+            request.snapshots = batch->snapshots;
+
+            std::shared_ptr<BatchExchange> exchange = std::make_shared<BatchExchange>();
+            SpawnBatchWorker(exchange, cfg.endpoint, EncodePlanRequest(request), cfg.timeoutMs);
+
+            std::lock_guard<std::mutex> lock(g_statesMutex);
+            for (uint64 raw : batch->guids)
+            {
+                BotPlanState* state = Find(raw);
+                // A null state (Forget already ran) or a phase that is not
+                // AwaitingPlan (should not happen, but Tick never assumes it)
+                // means this bot will never look at `exchange` -- exactly the
+                // "a bot logging out mid-flight leaves a result nobody reads"
+                // property the other exchanges already rely on.
+                if (state && state->phase == Phase::AwaitingPlan)
+                    state->batch = exchange;
+            }
         }
 
         // Writes an outcome into a state the caller ALREADY holds g_statesMutex
@@ -513,6 +611,13 @@ namespace botbrain
                     sLog.outString("mod-bot-brain: contract handshake OK -- peer %s speaks %s, max batch %d",
                         endpoint.c_str(), out.version.c_str(), out.maxBatch);
                 }
+
+                // A non-positive max_batch is a malformed or absent field, not
+                // an instruction to batch zero snapshots per request -- fall
+                // back to sending one at a time rather than wedge every bot in
+                // AwaitingPlan behind a batch that can never reach its own
+                // threshold.
+                g_maxBatch.store(out.maxBatch > 0 ? uint32(out.maxBatch) : 1, std::memory_order_relaxed);
                 g_admitted.store(true);
                 return;
             }
@@ -620,6 +725,39 @@ namespace botbrain
                 ReportHandshake(*finished, cfg.endpoint, true);
         }
 
+        // Drives the flush deadline from the world thread. Called from Tick
+        // for every bot, not just the ones contributing to the pending batch:
+        // that is deliberate, because the batch that needs flushing may belong
+        // to bots this particular call is not about. As long as some bot ticks
+        // regularly -- which is guaranteed whenever any bot exists -- a batch
+        // that never reaches MaxBatch still goes out promptly instead of
+        // waiting for a snapshot count it may never see (a realm with three
+        // bots is not going to accumulate 2048 of anything).
+        void MaybeFlushPendingBatch()
+        {
+            if (g_shuttingDown.load())
+                return;   // BeginShutdown means stop spawning workers, full stop
+
+            Settings const& cfg = GetSettings();
+            if (!cfg.enabled)
+                return;
+
+            uint32 const now = WorldTimer::getMSTime();
+
+            std::shared_ptr<PendingBatch> toDispatch;
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                if (!g_pendingBatch)
+                    return;
+                if (!Elapsed(now, g_pendingBatch->flushDeadlineMs))
+                    return;
+                toDispatch = g_pendingBatch;
+                g_pendingBatch.reset();
+            }
+
+            DispatchBatch(toDispatch, cfg);
+        }
+
         bool ShouldPlanFor(Player* bot, PlayerbotAI* botAI)
         {
             Settings const& cfg = GetSettings();
@@ -664,7 +802,27 @@ namespace botbrain
     void Forget(ObjectGuid guid)
     {
         std::lock_guard<std::mutex> lock(g_statesMutex);
-        g_states.erase(guid.GetRawValue());
+        uint64 const raw = guid.GetRawValue();
+        g_states.erase(raw);
+
+        // A bot that logs out while its snapshot is still sitting in
+        // g_pendingBatch (not dispatched yet) is not a crash risk either way --
+        // DispatchBatch's Find() would simply find nothing for this guid and
+        // move on, the same way a dispatched batch's response is safely
+        // ignored once g_states no longer has an entry to write it into. This
+        // is just tidiness: don't ask the brain to plan for a bot that is
+        // already gone by the time the batch goes out.
+        if (g_pendingBatch)
+        {
+            for (size_t i = 0; i < g_pendingBatch->guids.size(); ++i)
+            {
+                if (g_pendingBatch->guids[i] != raw)
+                    continue;
+                g_pendingBatch->guids.erase(g_pendingBatch->guids.begin() + i);
+                g_pendingBatch->snapshots.erase(g_pendingBatch->snapshots.begin() + i);
+                break;
+            }
+        }
     }
 
     void RecordOutcome(Player* bot, std::string const& intentId, std::string const& kind,
@@ -772,6 +930,12 @@ namespace botbrain
         // further log line to say so.
         MaybeRetryHandshake();
 
+        // Also before the gate, and for the same shape of reason: the pending
+        // batch this call flushes may not be this bot's own. Whichever bot's
+        // Tick() happens to run while the deadline is past is the one that
+        // sends it -- the batch does not care which map thread does the work.
+        MaybeFlushPendingBatch();
+
         if (!ShouldPlanFor(bot, botAI))
             return;
 
@@ -782,7 +946,7 @@ namespace botbrain
         // Phase A/D bookkeeping happens under the lock; the two expensive
         // steps (building the snapshot, spawning a worker) happen after it.
         std::shared_ptr<DestinationExchange> readyDestinations;
-        std::shared_ptr<PlanExchange> readyPlan;
+        std::shared_ptr<BatchExchange> readyPlan;
         bool startRequest = false;
         bool hasOutcome = false;
         IntentOutcome outcome;
@@ -811,10 +975,15 @@ namespace botbrain
                     break;
 
                 case Phase::AwaitingPlan:
-                    if (!state.plan || !state.plan->done.load(std::memory_order_acquire))
+                    // Two sub-waits share this phase: the snapshot may still be
+                    // sitting in g_pendingBatch (state.batch still null -- not
+                    // dispatched yet), or it may be riding a dispatched batch
+                    // that has not answered yet. Either way there is nothing
+                    // for this bot to do until state.batch is both set and done.
+                    if (!state.batch || !state.batch->done.load(std::memory_order_acquire))
                         return;
-                    readyPlan = state.plan;
-                    state.plan.reset();
+                    readyPlan = state.batch;
+                    state.batch.reset();
                     break;
             }
         }
@@ -873,44 +1042,63 @@ namespace botbrain
                 return;
             }
 
-            PlanRequest request;
-            request.contractVersion = kContractVersion;
-            request.requestId = MakeRequestId(snapshot.bot.guid);
-            request.sentAtMs = NowUnixMs();
-            request.deadlineMs = cfg.timeoutMs;
-            request.snapshots.push_back(snapshot);
+            // ---- Join the shared batch instead of sending alone. -----------
+            // This is BotBrainPipeline's half of "batching is not an
+            // optimisation, it is the design" (contract/wire.go:16-20): at
+            // 1000 bots, one round trip per bot per interval spends more time
+            // in HTTP than in planning. Joining costs nothing this bot can
+            // observe -- it still waits in AwaitingPlan exactly as before,
+            // just possibly a little longer, bounded by BotBrain.BatchFlushMs.
+            std::shared_ptr<PendingBatch> toDispatch;
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                BotPlanState& state = g_states[raw];
+                state.poiTable = table;
+                state.poiTableAtMs = now;
+                state.hasOutcome = false;
+                state.phase = Phase::AwaitingPlan;
+                state.batch.reset();   // not dispatched yet; MaybeFlushPendingBatch or the size check below will set it
 
-            std::shared_ptr<PlanExchange> exchange = std::make_shared<PlanExchange>();
-            SpawnPlanWorker(exchange, cfg.endpoint, EncodePlanRequest(request), cfg.timeoutMs);
+                if (!g_pendingBatch)
+                {
+                    g_pendingBatch = std::make_shared<PendingBatch>();
+                    g_pendingBatch->flushDeadlineMs = now + cfg.batchFlushMs;
+                }
+                g_pendingBatch->snapshots.push_back(snapshot);
+                g_pendingBatch->guids.push_back(raw);
 
-            std::lock_guard<std::mutex> lock(g_statesMutex);
-            BotPlanState& state = g_states[raw];
-            state.plan = exchange;
-            state.poiTable = table;
-            state.poiTableAtMs = now;
-            state.hasOutcome = false;
-            state.phase = Phase::AwaitingPlan;
+                // max_batch (2048 at the time of writing) is negotiated at
+                // handshake, not hardcoded, so a future contract can raise or
+                // lower it without a worldserver rebuild.
+                uint32 const maxBatch = g_maxBatch.load(std::memory_order_relaxed);
+                if (uint32(g_pendingBatch->snapshots.size()) >= (maxBatch ? maxBatch : 1))
+                {
+                    toDispatch = g_pendingBatch;
+                    g_pendingBatch.reset();
+                }
+            }
+
+            if (toDispatch)
+                DispatchBatch(toDispatch, cfg);
             return;
         }
 
         // ---- Phase D: take the answer. -------------------------------------
+        // readyPlan is shared with every other bot that rode the same batch.
+        // Everything read from it here (result, decoded, decodeError,
+        // response) was written by the worker BEFORE it set `done`, so this is
+        // a plain read of already-settled data -- no race with another bot's
+        // map thread reading the same exchange concurrently.
         if (readyPlan)
         {
-            PlanResponse response;
-            std::string error;
-            bool decoded = false;
-
-            if (!readyPlan->result.ok)
-                error = readyPlan->result.error;
-            else
-                decoded = DecodePlanResponse(readyPlan->result.body, response, error);
-
             std::lock_guard<std::mutex> lock(g_statesMutex);
             BotPlanState& state = g_states[raw];
             state.phase = Phase::Idle;
 
-            if (!decoded)
+            if (!readyPlan->result.ok || !readyPlan->decoded)
             {
+                std::string const error = readyPlan->result.ok ? readyPlan->decodeError : readyPlan->result.error;
+
                 // Silent by design at BASIC level: a brain that is down must
                 // not fill the log once per bot per interval.
                 sLog.outDetail("mod-bot-brain: plan for %s failed (%s); stock chooser continues",
@@ -921,8 +1109,14 @@ namespace botbrain
 
             state.nextRequestMs = now + cfg.intervalMs;
 
+            // At most one intent per snapshot (contract/wire.go:81), and the
+            // Go planner keys its results in a map[BotID]Intent -- so this
+            // `break` on first match is correct as-is, batched or not. It is
+            // NOT "only look at bot 0's intent": the filter above it discards
+            // every intent not addressed to guidLow/realmID first, so the
+            // first match found IS this bot's one intent, never another bot's.
             uint64 const guidLow = bot->GetGUIDLow();
-            for (Intent const& intent : response.intents)
+            for (Intent const& intent : readyPlan->response.intents)
             {
                 if (intent.bot.guid != guidLow || intent.bot.realm != realmID)
                     continue;   // never apply an intent addressed to another bot

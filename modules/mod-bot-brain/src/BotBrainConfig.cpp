@@ -36,6 +36,7 @@ namespace botbrain
         cfg.intervalMs = ReadUint("BotBrain.IntervalMs", 15000, 1000, 3600000);
         cfg.backoffMs = ReadUint("BotBrain.BackoffMs", 60000, 1000, 3600000);
         cfg.maxInFlight = ReadUint("BotBrain.MaxInFlight", 8, 1, 256);
+        cfg.batchFlushMs = ReadUint("BotBrain.BatchFlushMs", 200, 10, 10000);
         cfg.maxPois = ReadUint("BotBrain.MaxPois", 24, 1, 512);
         cfg.poiTableTtlMs = ReadUint("BotBrain.PoiTableTtlMs", 120000, 1000, 3600000);
         cfg.logApplied = sConfig.GetBoolDefault("BotBrain.LogAppliedIntents", true);
