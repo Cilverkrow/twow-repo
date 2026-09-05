@@ -23,6 +23,7 @@
 #include <chrono>
 #include <cstdio>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <sstream>
 #include <thread>
@@ -64,6 +65,20 @@ namespace botbrain
             HttpResult result;
         };
 
+        // The handshake retry uses the same shape as the two above for the same
+        // reason: the HTTP call must not run on the world thread, and a detached
+        // worker must not log. The worker fills this in and the world thread
+        // reads it, so every sLog line below still comes from the world thread.
+        struct HandshakeExchange
+        {
+            std::atomic<bool> done{false};
+            bool ok = false;         // a compatible peer answered
+            bool skew = false;       // it answered, but speaks a major we do not
+            std::string version;     // what it said it speaks
+            int maxBatch = 0;
+            std::string error;       // transport or decode failure
+        };
+
         enum class Phase
         {
             Idle,
@@ -95,6 +110,16 @@ namespace botbrain
         std::atomic<uint32> g_inFlight{0};
         std::atomic<bool> g_shuttingDown{false};
         std::atomic<bool> g_admitted{false};
+
+        // Handshake retry state. The handshake used to run only at
+        // WORLDHOOK_ON_STARTUP, so a bot-brain that started after the
+        // worldserver -- or restarted at any point -- left g_admitted false for
+        // the whole process lifetime, with no further log line. The brain was
+        // silently off until someone restarted the realm.
+        std::mutex g_handshakeMutex;
+        std::shared_ptr<HandshakeExchange> g_handshakeAttempt;   // non-null while one is in flight
+        std::atomic<uint32> g_nextHandshakeMs{0};                // WorldTimer ms; when a retry is allowed
+
         std::atomic<uint64> g_requestCounter{0};
 
         int64_t NowUnixMs()
@@ -414,6 +439,187 @@ namespace botbrain
             return it == g_states.end() ? nullptr : &it->second;
         }
 
+        // Writes an outcome into a state the caller ALREADY holds g_statesMutex
+        // for. TakeTravelIntent runs under that lock, so it cannot call the
+        // public RecordOutcome, which takes it -- that would deadlock the world
+        // thread on the first rejected intent.
+        void StoreOutcome(BotPlanState& state, std::string const& intentId, std::string const& kind,
+            std::string const& result, std::string const& reason, std::string const& poiId)
+        {
+            if (intentId.empty())
+                return;
+
+            state.hasOutcome = true;
+            state.outcome.intentId = intentId;
+            state.outcome.kind = kind;
+            state.outcome.result = result;
+            state.outcome.reason = reason;
+            state.outcome.poiId = poiId;
+            state.outcome.issuedAtMs = NowUnixMs();
+        }
+
+        // The transport half of a handshake: no logging, no globals touched.
+        // That is what makes it safe to call from a detached worker, and it is
+        // the whole reason it is split out of Handshake().
+        void AttemptHandshake(std::string const& endpoint, uint32 timeoutMs, HandshakeExchange& out)
+        {
+            HttpResult const result = FetchContract(endpoint, timeoutMs);
+            if (!result.ok)
+            {
+                out.error = result.error;
+                return;
+            }
+
+            ContractInfo info;
+            std::string error;
+            if (!DecodeContractInfo(result.body, info, error))
+            {
+                out.error = "unusable JSON: " + error;
+                return;
+            }
+
+            out.version = info.version;
+            out.maxBatch = info.maxBatch;
+
+            if (!ContractMajorSupported(info, kContractMajor))
+            {
+                out.skew = true;
+                return;
+            }
+
+            out.ok = true;
+        }
+
+        // Turns an attempt into log lines and the admission bit.
+        //
+        // WORLD THREAD ONLY. This is the half AttemptHandshake deliberately does
+        // not do, because the detached workers in this file never log -- they
+        // fill an exchange and let the world thread speak for them.
+        void ReportHandshake(HandshakeExchange const& out, std::string const& endpoint, bool isRetry)
+        {
+            if (out.ok)
+            {
+                if (isRetry)
+                {
+                    // Worth a normal-level line: "the brain came back" is the
+                    // event an operator waits for after restarting the service,
+                    // and without it the only evidence is bots quietly starting
+                    // to behave differently.
+                    sLog.outString("mod-bot-brain: contract handshake recovered -- peer %s speaks %s, max batch %d; planning resumes",
+                        endpoint.c_str(), out.version.c_str(), out.maxBatch);
+                }
+                else
+                {
+                    sLog.outString("mod-bot-brain: contract handshake OK -- peer %s speaks %s, max batch %d",
+                        endpoint.c_str(), out.version.c_str(), out.maxBatch);
+                }
+                g_admitted.store(true);
+                return;
+            }
+
+            // Failures are loud once at boot and quiet on every retry. A service
+            // down for an hour would otherwise write the same error sixty times,
+            // which teaches people to filter exactly the line that matters when
+            // it finally changes.
+            if (out.skew)
+            {
+                if (isRetry)
+                {
+                    sLog.outDetail("mod-bot-brain: handshake retry found contract skew (peer speaks %s); still off",
+                        out.version.c_str());
+                }
+                else
+                {
+                    sLog.outError("mod-bot-brain: contract skew -- this build speaks major %d, %s serves version %s; the brain stays off",
+                        kContractMajor, endpoint.c_str(), out.version.c_str());
+                }
+                return;
+            }
+
+            if (isRetry)
+            {
+                sLog.outDetail("mod-bot-brain: handshake retry with %s failed (%s)",
+                    endpoint.c_str(), out.error.c_str());
+            }
+            else
+            {
+                sLog.outError("mod-bot-brain: contract handshake with %s failed (%s); the brain stays off and bots keep the stock chooser. It is retried every BotBrain.BackoffMs.",
+                    endpoint.c_str(), out.error.c_str());
+            }
+        }
+
+        // Drives the retry from the world thread.
+        //
+        // Cheap in the common case: once admitted this is a single relaxed load
+        // and a return, which matters because Tick runs per bot per tick.
+        //
+        // Called from Tick, so retries only happen while there is at least one
+        // bot around -- which is exactly when being un-admitted costs anything.
+        void MaybeRetryHandshake()
+        {
+            if (g_admitted.load(std::memory_order_relaxed))
+                return;
+            if (g_shuttingDown.load())
+                return;
+
+            Settings const& cfg = GetSettings();
+            if (!cfg.enabled)
+                return;
+
+            uint32 const now = WorldTimer::getMSTime();
+
+            std::shared_ptr<HandshakeExchange> finished;
+            {
+                std::lock_guard<std::mutex> lock(g_handshakeMutex);
+
+                if (g_handshakeAttempt)
+                {
+                    if (!g_handshakeAttempt->done.load(std::memory_order_acquire))
+                        return;                        // one is in flight; wait for it
+                    finished = g_handshakeAttempt;
+                    g_handshakeAttempt.reset();
+                }
+                else
+                {
+                    if (!Elapsed(now, g_nextHandshakeMs.load(std::memory_order_relaxed)))
+                        return;
+
+                    std::shared_ptr<HandshakeExchange> exchange = std::make_shared<HandshakeExchange>();
+                    g_handshakeAttempt = exchange;
+
+                    // Arm the next window before spawning rather than when the
+                    // worker returns, so a worker that outlives BackoffMs cannot
+                    // have a second attempt queued up behind it.
+                    g_nextHandshakeMs.store(now + cfg.backoffMs, std::memory_order_relaxed);
+
+                    std::string const endpoint = cfg.endpoint;
+                    uint32 const timeoutMs = cfg.timeoutMs;
+
+                    std::thread([exchange, endpoint, timeoutMs]()
+                    {
+                        try
+                        {
+                            AttemptHandshake(endpoint, timeoutMs, *exchange);
+                        }
+                        catch (...)
+                        {
+                            // An escaping exception on a detached thread is
+                            // std::terminate for the entire worldserver.
+                            exchange->error = "handshake worker threw";
+                        }
+                        exchange->done.store(true, std::memory_order_release);
+                    }).detach();
+                    return;
+                }
+            }
+
+            // Reported outside the lock: ReportHandshake logs, and holding a
+            // mutex across a log write is how an unrelated slow sink becomes a
+            // world-thread stall.
+            if (finished)
+                ReportHandshake(*finished, cfg.endpoint, true);
+        }
+
         bool ShouldPlanFor(Player* bot, PlayerbotAI* botAI)
         {
             Settings const& cfg = GetSettings();
@@ -445,34 +651,14 @@ namespace botbrain
         if (!cfg.enabled)
             return false;
 
-        HttpResult const result = FetchContract(cfg.endpoint, cfg.timeoutMs);
-        if (!result.ok)
-        {
-            sLog.outError("mod-bot-brain: contract handshake with %s failed (%s); the brain stays off and bots keep the stock chooser",
-                cfg.endpoint.c_str(), result.error.c_str());
-            return false;
-        }
+        HandshakeExchange out;
+        AttemptHandshake(cfg.endpoint, cfg.timeoutMs, out);
 
-        ContractInfo info;
-        std::string error;
-        if (!DecodeContractInfo(result.body, info, error))
-        {
-            sLog.outError("mod-bot-brain: contract handshake returned unusable JSON (%s); the brain stays off",
-                error.c_str());
-            return false;
-        }
-
-        if (!ContractMajorSupported(info, kContractMajor))
-        {
-            sLog.outError("mod-bot-brain: contract skew -- this build speaks major %d, %s serves version %s; the brain stays off",
-                kContractMajor, cfg.endpoint.c_str(), info.version.c_str());
-            return false;
-        }
-
-        sLog.outString("mod-bot-brain: contract handshake OK -- peer %s speaks %s, max batch %d",
-            cfg.endpoint.c_str(), info.version.c_str(), info.maxBatch);
-        g_admitted.store(true);
-        return true;
+        // Boot already runs on the world thread, so it may log directly. The
+        // retry path routes an identical outcome through the same reporter, so
+        // the two cannot drift into saying different things about one event.
+        ReportHandshake(out, cfg.endpoint, false);
+        return out.ok;
     }
 
     void Forget(ObjectGuid guid)
@@ -482,7 +668,7 @@ namespace botbrain
     }
 
     void RecordOutcome(Player* bot, std::string const& intentId, std::string const& kind,
-        std::string const& result, std::string const& reason)
+        std::string const& result, std::string const& reason, std::string const& poiId)
     {
         if (!bot || intentId.empty())
             return;
@@ -492,12 +678,7 @@ namespace botbrain
         if (!state)
             return;
 
-        state->hasOutcome = true;
-        state->outcome.intentId = intentId;
-        state->outcome.kind = kind;
-        state->outcome.result = result;
-        state->outcome.reason = reason;
-        state->outcome.issuedAtMs = NowUnixMs();
+        StoreOutcome(*state, intentId, kind, result, reason, poiId);
     }
 
     bool TakeTravelIntent(Player* bot, Intent& intent, ResolvedPoi& poi)
@@ -516,35 +697,81 @@ namespace botbrain
         Intent const candidate = state->intent;
         state->hasIntent = false;
 
-        if (!IsPoiDirectedKind(candidate.kind) || !candidate.hasTravel || candidate.travelPoiId.empty())
+        // Every path out of here that is not "accepted" records WHY, so the next
+        // snapshot carries it as last_outcome. Before this, RecordOutcome had a
+        // single call site and it passed "accepted": the planner was told about
+        // successes only and learned nothing from failures, so a bot whose
+        // travel was refused got sent to the same place on the next tick, and
+        // the next, indefinitely.
+        //
+        // The rejections below are the server's own validation, not the bot's
+        // experience of the world. They say "this intent was unusable", which is
+        // feedback about the PLAN - exactly what a planner can act on.
+        if (!IsPoiDirectedKind(candidate.kind))
+        {
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unsupported_kind", candidate.travelPoiId);
             return false;
+        }
+        if (!candidate.hasTravel || candidate.travelPoiId.empty())
+        {
+            // A POI-directed kind that names no POI is a malformed intent rather
+            // than an unusable one, and the distinction is worth keeping: this
+            // one means the two sides disagree about the contract.
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unknown_poi", candidate.travelPoiId);
+            return false;
+        }
 
         int64_t const now = NowUnixMs();
         if (candidate.expiresAtMs && candidate.expiresAtMs < now)
+        {
+            // "expired" is its own result, not a rejection: nothing was wrong
+            // with the plan, it simply arrived too late to be worth applying.
+            // A planner should read this as "be faster", not "choose elsewhere".
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "expired", "", candidate.travelPoiId);
             return false;
+        }
 
         // The POI ids are snapshot-scoped by contract. An id from a table this
         // old is a stale destination, which is precisely what that scoping rule
         // exists to prevent.
         if (Elapsed(WorldTimer::getMSTime(), state->poiTableAtMs + cfg.poiTableTtlMs))
+        {
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "stale_poi", candidate.travelPoiId);
             return false;
+        }
 
         for (ResolvedPoi const& row : state->poiTable)
         {
             if (row.id != candidate.travelPoiId)
                 continue;
             if (!row.destination || !row.position)
+            {
+                // The id resolved, but the server could not turn it into a place
+                // to walk to. From the planner's side that is the same actionable
+                // fact as an unreachable destination: do not pick this one again.
+                StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unreachable", candidate.travelPoiId);
                 return false;
+            }
             intent = candidate;
             poi = row;
             return true;
         }
 
+        // Fell off the end of the table: the intent named a POI this snapshot
+        // never offered.
+        StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unknown_poi", candidate.travelPoiId);
         return false;
     }
 
     void Tick(Player* bot, PlayerbotAI* botAI)
     {
+        // Before the admission gate, deliberately: this is the call that can
+        // re-open it. The handshake used to run only at WORLDHOOK_ON_STARTUP, so
+        // a bot-brain that started after the worldserver -- or restarted at any
+        // point -- left the module inert for the whole process lifetime, with no
+        // further log line to say so.
+        MaybeRetryHandshake();
+
         if (!ShouldPlanFor(bot, botAI))
             return;
 

@@ -57,44 +57,68 @@ type Config struct {
 	LLM llm.Config
 	// LogLevel is "debug", "info" or "warn".
 	LogLevel string
+	// MaxBodyBytes caps the request body the plan endpoint will read.
+	//
+	// MaxBatch caps snapshots, but only AFTER the body has been read into
+	// memory, so on its own it bounds nothing: the endpoint is unauthenticated
+	// and a single POST of arbitrary length was enough to drive the process out
+	// of memory. This is the limit that actually applies, and it applies before
+	// the first byte is decoded.
+	MaxBodyBytes int64
 }
 
 // Load reads configuration from the environment.
+//
+// A value that is set but unparseable is a startup ERROR, not a silent fallback
+// to the default. The old behaviour meant BOT_BRAIN_MAX_BATCH=lots started a
+// healthy-looking service on 2048 with nothing in the log to say the operator's
+// intent had been discarded - the failure mode where you tune a knob, observe
+// no change, and conclude the knob does not work.
+//
+// Unset still means "use the default"; that is the documented way to not care.
+// Only a value someone actually typed is held to being meaningful.
 func Load(getenv func(string) string) (Config, error) {
 	if getenv == nil {
 		getenv = os.Getenv
 	}
+	e := &env{getenv: getenv}
 	c := Config{
-		ListenAddr:      str(getenv, "BOT_BRAIN_LISTEN", "127.0.0.1:8085"),
-		MaxBatch:        num(getenv, "BOT_BRAIN_MAX_BATCH", contract.DefaultMaxBatch),
-		DefaultDeadline: dur(getenv, "BOT_BRAIN_DEFAULT_DEADLINE", 2*time.Second),
-		IntentTTL:       dur(getenv, "BOT_BRAIN_INTENT_TTL", 30*time.Second),
-		Workers:         num(getenv, "BOT_BRAIN_WORKERS", 32),
-		ShutdownGrace:   dur(getenv, "BOT_BRAIN_SHUTDOWN_GRACE", 10*time.Second),
-		LogLevel:        str(getenv, "BOT_BRAIN_LOG_LEVEL", "info"),
+		ListenAddr:      e.str("BOT_BRAIN_LISTEN", "127.0.0.1:8085"),
+		MaxBatch:        e.num("BOT_BRAIN_MAX_BATCH", contract.DefaultMaxBatch),
+		DefaultDeadline: e.dur("BOT_BRAIN_DEFAULT_DEADLINE", 2*time.Second),
+		IntentTTL:       e.dur("BOT_BRAIN_INTENT_TTL", 30*time.Second),
+		Workers:         e.num("BOT_BRAIN_WORKERS", 32),
+		ShutdownGrace:   e.dur("BOT_BRAIN_SHUTDOWN_GRACE", 10*time.Second),
+		LogLevel:        e.str("BOT_BRAIN_LOG_LEVEL", "info"),
+		MaxBodyBytes:    int64(e.num("BOT_BRAIN_MAX_BODY_BYTES", contract.DefaultMaxBodyBytes)),
 		Rule: rule.Thresholds{
-			RestBelowHealthPct:           flt(getenv, "BOT_BRAIN_RULE_REST_BELOW_HP_PCT", 45),
-			RepairBelowDurabilityPct:     flt(getenv, "BOT_BRAIN_RULE_REPAIR_BELOW_DUR_PCT", 25),
-			VendorWhenFreeBagSlotsAtMost: uint32(num(getenv, "BOT_BRAIN_RULE_VENDOR_FREE_SLOTS", 1)),
-			MaxTravelYards:               flt(getenv, "BOT_BRAIN_RULE_MAX_TRAVEL_YARDS", 1500),
+			RestBelowHealthPct:           e.flt("BOT_BRAIN_RULE_REST_BELOW_HP_PCT", 45),
+			RepairBelowDurabilityPct:     e.flt("BOT_BRAIN_RULE_REPAIR_BELOW_DUR_PCT", 25),
+			VendorWhenFreeBagSlotsAtMost: uint32(e.num("BOT_BRAIN_RULE_VENDOR_FREE_SLOTS", 1)),
+			MaxTravelYards:               e.flt("BOT_BRAIN_RULE_MAX_TRAVEL_YARDS", 1500),
 		},
 		LLM: llm.Config{
-			Enabled:  boolean(getenv, "BOT_BRAIN_LLM_ENABLED", false),
-			BaseURL:  str(getenv, "BOT_BRAIN_LLM_BASE_URL", ""),
-			Model:    str(getenv, "BOT_BRAIN_LLM_MODEL", ""),
+			Enabled:  e.boolean("BOT_BRAIN_LLM_ENABLED", false),
+			BaseURL:  e.str("BOT_BRAIN_LLM_BASE_URL", ""),
+			Model:    e.str("BOT_BRAIN_LLM_MODEL", ""),
 			APIKey:   getenv("BOT_BRAIN_LLM_API_KEY"),
-			Provider: llm.Provider(str(getenv, "BOT_BRAIN_LLM_PROVIDER", string(llm.ProviderOpenAI))),
+			Provider: llm.Provider(e.str("BOT_BRAIN_LLM_PROVIDER", string(llm.ProviderOpenAI))),
 			// The default timeout is deliberately far below any plausible
 			// worldserver planning cadence. A local 7B on CPU takes ~8 s
 			// (LLM-011); with this default such a backend never answers and
 			// every batch falls back to rules, which is the correct visible
 			// outcome rather than a hidden stall.
-			Timeout:        dur(getenv, "BOT_BRAIN_LLM_TIMEOUT", 1500*time.Millisecond),
-			MaxTokens:      num(getenv, "BOT_BRAIN_LLM_MAX_TOKENS", 1024),
-			Temperature:    flt(getenv, "BOT_BRAIN_LLM_TEMPERATURE", 0),
-			MaxBotsPerCall: num(getenv, "BOT_BRAIN_LLM_MAX_BOTS_PER_CALL", 16),
-			AllowedModels:  list(getenv, "BOT_BRAIN_LLM_ALLOWED_MODELS"),
+			Timeout:        e.dur("BOT_BRAIN_LLM_TIMEOUT", 1500*time.Millisecond),
+			MaxTokens:      e.num("BOT_BRAIN_LLM_MAX_TOKENS", 1024),
+			Temperature:    e.flt("BOT_BRAIN_LLM_TEMPERATURE", 0),
+			MaxBotsPerCall: e.num("BOT_BRAIN_LLM_MAX_BOTS_PER_CALL", 16),
+			AllowedModels:  e.list("BOT_BRAIN_LLM_ALLOWED_MODELS"),
 		},
+	}
+	// Report every bad variable at once. Fixing a compose file one restart per
+	// typo is a bad way to spend an afternoon.
+	if len(e.bad) > 0 {
+		return c, fmt.Errorf("unparseable configuration: %s", strings.Join(e.bad, "; "))
 	}
 	return c, c.validate()
 }
@@ -108,6 +132,9 @@ func (c Config) validate() error {
 	}
 	if c.IntentTTL <= 0 {
 		return fmt.Errorf("BOT_BRAIN_INTENT_TTL must be positive, got %s", c.IntentTTL)
+	}
+	if c.MaxBodyBytes <= 0 {
+		return fmt.Errorf("BOT_BRAIN_MAX_BODY_BYTES must be positive, got %d", c.MaxBodyBytes)
 	}
 	if c.LLM.Enabled && c.LLM.Timeout >= c.DefaultDeadline {
 		// If the model may take as long as the whole batch budget, the fallback
@@ -126,42 +153,70 @@ func (c Config) Redacted() Config {
 	return c
 }
 
-func str(getenv func(string) string, key, def string) string {
-	if v := strings.TrimSpace(getenv(key)); v != "" {
+// env reads the environment and remembers what it could not parse.
+//
+// The accumulator is the point: a caller gets every bad variable in one error
+// rather than discovering them one restart at a time.
+type env struct {
+	getenv func(string) string
+	bad    []string
+}
+
+// reject records a value that was set but could not be read. The value is
+// included because "BOT_BRAIN_MAX_BATCH is invalid" does not tell an operator
+// which of the three places they configured it is the one that is wrong.
+func (e *env) reject(key, value, want string) {
+	e.bad = append(e.bad, fmt.Sprintf("%s=%q is not %s", key, value, want))
+}
+
+func (e *env) str(key, def string) string {
+	if v := strings.TrimSpace(e.getenv(key)); v != "" {
 		return v
 	}
 	return def
 }
 
-func num(getenv func(string) string, key string, def int) int {
-	if v := strings.TrimSpace(getenv(key)); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			return n
-		}
+func (e *env) num(key string, def int) int {
+	v := strings.TrimSpace(e.getenv(key))
+	if v == "" {
+		return def
 	}
-	return def
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		e.reject(key, v, "an integer")
+		return def
+	}
+	return n
 }
 
-func flt(getenv func(string) string, key string, def float64) float64 {
-	if v := strings.TrimSpace(getenv(key)); v != "" {
-		if f, err := strconv.ParseFloat(v, 64); err == nil {
-			return f
-		}
+func (e *env) flt(key string, def float64) float64 {
+	v := strings.TrimSpace(e.getenv(key))
+	if v == "" {
+		return def
 	}
-	return def
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		e.reject(key, v, "a number")
+		return def
+	}
+	return f
 }
 
-func boolean(getenv func(string) string, key string, def bool) bool {
-	if v := strings.TrimSpace(getenv(key)); v != "" {
-		if b, err := strconv.ParseBool(v); err == nil {
-			return b
-		}
+func (e *env) boolean(key string, def bool) bool {
+	v := strings.TrimSpace(e.getenv(key))
+	if v == "" {
+		return def
 	}
-	return def
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		e.reject(key, v, `a boolean ("1", "true", "0", "false")`)
+		return def
+	}
+	return b
 }
 
-func dur(getenv func(string) string, key string, def time.Duration) time.Duration {
-	v := strings.TrimSpace(getenv(key))
+func (e *env) dur(key string, def time.Duration) time.Duration {
+	v := strings.TrimSpace(e.getenv(key))
 	if v == "" {
 		return def
 	}
@@ -174,11 +229,12 @@ func dur(getenv func(string) string, key string, def time.Duration) time.Duratio
 	if n, err := strconv.Atoi(v); err == nil {
 		return time.Duration(n) * time.Millisecond
 	}
+	e.reject(key, v, `a duration ("1500ms", "2s") or a bare integer of milliseconds`)
 	return def
 }
 
-func list(getenv func(string) string, key string) []string {
-	v := strings.TrimSpace(getenv(key))
+func (e *env) list(key string) []string {
+	v := strings.TrimSpace(e.getenv(key))
 	if v == "" {
 		return nil
 	}

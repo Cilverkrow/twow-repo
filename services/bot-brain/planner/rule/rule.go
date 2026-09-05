@@ -210,14 +210,74 @@ func (p *Planner) travel(s *contract.Snapshot, id string, kind contract.IntentKi
 	return in
 }
 
+// avoidPOI returns the destination the previous intent was refused at, or "" if
+// there is nothing to avoid.
+//
+// This is the whole of the feedback loop on this side. The server records why an
+// intent was unusable and which POI it named; without acting on that, a bot
+// whose travel is refused is sent to the same place on the next tick, and the
+// next, indefinitely - the planner is told only about successes and learns
+// nothing from failure.
+//
+// Only verdicts ABOUT THE DESTINATION are acted on:
+//
+//   - "rejected" and "failed" say the plan was unusable or could not finish.
+//     Reason narrows it to the ones a different choice actually fixes.
+//   - "expired" is deliberately NOT here. Nothing was wrong with the
+//     destination; the plan simply arrived too late to apply. Reading it as
+//     "choose elsewhere" would make a slow round trip look like an unreachable
+//     world, and would walk bots away from perfectly good destinations whenever
+//     the service was busy.
+//   - "accepted" and "completed" are successes, and "superseded" means we
+//     ourselves replaced it.
+//
+// An unknown Result or Reason avoids nothing, per the contract's rule that
+// unknown values are ignored rather than guessed at.
+func avoidPOI(s *contract.Snapshot) string {
+	o := s.LastOutcome
+	// Absence is normal - a bot that has never been planned for, or whose
+	// history the server lost across a restart - and must never read as failure.
+	if o == nil || o.POIID == "" {
+		return ""
+	}
+	if o.Result != "rejected" && o.Result != "failed" {
+		return ""
+	}
+	switch o.Reason {
+	case "unreachable", "unknown_poi", "stale_poi":
+		// The destination is the problem: it cannot be pathed to, the server
+		// does not know it, or the table it came from aged out. Picking it again
+		// produces the identical refusal.
+		return o.POIID
+	case "identity_protected":
+		// The server refused something that would have touched bot identity. A
+		// brain that sees this has a bug, and steering around the POI would hide
+		// it. Left for the metric to surface.
+		return ""
+	default:
+		// "in_combat", "not_group_leader", "unsupported_kind" and anything this
+		// build has not heard of are about the BOT or the KIND, not the place.
+		// Avoiding the POI would be superstition.
+		return ""
+	}
+}
+
 // nearest picks the closest POI of a kind, deterministically. Ties break on the
 // POI id so that two replicas planning the same snapshot agree, which matters
 // the moment this service is scaled horizontally.
 func (p *Planner) nearest(s *contract.Snapshot, kind string) *contract.PointOfInterest {
+	avoid := avoidPOI(s)
 	candidates := make([]*contract.PointOfInterest, 0, 4)
 	for i := range s.POIs {
 		poi := &s.POIs[i]
 		if poi.Kind != kind || poi.ID == "" {
+			continue
+		}
+		if avoid != "" && poi.ID == avoid {
+			// Refused here last time for a reason that a different destination
+			// fixes. Skipping it rather than ranking it last is deliberate: a
+			// penalty would still choose it when it is the only candidate, which
+			// is exactly the case that loops.
 			continue
 		}
 		if !poi.Pos.SameMap(s.Pos) {
@@ -256,10 +316,18 @@ func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string) *co
 	if len(wanted) == 0 {
 		return nil
 	}
+	avoid := avoidPOI(s)
 	var best *contract.PointOfInterest
 	for i := range s.POIs {
 		poi := &s.POIs[i]
 		if poi.Kind != poiKind || poi.ID == "" || !wanted[poi.RelatedQuestID] {
+			continue
+		}
+		// Same guard as nearest(). Quest travel is the path most likely to loop,
+		// because a quest POI stays in the log until the quest is done - so an
+		// unreachable objective would be re-proposed every tick for as long as
+		// the bot carries the quest.
+		if avoid != "" && poi.ID == avoid {
 			continue
 		}
 		if !poi.Pos.SameMap(s.Pos) {

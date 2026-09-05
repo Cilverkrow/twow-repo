@@ -1,0 +1,16 @@
+{
+  "version": "1.2",
+  "supported_majors": [1],
+  "known_intent_kinds": [
+    "idle",
+    "travel_to",
+    "pick_quest",
+    "turn_in_quest",
+    "abandon_quest",
+    "grind_area",
+    "vendor_sell",
+    "repair",
+    "rest"
+  ],
+  "max_batch": 2048
+}

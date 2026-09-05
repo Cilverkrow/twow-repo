@@ -91,6 +91,7 @@ services:
       - ${CORE_SQL_PATH:-../../core/sql}:/sql-core:ro
       - ${SQL_BASE_PATH:-../../core/sql/base}:/sql-base:ro
       - ${PLAYERBOTS_SQL_PATH:-../../modules/mod-playerbots/sql}:/sql-playerbots:ro
+      - ${BOT_BRAIN_SQL_PATH:-../../modules/mod-bot-brain/sql}:/sql-bot-brain:ro
     entrypoint: ["/bin/bash", "/db-init.sh"]
     healthcheck:
       # A one-shot job is gated by service_completed_successfully, not by health.

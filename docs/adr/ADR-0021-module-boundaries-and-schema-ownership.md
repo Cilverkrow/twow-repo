@@ -50,6 +50,7 @@ on every future merge.
 | `tw_world`, `tw_char`, `tw_logon`, `tw_logs` | upstream (`twow-core`) | core AutoUpdater, upstream files only |
 | `cv_bots` | `mod-playerbots` | `modules/mod-playerbots/sql/` |
 | `cv_ops` | `mod-donation`, `mod-worldbuff`, `mod-guildbank` | each module's `data/sql/` |
+| `cv_brain` | `mod-bot-brain` | `modules/mod-bot-brain/sql/` (ADR-0039) |
 
 Upstream schemas are read-only to us (ADR-0024 invariant 2). A module migration that
 names an upstream schema fails CI (`.github/workflows/ci.yml`, job `lint`, step
