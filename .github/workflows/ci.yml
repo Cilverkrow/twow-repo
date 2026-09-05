@@ -664,6 +664,79 @@ jobs:
           CGO_ENABLED: '0'
           GOOS: linux
         run: go build -trimpath ./...
+
+  # The check neither `go` nor `build-and-test` performs: that the Go service
+  # and the C++ module actually agree when run against each other, live. `go`
+  # above proves the Go side works in isolation; `build-and-test` proves the
+  # whole server compiles and links, including bot_brain_wire_tests, but never
+  # runs it against a real bot-brain process. Both could stay green forever
+  # while a field name the encoder emits is one the Go struct silently drops -
+  # that is exactly the failure class ARCH-001 exists to catch, and until this
+  # job nothing did.
+  #
+  # Deliberately its own job rather than a step bolted onto either of the
+  # above: `go`'s container has no C++ toolchain, and `build-and-test`'s
+  # multi-hour containerised build is the wrong place to add a service you
+  # start and kill by hand. This job needs only core/dep/include (rapidjson,
+  # header-only) and a stock g++, so it stays a couple of minutes rather than
+  # inheriting build-and-test's cost - see tests.cmake for why
+  # bot_brain_wire_tests only ever needed that one header directory.
+  bot-brain-integration:
+    needs: capacity
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    name: bot-brain live integration
+    timeout-minutes: 15
+
+    steps:
+      # Recursive for the same reason build-and-test's checkout is: core
+      # carries Eluna as its own submodule, and dep/include sits under core/.
+      # Nothing here reads core/src or links against the server - only the
+      # single header directory tests.cmake already depends on.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/bot-brain/go.mod
+
+      # bot_brain_wire_tests compiled exactly as tests.cmake compiles it: the
+      # same two files, the same one include directory, the same golden-dir
+      # compile definition. Not run through CMake here, because configuring
+      # the whole project just to reach one hermetic two-file target would
+      # buy nothing this job needs.
+      - name: compile the C++ wire encoder/decoder
+        run: |
+          g++ -std=c++17 -O0 -Wall \
+            -I modules/mod-bot-brain/src \
+            -I core/dep/include \
+            -DBB_GOLDEN_DIR="\"${GITHUB_WORKSPACE}/contracts/bot-brain/v1/golden\"" \
+            modules/mod-bot-brain/t/bot_brain_wire_tests.cpp \
+            modules/mod-bot-brain/src/BotBrainWire.cpp \
+            -o bot_brain_wire_tests
+
+      # The suite this binary was built to run, unmodified: BB_GOLDEN_DIR
+      # points at fixtures that are checked out here as plain files (no world,
+      # no service needed), so this also re-proves the encoder/decoder agree
+      # with the golden contract before betting the live run on the same
+      # binary.
+      - name: C++ wire unit suite (sanity before the live run)
+        run: ./bot_brain_wire_tests
+
+      # The live check: a real `go build` of the real service, started on
+      # loopback, driven over an actual TCP socket by JSON this binary
+      # encoded, decoding a response this binary decoded. Then the service is
+      # killed and the same request is re-driven to prove the failure is a
+      # clean transport error, not a hang or a stale 200 - issue #155's second
+      # criterion. See the script for exactly what "FAIL if the service is not
+      # running" means here: every network call is unguarded, so a service
+      # that never comes up cannot produce a green run.
+      - name: live Go service <-> C++ wire code, over a real socket
+        env:
+          BB_WIRE_TEST_BIN: ${{ github.workspace }}/bot_brain_wire_tests
+        run: bash test/integration/bot-brain-live.sh
+
   integration:
     needs: capacity
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
