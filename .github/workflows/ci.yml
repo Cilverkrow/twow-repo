@@ -562,6 +562,26 @@ jobs:
         if: always()
         run: python3 modules/mod-dungeon-clear/tools/gen_routes.py --check
 
+      # mod-dungeon-clear ships its own guards under tools/, and they ran
+      # NOWHERE: the workflow that invoked them is the module's vendored
+      # upstream .github/workflows/tests.yml, which this repository does not
+      # run. So both were dead tooling - present, documented, never executed.
+      #
+      # check_config_reads: every DungeonClear tunable must be read through
+      # DcSettings. A raw sConfigMgr read logs "Config: Missing property" on
+      # EVERY call, and the module's own header records this flooding Server.log
+      # twice already. This is the guard against a third time.
+      #
+      # check_msvc_portability: the module is built on MSVC by core, and this
+      # catches the constructs that break there.
+      - name: mod-dungeon-clear config-read guard
+        if: always()
+        run: python3 modules/mod-dungeon-clear/tools/check_config_reads.py
+
+      - name: mod-dungeon-clear MSVC portability guard
+        if: always()
+        run: python3 modules/mod-dungeon-clear/tools/check_msvc_portability.py
+
   # ---------------------------------------------------------------- integration
   #
   # The database bootstrap, from empty, against a real MariaDB.

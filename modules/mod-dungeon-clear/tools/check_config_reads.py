@@ -50,6 +50,65 @@ ALLOWLIST = {
 CALL = re.compile(r"sConfigMgr->Get\w*\s*(?:<[^>;]*>)?\s*\(")
 
 
+def blank_comments(text):
+    """Replace comment CONTENT with spaces, preserving every offset and newline.
+
+    Without this the guard matches its own documentation. AcCompat.h:299 is the
+    line explaining the shim -
+
+        // AzerothCore reads settings through sConfigMgr->GetOption<T>(name, default).
+
+    - and it was reported as a violation, which is a false positive that would
+    make the guard's first CI run fail on prose.
+
+    Blanking rather than deleting keeps byte offsets identical, so the reported
+    line numbers stay correct. String and character literals are tracked so a
+    "//" inside one is not mistaken for a comment.
+    """
+    out = list(text)
+    i, n = 0, len(text)
+    state = None  # None | 'line' | 'block' | 'str' | 'char'
+    while i < n:
+        c = text[i]
+        nxt = text[i + 1] if i + 1 < n else ""
+        if state is None:
+            if c == "/" and nxt == "/":
+                state = "line"
+                out[i] = out[i + 1] = " "
+                i += 2
+                continue
+            if c == "/" and nxt == "*":
+                state = "block"
+                out[i] = out[i + 1] = " "
+                i += 2
+                continue
+            if c == '"':
+                state = "str"
+            elif c == "'":
+                state = "char"
+        elif state == "line":
+            if c == "\n":
+                state = None
+            else:
+                out[i] = " "
+        elif state == "block":
+            if c == "*" and nxt == "/":
+                out[i] = out[i + 1] = " "
+                state = None
+                i += 2
+                continue
+            if c != "\n":
+                out[i] = " "
+        elif state in ("str", "char"):
+            if c == "\\":
+                i += 2
+                continue
+            if (state == "str" and c == '"') or (state == "char" and c == "'"):
+                state = None
+        i += 1
+    return "".join(out)
+
+
 def calls(text):
     """Yield (offset, full-call-text) for each sConfigMgr->Get*(...) call."""
     for m in CALL.finditer(text):
@@ -73,6 +132,9 @@ def main():
             continue
 
         text = path.read_text(encoding="utf-8", errors="replace")
+        # Comments are blanked (offsets preserved) so the guard cannot flag the
+        # prose that documents the very API it is guarding.
+        text = blank_comments(text)
         for offset, call in calls(text):
             line = text.count("\n", 0, offset) + 1
             where = f"{path.relative_to(SRC_DIR.parent)}:{line}"
