@@ -44,8 +44,34 @@ Verified by `go test ./...` and by running the binary:
 - **The HTTP server.** `/healthz`, `/readyz`, `/metrics`, `/v1/contract`,
   `POST /v1/plan`. Batches of 1000 bots are exercised in tests.
 - **Prometheus metrics**, hand-rolled so the module has zero dependencies.
-- **Config**, entirely from environment, with a startup check that refuses the
-  one misconfiguration that would silently defeat the whole design.
+- **Config**, entirely from environment. An unset value takes a default that
+  produces a working service; a value that is *set but unreadable* fails
+  startup, naming every bad variable at once rather than quietly running on a
+  default nobody chose. A startup check also refuses the one *valid* combination
+  that would silently defeat the whole design (an LLM timeout with no budget
+  left for the fallback).
+
+## What exists but has never run for real
+
+- **The C++ integration** (`modules/mod-bot-brain`). The seam, the client, the
+  config flag and the wire codec all exist and are unit-tested; the module
+  attaches through `RegisterAiContextAugmenter` with zero delta to the bot tree.
+  What has never happened is a bot taking an intent from it (#155). Until that
+  does, treat this end as unproven rather than done.
+
+  Three known gaps between the two sides, all verified in the tree:
+
+  - The client sends **one snapshot per request**, which is the thing this
+    package's own contract doc warns against; `MaxBatch = 2048` is decorative
+    until that changes.
+  - Only the **first** intent in a response is applied. Harmless today because
+    responses carry one, and a silent dropper of N-1 intents the moment
+    batching lands - so the two must change together.
+  - The handshake runs **once at startup and is never retried**, so a service
+    that restarts leaves the brain off for the worldserver's whole lifetime.
+- **Durable identity and memory.** ADR-0039 decides both - a stored v4 UUID and
+  a `cv_brain` schema - and the UUID now travels on the wire. The store itself
+  is created but nothing writes to it yet.
 
 ## What is a skeleton
 
@@ -61,9 +87,6 @@ Verified by `go test ./...` and by running the binary:
 
 ## What does not exist at all
 
-- **Any C++ integration.** The worldserver does not call this service and knows
-  nothing about it. There is no seam, no client, no config flag on that side.
-  Wiring it up is separate, later work.
 - **gRPC/protobuf.** ARCH-001 names protobuf as the eventual transport and that
   is still right. This is HTTP/JSON so the C++ side can be developed against it
   with curl. The `contract` package is transport-agnostic; adding gRPC is
@@ -279,8 +302,9 @@ The ones that matter:
 
 | Variable | Default | Notes |
 |---|---|---|
-| `BOT_BRAIN_LISTEN` | `:8085` | |
-| `BOT_BRAIN_MAX_BATCH` | `2048` | Snapshots per call. |
+| `BOT_BRAIN_LISTEN` | `127.0.0.1:8085` | Loopback, not every interface. Containers override to `:8085` deliberately - there the network namespace is the boundary. |
+| `BOT_BRAIN_MAX_BATCH` | `2048` | Snapshots per call. Enforced by the decoder, so it bounds work, not memory. |
+| `BOT_BRAIN_MAX_BODY_BYTES` | `16777216` | Request body cap, applied before decoding. This is the limit that bounds memory. |
 | `BOT_BRAIN_DEFAULT_DEADLINE` | `2s` | Used when the caller sends no `deadline_ms`. |
 | `BOT_BRAIN_INTENT_TTL` | `30s` | Intent validity, in the *server's* clock. |
 | `BOT_BRAIN_RULE_*` | see compose | The policy knobs. This is the 326 seconds you are buying back. |

@@ -1,7 +1,7 @@
 # ADR-0012: External LLM child process with fail-closed admission
 
 - Status: Accepted; **amended 2026-09-02** -- the admission contract survives, the
-  child-process/Ollama transport does not
+  child-process/Ollama transport does not. The replacement transport is ADR-0039.
 - Date: 2026-08-30
 - Primary: WS-10
 

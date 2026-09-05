@@ -17,6 +17,19 @@ type BotID struct {
 	Realm uint32 `json:"realm"`
 	// GUID is the character low GUID. Required and non-zero.
 	GUID uint64 `json:"guid"`
+
+	// UUID is the brain's stable key for this bot (ADR-0039), minted once by the
+	// worldserver into cv_brain.bot_identity. It is NOT derived from Realm and
+	// GUID: a realm merge shifts every guid, so a derived key would rename the
+	// bot and orphan everything remembered about it, with no repair.
+	//
+	// Optional. Empty means the row has not been minted yet, which is a normal
+	// state for a bot seen for the first time - plan for it without memory
+	// rather than refusing it. Never treat empty as an error.
+	//
+	// This is the memory key, not the address. Intents are still addressed by
+	// Realm and GUID, because those are what the applier matches on.
+	UUID string `json:"uuid,omitempty"`
 }
 
 // String renders a BotID as "realm:guid" for logs and metric labels.
@@ -230,6 +243,19 @@ type IntentOutcome struct {
 	// IssuedAtMS is when the intent was issued, server clock, Unix ms. Zero
 	// means the server did not record it.
 	IssuedAtMS int64 `json:"issued_at_ms,omitempty"`
+	// POIID is the destination the intent named, when it had one.
+	//
+	// Without this a planner is told THAT its last travel intent was refused
+	// but not WHERE it was sending the bot, which is not enough to choose
+	// differently: the same POI is still nearest, so the same intent is issued
+	// again on the next tick, and the bot is sent at a place it cannot reach
+	// indefinitely. Result and Reason describe the verdict; this describes the
+	// subject of it.
+	//
+	// Empty for outcomes about intents that named no destination, and for a
+	// server too old to send it. Empty must therefore mean "unknown", never
+	// "no POI was involved".
+	POIID string `json:"poi_id,omitempty"`
 }
 
 // Snapshot is everything the brain is told about one bot.

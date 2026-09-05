@@ -13,6 +13,18 @@ import (
 // an unbounded allocation here.
 const DefaultMaxBatch = 2048
 
+// DefaultMaxBodyBytes bounds a plan request body at 16 MiB.
+//
+// It lives here beside DefaultMaxBatch because the two are the same limit
+// expressed twice, and only this one actually binds: MaxBatch is enforced by
+// the decoder, which does not run until the whole body is already in memory.
+//
+// Sized from the contract rather than picked. DefaultMaxBatch is 2048 snapshots
+// and a fat one - 24 POIs, a full quest log - encodes to roughly 4 KiB, so a
+// legitimate maximum batch is on the order of 8 MiB. Doubling that leaves room
+// for a verbose encoder without leaving room for an attack.
+const DefaultMaxBodyBytes = 16 << 20
+
 // PlanRequest is one batch of snapshots.
 //
 // Batching is not an optimisation, it is the design. At 1000 bots and a
@@ -180,7 +192,13 @@ func DecodePlanRequest(r io.Reader, maxBatch int) (*PlanRequest, DecodeResult, e
 	// or single lenient decode cannot give.
 	raw, err := io.ReadAll(r)
 	if err != nil {
-		return nil, res, fmt.Errorf("%w: reading body: %v", ErrMalformed, err)
+		// Both errors are wrapped, not just ErrMalformed. The reader handed to
+		// us may be an http.MaxBytesReader, and the server distinguishes "body
+		// too large" from "malformed" by errors.As on the cause - which finds
+		// nothing if the cause is flattened into text by %v. The symptom of
+		// getting this wrong is an over-sized request coming back as 400
+		// "malformed JSON", sending the operator to hunt a bug in their encoder.
+		return nil, res, fmt.Errorf("%w: reading body: %w", ErrMalformed, err)
 	}
 	var generic map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &generic); err != nil {

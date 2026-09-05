@@ -41,7 +41,7 @@ namespace botbrain
     // services/bot-brain/contract/version.go (VersionMajor.VersionMinor).
     extern char const* const kContractVersion;
     int constexpr kContractMajor = 1;
-    int constexpr kContractMinor = 0;
+    int constexpr kContractMinor = 2;
 
     // Intent kinds this build understands. Anything else is dropped silently.
     extern char const* const kIntentIdle;
@@ -66,6 +66,21 @@ namespace botbrain
         uint32_t realm = 0;
         uint64_t guid = 0;
 
+        // The brain's stable key for this bot (ADR-0039), minted once into
+        // cv_brain.bot_identity and never derived from the pair above -
+        // RealmMerge shifts every guid, so a derived id would rename the bot
+        // and orphan everything the brain remembered about it.
+        //
+        // Optional on the wire: a snapshot taken before the row exists is
+        // still worth planning for, just without memory. Empty means "not
+        // yet minted", never "no bot".
+        std::string uuid;
+
+        // Deliberately still (realm, guid): this is the addressing identity,
+        // the pair the applier uses to decide an intent is for THIS bot
+        // (BotBrainPipeline.cpp:700). The uuid is the memory key, not the
+        // address, and comparing on it would silently accept an intent for a
+        // bot whose row has not been minted.
         bool IsZero() const { return realm == 0 || guid == 0; }
         bool operator==(BotId const& o) const { return realm == o.realm && guid == o.guid; }
     };
@@ -148,6 +163,11 @@ namespace botbrain
         std::string result;              // "accepted" | "rejected" | ...
         std::string reason;
         int64_t issuedAtMs = 0;
+        // The destination the intent named, so the planner learns WHERE it was
+        // refused and not merely THAT it was. Without it the same POI is still
+        // nearest next tick and the bot is re-sent somewhere it cannot go.
+        // Empty when the intent named no POI, or was not POI-directed.
+        std::string poiId;
     };
 
     struct Snapshot

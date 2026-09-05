@@ -236,6 +236,11 @@ jobs:
           COPY sql /sql
           COPY sql/base /sql-base
           COPY modules/mod-playerbots/sql /sql-playerbots
+          # mod-bot-brain's cv_brain schema (ADR-0039). db-init skips the stage when
+          # this path is absent, so the image stays correct either way - but the
+          # published one should carry it, or a compose deployment gets a brain with
+          # no schema and the first mint fails at runtime instead of at bootstrap.
+          COPY modules/mod-bot-brain/sql /sql-bot-brain
           RUN chmod +x /db-init.sh
           VOLUME ["/state"]
           ENTRYPOINT ["/bin/bash", "/db-init.sh"]

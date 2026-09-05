@@ -46,6 +46,11 @@ services:
       # to send a few large batches per planning tick, never one call per bot:
       # at 1000 bots, per-bot round trips spend more time in HTTP than planning.
       BOT_BRAIN_MAX_BATCH: ${BOT_BRAIN_MAX_BATCH:-2048}
+      # The cap that actually bounds memory. MAX_BATCH is enforced by the
+      # decoder, which does not run until the whole body has been read, so on
+      # its own it bounds work rather than allocation. 16 MiB is roughly double
+      # a legitimate full batch.
+      BOT_BRAIN_MAX_BODY_BYTES: ${BOT_BRAIN_MAX_BODY_BYTES:-16777216}
 
       # Used when the caller sends no deadline_ms of its own. The caller should
       # always send one, because the caller is the side that knows how long it

@@ -100,7 +100,7 @@ namespace botbrain
     // it as last_outcome. This is how the loop closes without the brain
     // holding any state: the server remembers, and the brain is told.
     void RecordOutcome(Player* bot, std::string const& intentId, std::string const& kind,
-        std::string const& result, std::string const& reason);
+        std::string const& result, std::string const& reason, std::string const& poiId);
 
     // Drop everything remembered for a bot. Called on logout.
     void Forget(ObjectGuid guid);
@@ -109,6 +109,12 @@ namespace botbrain
     // false when the module must stay inert (skew, or no service). Runs on the
     // world thread at WORLDHOOK_ON_STARTUP so version skew is a boot-time log
     // line rather than a silent stream of dropped intents in production.
+    //
+    // Failing here is no longer permanent. Tick retries in the background every
+    // BotBrain.BackoffMs until a compatible peer answers, so a service that
+    // starts after the worldserver, or restarts later, is picked up. Before that
+    // it left the module inert for the whole process lifetime with no further
+    // log line - the brain was off until someone restarted the realm.
     bool Handshake();
 
     // True once Handshake() has confirmed a compatible peer. Until then the

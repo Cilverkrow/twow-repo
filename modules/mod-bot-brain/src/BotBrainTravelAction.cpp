@@ -73,7 +73,7 @@ namespace botbrain
                 intent.source.empty() ? "?" : intent.source.c_str(),
                 intent.confidence);
 
-        RecordOutcome(bot, intent.intentId, intent.kind, "accepted", std::string());
+        RecordOutcome(bot, intent.intentId, intent.kind, "accepted", std::string(), poi.id);
         return true;
     }
 }

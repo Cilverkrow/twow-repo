@@ -29,6 +29,12 @@ type Options struct {
 	Planner planner.Planner
 	// MaxBatch caps snapshots per request.
 	MaxBatch int
+	// MaxBodyBytes caps the request body before it is read.
+	//
+	// MaxBatch alone bounds nothing: it is enforced by the decoder, which only
+	// runs after the whole body is in memory. Zero means
+	// [config.DefaultMaxBodyBytes].
+	MaxBodyBytes int64
 	// DefaultDeadline applies when the request carries no deadline_ms.
 	DefaultDeadline time.Duration
 	// IntentTTL is passed to planners so they can stamp expiry in the server's
@@ -75,6 +81,9 @@ const (
 func New(opts Options) *Server {
 	if opts.MaxBatch <= 0 {
 		opts.MaxBatch = contract.DefaultMaxBatch
+	}
+	if opts.MaxBodyBytes <= 0 {
+		opts.MaxBodyBytes = contract.DefaultMaxBodyBytes
 	}
 	if opts.DefaultDeadline <= 0 {
 		opts.DefaultDeadline = 2 * time.Second
@@ -184,6 +193,13 @@ func (s *Server) handleContract(w http.ResponseWriter, r *http.Request) {
 // handlePlan is the batch endpoint.
 func (s *Server) handlePlan(w http.ResponseWriter, r *http.Request) {
 	start := s.now()
+	// Cap the body BEFORE decoding. This endpoint has no authentication by
+	// design (ADR-0012 puts the trust boundary at the network, not at a shared
+	// secret), so without this an unauthenticated POST of arbitrary length is
+	// read into memory in full and the service is one curl away from an OOM
+	// kill. MaxBatch does not help: the decoder enforces it, and the decoder
+	// runs last.
+	r.Body = http.MaxBytesReader(w, r.Body, s.opts.MaxBodyBytes)
 	req, decoded, err := contract.DecodePlanRequest(r.Body, s.opts.MaxBatch)
 	if err != nil {
 		s.writeDecodeError(w, err)
@@ -334,6 +350,14 @@ func (s *Server) writeDecodeError(w http.ResponseWriter, err error) {
 	case errors.Is(err, contract.ErrBatchTooLarge):
 		code = contract.CodeBatchTooLarge
 		status = http.StatusRequestEntityTooLarge
+	case isBodyTooLarge(err):
+		// Same code and status as an over-large batch, deliberately: from the
+		// caller's side both mean "you sent more than I will accept, send
+		// less", and the C++ client already halves its batch on this code.
+		// Distinguishing them would give it a second thing to learn for no
+		// different action.
+		code = contract.CodeBatchTooLarge
+		status = http.StatusRequestEntityTooLarge
 	}
 	s.opts.Metrics.Inc(MetricPlanRequests, 1, "outcome", code)
 	writeJSON(w, status, map[string]any{
@@ -342,6 +366,18 @@ func (s *Server) writeDecodeError(w http.ResponseWriter, err error) {
 		"contract_version": contract.Version,
 		"supported_majors": contract.SupportedMajors,
 	})
+}
+
+// isBodyTooLarge reports whether err came from the body cap.
+//
+// http.MaxBytesReader wraps its error in *http.MaxBytesError, but the decoder
+// wraps THAT in its own "malformed" error, so errors.As is what finds it -
+// a == comparison silently never matches and every over-sized body would come
+// back as a 400 "malformed JSON", sending the operator to look for a bug in
+// their encoder.
+func isBodyTooLarge(err error) bool {
+	var maxErr *http.MaxBytesError
+	return errors.As(err, &maxErr)
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {

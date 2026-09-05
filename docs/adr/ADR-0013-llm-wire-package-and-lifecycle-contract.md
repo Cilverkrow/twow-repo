@@ -1,7 +1,8 @@
 # ADR-0013: Strict LLM wire, package, and lifecycle contract
 
 - Status: **Transport half superseded 2026-09-02** by the `services/bot-brain` HTTP
-  service (see ADR-0012 amendment, ADR-0028). The protocol discipline half stands.
+  service (see ADR-0012 amendment, ADR-0028, and ADR-0039 which states the replacement
+  in full). The protocol discipline half stands.
 - Date: 2026-08-30
 - Primary: WS-10 / WS-40
 
