@@ -4,7 +4,7 @@ Operational follow-up is maintained in [Open project threads](../OPEN-THREADS.md
 
 ## Accepted decisions
 
-The accepted durable decisions are recorded by **ADR-0001 through ADR-0030** and **ADR-0038**, minus the
+The accepted durable decisions are recorded by **ADR-0001 through ADR-0030**, **ADR-0038** and **ADR-0039**, minus the
 supersessions listed at the bottom of this page.
 
 **ADR-0001 to ADR-0019** cover project governance, evidence authority, chat-history
