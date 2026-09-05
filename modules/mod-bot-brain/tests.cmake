@@ -25,6 +25,14 @@ target_include_directories(bot_brain_wire_tests PRIVATE
   "${BB_MODULE_DIR}/src"
   "${TW_CORE_ROOT}/dep/include")
 
+# Where the golden fixtures live, baked in rather than searched for at runtime.
+#
+# A test that cannot find its fixtures must FAIL, not quietly pass having
+# checked nothing - which is exactly what a relative path plus a
+# WORKING_DIRECTORY would risk the first time someone runs the binary by hand.
+target_compile_definitions(bot_brain_wire_tests PRIVATE
+  BB_GOLDEN_DIR="${CMAKE_SOURCE_DIR}/contracts/bot-brain/v1/golden")
+
 set_target_properties(bot_brain_wire_tests PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
