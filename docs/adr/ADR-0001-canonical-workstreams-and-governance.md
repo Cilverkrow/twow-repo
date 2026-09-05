@@ -1,6 +1,6 @@
 # ADR-0001: Nine canonical workstreams and stable IDs
 
-- Status: Accepted
+- Status: Accepted; amended 2026-09-05 (hub gate retired)
 - Date: 2026-08-30
 - Primary: WS-00
 
@@ -24,16 +24,23 @@ Use exactly nine canonical workstreams with stable technical IDs:
 | WS-70 | Bot-Persönlichkeiten |
 | WS-80 | Dokumentation und Entscheidungen |
 
-The ID is the stable identity; a later title refinement must not create a new workstream. Every task has one primary owner and may name dependent workstreams. Unknown IDs and unresolved multi-owner conflicts block work.
+The ID is the stable identity; a later title refinement must not create a new workstream.
+Tasks may name one primary owner and dependent workstreams when that helps coordination,
+but these labels do not authorize work or act as a preflight gate.
 
-The collaboration hub under `runbooks/workstreams` is the canonical routing map. WS-00 owns coordination and handoffs. WS-80 owns project-wide ADRs and indexes; detailed evidence stays with the owning workstream.
+The collaboration hub under `runbooks/workstreams` preserves the original routing map as
+immutable historical evidence. It is not a current prerequisite, authority, or input.
+Current work starts from `AGENTS.md`, the current tree and explicit authorization; GitHub
+issues are the operational tracker. WS-00 remains a coordination label and WS-80 a
+project-documentation label.
 
 ## Consequences
 
 - Local and online work use matching titles.
 - Each existing runbook object has one owner; overlap is expressed by references.
-- Agents run the root `AGENTS.md` and hub preflight before acting.
-- Routing errors are corrected through handoffs, not silent cross-workstream mutation.
+- Agents read root `AGENTS.md`; no hub preflight is required.
+- Ownership labels guide communication but never override repository boundaries or the
+  authorized mutation scope.
 
 ## Evidence
 

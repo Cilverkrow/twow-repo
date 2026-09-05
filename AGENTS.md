@@ -3,8 +3,9 @@
 Read this before doing anything in this repository. It has two halves:
 
 - **Engineering** — how to build, test and run the project. Start here for code work.
-- **Governance** — the canonical collaboration-hub policy. Mandatory before any analysis,
-  planning, mutation or execution task.
+- **Governance** — current evidence precedence and authorization boundaries. Mandatory
+  before any analysis, planning, mutation or execution task; the historical collaboration
+  hub is no longer a preflight.
 
 Paths are relative to the repository root and use forward slashes. Historical runbooks may
 retain absolute `C:\TW\ComTW` paths as evidence; those do not authorize access to or
@@ -65,6 +66,65 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=/opt/turtle
 cmake --build build --parallel "$(nproc)"
 ```
+
+## Fast-feedback build and runtime workflow
+
+Before any command that may compile C++, build an image, bootstrap a database, or start a
+service, write a short plan in the task log. Documentation-only work still records
+`BUILD_REQUIRED=NO`; it does not run a build merely to prove that no code changed.
+
+```text
+BUILD_PLAN
+CHANGE_CLASS=<docs-only|script-or-image-layer|C++|migration|runtime-acceptance>
+SMALLEST_SUFFICIENT_TARGET=<exact target and test>
+BUILD_REQUIRED=<YES|NO>
+REUSE_CANDIDATE=<image/build tree/server/snapshot or NONE>
+COMPATIBILITY=<source+core pins; toolchain; generator; flags; arch; linkage; schema/cache>
+REUSE_DECISION=<REUSE|REJECT|NOT_APPLICABLE>: <reason>
+FULL_BUILD_REQUIRED=<YES|NO>
+FULL_BUILD_REASON=<why the smaller target is insufficient, or NOT_APPLICABLE>
+EXPENSIVE_LANE=<single task-owned build/run lane, or NONE>
+```
+
+Classify first, then use the smallest gate that can falsify the change:
+
+- A script- or image-layer-only change reuses a verified server binary/image and tests
+  only the changed layer in a task-isolated environment. Record the reused artifact's
+  digest and source provenance. Do not rebuild C++ without a demonstrated dependency.
+- A C++ change prefers a compatible incremental build tree and rebuilds only the changed
+  target plus its actual compile/link dependencies. Compatibility means the source and
+  core pins, toolchain, generator, CMake options, architecture, linkage mode, install
+  prefix, and relevant generated inputs agree. `ccache` can reuse compiler output; it is
+  not an incremental build tree and does not preserve configured or linked state. Do not
+  rebuild unchanged upstream more than once after establishing a compatible artifact.
+- Start with a deterministic reproduction and a focused regression. Broaden to component
+  integration only after those pass. A full release image and end-to-end runtime proof
+  belong at the integration/acceptance gate, not after every edit.
+- For container work, try the repository's standard Dockerfile with a verified compatible
+  cache before inventing another build path. Run at most one expensive build or runtime
+  lane for a task at a time. Before replacing or abandoning it, prove that both the client
+  command and its task-owned container/Ninja process have ended. Failed, timed-out, or
+  interrupted work is never a passing or reusable baseline.
+
+Measure elapsed time for build, database bootstrap, cache construction, readiness, and
+tests separately. Report measured values only; do not claim time saved without comparable
+before/after measurements. Inventory candidate build trees, images, caches, worktrees, and
+snapshots with bounded, named queries. Record both storage cost and restore/rebuild value;
+neither implies the other. Never make a full worktree backup or run a global prune as part
+of ordinary iteration.
+
+Readiness is an instance-scoped latch, not a transient log tail. Start observation before
+the service, bind it to the container/process identity and start time, and retain the first
+valid ready marker for that instance. A fixed last-N-lines query is diagnostic only: noisy
+SQL startup output can evict the marker and manufacture a timeout. Keep collected logs
+bounded and sanitized; never export unrestricted SQL logs as evidence.
+
+Treat a fresh bootstrap and a warm functional test as different gates. Fresh bootstrap
+proves schema creation and the migration ledger. Warm testing proves behaviour against an
+existing compatible state. Reuse a warm database snapshot only when source, schema,
+migration ledger, and generated cache compatibility are verified, the test receives its
+own isolated copy, and snapshot creation/retention has explicit approval. Never infer a
+retention decision from test authorization.
 
 Do not use `libboost-all-dev`: it pulls ~230 packages including OpenMPI. Only `thread`,
 `filesystem` and `system` are linked.
@@ -210,12 +270,13 @@ back, with the other agent's branch pointer restored by hand.
 Never run `git checkout`, `git switch`, `git stash` or `git reset` in the shared checkout
 while others are working. Uncommitted changes have no reflog.
 
-**Remove your worktree when your PR merges.** `git worktree remove --force ../twow-<task>`,
-then `git worktree prune`. Nineteen worktrees accumulated across `twow-repo` and `twow-core`
-in a single day because every agent created one and none removed it. A worktree shares the
-object store, so it does not duplicate history -- but it is a full checkout of the working
-tree, and the owner's `git/` directory holds ~75 other projects. Leaving yours behind is
-clutter in somebody else's workspace.
+**Do not remove a worktree automatically.** After its PR merges or the task is explicitly
+superseded, report the exact worktree path and exact `git worktree remove <path>` command.
+Recommend removal only after proving that the tree is clean, a commit exists, the branch is
+pushed, the PR is merged/superseded, and untracked evidence is preserved. Removal still
+requires explicit authorization; then run the exact remove command without `--force`,
+followed by `git worktree prune`. A worktree shares the object store, so it does not
+duplicate history, but it is a full checkout and abandoned trees still consume storage.
 
 Note that a squash-merged branch is **not** an ancestor of the target, so
 `git merge-base --is-ancestor` will say "not merged" for work that is merged. Check the PR

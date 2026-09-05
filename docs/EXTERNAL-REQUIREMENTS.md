@@ -131,7 +131,7 @@ Possessing access does not authorize use. The task must still explicitly permit 
 
 Before claiming the environment is ready:
 
-1. Read `AGENTS.md`, the collaboration hub, [open threads](OPEN-THREADS.md), and [footguns](FOOTGUNS.md).
+1. Read `AGENTS.md`, [open threads](OPEN-THREADS.md), and [footguns](FOOTGUNS.md). The historical collaboration hub is not a bootstrap prerequisite.
 2. Select a new build/work directory; do not point tools at a live workspace by accident.
 3. Install and record the build toolchain and dependency versions.
 4. Supply game-derived server data and runtime binaries outside Git.
