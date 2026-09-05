@@ -16,8 +16,17 @@
  * So:
  *   A (worker)      GetPartitions for this bot -> PartitionedTravelList
  *   B (map thread)  build the POI table and the snapshot JSON, bot alive
- *   C (worker)      POST /v1/plan, JSON in, JSON out
- *   D (map thread)  parse, keep the intent until the travel chooser asks
+ *   C (worker)      POST /v1/plan, JSON in, JSON out, response parsed here too
+ *   D (map thread)  read the parsed reply, keep the intent until the travel
+ *                   chooser asks
+ *
+ * C is a BATCH, not a per-bot call: many bots' snapshots from step B ride one
+ * request together (services/bot-brain/contract/wire.go:16-20 -- "batching is
+ * not an optimisation, it is the design"), and the worker parses the shared
+ * reply once before handing it back, so every bot's map thread in step D
+ * reads already-settled data instead of racing to parse the same JSON twice.
+ * A bot still moves through A -> B -> C -> D exactly as before; it simply
+ * shares C with whoever else's snapshot was in the same batch window.
  *
  * ---------------------------------------------------------------------------
  * What crosses the worker boundary

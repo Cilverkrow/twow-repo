@@ -42,9 +42,20 @@ namespace botbrain
         // Backoff after a failed or empty round trip, per bot.
         uint32_t backoffMs = 60000;
 
-        // Ceiling on concurrent HTTP worker threads across all bots. A brain
-        // that stops answering must cost a bounded number of threads.
+        // Ceiling on concurrent HTTP worker threads across all bots. Batching
+        // means one worker serves many bots at once, so this now bounds
+        // concurrent BATCHES, not concurrent bots -- a much smaller number for
+        // the same safety property: a brain that stops answering must cost a
+        // bounded number of threads.
         uint32_t maxInFlight = 8;
+
+        // How long a batch may sit accumulating snapshots before it is sent
+        // even if it never reaches the negotiated max batch size. Batching is
+        // the design (services/bot-brain/contract/wire.go:16-20), but a realm
+        // with three bots must not wait for 2045 more of them to show up
+        // before anyone gets a plan -- this deadline is what keeps a quiet
+        // server responsive.
+        uint32_t batchFlushMs = 200;
 
         // How many POIs one snapshot may carry, nearest first. The whole
         // partition list for a bot can run to hundreds; the brain chooses among
