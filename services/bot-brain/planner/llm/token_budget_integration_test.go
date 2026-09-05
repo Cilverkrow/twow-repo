@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -196,5 +197,52 @@ func TestTokenBudgetUsageEnvelopeDoesNotPermitOtherFields(t *testing.T) {
 	}
 	if _, err := pocContent([]byte(strings.Replace(valid, `"usage":`, `"other":`, 1))); err == nil {
 		t.Fatal("unknown envelope field admitted")
+	}
+}
+
+func TestTokenBudgetDuplicateUsageLatchesBothPaths(t *testing.T) {
+	const high = `{"prompt_tokens":999999,"completion_tokens":1,"total_tokens":1000000}`
+	const low = `{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}`
+	for _, poc := range []bool{false, true} {
+		for _, status := range []int{200, 429} {
+			for _, pair := range []string{high + `,"usage":null`, high + `,"usage":` + low, `null,"usage":` + high, low + `,"usage":` + high, `null,"usage":null`, low + `,"us\u0061ge":` + low} {
+				t.Run(fmt.Sprintf("poc=%t/status=%d/case=%d", poc, status, len(pair)), func(t *testing.T) {
+					var calls atomic.Int64
+					s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						calls.Add(1)
+						w.WriteHeader(status)
+						io.WriteString(w, `{"usage":`+pair+`,`+envelope(goodProposal)[1:])
+					}))
+					defer s.Close()
+					b := testBudget(t, TokenLimits{10000, 10, 1000000, 1000000}, nil)
+					first := budgetCaller(t, poc, budgetConfig(s.URL, b))
+					if err := first(context.Background()); !errors.Is(err, ErrTokenUsage) {
+						t.Error("ambiguous usage not rejected with accounting error")
+					}
+					charge := b.usedDay
+					if !b.stopped || charge <= 10 || b.usedHour != charge {
+						t.Errorf("missing permanent latch or reservation")
+					}
+					for _, nextPoC := range []bool{poc, !poc} {
+						if err := budgetCaller(t, nextPoC, budgetConfig(s.URL, b))(context.Background()); !errors.Is(err, ErrTokenBudget) {
+							t.Errorf("shared-path admission remained open")
+						}
+					}
+					if calls.Load() != 1 || b.usedDay != charge || b.usedHour != charge {
+						t.Error("additional provider I/O or changed reservation")
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestAccountingUsagePreservesExtensionsAndNullPolicy(t *testing.T) {
+	for _, raw := range []string{`{}`, `{"usage":null}`, `{"extension":{"usage":null},"usage":null}`, `{"extension":1,"extension":2}`, `invalid`} {
+		b := testBudget(t, TokenLimits{10, 5, 30, 30}, nil)
+		r, _ := b.reserve(context.Background(), 10, 5)
+		if r.observeUsage([]byte(raw)) != nil || b.stopped || b.usedDay != 15 {
+			t.Fatal("changed non-ambiguous accounting policy")
+		}
 	}
 }

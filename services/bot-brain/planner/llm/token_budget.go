@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"math"
 	"sync"
 	"time"
@@ -130,11 +131,11 @@ func (p *Planner) reserveTokens(ctx context.Context, body []byte) (*tokenReserva
 // evidence closes this budget, even if this reservation belongs to an old window.
 // No raw provider error or usage content is returned in the error message.
 func (r *tokenReservation) observeUsage(raw []byte) error {
-	var envelope map[string]json.RawMessage
-	if json.Unmarshal(raw, &envelope) != nil {
-		return nil
-	} // main decoder rejects it
-	usage := envelope["usage"]
+	usage, err := accountingUsage(raw)
+	if err != nil {
+		r.budget.Stop()
+		return ErrTokenUsage
+	}
 	if len(usage) == 0 || bytes.Equal(bytes.TrimSpace(usage), []byte("null")) {
 		return nil
 	}
@@ -145,4 +146,45 @@ func (r *tokenReservation) observeUsage(raw []byte) error {
 		return ErrTokenUsage
 	}
 	return nil
+}
+
+// Inspect root keys before any map conversion can collapse duplicates. Only
+// usage belongs to this accounting projection; regular provider extensions
+// remain the responsibility of the caller's decoder. Malformed JSON retains
+// the existing caller-decoder policy; ambiguous usage latches closed.
+func accountingUsage(raw []byte) (json.RawMessage, error) {
+	if !json.Valid(raw) {
+		return nil, nil // caller rejects it; reservation is never refunded
+	}
+	d := json.NewDecoder(bytes.NewReader(raw))
+	if token, err := d.Token(); err != nil || token != json.Delim('{') {
+		return nil, nil // preserve non-object response decoding policy
+	}
+	var usage json.RawMessage
+	seen := false
+	for d.More() {
+		token, err := d.Token()
+		if err != nil {
+			return nil, ErrTokenUsage
+		}
+		key, ok := token.(string)
+		if !ok || (key == "usage" && seen) {
+			return nil, ErrTokenUsage
+		}
+		var value json.RawMessage
+		if d.Decode(&value) != nil {
+			return nil, ErrTokenUsage
+		}
+		if key == "usage" {
+			seen = true
+			usage = value
+		}
+	}
+	if token, err := d.Token(); err != nil || token != json.Delim('}') {
+		return nil, ErrTokenUsage
+	}
+	if _, err := d.Token(); err != io.EOF {
+		return nil, ErrTokenUsage
+	}
+	return usage, nil
 }
