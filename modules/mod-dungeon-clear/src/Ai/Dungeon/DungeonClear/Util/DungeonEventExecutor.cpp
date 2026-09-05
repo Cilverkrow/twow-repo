@@ -3,6 +3,7 @@
  * and/or modify it under version 3 of the License, or (at your option), any later version.
  */
 
+#include <unordered_map>
 #include "DungeonEventExecutor.h"
 
 #include <algorithm>
@@ -53,6 +54,11 @@ namespace
     // Range from which a GameObject may legitimately be Use()d (it has no range
     // check of its own — same rule the door system enforces).
     constexpr float DC_EVENT_GO_USE_RANGE = 5.0f;
+    // How far out a ritual step will still call a party member IN to click.
+    // Wide enough for a formation strung across a hall, narrow enough that
+    // nobody gets summoned from another room - the objective travel has
+    // already put the party in the chamber before any of this runs.
+    constexpr float DC_EVENT_GO_GATHER_RANGE = 40.0f;
     // Absolute floor for the "the event lapsed" gap (see EventStaleGapMs). Never
     // below a few ticks of headroom even if the playerbots delays are configured
     // down to nothing.
@@ -528,10 +534,81 @@ StepResult DungeonEventExecutor::RunStep(Player* bot, AiObjectContext* context,
                           bot->GetName(), go->GetObjectGuid().ToString(), go->GetName());
                 return StepResult::Running;
             }
-            LOG_DEBUG("playerbots.dungeonclear",
-                      "[dungeon-clear] {} event-step Use GO {} '{}'",
-                      bot->GetName(), go->GetObjectGuid().ToString(), go->GetName());
             go->Use(bot);
+            // INFO, not DEBUG: whether the ritual altar ever saw its clicks is the
+            // one fact three measurement windows on 2026-09-04 could not answer
+            // from the journal. uniqueUses is the core's own distinct-user count
+            // for a SUMMONING_RITUAL (0 for every other GO type).
+            LOG_INFO("playerbots.dungeonclear",
+                     "[dungeon-clear] {} event-step Use GO {} '{}' -> uniqueUses={} state={}",
+                     bot->GetName(), go->GetObjectGuid().ToString(), go->GetName(),
+                     go->GetUniqueUseCount(), static_cast<int>(go->GetGoState()));
+
+            // A SUMMONING_RITUAL (GO type 18) does not fire on one click. The core
+            // records DISTINCT users and bails out while there are too few:
+            //     AddUniqueUse(player);
+            //     if (GetUniqueUseCount() < info->summoningRitual.reqParticipants ...)
+            //         return;
+            // Uldaman's two altars both carry reqParticipants = 3 (data0), so a
+            // leader-only click is a permanent no-op. That is what left the four
+            // Stone Keepers asleep while the next step gated on killing them -
+            // 48371 stalls in two hours on 2026-09-03, at step 3 of 5, kind 6.
+            if (step.participants > 1)
+            {
+                if (Group* group = bot->GetGroup())
+                {
+                    uint32 clicked = 1;  // the leader, just above
+                    for (GroupReference* ref = group->GetFirstMember();
+                         ref && clicked < step.participants; ref = ref->next())
+                    {
+                        Player* member = ref->getSource();
+                        if (!member || member == bot)
+                            continue;
+                        if (!member->IsInWorld() || !member->IsAlive())
+                            continue;
+                        if (member->GetMapId() != bot->GetMapId())
+                            continue;
+                        // The core's Use() does no range check of its own - the
+                        // client normally enforces it - so hold the same distance
+                        // a click would really need. DC_EVENT_GO_USE_RANGE is 5
+                        // yards, and a follower in formation usually stands
+                        // further out than that: skipping them outright made the
+                        // ritual depend on where the party happened to be
+                        // standing. Measured 2026-09-03, first hour after the
+                        // ritual step went in: 4 of 13 runs got past the altar,
+                        // the other 9 stalled on it. So walk them in instead.
+                        // The step stays Running, which is exactly the budget
+                        // this needs; the 120s stall watchdog still catches a
+                        // party that genuinely cannot reach the altar.
+                        if (!member->IsWithinDistInMap(go, DC_EVENT_GO_USE_RANGE))
+                        {
+                            // Only ever move a BOT. A human in the party clicks
+                            // when they choose to, and counts if they are close.
+                            // HopTo, and nothing more eager. A direct MovePoint every 2s
+                            // was tried on 2026-09-04 (HopTo bails while the bot
+                            // isMoving(), which a follower nearly always is): it fetched
+                            // them, and the keepers then died in 3 of 37 runs against
+                            // 9 of 39 with HopTo. Whatever the restarted splines did to
+                            // the party, it cost more than the odd missed click.
+                            if (GET_PLAYERBOT_AI(member) &&
+                                member->IsWithinDistInMap(go, DC_EVENT_GO_GATHER_RANGE))
+                                HopTo(member, go->GetPositionX(), go->GetPositionY(),
+                                      go->GetPositionZ());
+                            continue;
+                        }
+                        go->Use(member);
+                        ++clicked;
+                    }
+                }
+                // Done only once the ritual ACTUALLY fired. The core flips the GO
+                // to GO_STATE_ACTIVE in the same call that reaches the participant
+                // count, so this reads the real outcome rather than "somebody
+                // clicked". Staying Running holds the party at the altar while
+                // stragglers close the last yards; the step timeout still turns a
+                // genuine failure into a visible stall.
+                return go->GetGoState() != GO_STATE_READY ? StepResult::Done
+                                                          : StepResult::Running;
+            }
             return StepResult::Done;
         }
 
@@ -1378,9 +1455,13 @@ void DungeonEventExecutor::SweepCompletedConditionalEvents(Player* bot,
             // Latch it so the folded panel note flips to (done) and — because the
             // boss signature counts cleared.size() — the boss list re-pushes.
             cleared.insert(lk);
-            LOG_DEBUG("playerbots.dungeonclear",
-                      "[DC:{}] conditional event '{}' (id {}) completed via condition "
-                      "transition -> latched done", bot->GetName(), ev->name, ev->id);
+            // INFO, not DEBUG: this fires once per event per run at most, and it
+            // is the one line that can show a condition being mistaken for a
+            // completion - the suspect behind Uldaman parties that reached the
+            // shut seal with no event due on 2026-09-03.
+            LOG_INFO("playerbots.dungeonclear",
+                     "[DC:{}] conditional event '{}' (id {}) completed via condition "
+                     "transition -> latched done", bot->GetName(), ev->name, ev->id);
         }
     }
 }

@@ -3,6 +3,7 @@
  * and/or modify it under version 3 of the License, or (at your option), any later version.
  */
 
+#include <unordered_map>
 #include "Ai/Dungeon/DungeonClear/Util/NavmeshSnap.h"
 #include "DungeonClearActions.h"
 #include "Ai/Dungeon/DungeonClear/Util/DcEncounterMask.h"
@@ -56,6 +57,7 @@
 #include "Ai/Dungeon/DungeonClear/Util/ChunkedPathfinder.h"
 #include "Ai/Dungeon/DungeonClear/Util/DcDoorPolicy.h"
 #include "Ai/Dungeon/DungeonClear/Util/DcLeaderSignal.h"
+#include "Ai/Dungeon/DungeonClear/Util/DcRouteRecorder.h"
 #include "Ai/Dungeon/DungeonClear/Util/DcMovement.h"
 #include "Ai/Dungeon/DungeonClear/Util/DcPartyState.h"
 #include "Ai/Dungeon/DungeonClear/Util/DcBreadcrumb.h"
@@ -1822,8 +1824,35 @@ bool DcObjectiveArriveAction::Execute(Event& /*event*/)
             if (step.kind == EventStepKind::KillCreature && step.engage && step.creatureEntry)
             {
                 float const search = step.radius > 0.0f ? step.radius : 250.0f;
-                if (Creature* target =
-                        bot->FindNearestCreature(step.creatureEntry, search, /*alive*/ true))
+                Creature* target =
+                    bot->FindNearestCreature(step.creatureEntry, search, /*alive*/ true);
+                // A friendly, not-yet-hostile instance of the entry (Uldaman's
+                // stoned Stone Keepers, faction 35 until the altar wakes them)
+                // cannot be engaged: EngageDirect on it registers a "first
+                // contact" and nothing else, every tick, and returning false
+                // here skipped Drive - no STALLED line, no diag snapshot, and a
+                // run that idled until the wall clock ended it (2026-09-04:
+                // ~1200 first-contact lines per tank per 14 min, six of nine
+                // ladder slots zombies for 60-96 min). Fall through to Drive
+                // instead: the step keeps waiting, visibly, until the target
+                // turns hostile.
+                if (target && !bot->IsHostileTo(target))
+                {
+                    static std::unordered_map<uint64, uint32> s_friendlySaidAt;
+                    uint32 const nowMs = getMSTime();
+                    uint32& at = s_friendlySaidAt[bot->GetObjectGuid().GetRawValue()];
+                    if (!at || getMSTimeDiff(at, nowMs) > 30000)
+                    {
+                        at = nowMs;
+                        LOG_INFO("playerbots.dungeonclear",
+                                 "[DC:{}] engage step: {} (entry {}) is not hostile (faction {}) "
+                                 "-> waiting for it to turn, not attacking",
+                                 bot->GetName(), target->GetName(), target->GetEntry(),
+                                 target->GetFactionTemplateId());
+                    }
+                    target = nullptr;
+                }
+                if (target)
                 {
                     // FindNearestCreature is a flat 2D scan that can return an
                     // instance of the entry across a wall / on another level. Only
@@ -1977,10 +2006,20 @@ bool DcObjectiveArriveAction::Execute(Event& /*event*/)
             uint32 const kind = p.stepIndex < ev->steps.size()
                                     ? static_cast<uint32>(ev->steps[p.stepIndex].kind)
                                     : 9999u;
-            LOG_INFO("playerbots.dungeonclear",
-                     "[DC:{}] event '{}' STALLED at step {}/{} kind {}",
-                     bot->GetName(), ev->name, p.stepIndex,
-                     static_cast<uint32>(ev->steps.size()), kind);
+            // Once per bot per 30s. "Rare and singular" above was wrong: this
+            // runs every tick a stall persists - 147651 lines in 5.5 hours on
+            // 2026-09-03, seven a second, the whole journal drowned in it.
+            static std::unordered_map<uint64, uint32> s_stallSaidAt;
+            uint32 const nowStall = getMSTime();
+            uint32& saidAt = s_stallSaidAt[bot->GetObjectGuid().GetRawValue()];
+            if (!saidAt || getMSTimeDiff(saidAt, nowStall) > 30000)
+            {
+                saidAt = nowStall;
+                LOG_INFO("playerbots.dungeonclear",
+                         "[DC:{}] event '{}' STALLED at step {}/{} kind {}",
+                         bot->GetName(), ev->name, p.stepIndex,
+                         static_cast<uint32>(ev->steps.size()), kind);
+            }
         }
         StallDungeonClear(botAI, "I can't progress the event at " + next->name +
                                      " on my own. Sort it and I'll continue, or `dc skip`.");
@@ -1993,6 +2032,22 @@ bool DcObjectiveArriveAction::Execute(Event& /*event*/)
         context->GetValue<std::unordered_set<uint32>&>(DcKey::ClearedAnchors)->Get();
     if (cleared.insert(next->entry).second)
     {
+        // Close the recorder's leg for this OBJECTIVE exactly as a boss kill
+        // does (DungeonClearModule's death hook only knows bosses). Until
+        // 2026-09-04 the walk to an objective was never learned: Uldaman's
+        // Altar of the Keepers is 270yd from the Map Chamber, the chunked
+        // router dead-ended at (-163,298,-53) in 11 of 11 stalls across two
+        // 90-min windows, and the 5 parties that did arrive got there by
+        // fighting trash forward - a path nobody kept. Leader only: the leg
+        // is per instance, one close is all it takes.
+        if (next->kind == DungeonAnchorKind::Objective &&
+            DcLeaderSignal::IsDungeonClearLeader(bot))
+        {
+            LOG_INFO("playerbots.dungeonclear",
+                     "[DC-ROUTE] objective '{}' (entry {}) done by leader {} -> closing the recorder's leg",
+                     next->name, next->entry, bot->GetName());
+            DcRouteRecorder::OnBossKilled(bot->FindMap(), next->entry, next->name);
+        }
         ClearStall(context);
         DcStatusPublisher::SendAddonMessage(botAI, "CHAT\tReached " + next->name + " \xe2\x80\x94 continuing.");
         LOG_DEBUG("playerbots.dungeonclear",
@@ -2453,11 +2508,23 @@ bool DungeonClearDoorBlockedAction::Execute(Event& event)
             // reach — Use() has no range check of its own.
             if (!timedOut && !bot->IsWithinDistInMap(door, DC_DOOR_USE_RANGE))
             {
+                // Coordinates and roles in the line: on 2026-09-03 this reported
+                // 220.9yd for a door the value cannot even select past 100yd,
+                // fifteen times a second with the number never changing. Bot and
+                // door positions, the door's instance versus the bot's, and
+                // whether this bot is the leader, are what tells which of the
+                // two distances is lying.
                 LOG_INFO("playerbots.dungeonclear",
                          "[DC:{}] door-blocked: entitled to open {} '{}' but "
-                         "{:.1f}yd away (> {:.0f}yd) -> holding, not clicking",
+                         "{:.1f}yd away (> {:.0f}yd) -> holding, not clicking "
+                         "[bot=({:.0f},{:.0f},{:.0f}) door=({:.0f},{:.0f},{:.0f}) "
+                         "inst bot={} door={} leader={}]",
                          bot->GetName(), door->GetObjectGuid().ToString(),
-                         door->GetName(), bot->GetExactDist(door), DC_DOOR_USE_RANGE);
+                         door->GetName(), bot->GetExactDist(door), DC_DOOR_USE_RANGE,
+                         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
+                         door->GetPositionX(), door->GetPositionY(), door->GetPositionZ(),
+                         bot->GetInstanceId(), door->GetInstanceId(),
+                         DcLeaderSignal::IsDungeonClearLeader(bot) ? "yes" : "no");
                 StallDungeonClear(botAI, openingReason);
                 return true;
             }

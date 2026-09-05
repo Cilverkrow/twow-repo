@@ -479,7 +479,13 @@ namespace Acore
 
 // Conditional info log - same formatting path as LOG_INFO, but only when
 // `cond` holds (throttled diagnostics that must not spam the journal).
-#define LOG_INFO_IF(cond, ...) do { if (cond) LOG_INFO(__VA_ARGS__); } while (0)
+// MSVC's traditional preprocessor hands __VA_ARGS__ to a NESTED macro as a
+// single token, so LOG_INFO saw one argument and StringFormat none:
+//   error C2672: Acore::StringFormat: expected 2 arguments, given 0
+// The extra expansion pass is the standard workaround and is a no-op for a
+// conforming preprocessor. Reported from a Windows build 2026-09-02.
+#define DC_MSVC_EXPAND(x) x
+#define LOG_INFO_IF(cond, ...) do { if (cond) DC_MSVC_EXPAND(LOG_INFO(__VA_ARGS__)); } while (0)
 
 #endif
 

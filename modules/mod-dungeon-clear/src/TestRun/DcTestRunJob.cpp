@@ -50,6 +50,14 @@
 #include "TestRun/DcDiagSnapshot.h"
 #include "TestRun/DcTestComp.h"
 
+// Characters that took a claim, were handed to AddPlayerBot and never entered
+// the world. The claim walks the player cache in guid order, so the first
+// eligible character of a class is picked run after run; when that one cannot
+// log in, every run needing the class fails identically. Live 2026-09-04
+// 08:22-09:52: guid 886 "failed to enter world" 7 times, 7 of 18 ladder starts
+// lost at spawning_bots. Session-local on purpose - a restart re-tries it.
+static std::unordered_set<uint32> g_loginFailedGuids;
+
 namespace
 {
     // Stage timeouts: a setup stage overrunning these is itself the failure.
@@ -374,6 +382,8 @@ std::unique_ptr<DcTestRunJob> DcTestRunJob::Create(Player* gm, DcTestDungeonRegi
             // (until a future re-roll picks them - a small window relative
             // to a run's minutes, and _reservedGuids covers run-vs-run).
             if (rotationGuids.count(cacheEntry.first))
+                continue;
+            if (g_loginFailedGuids.count(cacheEntry.first))
                 continue;
             if ((Player::TeamForRace(uint8(data->uiRace)) == ALLIANCE) != isAlliance)
                 continue;
@@ -811,6 +821,17 @@ void DcTestRunJob::TickSpawning()
             FailSetup("roster characters did not finish logging in (" + missing +
                       ") — logged in as a real player, or a login failure (see server log)");
             return;
+        }
+        for (Slot const& slot : _slots)
+        {
+            Player* bot = ObjectAccessor::FindPlayer(slot.guid);
+            if (bot && bot->IsInWorld() && GET_PLAYERBOT_AI(bot))
+                continue;
+            if (slot.guid && g_loginFailedGuids.insert(slot.guid.GetCounter()).second)
+                LOG_INFO("playerbots.dungeonclear",
+                         "TESTRUN {} guid {} ({} slot) never entered the world — excluded from "
+                         "claims until restart; check the character row (map, position, online flag)",
+                         _record.runId, slot.guid.GetCounter(), slot.role);
         }
         FailSetup("bots did not finish logging in (addclass pool empty, "
                   "maxAddedBots cap, or login failure — see server log)");
@@ -2049,8 +2070,37 @@ void DcTestRunJob::TickMonitoring(uint32 dt)
 
     if (!tank || !tankAI)
     {
-        obs.leaderMissing = true;
-        obs.leaderGoneFromWorld = !tank;
+        // A tank BETWEEN MAPS is not a lost tank. FindTank uses
+        // ObjectAccessor::FindPlayer, which returns null for a Player whose
+        // IsInWorld() is false - and that is precisely the state a teleport
+        // passes through. So an ordinary map change read as "the leader
+        // vanished" and killed the run.
+        //
+        // Measured 2026-09-02: 37 Dragonmaw runs died overnight on "leader tank
+        // left the world" while the destruction probe (DC-BOTLIFE, fired from
+        // Player::~Player for any bot still under run protection) reported
+        // ZERO. Nothing was ever destroyed; every one of them was this false
+        // alarm. It is the same mistake a guard of mine made the day before,
+        // from the other direction - asking a registry whether a pointer is
+        // good, when the honest answer during a teleport is "not right now".
+        //
+        // Only FindPlayerNotInWorld coming back empty means the Player is
+        // really gone. A transient absence is left alone: the no-progress
+        // watchdog already ends a run that stops getting anywhere, so this
+        // check does not have to be the safety net as well.
+        Player* const tankAnywhere = ObjectAccessor::FindPlayerNotInWorld(_tankGuid);
+        if (!tankAnywhere)
+        {
+            obs.leaderMissing = true;
+            obs.leaderGoneFromWorld = true;
+        }
+        else if (!GET_PLAYERBOT_AI(tankAnywhere))
+        {
+            // Present but without its AI - a real fault, and a different one.
+            obs.leaderMissing = true;
+            obs.leaderGoneFromWorld = false;
+        }
+        // else: in transit between maps. Say nothing and let the run continue.
     }
     else
     {
@@ -2087,13 +2137,18 @@ void DcTestRunJob::TickMonitoring(uint32 dt)
                 DcTestRunRecord::BossKill kill;
                 kill.t = _totalMs / 1000;
                 kill.via = "mask";
-                for (BossRef const& ref : _roster)
-                    if (ref.encounterIndex == bit)
-                    {
-                        kill.entry = ref.entry;
-                        kill.name = ref.name;
-                        break;
-                    }
+                // Prefer a real BOSS for the name. Objectives reuse a boss's
+                // encounterIndex as an ordering hint (Uldaman's two altars both say
+                // 7, Archaedas's bit), and taking the first match labelled a kill
+                // "Altar of the Keepers" in six runs on 2026-09-03.
+                for (int pass = 0; pass < 2 && kill.name.empty(); ++pass)
+                    for (BossRef const& ref : _roster)
+                        if (ref.encounterIndex == bit && (pass == 1 || ref.isBoss))
+                        {
+                            kill.entry = ref.entry;
+                            kill.name = ref.name;
+                            break;
+                        }
                 if (kill.name.empty())
                     kill.name = "encounter #" + std::to_string(bit);
                 _record.bossTimeline.push_back(kill);
@@ -2162,8 +2217,7 @@ void DcTestRunJob::TickMonitoring(uint32 dt)
             fold(mv ? mv->GetObjectGuid().GetCounter() : 0u);
             fold(mv ? static_cast<uint32>(mv->GetHealthPct()) : 0u);
         }
-        if (partySig != _lastPartyCombatSig)
-            progressed = true;
+        bool const combatChurn = partySig != _lastPartyCombatSig;
         _lastPartyCombatSig = partySig;
 
         // Sampled every monitor step while somebody is still standing, so the
@@ -2191,6 +2245,21 @@ void DcTestRunJob::TickMonitoring(uint32 dt)
             }
         }
 
+        // Combat churn (members' combat state / victim / victim health) counts
+        // as progress only for a bounded stretch after the last HARD progress
+        // (a kill-bit, a cleared anchor, closing distance). Unbounded, a party
+        // locked in a fight it cannot finish never trips the watchdog: on
+        // 2026-09-04 08:22-09:58 six of nine ladder slots sat in Uldaman's
+        // keeper hall for 60-96 minutes (~1200 "first contact: Stone Keeper"
+        // lines per tank per 14 min), no boss and no objective for over an
+        // hour, and the 420s no-progress limit never fired once.
+        if (progressed)
+            _sinceHardProgressMs = 0;
+        else
+            _sinceHardProgressMs += dt;
+        if (!progressed && combatChurn && _limits.noProgressMs &&
+            _sinceHardProgressMs < 3 * _limits.noProgressMs)
+            progressed = true;
         if (progressed)
         {
             _sinceProgressMs = 0;
