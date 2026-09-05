@@ -243,6 +243,19 @@ type IntentOutcome struct {
 	// IssuedAtMS is when the intent was issued, server clock, Unix ms. Zero
 	// means the server did not record it.
 	IssuedAtMS int64 `json:"issued_at_ms,omitempty"`
+	// POIID is the destination the intent named, when it had one.
+	//
+	// Without this a planner is told THAT its last travel intent was refused
+	// but not WHERE it was sending the bot, which is not enough to choose
+	// differently: the same POI is still nearest, so the same intent is issued
+	// again on the next tick, and the bot is sent at a place it cannot reach
+	// indefinitely. Result and Reason describe the verdict; this describes the
+	// subject of it.
+	//
+	// Empty for outcomes about intents that named no destination, and for a
+	// server too old to send it. Empty must therefore mean "unknown", never
+	// "no POI was involved".
+	POIID string `json:"poi_id,omitempty"`
 }
 
 // Snapshot is everything the brain is told about one bot.

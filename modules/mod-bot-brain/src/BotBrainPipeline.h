@@ -100,7 +100,7 @@ namespace botbrain
     // it as last_outcome. This is how the loop closes without the brain
     // holding any state: the server remembers, and the brain is told.
     void RecordOutcome(Player* bot, std::string const& intentId, std::string const& kind,
-        std::string const& result, std::string const& reason);
+        std::string const& result, std::string const& reason, std::string const& poiId);
 
     // Drop everything remembered for a bot. Called on logout.
     void Forget(ObjectGuid guid);

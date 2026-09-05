@@ -439,6 +439,25 @@ namespace botbrain
             return it == g_states.end() ? nullptr : &it->second;
         }
 
+        // Writes an outcome into a state the caller ALREADY holds g_statesMutex
+        // for. TakeTravelIntent runs under that lock, so it cannot call the
+        // public RecordOutcome, which takes it -- that would deadlock the world
+        // thread on the first rejected intent.
+        void StoreOutcome(BotPlanState& state, std::string const& intentId, std::string const& kind,
+            std::string const& result, std::string const& reason, std::string const& poiId)
+        {
+            if (intentId.empty())
+                return;
+
+            state.hasOutcome = true;
+            state.outcome.intentId = intentId;
+            state.outcome.kind = kind;
+            state.outcome.result = result;
+            state.outcome.reason = reason;
+            state.outcome.poiId = poiId;
+            state.outcome.issuedAtMs = NowUnixMs();
+        }
+
         // The transport half of a handshake: no logging, no globals touched.
         // That is what makes it safe to call from a detached worker, and it is
         // the whole reason it is split out of Handshake().
@@ -649,7 +668,7 @@ namespace botbrain
     }
 
     void RecordOutcome(Player* bot, std::string const& intentId, std::string const& kind,
-        std::string const& result, std::string const& reason)
+        std::string const& result, std::string const& reason, std::string const& poiId)
     {
         if (!bot || intentId.empty())
             return;
@@ -659,12 +678,7 @@ namespace botbrain
         if (!state)
             return;
 
-        state->hasOutcome = true;
-        state->outcome.intentId = intentId;
-        state->outcome.kind = kind;
-        state->outcome.result = result;
-        state->outcome.reason = reason;
-        state->outcome.issuedAtMs = NowUnixMs();
+        StoreOutcome(*state, intentId, kind, result, reason, poiId);
     }
 
     bool TakeTravelIntent(Player* bot, Intent& intent, ResolvedPoi& poi)
@@ -683,30 +697,69 @@ namespace botbrain
         Intent const candidate = state->intent;
         state->hasIntent = false;
 
-        if (!IsPoiDirectedKind(candidate.kind) || !candidate.hasTravel || candidate.travelPoiId.empty())
+        // Every path out of here that is not "accepted" records WHY, so the next
+        // snapshot carries it as last_outcome. Before this, RecordOutcome had a
+        // single call site and it passed "accepted": the planner was told about
+        // successes only and learned nothing from failures, so a bot whose
+        // travel was refused got sent to the same place on the next tick, and
+        // the next, indefinitely.
+        //
+        // The rejections below are the server's own validation, not the bot's
+        // experience of the world. They say "this intent was unusable", which is
+        // feedback about the PLAN - exactly what a planner can act on.
+        if (!IsPoiDirectedKind(candidate.kind))
+        {
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unsupported_kind", candidate.travelPoiId);
             return false;
+        }
+        if (!candidate.hasTravel || candidate.travelPoiId.empty())
+        {
+            // A POI-directed kind that names no POI is a malformed intent rather
+            // than an unusable one, and the distinction is worth keeping: this
+            // one means the two sides disagree about the contract.
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unknown_poi", candidate.travelPoiId);
+            return false;
+        }
 
         int64_t const now = NowUnixMs();
         if (candidate.expiresAtMs && candidate.expiresAtMs < now)
+        {
+            // "expired" is its own result, not a rejection: nothing was wrong
+            // with the plan, it simply arrived too late to be worth applying.
+            // A planner should read this as "be faster", not "choose elsewhere".
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "expired", "", candidate.travelPoiId);
             return false;
+        }
 
         // The POI ids are snapshot-scoped by contract. An id from a table this
         // old is a stale destination, which is precisely what that scoping rule
         // exists to prevent.
         if (Elapsed(WorldTimer::getMSTime(), state->poiTableAtMs + cfg.poiTableTtlMs))
+        {
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "stale_poi", candidate.travelPoiId);
             return false;
+        }
 
         for (ResolvedPoi const& row : state->poiTable)
         {
             if (row.id != candidate.travelPoiId)
                 continue;
             if (!row.destination || !row.position)
+            {
+                // The id resolved, but the server could not turn it into a place
+                // to walk to. From the planner's side that is the same actionable
+                // fact as an unreachable destination: do not pick this one again.
+                StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unreachable", candidate.travelPoiId);
                 return false;
+            }
             intent = candidate;
             poi = row;
             return true;
         }
 
+        // Fell off the end of the table: the intent named a POI this snapshot
+        // never offered.
+        StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unknown_poi", candidate.travelPoiId);
         return false;
     }
 

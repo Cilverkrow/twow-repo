@@ -41,7 +41,7 @@ namespace botbrain
     // services/bot-brain/contract/version.go (VersionMajor.VersionMinor).
     extern char const* const kContractVersion;
     int constexpr kContractMajor = 1;
-    int constexpr kContractMinor = 1;
+    int constexpr kContractMinor = 2;
 
     // Intent kinds this build understands. Anything else is dropped silently.
     extern char const* const kIntentIdle;
@@ -163,6 +163,11 @@ namespace botbrain
         std::string result;              // "accepted" | "rejected" | ...
         std::string reason;
         int64_t issuedAtMs = 0;
+        // The destination the intent named, so the planner learns WHERE it was
+        // refused and not merely THAT it was. Without it the same POI is still
+        // nearest next tick and the bot is re-sent somewhere it cannot go.
+        // Empty when the intent named no POI, or was not POI-directed.
+        std::string poiId;
     };
 
     struct Snapshot

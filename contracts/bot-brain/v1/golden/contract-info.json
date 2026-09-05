@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "supported_majors": [1],
   "known_intent_kinds": [
     "idle",

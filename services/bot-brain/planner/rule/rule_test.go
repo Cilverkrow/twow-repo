@@ -348,3 +348,160 @@ func TestCustomThresholds(t *testing.T) {
 		t.Fatalf("kind = %q, want grind_area with the rest rung disabled", intents[0].Kind)
 	}
 }
+
+// The outcome loop: a destination the server refused must not be chosen again.
+//
+// Before this, RecordOutcome had one call site and it passed "accepted", so the
+// planner heard about successes only. A bot whose travel was refused was sent to
+// the same POI on the next tick, and the next, indefinitely.
+func TestRefusedPOIIsNotChosenAgain(t *testing.T) {
+	reasons := []string{"unreachable", "unknown_poi", "stale_poi"}
+	for _, reason := range reasons {
+		t.Run(reason, func(t *testing.T) {
+			s := base()
+			s.POIs = []contract.PointOfInterest{
+				{ID: "near", Kind: "grind_area", Pos: s.Pos, DistanceYards: f(10)},
+				{ID: "far", Kind: "grind_area", Pos: s.Pos, DistanceYards: f(500)},
+			}
+			s.LastOutcome = &contract.IntentOutcome{
+				IntentID: "prev", Kind: contract.IntentTravelTo,
+				Result: "rejected", Reason: reason, POIID: "near",
+			}
+
+			got := planOne(t, s)
+			if got.Travel == nil {
+				t.Fatalf("no travel intent at all; the planner gave up instead of choosing elsewhere (kind %q)", got.Kind)
+			}
+			if got.Travel.POIID == "near" {
+				t.Fatalf("re-proposed %q after it was refused with %q; this is the loop the outcome exists to break",
+					got.Travel.POIID, reason)
+			}
+			if got.Travel.POIID != "far" {
+				t.Fatalf("POI = %q, want the remaining candidate %q", got.Travel.POIID, "far")
+			}
+		})
+	}
+}
+
+// Reasons that are about the BOT or the KIND, not the place, must NOT steer the
+// planner away from a perfectly good destination.
+func TestOutcomeReasonsThatAreNotAboutThePlace(t *testing.T) {
+	for _, reason := range []string{"in_combat", "not_group_leader", "unsupported_kind", "identity_protected", "some_future_reason"} {
+		t.Run(reason, func(t *testing.T) {
+			s := base()
+			s.POIs = []contract.PointOfInterest{
+				{ID: "near", Kind: "grind_area", Pos: s.Pos, DistanceYards: f(10)},
+			}
+			s.LastOutcome = &contract.IntentOutcome{
+				IntentID: "prev", Kind: contract.IntentTravelTo,
+				Result: "rejected", Reason: reason, POIID: "near",
+			}
+			got := planOne(t, s)
+			if got.Travel == nil || got.Travel.POIID != "near" {
+				t.Fatalf("avoided %q because of %q, which says nothing about the destination; superstition, not feedback", "near", reason)
+			}
+		})
+	}
+}
+
+// "expired" is not a verdict on the destination. Nothing was wrong with the
+// place - the plan arrived too late to apply. Treating it as "choose elsewhere"
+// would walk bots away from good destinations whenever the service was busy.
+func TestExpiredDoesNotAvoidThePOI(t *testing.T) {
+	s := base()
+	s.POIs = []contract.PointOfInterest{
+		{ID: "near", Kind: "grind_area", Pos: s.Pos, DistanceYards: f(10)},
+	}
+	s.LastOutcome = &contract.IntentOutcome{
+		IntentID: "prev", Kind: contract.IntentTravelTo,
+		Result: "expired", POIID: "near",
+	}
+	got := planOne(t, s)
+	if got.Travel == nil || got.Travel.POIID != "near" {
+		t.Fatal("an expired intent steered the planner away from its destination; expiry is a timing fact, not a routing one")
+	}
+}
+
+// Successes must not be read as refusals.
+func TestAcceptedOutcomeDoesNotAvoid(t *testing.T) {
+	for _, result := range []string{"accepted", "completed", "superseded"} {
+		t.Run(result, func(t *testing.T) {
+			s := base()
+			s.POIs = []contract.PointOfInterest{
+				{ID: "near", Kind: "grind_area", Pos: s.Pos, DistanceYards: f(10)},
+			}
+			s.LastOutcome = &contract.IntentOutcome{
+				IntentID: "prev", Kind: contract.IntentTravelTo, Result: result, POIID: "near",
+			}
+			got := planOne(t, s)
+			if got.Travel == nil || got.Travel.POIID != "near" {
+				t.Fatalf("result %q was treated as a refusal", result)
+			}
+		})
+	}
+}
+
+// A refusal with no POI id (an older server) must not silently avoid nothing in
+// a way that breaks, and must not panic.
+func TestRefusalWithoutPOIIDIsHarmless(t *testing.T) {
+	s := base()
+	s.POIs = []contract.PointOfInterest{
+		{ID: "near", Kind: "grind_area", Pos: s.Pos, DistanceYards: f(10)},
+	}
+	s.LastOutcome = &contract.IntentOutcome{
+		IntentID: "prev", Kind: contract.IntentTravelTo, Result: "rejected", Reason: "unreachable",
+	}
+	got := planOne(t, s)
+	if got.Travel == nil || got.Travel.POIID != "near" {
+		t.Fatal("an outcome with no poi_id changed the choice; empty must mean unknown, not a match")
+	}
+}
+
+// Absence of an outcome is normal - a bot never planned for, or one whose
+// history the server lost across a restart - and must never read as failure.
+func TestNoOutcomeIsNotAFailure(t *testing.T) {
+	s := base()
+	s.POIs = []contract.PointOfInterest{
+		{ID: "near", Kind: "grind_area", Pos: s.Pos, DistanceYards: f(10)},
+	}
+	s.LastOutcome = nil
+	got := planOne(t, s)
+	if got.Travel == nil || got.Travel.POIID != "near" {
+		t.Fatal("a bot with no history was refused a destination")
+	}
+}
+
+// When the ONLY candidate is the refused one, the planner must not propose it
+// anyway. Skipping rather than penalising is the point: a penalty still chooses
+// it when it is alone, which is exactly the case that loops.
+func TestRefusedSoleCandidateIsNotProposed(t *testing.T) {
+	s := base()
+	s.POIs = []contract.PointOfInterest{
+		{ID: "only", Kind: "grind_area", Pos: s.Pos, DistanceYards: f(10)},
+	}
+	s.LastOutcome = &contract.IntentOutcome{
+		IntentID: "prev", Kind: contract.IntentTravelTo,
+		Result: "rejected", Reason: "unreachable", POIID: "only",
+	}
+	got := planOne(t, s)
+	if got.Travel != nil && got.Travel.POIID == "only" {
+		t.Fatal("proposed the sole candidate again after it was refused; this is the infinite loop")
+	}
+}
+
+func planOne(t *testing.T, s contract.Snapshot) contract.Intent {
+	t.Helper()
+	p := rule.New(rule.DefaultThresholds())
+	out, err := p.Plan(context.Background(), planner.Request{
+		Snapshots:   []contract.Snapshot{s},
+		ServerNowMS: 1_756_700_000_000,
+		IntentTTLMS: 30_000,
+	})
+	if err != nil {
+		t.Fatalf("Plan: %v", err)
+	}
+	if len(out) != 1 {
+		t.Fatalf("got %d intents, want 1", len(out))
+	}
+	return out[0]
+}

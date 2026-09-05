@@ -276,6 +276,7 @@ namespace botbrain
                 WriteStr(w, "result", s.lastOutcome.result);
                 WriteStrIfSet(w, "reason", s.lastOutcome.reason);
                 WriteIntIfSet(w, "issued_at_ms", s.lastOutcome.issuedAtMs);
+                WriteStrIfSet(w, "poi_id", s.lastOutcome.poiId);
                 w.EndObject();
             }
 
