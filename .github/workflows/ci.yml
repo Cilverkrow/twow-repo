@@ -598,6 +598,16 @@ jobs:
 
       # Formatting is a diff, not an opinion: gofmt -l prints the files it would
       # change and says nothing when it would change none.
+      # The contract version is declared twice, by hand, in two languages, and
+      # BotBrainWire.h asks the reader to keep them in step. Until this, nothing
+      # checked. A MAJOR skew fails the handshake closed and every bot silently
+      # stops planning; a MINOR skew does not fail closed at all - it negotiates
+      # down - so a field one side believes it is sending is quietly not read.
+      # working-directory is overridden because this reads both trees.
+      - name: contract version agrees across Go and C++
+        working-directory: .
+        run: bash ops/ci/check-contract-version.sh
+
       - name: gofmt
         run: |
           unformatted=$(gofmt -l .)

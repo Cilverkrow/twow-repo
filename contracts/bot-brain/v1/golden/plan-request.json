@@ -1,0 +1,91 @@
+{
+  "contract_version": "1.0",
+  "request_id": "req-golden-0001",
+  "sent_at_ms": 1756700000000,
+  "deadline_ms": 750,
+  "snapshots": [
+    {
+      "bot": { "realm": 1, "guid": 4242 },
+      "char": {
+        "name": "Goldenbot",
+        "level": 23,
+        "class": 4,
+        "race": 1,
+        "faction": "alliance",
+        "money": 123456,
+        "free_bag_slots": 3
+      },
+      "pos": {
+        "map_id": 1,
+        "x": -618.518,
+        "y": -4251.67,
+        "z": 40.5,
+        "orientation": 1.5707964,
+        "zone_id": 14,
+        "area_id": 362,
+        "instance_id": 0
+      },
+      "vitals": {
+        "health_pct": 61.5,
+        "power_pct": 42,
+        "is_dead": false,
+        "in_combat": false,
+        "is_resting": false,
+        "is_mounted": false,
+        "durability_pct": 88.25
+      },
+      "surroundings": {
+        "hostile_count": 2,
+        "friendly_player_count": 0,
+        "friendly_bot_count": 0,
+        "group_size": 1,
+        "is_group_leader": false
+      },
+      "quests": [
+        {
+          "quest_id": 788,
+          "status": "incomplete",
+          "objectives_done": 1,
+          "objectives_total": 3,
+          "required_level": 20,
+          "quest_level": 22
+        }
+      ],
+      "pois": [
+        {
+          "id": "p0",
+          "kind": "quest_objective",
+          "pos": {
+            "map_id": 1,
+            "x": -700.25,
+            "y": -4300.75,
+            "z": 38,
+            "orientation": 0
+          },
+          "distance_yards": 112.5,
+          "related_quest_id": 788
+        },
+        {
+          "id": "p1",
+          "kind": "repair",
+          "pos": {
+            "map_id": 1,
+            "x": -620,
+            "y": -4260,
+            "z": 40,
+            "orientation": 0
+          },
+          "distance_yards": 9.75
+        }
+      ],
+      "last_outcome": {
+        "intent_id": "int-golden-0000",
+        "kind": "travel_to",
+        "result": "rejected",
+        "reason": "unreachable",
+        "issued_at_ms": 1756699000000
+      },
+      "observed_at_ms": 1756700000000
+    }
+  ]
+}
