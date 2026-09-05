@@ -52,7 +52,7 @@ Primary sources:
 - `runbooks/ssc-llm-production-bridge-*`
 - `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/rndbot-persistent-active-roster-*`
 - `runbooks/bot-personality-discovery-20260828-224032/`
-- `runbooks/personality-context-contract-v1.md`
+- `docs/contracts/personality-context-contract-v1.md`
 - `runbooks/playerbot-discovery-matrix-preflight-02-20260830-173815/`
 - `runbooks/db-profession-riding-discovery-01-20260830-010856/`
 - `runbooks/donation-point-*` and `runbooks/donation-runtime-test-01-20260829-184426/`

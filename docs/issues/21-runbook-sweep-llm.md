@@ -275,7 +275,7 @@ title: Answer the seven open questions blocking DB-backed bot personalities
 workstream: WS-30
 priority: p2
 existing_ot: none
-source: runbooks/personality-context-contract-v1.md
+source: docs/contracts/personality-context-contract-v1.md
 superseded_by: none
 body: |
   **State:** the personality contract is a complete design with **no real IDs in it**, and

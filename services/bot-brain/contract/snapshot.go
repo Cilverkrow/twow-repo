@@ -111,7 +111,7 @@ type Character struct {
 	// (bags full) and is one of the few things worth a vendor trip for.
 	FreeBagSlots uint32 `json:"free_bag_slots"`
 	// TraitKeys are the deterministic personality trait keys assigned by the
-	// personality layer (ARCH-002, runbooks/personality-context-contract-v1.md
+	// personality layer (ARCH-002, docs/contracts/personality-context-contract-v1.md
 	// section 4.1). Absent means personality is not deployed yet, which is the
 	// state today; planners must behave sensibly with an empty list.
 	TraitKeys []string `json:"trait_keys,omitempty"`

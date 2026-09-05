@@ -30,5 +30,5 @@ Interfaces between these areas are narrow, versioned contracts. WS-70 data canno
 
 - `runbooks/workstreams/WS-10-ssc-analyse-entwicklung/README.md`
 - `runbooks/workstreams/WS-70-bot-persoenlichkeiten/README.md`
-- `runbooks/personality-context-contract-v1.md`
+- `docs/contracts/personality-context-contract-v1.md`
 - `docs/MODULARIZATION-ROADMAP.md`

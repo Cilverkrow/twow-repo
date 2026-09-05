@@ -27,6 +27,6 @@ Ollama receives no database connection or credentials. Prompts and responses do 
 
 ## Evidence
 
-- `runbooks/personality-context-contract-v1.md`
+- `docs/contracts/personality-context-contract-v1.md`
 - `runbooks/bot-personality-discovery-20260828-224032/bot-personality-discovery-report.md`
 - `runbooks/ssc-llm-bridge-v1-english-correction-20260830-131349/REPORT.md`
