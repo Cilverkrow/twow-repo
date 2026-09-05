@@ -128,26 +128,36 @@ on:
         default: false
 
 concurrency:
-  # Pushes never cancel or queue each other; pull request updates still do.
+  # Nothing cancels anything. Every commit gets its own group and runs to
+  # completion.
   #
-  # This used to be one group per ref with cancel-in-progress, on the reasoning
-  # that an orphaned build of a superseded commit is waste. That is true when the
-  # pipeline is cheap. It is not cheap -- a full run is around 26 minutes -- and
-  # the effect in practice was that an afternoon of active work produced ZERO
-  # completed runs: four were killed between 20 and 26 minutes by the next push,
-  # including the ones meant to measure whether the pipeline rework had worked.
-  # Cancelling saved runner minutes and cost hours of wall clock.
+  # This was already true for pushes, and the reasoning is worth keeping because
+  # it was learned the hard way: one group per ref with cancel-in-progress looks
+  # like an obvious saving, but a full run is 26+ minutes (currently ~67 while
+  # the compiler cache is cold), so an afternoon of active work produced ZERO
+  # completed runs - four were killed between 20 and 26 minutes by the next
+  # push, including the ones meant to measure whether a pipeline rework had
+  # worked. Cancelling saved runner minutes and cost hours of wall clock.
   #
-  # Including the SHA in the group on pushes gives every commit its own group, so
-  # nothing is cancelled and nothing queues behind anything. On a pull request
-  # the group is stable per ref, so a new commit supersedes the old run -- which
-  # is right there, because only the tip of a PR is interesting.
+  # Pull requests were left cancelling on the argument that only the tip of a PR
+  # is interesting. That argument is wrong for the same reason, and worse: a
+  # branch with an open PR fires pull_request on every push, so the exact
+  # commits being actively worked on were the ones that never finished, while
+  # pushes to branches nobody was watching ran to completion.
   #
-  # The trade is runner minutes on busy branches. Worth it while several agents
-  # are pushing and the results are being used as measurements rather than as a
-  # pass/fail light.
-  group: ci-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # There is a second cost that is easy to miss. A cancelled run never reaches
+  # the post-step that saves its compiler cache, so cancellation actively
+  # prevented the ccache from ever being repopulated - guaranteeing the next run
+  # was cold, which made it slower, which made it likelier to be cancelled.
+  #
+  # Including the SHA in the group unconditionally gives every commit its own
+  # group: nothing is cancelled, nothing queues behind anything.
+  #
+  # The trade is runner minutes on busy branches. That is the intended trade - a
+  # result that arrives is worth more than a runner minute saved, and a run
+  # killed at minute 25 cost the minutes anyway and produced nothing.
+  group: ci-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
