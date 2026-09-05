@@ -85,11 +85,11 @@ services:
     volumes:
       - db-init-state:/state
       - ./db-init.sh:/db-init.sh:ro
-      # SQL_PATH and SQL_BASE_PATH are separate variables because sql/base moves
-      # to the upstream repo later (ADR-0020) and will then live outside this
-      # tree; only the base path has to be repointed when that happens.
+      # Core owns schema/base; platform SQL contributes project migrations.
+      # Shared migrations must agree before the bootstrap connects to the DB.
       - ${SQL_PATH:-../../sql}:/sql:ro
-      - ${SQL_BASE_PATH:-../../sql/base}:/sql-base:ro
+      - ${CORE_SQL_PATH:-../../core/sql}:/sql-core:ro
+      - ${SQL_BASE_PATH:-../../core/sql/base}:/sql-base:ro
       - ${PLAYERBOTS_SQL_PATH:-../../modules/mod-playerbots/sql}:/sql-playerbots:ro
     entrypoint: ["/bin/bash", "/db-init.sh"]
     healthcheck:

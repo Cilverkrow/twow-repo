@@ -33,6 +33,7 @@ set -euo pipefail
 
 STATE=/state
 SQL_DIR=${SQL_DIR:-/sql}
+CORE_SQL_DIR=${CORE_SQL_DIR:-/sql-core}
 SQL_BASE_DIR=${SQL_BASE_DIR:-/sql-base}
 PB_SQL_DIR=${PB_SQL_DIR:-/sql-playerbots}
 
@@ -58,6 +59,46 @@ stage() {
 
 mkdir -p "$STATE"
 
+# The pinned core owns its schema. Platform SQL retains project additions, but
+# must not silently shadow a changed core migration. Preserve existing platform
+# raw-byte ledger identities for shared files differing only in CRLF/LF.
+reconcile_stream() {
+    local output=$1; shift
+    local dir f name
+    local -A files=()
+    for dir in "$@"; do
+        [ -d "$dir" ] || { log "missing migration directory $dir"; return 1; }
+        for f in "$dir"/*.sql; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            if [ -n "${files[$name]:-}" ]; then
+                cmp -s <(sed 's/\r$//' "${files[$name]}") <(sed 's/\r$//' "$f") || {
+                    log "conflicting migration $name: ${files[$name]} and $f"
+                    return 1
+                }
+            else
+                files[$name]=$f
+            fi
+        done
+    done
+    : > "$output"
+    for name in "${!files[@]}"; do
+        printf '%s\t%s\n' "$name" "${files[$name]}"
+    done | LC_ALL=C sort | cut -f2- > "$output"
+}
+
+[ -f "$CORE_SQL_DIR/create_databases.sql" ] || {
+    log "missing pinned core schema: $CORE_SQL_DIR/create_databases.sql"
+    exit 1
+}
+reconcile_stream "$STATE/world-inputs" \
+    "$SQL_DIR/database_updates" "$SQL_DIR/database_updates/world" \
+    "$CORE_SQL_DIR/database_updates" "$CORE_SQL_DIR/database_updates/world"
+reconcile_stream "$STATE/character-inputs" \
+    "$SQL_DIR/database_updates/character" "$SQL_DIR/character_updates" \
+    "$CORE_SQL_DIR/database_updates/character" "$CORE_SQL_DIR/character_updates"
+reconcile_stream "$STATE/logon-inputs" "$SQL_DIR/logon" "$CORE_SQL_DIR/logon"
+
 # The healthcheck says the server is up; this says it will actually talk to us.
 for _ in $(seq 1 60); do
     mysql_root -e 'SELECT 1' >/dev/null 2>&1 && break
@@ -70,8 +111,7 @@ mysql_root -e 'SELECT 1' >/dev/null || { log "cannot reach $DB_HOST:$DB_PORT as 
 # table definitions, i.e. the complete schema for tw_char, tw_logon and tw_logs.
 # Only world *content* is separate (sql/base).
 stage_schemas() {
-    [ -f "$SQL_DIR/create_databases.sql" ] || { log "missing $SQL_DIR/create_databases.sql"; exit 1; }
-    mysql_root < "$SQL_DIR/create_databases.sql"
+    mysql_root < "$CORE_SQL_DIR/create_databases.sql"
     mysql_root -e "CREATE DATABASE IF NOT EXISTS \`$BOT_DB\` CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci;"
 }
 
@@ -141,8 +181,18 @@ migration_hash() { sha1sum "$1" | cut -d' ' -f1 | tr 'a-f' 'A-F'; }
 # migrations.Name carries no unique key (sql/create_databases.sql: the PRIMARY
 # KEY is the autoincrement Id), so IGNORE would cheerfully duplicate every row.
 apply_migration() {
-    local db=$1 f=$2 name hash
+    local db=$1 f=$2 name hash recorded
     name=$(basename "$f" .sql)
+    hash=$(migration_hash "$f")
+    recorded=$(mysql_root -N -B "$db" -e "SELECT Hash FROM migrations WHERE Name='${name}';")
+    if [ -n "$recorded" ]; then
+        [ "$recorded" = "$hash" ] || {
+            log "FAILED: migration identity conflict ($db) $name"
+            exit 1
+        }
+        log "skip recorded migration ($db) $name"
+        return 0
+    fi
     log "update ($db) $name"
     mysql_root "$db" < "$f" || {
         log "FAILED: $name did not apply to $db -- the client error is above."
@@ -150,23 +200,12 @@ apply_migration() {
         log "will apply it. Delete $STATE/30-updates to force this stage to re-run."
         exit 1
     }
-    hash=$(migration_hash "$f")
     mysql_root "$db" <<SQL
 INSERT INTO migrations (Name, Hash, AppliedAt)
 SELECT '${name}', '${hash}', NOW()
   FROM DUAL
  WHERE NOT EXISTS (SELECT 1 FROM migrations WHERE Name = '${name}');
 SQL
-}
-
-apply_update_dir() {
-    local dir=$1 db=$2 n=0
-    [ -d "$dir" ] || return 0
-    while IFS= read -r f; do
-        apply_migration "$db" "$f"
-        n=$((n + 1))
-    done < <(find "$dir" -maxdepth 1 -name '*.sql' | LC_ALL=C sort)
-    log "applied and recorded $n migrations from $dir into $db"
 }
 
 # tw_world's migrations are split across TWO directories -- sql/database_updates/
@@ -198,20 +237,6 @@ apply_update_dir() {
 # landing on a table the first one's rows had just been wiped from. That is a
 # content decision about which trainer list is correct, in files this change does
 # not own; it is reported with OPS-020 rather than papered over here.
-world_migration_stream() {
-    local d
-    for d in "$SQL_DIR/database_updates" "$SQL_DIR/database_updates/world"; do
-        # Guarded rather than left to find, whose "No such file or directory" on
-        # stderr would be the only sign that half the stream had gone missing.
-        # This runs inside a process substitution, so its exit status is
-        # discarded and a failing find would just silently yield fewer files.
-        [ -d "$d" ] || continue
-        find "$d" -maxdepth 1 -name '*.sql'
-    done | while IFS= read -r p; do
-        printf '%s\t%s\n' "$(basename "$p")" "$p"
-    done | LC_ALL=C sort | cut -f2-
-}
-
 stage_updates() {
     # Everything in that stream is *_world.sql today; route by suffix anyway so
     # a stray character/auth file is not silently loaded into the wrong database.
@@ -222,9 +247,8 @@ stage_updates() {
             *) db=tw_world ;;
         esac
         apply_migration "$db" "$f"
-    done < <(world_migration_stream)
+    done < "$STATE/world-inputs"
 
-    apply_update_dir "$SQL_DIR/database_updates/character" tw_char
 
     # There are three competing conventions for "a character migration" in this
     # tree -- database_updates/character/, character_updates/ and wip_updates/ --
@@ -232,9 +256,18 @@ stage_updates() {
     # 20260830230336_ai_playerbot_persistent_active_roster.sql, so a freshly
     # bootstrapped stack had no ai_playerbot_roster_* tables at all and ADR-0024
     # invariant 1 had nowhere to store a roster. Collapsing the conventions is
-    # REF-004; until then, apply all of them.
-    apply_update_dir "$SQL_DIR/character_updates" tw_char
-    apply_update_dir "$SQL_DIR/logon" tw_logon
+    # REF-004; include both committed character directories, but not wip_updates.
+    while IFS= read -r f; do
+        # Core's legacy bot index requires the module table from stage 40.
+        # Apply its actual SQL and record its hash after that table exists.
+        case "$(basename "$f")" in
+            20260708055500_ai_playerbot_random_bots_index.sql) continue ;;
+        esac
+        apply_migration tw_char "$f"
+    done < "$STATE/character-inputs"
+    while IFS= read -r f; do
+        apply_migration tw_logon "$f"
+    done < "$STATE/logon-inputs"
 }
 
 # ----------------------------------------------------------- 40 playerbots
@@ -284,6 +317,7 @@ stage_playerbots() {
     [ -d "$PB_SQL_DIR" ] || { log "missing $PB_SQL_DIR"; exit 1; }
     apply_module_sql tw_world "$PB_SQL_DIR/world" "$PB_SQL_DIR/world/classic"
     apply_module_sql tw_char  "$PB_SQL_DIR/characters"
+    apply_migration tw_char "$CORE_SQL_DIR/character_updates/20260708055500_ai_playerbot_random_bots_index.sql"
 }
 
 # ------------------------------------------------- 45 playerbot migrations
@@ -337,6 +371,12 @@ if [ "$probe" != "1" ]; then
     log "Inspect the log above for the first error; nothing is swallowed any more."
     exit 1
 fi
+
+# Execute the pinned loader's projection even for a previously completed volume.
+# An old stage marker must never turn missing core schema into a successful init.
+mysql_root tw_world -e 'SELECT entry, effectBonusCoefficient1,
+    effectBonusCoefficient2, effectBonusCoefficient3, minTargetLevel, customFlags
+    FROM spell_extra LIMIT 0;' >/dev/null
 
 creatures=$(mysql_root -N -B -e "SELECT COUNT(*) FROM tw_world.creature;")
 log "verified: schema migrated, tw_world.creature has ${creatures} rows"

@@ -601,7 +601,8 @@ jobs:
       # db-init.sh reads these to find the SQL. In the container they are bind
       # mounts; here they are the tree itself.
       SQL_DIR: sql
-      SQL_BASE_DIR: sql/base
+      CORE_SQL_DIR: core/sql
+      SQL_BASE_DIR: core/sql/base
       PB_SQL_DIR: modules/mod-playerbots/sql
       MYSQL_PWD: ci-root
 
@@ -635,11 +636,11 @@ jobs:
           free -h 2>/dev/null | head -2 || true
           df -h . | tail -1
 
-      # No submodules: this job reads sql/, modules/mod-playerbots/sql and
-      # deploy/compose, none of which is under core/.
+      # Bootstrap consumes the schema and migration coverage of the pinned core.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          submodules: recursive
 
       - name: Install the MariaDB client
         run: |
@@ -683,6 +684,11 @@ jobs:
           $SUDO mkdir -p /state
           $SUDO chown "$(id -u):$(id -g)" /state
           time bash deploy/compose/db-init.sh
+
+      - name: Verify pinned core migration coverage and resolver negatives
+        run: |
+          bash test/smoke/bootstrap-stream-contract.sh
+          bash test/smoke/verify-bootstrap-coverage.sh
 
       # Invariant 3 from the operator's side: running the bootstrap twice must
       # be a no-op. db-init.sh guarantees that with stage markers, and
