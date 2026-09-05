@@ -1262,6 +1262,13 @@ jobs:
     needs: capacity
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: build + test
+    permissions:
+      contents: read
+      # Only this job, and only to DELETE its own superseded compiler caches -
+      # see the prune step at the end. The workflow-level default stays
+      # read-only; widening it there would hand the same write to lint, smoke
+      # and every other job that has no business with it.
+      actions: write
     # A cold cache exceeded 120 minutes in run 115 and was killed before it
     # could save the cache, making the next run repeat the same cold build.
     timeout-minutes: 150
@@ -1747,6 +1754,58 @@ jobs:
         with:
           path: .ccache
           key: ci-trixie-gcc-${{ github.run_id }}
+
+      # Delete every OLDER compiler cache, keeping only the one just saved.
+      #
+      # Without this the cache is written but never reclaimed. The key carries
+      # the run id so each push writes a NEW entry and the previous one is left
+      # behind; at ~2 GB apiece against a repository-wide 10 GB budget, five
+      # pushes are enough for the compiler caches alone to fill it. Measured
+      # before this step existed: three ccache entries holding 6.08 GB of a
+      # 7.31 GB total, with 28 buildkit blobs making up the rest.
+      #
+      # The symptom was not "the cache is full", it was "a warm build came out
+      # cold": GitHub evicts least-recently-used, so main's newest entry was
+      # being thrown out before the next run could restore it. Run 33988644479
+      # logged `Cache not found for input keys: ci-trixie-gcc-...` followed by
+      # `Hits: 0 / 1517 (0.00%)` and took 66 minutes, on a branch that was level
+      # with main and had the restore/save split. Runs that DID find the cache
+      # finished in 14.0 and 18.8 minutes.
+      #
+      # Deliberately after the save and gated on its success: deleting first
+      # would leave a window with no cache at all, and deleting after a failed
+      # save would throw away the only good copy for the sake of tidiness.
+      #
+      # `|| true` on the delete: a cache can vanish between the list and the
+      # delete (another run's prune, or GitHub's own eviction), and losing a
+      # race to delete something that is already gone is not a build failure.
+      - name: Prune superseded compiler caches
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          keep="ci-trixie-gcc-${{ github.run_id }}"
+          echo "keeping $keep"
+
+          # --paginate: the repository has dozens of small buildkit blobs and
+          # the compiler caches are not guaranteed to be on the first page.
+          stale=$(gh api --paginate "repos/${{ github.repository }}/actions/caches" \
+                    --jq ".actions_caches[] | select(.key | startswith(\"ci-trixie-gcc-\")) | .key" \
+                  | grep -vx "$keep" || true)
+
+          if [ -z "$stale" ]; then
+            echo "no superseded compiler caches"
+            exit 0
+          fi
+
+          echo "$stale" | while IFS= read -r key; do
+            [ -z "$key" ] && continue
+            echo "deleting $key"
+            gh cache delete "$key" --repo "${{ github.repository }}" || true
+          done
+
+          gh api "repos/${{ github.repository }}/actions/cache/usage" \
+            --jq '"cache usage now: \(.active_caches_size_in_bytes/1073741824*100|floor/100)GB across \(.active_caches_count) entries"'
 
       - name: Remove the disposable adapter database
         if: always()
