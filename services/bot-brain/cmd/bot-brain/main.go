@@ -99,6 +99,7 @@ func run() error {
 	srv := httpapi.New(httpapi.Options{
 		Planner:         active,
 		MaxBatch:        cfg.MaxBatch,
+		MaxBodyBytes:    cfg.MaxBodyBytes,
 		DefaultDeadline: cfg.DefaultDeadline,
 		IntentTTL:       cfg.IntentTTL,
 		Metrics:         reg,

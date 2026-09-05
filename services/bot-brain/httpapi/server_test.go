@@ -490,3 +490,71 @@ func TestWrongMethodAndPath(t *testing.T) {
 		t.Errorf("unknown path = %d, want 404", rec.Code)
 	}
 }
+
+// The body cap must bind BEFORE the JSON is decoded.
+//
+// MaxBatch is not a substitute: the decoder enforces it, and the decoder does
+// not run until the whole body is in memory. Since /v1/plan is unauthenticated
+// by design, without this cap a single POST of arbitrary length is read in full
+// and the service is one curl away from being OOM-killed.
+func TestOversizedBodyIsRejected(t *testing.T) {
+	reg := metrics.New()
+	srv := httpapi.New(httpapi.Options{
+		Planner:         rule.New(rule.Thresholds{}),
+		MaxBatch:        16,
+		MaxBodyBytes:    512,
+		DefaultDeadline: time.Second,
+		IntentTTL:       30 * time.Second,
+		Metrics:         reg,
+	})
+
+	// Deliberately ONE snapshot, so MaxBatch cannot be what rejects it: the
+	// only thing over the limit here is the number of bytes. Padding rides in
+	// an unknown field, which the decoder tolerates by design.
+	body := `{"contract_version":"` + contract.Version + `","request_id":"r1","snapshots":[{"bot":{"realm":1,"guid":1}}],"pad":"` +
+		strings.Repeat("x", 4096) + `"}`
+
+	rec := post(t, srv, body)
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d, want 413; a %d-byte body got past a 512-byte cap", rec.Code, len(body))
+	}
+	// The code matters as much as the status: the C++ client keys its
+	// batch-halving on it, and a "malformed" would send it looking for an
+	// encoder bug instead.
+	var resp struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("response is not JSON: %v", err)
+	}
+	if resp.Code != contract.CodeBatchTooLarge {
+		t.Errorf("code = %q, want %q", resp.Code, contract.CodeBatchTooLarge)
+	}
+}
+
+// A body under the cap is unaffected: the limit must not become a second,
+// invisible batch limit.
+func TestBodyUnderCapIsAccepted(t *testing.T) {
+	reg := metrics.New()
+	srv := httpapi.New(httpapi.Options{
+		Planner:         rule.New(rule.Thresholds{}),
+		MaxBatch:        16,
+		MaxBodyBytes:    512,
+		DefaultDeadline: time.Second,
+		IntentTTL:       30 * time.Second,
+		Metrics:         reg,
+	})
+	rec := post(t, srv, `{"contract_version":"`+contract.Version+`","request_id":"r1","snapshots":[{"bot":{"realm":1,"guid":1}}]}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d (%s), want 200", rec.Code, rec.Body.String())
+	}
+}
+
+// Zero means "use the contract default", not "read nothing".
+func TestZeroMaxBodyBytesMeansTheDefault(t *testing.T) {
+	srv, _ := newServer(t, nil) // newServer leaves MaxBodyBytes unset
+	rec := post(t, srv, `{"contract_version":"`+contract.Version+`","request_id":"r1","snapshots":[{"bot":{"realm":1,"guid":1}}]}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d (%s); an unset MaxBodyBytes must not reject a normal request", rec.Code, rec.Body.String())
+	}
+}
