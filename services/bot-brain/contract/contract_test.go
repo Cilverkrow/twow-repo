@@ -52,11 +52,13 @@ func TestNegotiate(t *testing.T) {
 		reasoning string
 	}{
 		{
-			name: "exact match", peer: "1.0", want: "1.0",
+			name: "exact match", peer: Version, want: Version,
 			reasoning: "the happy path",
 		},
 		{
-			name: "peer is newer minor", peer: "1.9", want: "1.0",
+			// 1.99 rather than a literal one above ours, so this stays "newer" as our
+			// own minor climbs. want is Version for the same reason.
+			name: "peer is newer minor", peer: "1.99", want: Version,
 			reasoning: "C++ deployed ahead of the service: serve it, stamped with what we actually speak",
 		},
 		{
@@ -118,8 +120,11 @@ func TestDecodeToleratesUnknownFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decode failed on a newer peer's request: %v", err)
 	}
-	if res.Effective.String() != "1.0" {
-		t.Fatalf("effective version = %s, want 1.0", res.Effective)
+	// The body declares 1.4, which is ahead of us, so the stamp is OUR version -
+	// asserted against the constant rather than a literal, because a minor bump
+	// is a legitimate change that should not break a test about unknown fields.
+	if res.Effective.String() != Version {
+		t.Fatalf("effective version = %s, want %s", res.Effective, Version)
 	}
 	if res.UnknownFields != 3 {
 		t.Fatalf("UnknownFields = %d, want 3 (telemetry_budget, mood, aura_ids); saw %v",

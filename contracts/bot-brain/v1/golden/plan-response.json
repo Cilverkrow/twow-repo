@@ -1,9 +1,13 @@
 {
-  "contract_version": "1.0",
+  "contract_version": "1.1",
   "request_id": "req-golden-0001",
   "intents": [
     {
-      "bot": { "realm": 1, "guid": 4242 },
+      "bot": {
+        "realm": 1,
+        "guid": 4242,
+        "uuid": "8f14e45f-ceea-4d5b-a5a1-2c7d5f0a1b3c"
+      },
       "intent_id": "int-golden-0001",
       "kind": "travel_to",
       "travel": {
@@ -17,7 +21,10 @@
       "rationale": "nearest incomplete quest objective"
     },
     {
-      "bot": { "realm": 1, "guid": 4243 },
+      "bot": {
+        "realm": 1,
+        "guid": 4243
+      },
       "intent_id": "int-golden-0002",
       "kind": "idle",
       "source": "rule",
@@ -26,7 +33,10 @@
   ],
   "errors": [
     {
-      "bot": { "realm": 1, "guid": 4244 },
+      "bot": {
+        "realm": 1,
+        "guid": 4244
+      },
       "code": "bot_unplannable",
       "message": "snapshot has no pois on the bot's map"
     }

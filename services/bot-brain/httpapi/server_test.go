@@ -219,10 +219,18 @@ func TestVersionSkewHandling(t *testing.T) {
 		wantStamp  string
 		wantCode   string
 	}{
-		{name: "exact", version: "1.0", wantStatus: http.StatusOK, wantStamp: "1.0"},
+		// Both stamps are contract.Version rather than a literal: this test asserts
+		// the negotiation rule, not a particular version number. Hardcoding "1.0"
+		// meant a legitimate minor bump broke a test that had nothing to do with
+		// the change - which is how people learn to edit tests instead of reading
+		// them.
+		{name: "exact", version: contract.Version, wantStatus: http.StatusOK, wantStamp: contract.Version},
 		{
-			name: "newer minor peer is served", version: "1.9",
-			wantStatus: http.StatusOK, wantStamp: "1.0",
+			// A peer ahead of us on the minor is served, and the response is stamped
+			// with OUR version - we cannot promise a minor we do not implement.
+			// 1.99 rather than 1.9 so this stays 'newer' as our own minor climbs.
+			name: "newer minor peer is served", version: "1.99",
+			wantStatus: http.StatusOK, wantStamp: contract.Version,
 		},
 		{
 			name: "different major is refused", version: "2.0",

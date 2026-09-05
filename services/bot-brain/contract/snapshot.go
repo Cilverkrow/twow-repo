@@ -17,6 +17,19 @@ type BotID struct {
 	Realm uint32 `json:"realm"`
 	// GUID is the character low GUID. Required and non-zero.
 	GUID uint64 `json:"guid"`
+
+	// UUID is the brain's stable key for this bot (ADR-0039), minted once by the
+	// worldserver into cv_brain.bot_identity. It is NOT derived from Realm and
+	// GUID: a realm merge shifts every guid, so a derived key would rename the
+	// bot and orphan everything remembered about it, with no repair.
+	//
+	// Optional. Empty means the row has not been minted yet, which is a normal
+	// state for a bot seen for the first time - plan for it without memory
+	// rather than refusing it. Never treat empty as an error.
+	//
+	// This is the memory key, not the address. Intents are still addressed by
+	// Realm and GUID, because those are what the applier matches on.
+	UUID string `json:"uuid,omitempty"`
 }
 
 // String renders a BotID as "realm:guid" for logs and metric labels.

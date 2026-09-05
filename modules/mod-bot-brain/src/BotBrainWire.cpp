@@ -109,6 +109,10 @@ namespace botbrain
             w.Uint(id.realm);
             w.Key("guid");
             w.Uint64(id.guid);
+            // Omitted rather than sent empty: absent means "not minted yet",
+            // and an empty string would be a third state the service has to
+            // guess about.
+            WriteStrIfSet(w, "uuid", id.uuid);
             w.EndObject();
         }
 
@@ -399,6 +403,7 @@ namespace botbrain
                 {
                     e.bot.realm = static_cast<uint32_t>(GetUint64(bot->value, "realm", 0));
                     e.bot.guid = GetUint64(bot->value, "guid", 0);
+                    e.bot.uuid = GetString(bot->value, "uuid");
                 }
                 e.code = GetString(*it, "code");
                 e.message = GetString(*it, "message");
@@ -421,6 +426,7 @@ namespace botbrain
             {
                 intent.bot.realm = static_cast<uint32_t>(GetUint64(bot->value, "realm", 0));
                 intent.bot.guid = GetUint64(bot->value, "guid", 0);
+                    intent.bot.uuid = GetString(bot->value, "uuid");
             }
             intent.intentId = GetString(*it, "intent_id");
             intent.kind = GetString(*it, "kind");

@@ -1,11 +1,15 @@
 {
-  "contract_version": "1.0",
+  "contract_version": "1.1",
   "request_id": "req-golden-0001",
   "sent_at_ms": 1756700000000,
   "deadline_ms": 750,
   "snapshots": [
     {
-      "bot": { "realm": 1, "guid": 4242 },
+      "bot": {
+        "realm": 1,
+        "guid": 4242,
+        "uuid": "8f14e45f-ceea-4d5b-a5a1-2c7d5f0a1b3c"
+      },
       "char": {
         "name": "Goldenbot",
         "level": 23,

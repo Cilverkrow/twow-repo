@@ -71,7 +71,7 @@ import (
 // design assumption is that skew is normal, not exceptional.
 const (
 	VersionMajor = 1
-	VersionMinor = 0
+	VersionMinor = 1
 )
 
 // Version is the canonical "MAJOR.MINOR" string carried on every request and
