@@ -1296,8 +1296,29 @@ jobs:
       # is a 10 GB LRU for the entire repository, so this will evict other
       # scopes, and that is the intended trade - nothing else in this repository
       # is worth 71 minutes.
+      # RESTORE ONLY. The save is a separate step at the end of this job and it
+      # runs only on the default branch. That asymmetry is the whole fix, and it
+      # is worth explaining because the symptom pointed somewhere else entirely.
+      #
+      # GitHub scopes every cache to the ref that wrote it. A cache written on
+      # refs/pull/183/merge cannot be read from refs/pull/184/merge - PR caches
+      # are private to their PR. The ONE exception is the default branch: a
+      # cache saved on main is readable by every branch and every PR.
+      #
+      # With actions/cache (restore+save) on every run, each PR wrote its own
+      # 2 GB ccache that no other branch could ever read, and read nothing on
+      # its first run. Measured: `Cache not found for input keys:
+      # ci-trixie-gcc-33980977774, ci-trixie-gcc-` followed by
+      # `Hits: 0 / 1517 (0.00%)` and a 67-minute build - while four 2 GB caches
+      # sat in the repository, every one of them scoped to a pull request.
+      #
+      # Worse than useless: those private caches crowd the repository's shared
+      # 10 GB LRU budget, evicting the only cache that could have helped anyone.
+      # Three runs of one PR were enough to spend 6 GB of it.
+      #
+      # So: every run restores from main's cache, and only main writes one.
       - name: Restore the compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .ccache
           key: ci-trixie-gcc-${{ github.run_id }}
@@ -1609,6 +1630,25 @@ jobs:
             && ccache --show-stats"
           du -sh stage
           ls -la stage/bin
+
+      # Only the default branch writes a cache, for the reason spelled out at the
+      # restore step: a PR's cache is readable by nothing except that PR, so
+      # writing one spends the shared budget to benefit a branch that is about to
+      # be deleted.
+      #
+      # Deliberately NOT `if: always()`. A cache saved from a failed build can be
+      # poisoned - a half-finished object tree that every later run then inherits
+      # - and the whole point of this cache is that it is trusted without being
+      # checked.
+      #
+      # Note the first main build after this lands is still cold, because there
+      # is no main-scoped cache to inherit yet. It is the run that creates one.
+      - name: Save the compiler cache
+        if: success() && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ci-trixie-gcc-${{ github.run_id }}
 
       - name: Remove the disposable adapter database
         if: always()
