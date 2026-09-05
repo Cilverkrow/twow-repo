@@ -8,8 +8,9 @@
 # See ADR-0012.
 #
 # Two things must both be true for a bot to be planned for:
-#   1. BotBrain.Enable = 1 below, and the startup handshake with the service
-#      succeeded (matching contract major);
+#   1. BotBrain.Enable = 1 below, and a handshake with the service succeeded
+#      (matching contract major). This is attempted at startup and retried
+#      every BotBrain.BackoffMs, so the service may start in either order;
 #   2. the bot carries the "bot brain" non-combat strategy -- append
 #      ",+bot brain" to AiPlayerbot.RandomBotNonCombatStrategies.
 #
@@ -39,6 +40,11 @@ BotBrain.TimeoutMs = 750
 BotBrain.IntervalMs = 15000
 
 # Per-bot pause after a failed or unusable round trip.
+#
+# Also the retry interval for the startup handshake. If the service is not
+# up when the worldserver starts, the module retries in the background at
+# this cadence and logs once when it recovers, so start order does not
+# matter and restarting the service does not require restarting the realm.
 BotBrain.BackoffMs = 60000
 
 # Ceiling on concurrent worker threads across all bots. A service that stops
