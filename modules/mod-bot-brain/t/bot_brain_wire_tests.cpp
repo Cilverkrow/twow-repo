@@ -22,6 +22,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <sstream>
 #include <string>
 
 namespace
@@ -333,6 +335,165 @@ namespace
         CHECK(!botbrain::IsPoiDirectedKind("rest"));
         CHECK(!botbrain::IsPoiDirectedKind("abandon_quest"));
     }
+
+    // ---------------------------------------------------------------- goldens
+    //
+    // The fixtures in contracts/bot-brain/v1/golden/ are the contract as an
+    // artifact rather than as two hand-written copies. Each is checked by the
+    // side that must READ it: the Go service reads plan-request.json, and this
+    // file reads the two the service PRODUCES.
+    //
+    // That asymmetry is the point. A test where the encoder checks its own
+    // output proves the encoder is self-consistent, which was never in doubt.
+    // What has actually gone wrong is a field NAME or NESTING that one side
+    // renamed and the other did not - see BotBrainWire.cpp's "'pois'. Not
+    // 'poi'. This name has been got wrong before."
+    //
+    // BB_GOLDEN_DIR is a compile definition rather than a runtime search,
+    // because a test that cannot find its fixtures must FAIL, not silently pass
+    // having checked nothing.
+    bool ReadFile(std::string const& path, std::string& out)
+    {
+        std::ifstream in(path.c_str(), std::ios::binary);
+        if (!in)
+            return false;
+        std::ostringstream buffer;
+        buffer << in.rdbuf();
+        out = buffer.str();
+        return true;
+    }
+
+    std::string GoldenPath(char const* name)
+    {
+#ifdef BB_GOLDEN_DIR
+        return std::string(BB_GOLDEN_DIR) + "/" + name;
+#else
+        return std::string("contracts/bot-brain/v1/golden/") + name;
+#endif
+    }
+
+    // The response the service sends back. Decoded, not compared as text: what
+    // matters is that OUR decoder pulls the right value out of THEIR encoder's
+    // output, which is exactly the direction a shared struct definition cannot
+    // check for us.
+    void TestGoldenPlanResponse()
+    {
+        std::string body;
+        std::string const path = GoldenPath("plan-response.json");
+        if (!ReadFile(path, body))
+        {
+            std::printf("FAIL: cannot read %s\n", path.c_str());
+            ++g_failures;
+            return;
+        }
+
+        botbrain::PlanResponse response;
+        std::string error;
+        CHECK(botbrain::DecodePlanResponse(body, response, error));
+        if (!error.empty())
+            std::printf("  decode error: %s\n", error.c_str());
+
+        CHECK(response.requestId == "req-golden-0001");
+        CHECK(response.intents.size() == 2);
+        CHECK(response.errors.size() == 1);
+
+        if (response.intents.size() == 2)
+        {
+            botbrain::Intent const& first = response.intents[0];
+            CHECK(first.bot.realm == 1);
+            CHECK(first.bot.guid == 4242);
+            // The memory key from ADR-0039. Empty here would mean the decoder
+            // silently ignores a field the service is sending.
+            CHECK(!first.bot.uuid.empty());
+            CHECK(first.intentId == "int-golden-0001");
+            CHECK(first.kind == "travel_to");
+            CHECK(first.hasTravel);
+            CHECK(first.travelPoiId == "p0");
+            CHECK(first.hasStopWithinYards);
+            CHECK(first.source == "rule");
+
+            // Absent-vs-zero, end to end: the second intent carries no travel
+            // block at all, and that must decode as ABSENT rather than as a
+            // travel to POI "".
+            botbrain::Intent const& second = response.intents[1];
+            CHECK(second.bot.guid == 4243);
+            CHECK(second.kind == "idle");
+            CHECK(!second.hasTravel);
+        }
+
+        if (response.errors.size() == 1)
+        {
+            CHECK(response.errors[0].bot.guid == 4244);
+            CHECK(response.errors[0].code == "bot_unplannable");
+        }
+    }
+
+    // The handshake payload. If this decodes wrong the module fails closed on
+    // every worldserver start, so it is worth a fixture of its own.
+    void TestGoldenContractInfo()
+    {
+        std::string body;
+        std::string const path = GoldenPath("contract-info.json");
+        if (!ReadFile(path, body))
+        {
+            std::printf("FAIL: cannot read %s\n", path.c_str());
+            ++g_failures;
+            return;
+        }
+
+        botbrain::ContractInfo info;
+        std::string error;
+        CHECK(botbrain::DecodeContractInfo(body, info, error));
+        if (!error.empty())
+            std::printf("  decode error: %s\n", error.c_str());
+
+        CHECK(!info.version.empty());
+        CHECK(info.maxBatch == 2048);
+        CHECK(!info.supportedMajors.empty());
+        CHECK(botbrain::ContractMajorSupported(info, botbrain::kContractMajor));
+
+        // The vocabulary the service says it understands must contain the one
+        // kind this module can actually apply.
+        bool hasTravel = false;
+        for (std::size_t i = 0; i < info.knownIntentKinds.size(); ++i)
+            if (info.knownIntentKinds[i] == "travel_to")
+                hasTravel = true;
+        CHECK(hasTravel);
+    }
+
+    // The version the fixtures declare must be the version this build speaks.
+    // ops/ci/check-contract-version.sh enforces the same thing from outside;
+    // this catches it in the suite, where the failure names the field.
+    void TestGoldenVersionMatchesThisBuild()
+    {
+        std::string body;
+        if (!ReadFile(GoldenPath("contract-info.json"), body))
+        {
+            std::printf("FAIL: cannot read contract-info.json\n");
+            ++g_failures;
+            return;
+        }
+
+        botbrain::ContractInfo info;
+        std::string error;
+        if (!botbrain::DecodeContractInfo(body, info, error))
+        {
+            std::printf("FAIL: contract-info.json did not decode: %s\n", error.c_str());
+            ++g_failures;
+            return;
+        }
+
+        char expected[32];
+        std::snprintf(expected, sizeof(expected), "%d.%d",
+            botbrain::kContractMajor, botbrain::kContractMinor);
+        if (info.version != expected)
+        {
+            std::printf("FAIL: golden declares %s, this build speaks %s\n",
+                info.version.c_str(), expected);
+            ++g_failures;
+        }
+        ++g_checks;
+    }
 }
 
 int main(int argc, char** argv)
@@ -354,6 +515,14 @@ int main(int argc, char** argv)
     TestMalformedBodiesFailCleanly();
     TestContractHandshake();
     TestIntentKindClassification();
+
+    // The cross-language checks. Everything above proves this file agrees
+    // with itself; these three prove it agrees with what the Go service
+    // actually emits, which is the only failure mode a shared header
+    // cannot rule out.
+    TestGoldenPlanResponse();
+    TestGoldenContractInfo();
+    TestGoldenVersionMatchesThisBuild();
 
     std::printf("bot_brain_wire_tests: %d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
