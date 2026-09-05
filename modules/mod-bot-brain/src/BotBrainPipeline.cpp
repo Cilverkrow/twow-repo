@@ -13,6 +13,7 @@
 #include "playerbot/strategy/values/TravelValues.h"
 
 #include "Bag.h"
+#include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "ObjectMgr.h"
 #include "Player.h"
@@ -22,9 +23,11 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cstring>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <random>
 #include <sstream>
 #include <thread>
 #include <unordered_map>
@@ -57,6 +60,18 @@ namespace botbrain
         {
             std::atomic<bool> done{false};
             PartitionedTravelList list;
+        };
+
+        // Same lock-free handoff as DestinationExchange, for a bot's stable
+        // identity (ADR-0039) instead of its travel destinations: the worker
+        // writes `uuid` (empty means the attempt could not mint or find one --
+        // a DB hiccup, or it lost nothing and simply has nothing to report),
+        // then flips `done` with release ordering; the map thread reads `done`
+        // with acquire and only then reads `uuid`.
+        struct IdentityExchange
+        {
+            std::atomic<bool> done{false};
+            std::string uuid;
         };
 
         // Batching is not an optimisation, it is the design
@@ -130,6 +145,16 @@ namespace botbrain
 
             bool hasOutcome = false;
             IntentOutcome outcome;
+
+            // ADR-0039 identity cache. Empty means "not yet minted" -- still
+            // in flight, backing off after a failed attempt, or genuinely
+            // never seen before. A bot with an empty uuid is planned for
+            // without memory, never blocked or refused (ADR-0039 says so
+            // explicitly): this is exactly the field BotId::uuid on the wire,
+            // cached here so no bot pays a database round trip every tick.
+            std::string uuid;
+            std::shared_ptr<IdentityExchange> identity;   // non-null while a mint/lookup is in flight
+            uint32 nextIdentityAttemptMs = 0;             // backoff after a failed attempt
         };
 
         std::mutex g_statesMutex;
@@ -453,6 +478,111 @@ namespace botbrain
                     // bot gets an empty list and keeps travelling stock.
                 }
                 exchange->list = std::move(list);
+                exchange->done.store(true, std::memory_order_release);
+                g_inFlight.fetch_sub(1);
+            }).detach();
+        }
+
+        // A version-4 (random) UUID, canonical lowercase 8-4-4-4-12 hex form
+        // (ADR-0039). thread_local rather than a shared engine: this runs on
+        // detached identity workers, potentially several at once, and a PRNG
+        // is not safe to share across threads without its own locking.
+        std::string GenerateUuidV4()
+        {
+            thread_local std::mt19937_64 engine{std::random_device{}()};
+            std::uniform_int_distribution<uint64_t> dist;
+
+            uint64_t const hi = dist(engine);
+            uint64_t const lo = dist(engine);
+
+            uint8_t bytes[16];
+            std::memcpy(bytes, &hi, 8);
+            std::memcpy(bytes + 8, &lo, 8);
+            bytes[6] = uint8_t((bytes[6] & 0x0F) | 0x40);   // RFC 4122 version 4
+            bytes[8] = uint8_t((bytes[8] & 0x3F) | 0x80);   // RFC 4122 variant 10xx
+
+            char buffer[37];
+            std::snprintf(buffer, sizeof(buffer),
+                "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+                bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+            return std::string(buffer);
+        }
+
+        // WORKER THREAD ONLY -- two blocking round trips against cv_brain,
+        // which is exactly why this must never be called from Tick() itself
+        // (the "no blocking database call on the world update thread" rule
+        // every other worker in this file already follows). Never logs, same
+        // rule as SpawnBatchWorker's and SpawnDestinationWorker's bodies: a
+        // failure here is reported by returning an empty string, and the
+        // caller decides whether that is worth a log line.
+        //
+        // Reached through CharacterDatabase, the same global mod-playerbots
+        // already uses for its own project schema (cv_bots, via
+        // PlayerbotDatabaseContract.h) with a fully-qualified table name --
+        // there is no separate cv_brain connection, because none is needed:
+        // db-init.sh grants the worldserver's own DB_USER rights on cv_brain
+        // precisely so this module can reach it over the connection it
+        // already has.
+        std::string MintOrLookupBotUuid(uint32 realm, uint64 guid)
+        {
+            {
+                std::unique_ptr<QueryResult> existing(CharacterDatabase.PQuery(
+                    "SELECT `bot_uuid` FROM `cv_brain`.`bot_identity` WHERE `realm` = %u AND `guid` = " UI64FMTD,
+                    realm, guid));
+                if (existing)
+                {
+                    std::string const uuid = existing->Fetch()[0].GetCppString();
+                    if (!uuid.empty())
+                        return uuid;
+                }
+            }
+
+            // Not seen before: mint one and race whoever else may be minting
+            // this same (realm, guid) on another map thread right now.
+            // UNIQUE(realm, guid) (see the migration) is what makes the race
+            // safe -- INSERT IGNORE silently loses instead of erroring when it
+            // does, and the re-read below finds the ONE row that exists
+            // either way: ours if this thread won, the other worker's if it
+            // did not. Never two rows, never a second identity for the same
+            // bot.
+            std::string const minted = GenerateUuidV4();
+            CharacterDatabase.DirectPExecute(
+                "INSERT IGNORE INTO `cv_brain`.`bot_identity` (`bot_uuid`,`realm`,`guid`,`first_seen`) "
+                "VALUES ('%s', %u, " UI64FMTD ", " SI64FMTD ")",
+                minted.c_str(), realm, guid, static_cast<int64_t>(NowUnixMs()));
+
+            std::unique_ptr<QueryResult> winner(CharacterDatabase.PQuery(
+                "SELECT `bot_uuid` FROM `cv_brain`.`bot_identity` WHERE `realm` = %u AND `guid` = " UI64FMTD,
+                realm, guid));
+            if (!winner)
+                return std::string();   // DB hiccup on the re-read; retried on the next attempt
+
+            return winner->Fetch()[0].GetCppString();
+        }
+
+        // Mints or looks up a bot's stable identity (ADR-0039), entirely off
+        // the world thread. Captures only two integers -- realm and guid --
+        // never the bot itself: the same worker-boundary shape as
+        // SpawnBatchWorker and SpawnDestinationWorker (ADR-0012, and
+        // BotBrainClient.h:41-44 enforces it by type signature one layer
+        // down).
+        void SpawnIdentityWorker(std::shared_ptr<IdentityExchange> const& exchange, uint32 realm, uint64 guid)
+        {
+            g_inFlight.fetch_add(1);
+            std::thread([exchange, realm, guid]()
+            {
+                try
+                {
+                    exchange->uuid = MintOrLookupBotUuid(realm, guid);
+                }
+                catch (...)
+                {
+                    // An escaping exception on a detached thread is
+                    // std::terminate for the whole worldserver. Swallow it;
+                    // the bot simply keeps planning without memory this round
+                    // -- ADR-0039 names that a supported state, not an error.
+                }
                 exchange->done.store(true, std::memory_order_release);
                 g_inFlight.fetch_sub(1);
             }).detach();
@@ -950,6 +1080,7 @@ namespace botbrain
         bool startRequest = false;
         bool hasOutcome = false;
         IntentOutcome outcome;
+        std::string uuid;
 
         {
             std::lock_guard<std::mutex> lock(g_statesMutex);
@@ -972,6 +1103,30 @@ namespace botbrain
                     state.destinations.reset();
                     hasOutcome = state.hasOutcome;
                     outcome = state.outcome;
+
+                    // ADR-0039: this is "the pipeline is about to build a
+                    // snapshot" -- absorb a finished mint/lookup first, then
+                    // kick a new one off if this bot has never been minted
+                    // and no attempt is already in flight. Fire-and-forget:
+                    // THIS snapshot goes out with whatever is cached right
+                    // now (possibly still empty -- "not yet minted", not "no
+                    // bot"). It never waits on the database.
+                    if (state.identity && state.identity->done.load(std::memory_order_acquire))
+                    {
+                        state.uuid = state.identity->uuid;
+                        state.identity.reset();
+                    }
+                    if (state.uuid.empty() && !state.identity && Elapsed(now, state.nextIdentityAttemptMs))
+                    {
+                        state.identity = std::make_shared<IdentityExchange>();
+                        SpawnIdentityWorker(state.identity, realmID, bot->GetGUIDLow());
+                        // Reused as the retry backoff: cheap, already tuned
+                        // for "the peer/DB is having trouble, do not hammer
+                        // it every tick", and there is no reason this needs
+                        // its own config knob yet.
+                        state.nextIdentityAttemptMs = now + cfg.backoffMs;
+                    }
+                    uuid = state.uuid;
                     break;
 
                 case Phase::AwaitingPlan:
@@ -1014,6 +1169,11 @@ namespace botbrain
             Snapshot snapshot;
             snapshot.bot.realm = realmID;
             snapshot.bot.guid = bot->GetGUIDLow();
+            // Cached above, off the world thread's critical path (ADR-0039).
+            // Empty is a valid value here, meaning "not yet minted" -- the
+            // Go side plans for this bot without memory rather than
+            // rejecting the snapshot.
+            snapshot.bot.uuid = uuid;
             FillCharacter(bot, snapshot.chr);
             FillPosition(bot, snapshot.pos);
             FillVitals(bot, snapshot.vitals);
