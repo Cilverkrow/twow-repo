@@ -566,6 +566,88 @@ jobs:
   #
   # It waits only for the capacity preflight. It does not wait for compiled
   # artefacts, so bootstrap and build can still proceed in parallel afterwards.
+  # services/bot-brain has 58 tests across 7 packages and, until this job, no CI
+  # of any kind: no `go test`, no `go vet`, no build, and its image is never
+  # published. Those tests were decoration - a regression in the planner, the
+  # wire contract or version negotiation landed green.
+  #
+  # No submodules and no database: this module is stdlib-only by policy (go.mod
+  # has zero requires) and nothing here reads core/ or talks to MariaDB. That is
+  # what makes the job cost about a minute.
+  go:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    name: go (bot-brain)
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: services/bot-brain
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # go-version-file rather than a pinned string, so the toolchain follows
+      # go.mod and cannot silently drift from what developers build with. No
+      # cache-dependency-path: there is no go.sum, because there are no
+      # dependencies, and naming a file that does not exist fails the action.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/bot-brain/go.mod
+
+      # Formatting is a diff, not an opinion: gofmt -l prints the files it would
+      # change and says nothing when it would change none.
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::these files are not gofmt-clean:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      # -race because the service is concurrent by construction (the Fallback
+      # planner, the breaker ticker, the HTTP handlers) and a data race there is
+      # exactly the class of bug unit tests otherwise hide.
+      # -count=1 defeats the test cache, so a green tick means the tests ran in
+      # THIS commit rather than in some earlier one.
+      - name: go test
+        # CGO_ENABLED=1 explicitly: -race needs cgo, and relying on the runner's
+        # default is how this turns red for an environment reason rather than a
+        # code one. It is scoped to this step - the shipped binary is built with
+        # CGO off (Dockerfile:29) so it can run in a scratch image, and the build
+        # step below keeps that.
+        env:
+          CGO_ENABLED: '1'
+        run: go test -race -count=1 ./...
+
+      # The same gate the build+test job applies to CTest, for the same stated
+      # reason: every step above can be green while nothing was verified. `go
+      # test` reports ok on a package with no test files, so counting packages
+      # is not enough - count the tests themselves.
+      - name: Fail if nothing was tested
+        run: |
+          ran=$(go test -count=1 -v ./... 2>/dev/null | grep -c '^=== RUN' || true)
+          echo "tests executed: $ran"
+          if [ "${ran:-0}" -lt 1 ]; then
+            echo "::error::go test executed no tests. A green run that tested nothing is worse than a red one."
+            exit 1
+          fi
+
+      # Proves the binary this service ships can actually be produced, which no
+      # job did before: publish.yml builds mangosd, realmd and db-init only.
+      - name: build
+        # CGO off and GOOS=linux, matching Dockerfile:29, so this proves the
+        # artifact that actually ships can be produced - not merely that the code
+        # compiles for the runner.
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+        run: go build -trimpath ./...
   integration:
     needs: capacity
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
