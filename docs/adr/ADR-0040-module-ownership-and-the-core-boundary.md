@@ -3,7 +3,9 @@
 - Status: Accepted
 - Date: 2026-09-05
 - Primary: WS-00 / WS-10
-- Amends: the `TW_MODULES_DIR` design note in `core/CMakeLists.txt:53-58`
+- Supersedes: an earlier draft of this same ADR, whose central measurement was wrong. The error
+  and its cause are recorded below rather than deleted, because the mistake is instructive and
+  someone will otherwise make it again.
 
 ## Context
 
@@ -12,122 +14,120 @@
 that is proportional to our delta. `twow-repo` consumes core as the `core/` submodule and has no
 shared ancestry with it (its history was rewritten with git-filter-repo).
 
-The stated goal is that core stays close to upstream so upstream can be merged regularly. Measured
-against the fork point, at the pinned submodule commit `e3ab7b0` that the platform actually builds,
-it is not close:
+Both repositories contain `mod-playerbots` and `mod-dungeon-clear`. The copies had drifted in both
+directions, neither copy in core was ever compiled by core's CI (`MODULES` defaults to `disabled`),
+and work was happening in both places. The question is which repository owns them.
 
-| area | files changed |
+### The measurement that answers it, and the one that misled me
+
+Measured against the **fork point**, core's delta looked like this: 1888 files, of which 1617 were
+those two modules. At the fork point there are **zero** `mod-playerbots` and **zero**
+`mod-dungeon-clear` files. The obvious reading — the one this ADR originally took — is that 86% of
+what separates core from upstream is our own product, and that moving it out would collapse the
+delta to something rebaseable.
+
+That reading is **wrong**, and the reason is that a fork point is not the upstream. Upstream
+*adopted both modules after we forked*. They arrive in core through merges, not through our
+commits. Measured against the upstream tip instead, after the catch-up to `6be01e53`:
+
+| area | files differing from upstream |
 |---|---|
-| `modules/` (mod-playerbots 1024, mod-dungeon-clear 591) | 1617 |
-| `src/` (the engine) | 182 |
-| `sql/` | 54 |
-| everything else (dep, tools, cmake, CI, docs, dotfiles) | 35 |
-| **total** | **1888** |
+| `modules/mod-playerbots` | **2** of 1024 |
+| `modules/mod-dungeon-clear` | **1** of 647 |
+| `src/` (the engine) | **44** |
 
-**86% of everything separating core from upstream is two modules, and neither module comes from
-upstream.** At the fork point there are **zero** `ai_playerbot`/`mod-playerbots` files; upstream
-ships only a small four-file `src/game/PlayerBots/`. The 280 "dungeon" paths upstream are
-`src/scripts/dungeons/`, ordinary scripts, not `mod-dungeon-clear`. Both modules entered core
-through our own commits — *"Move playerbots into the module system"* and *"Port
-jrad7/mod-dungeon-clear onto the module system"*.
+Core's real delta from upstream is about **47 files**, not 1888. Those modules are essentially
+upstream's, verbatim. The 1617 files were never our product; they were upstream's work that we had
+merged, and diffing against a point in history before upstream wrote it made them look like ours.
 
-So core is not far from upstream because of engine work. The engine delta is 182 files. Core
-is far from upstream because we put our product inside it.
-
-Two consequences were already being paid, and are what prompted this ADR:
-
-1. **Both modules exist twice**, once in core and once in the platform, and they have drifted in
-   both directions. `mod-playerbots` is ~975 of 992 files byte-identical with the platform strictly
-   ahead; `mod-dungeon-clear` has genuinely diverged both ways — core is ahead on eight route files
-   and a Scarlet Monastery roster rework, the platform is ahead on error handling and test
-   scaffolding.
-2. **Neither copy in core is ever compiled.** Core's CI builds with `MODULES=disabled`, so those
-   1617 files are duplication carrying no verification at all.
-
-The duplication is not an accident. `core/CMakeLists.txt:53-58` makes module discovery exclusive —
-*"There is deliberately no merging of the two - one directory wins, whole."* A platform that wants
-its own modules must therefore vendor a copy of every module it also wants, including ours. The
-build system forced the fork.
+Upstream is also the *active* developer of one of them. Of the 115 files changed in the last 75
+upstream commits, **82 are `mod-dungeon-clear`** — Maraudon routes, Zul'Farrak recordings, roster
+directives, follower geometry. That is not a dormant vendored dependency; it is the part of
+upstream moving fastest.
 
 ## Decision
 
-**Core is the upstream engine plus the smallest delta that lets it serve us. Our modules are not
-part of that delta.**
+**Upstream-tracked code lives in core. Only code we actually wrote lives in the platform.**
 
 | | core | platform |
 |---|---|---|
-| upstream engine, and fixes to it | yes | no |
-| build and portability (MSVC) | yes | no |
-| the hook system modules attach to | yes | no |
-| our modules — playerbots, dungeon-clear, bot-brain, donation, leech, solo-dungeon, worldbuff | no | yes |
+| the engine, and our fixes to it | yes | no |
+| `mod-playerbots`, `mod-dungeon-clear` | **yes** | no |
+| our own modules — `mod-bot-brain`, `mod-donation`, `mod-leech`, `mod-solo-dungeon`, `mod-worldbuff` | no | yes |
 | services, deployment, CI, docs, ADRs | no | yes |
 
-A change belongs in core only if it is **upstream-shaped**: a fix to upstream code, a portability
-fix, or an additive hook that lets our code attach without rewriting upstream logic. Anything else
-in core is a smell, and the question to ask is "why can this not attach from outside?"
+The test is provenance, not convenience: **if a merge from upstream can deliver a change to this
+file, the file belongs in core.** Keeping such a file in the platform does not reduce merge cost, it
+converts an automatic merge into a manual port, forever. Deleting `mod-dungeon-clear` from core
+would have turned every future Maraudon route into a hand-carried patch.
 
-Our changes are tracked in the platform, normally, with no special ceremony. The exception is the
-small set that genuinely must live in core; each of those is a topic branch on core, kept small and
-upstream-shaped so it survives a rebase and can be reasoned about on its own.
+Our changes to upstream-tracked modules therefore go **into core**, as small topic branches, each
+kept upstream-shaped so it survives a rebase. That is the opposite direction from this ADR's first
+draft, and it is the direction that keeps merges cheap.
 
-### Why the modules move to the platform rather than the other way round
+### The build-system change this requires
 
-The platform cannot hold upstream code without forking it — it has no shared ancestry, so anything
-of upstream's it held would be a copy that upstream merges could never reach. Upstream code
-therefore has exactly one possible home, and that is core. Our code has a genuine choice, and the
-tie is broken by merge cost: every file of ours in core is a file an upstream merge has to consider.
+`core/CMakeLists.txt` made module discovery exclusive — *"There is deliberately no merging of the
+two - one directory wins, whole."* That is what forced the fork in the first place: a platform that
+wants its own modules had to vendor a copy of every module it also wanted, including upstream's.
 
-### What this does to `TW_MODULES_DIR`
+`TW_MODULES_DIR` becomes a **list** of module roots, searched in order. Core keeps its own; the
+platform sets `core/modules;modules` and adds its own alongside without copying anything. This is
+the enabling change, and without it the split above cannot be expressed at all.
 
-Nothing, and that is the point. Its exclusivity was a problem only because both repositories wanted
-modules. With core owning none, "one directory wins" is no longer a constraint anyone feels. The
-design note at `core/CMakeLists.txt:53-58` is amended to say so rather than left to be discovered as
-folklore.
+### What the platform gives back
 
-### What this does not decide
+The platform's forks carry real work that must land in core before those forks are deleted:
 
-Whether core should ship a *usable server* on its own. It still can: a server without our modules is
-still a server, and core's CI already builds exactly that configuration today. Bots are a platform
-feature, not an engine one.
+- `PersistentActiveRoster` and `PersistentActiveRosterDatabase` — the CAS-versioned, fail-closed
+  roster that is the remediation for bots being lost across a restart. Core has none of it.
+- The async LLM debug path. Core's `PlayerbotLLMInterface::Generate` is a blocking HTTP call made
+  from the chat-command handler, i.e. on the world update thread; an unreachable endpoint stalls
+  the server. (Both copies gate on `SEC_MODERATOR`, so this is not a hole any player can reach.)
+- `AddPlayerBot` returning `bool` and cleaning up on the login-failure path. Core leaks
+  `botSession` there and says so: *"botSession leaks here … Acceptable for smoke testing; fix if
+  needed."*
+- The recorded-route collector fix. `RecordedRoutes.cpp` calls 7 register functions while 97
+  translation units define one, so 90 routes are dropped by the linker and do not exist at
+  runtime. Byte-identical in both trees, so it is core's bug too.
+
+The `cv_bots` schema split stays platform-side: it presumes a database topology core knows nothing
+about.
 
 ## Consequences
 
-- Core's delta drops from 1888 files to roughly 270. That is a delta a person can read, and rebase
-  onto upstream without dreading it.
-- The two copies collapse to one, so drift-in-two-directions stops being possible.
-- **Three previously-planned "push down into core" branches evaporate.** The async-LLM fix, the
-  `AddPlayerBot` session leak and `PersistentActiveRoster` were only worth porting because there
-  were two copies. With one, they simply live where the module lives. This ADR deliberately records
-  that the earlier recommendation was solving the wrong problem.
-- The seam question is moot. `AiContextAugment` and `RegisterAiContextAugmenter` live *inside*
-  `mod-playerbots`, with no occurrence anywhere under `core/src`. Moving the module takes the seam
-  with it; core needs no seam of its own for `mod-bot-brain` to attach.
-- `mod-dungeon-clear` must be reconciled **before** core's copy is deleted, and this is the one
-  genuinely fiddly step. Core is ahead there. Deleting first would lose that work.
-- What survives as core work is small and honest: the MSVC portability fix (`DC_MSVC_EXPAND` in
-  core's `AcCompat.h:487`, which the platform lacks and correctly so — core supports Windows and the
-  platform's Windows compile is deliberately gated off), plus real engine fixes.
-- Core keeps `MODULES=disabled`, which it already does, so nothing about its CI changes.
+- Core keeps 1617 files it would have deleted, and that is correct: they are upstream's, and the
+  merge channel that delivers them stays open.
+- The platform stops carrying forks of upstream modules. One copy of each, in core.
+- Our module work becomes core PRs. That is more ceremony per change and it is the right trade:
+  the alternative is re-porting upstream's dungeon-clear work by hand every catch-up.
+- `TW_MODULES_DIR` must become a list before any of this can land. It is the load-bearing
+  prerequisite, not a detail.
+- **Three earlier decisions in this workstream were wrong and are reversed here.** The
+  reconciliation that copied core's `mod-dungeon-clear` into the platform (twow-repo #188) moves
+  work the wrong way. The deletion of both modules from core (twow-core #37) would close the merge
+  channel. And this ADR's own first draft argued for both. Recording that is cheaper than letting
+  someone rediscover it.
+- The seam is unaffected either way: `AiContextAugment` and `RegisterAiContextAugmenter` live
+  inside `mod-playerbots`, with no occurrence anywhere under `core/src`.
 
-## Sequence
+## The lesson worth keeping
 
-1. This ADR.
-2. Reconcile `mod-dungeon-clear` into the platform — a real merge, both directions.
-3. Reconcile `mod-playerbots` into the platform — confirm nothing exists only in core.
-4. Delete core's `modules/mod-playerbots` and `modules/mod-dungeon-clear`.
-5. Re-pin the submodule; confirm the platform still builds.
-
-Steps 2 and 3 must both complete before step 4. That ordering is the whole safety property.
+**A fork point is not the upstream.** Diffing against the commit you forked at measures everything
+that has happened since — on both sides — and silently attributes all of it to you. When the
+question is "how much of this is ours", the only honest baseline is the upstream tip, fetched.
+Every number in the first draft of this ADR was arithmetically correct and pointed at the wrong
+conclusion.
 
 ## Evidence
 
-- `UPSTREAM.lock` — upstream is `Shyalya/tortoise-wow` `playerbots-integration-gh` at `61a8269`.
-- `git diff --name-only 61a8269 e3ab7b0` in core — 1888 files, 1617 of them under `modules/`.
-- `git ls-tree -r 61a8269 | grep -c 'ai_playerbot\|mod-playerbots'` — **0**.
-- `git log --diff-filter=A -- modules/mod-playerbots/mod-playerbots.cmake` — added by our own commit.
-- `core/CMakeLists.txt:53-58` — the exclusivity note this ADR amends.
+- `git diff --name-only chore/upstream-catchup-6 shyalya/playerbots-integration-gh` — 2 files in
+  `mod-playerbots`, 1 in `mod-dungeon-clear`, 44 in `src/`.
+- `git ls-tree -r 61a8269 -- modules/mod-playerbots` — 0 files at the fork point; 1024 at the
+  upstream tip today.
+- `git log 3a978d77..shyalya/playerbots-integration-gh` — 75 commits, 82 of 115 changed files in
+  `mod-dungeon-clear`.
+- `core/CMakeLists.txt` — the exclusivity note this ADR requires changing.
 - `core/CMakeLists.txt:88` — `MODULES` defaults to `disabled`; core never compiles its own copies.
-- `core/modules/mod-dungeon-clear/src/AcCompat.h:487` — `DC_MSVC_EXPAND`, present only in core.
-- `core/modules/mod-playerbots/src/playerbot/PlayerbotMgr.cpp:228` — the acknowledged session leak.
-- `docs/adr/ADR-0039-bot-brain-identity-and-memory.md` — the module whose attachment proves the seam
-  needs nothing from the engine.
+- `core/modules/mod-playerbots/src/playerbot/PlayerbotMgr.cpp` — the acknowledged session leak.
+- `modules/mod-dungeon-clear/src/Routes/RecordedRoutes.cpp` — 7 collected, 97 defined.
