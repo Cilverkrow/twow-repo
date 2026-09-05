@@ -98,15 +98,13 @@ jobs:
   core:
     needs: discover
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    name: ${{ matrix.image }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: mangosd
-            dockerfile: deploy/docker/Dockerfile.core
-          - image: realmd
-            dockerfile: deploy/docker/Dockerfile.core
+    name: core images (mangosd, realmd)
+    # No matrix. mangosd and realmd were built as two matrix entries from the
+    # SAME Dockerfile and the SAME `--target runtime`, differing only in the tag
+    # pushed - and that target does `COPY --from=builder ${PREFIX} ${PREFIX}`,
+    # so one image already contains both binaries (ci.yml:1690 verifies exactly
+    # that). It was the same build twice: 69 min + 78 min on 2026-09-05.
+    # One build now, pushed under both names.
     steps:
       # recursive reaches two levels: core/ (ADR-0020) and the Eluna submodule
       # inside it. Anything less and the Dockerfile's `COPY . /src` copies an
@@ -141,7 +139,9 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}
+          images: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/mangosd
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/realmd
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -152,7 +152,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: deploy/docker/Dockerfile.core
           target: runtime
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -181,16 +181,38 @@ jobs:
           # CI image from an install staged on the runner - so nothing writes
           # ci-core and reading it was a guaranteed miss. Its own scope is the
           # only one left that can hit.
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          # One scope, and mode=min rather than max.
+          #
+          # mode=max caches every intermediate layer. Across two matrix scopes
+          # that filled ~7 GB of the repository's 10 GB Actions cache - a single
+          # buildkit blob was 5.39 GiB - which evicted ci.yml's 2.2 GB ccache
+          # before the next run could restore it. The visible result was ccache
+          # reporting `Hits: 0 / 1517 (0.00%)` and `build + test` cold-compiling
+          # for 64 minutes on every push, forever.
+          #
+          # mode=min caches the final layers only, which is what a push needs.
+          # The expensive compile is kept warm by ccache on the runner, not by
+          # storing every intermediate image layer in the shared cache.
+          cache-from: type=gha,scope=core
+          cache-to: type=gha,mode=min,scope=core
 
       # The registry attestation above is buildkit's. This one is signed against
       # the workflow's OIDC identity and lands in the repository's attestation
       # store, which is what `gh attestation verify` checks. They answer
       # different questions and both are wanted.
+      # One digest, two names, so one attestation per name. Both must be
+      # attested: `gh attestation verify` resolves by the name the user pulled,
+      # and attesting only one would leave the other unverifiable even though it
+      # is byte-identical.
       - uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/mangosd
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/realmd
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
