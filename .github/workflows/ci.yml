@@ -1480,25 +1480,10 @@ jobs:
       # (it dies at its final close() with ESTALE - see the long note in
       # ops/ci/in-builder.sh). Sources may live on the network mount; the things
       # the linker writes may not.
-      # DEBUG_SYMBOLS=OFF, here and nowhere else. Nothing in this job reads a
-      # symbol: no test resolves a backtrace, nothing strips or splits
-      # debuginfo, and the binaries never leave the runner.
-      #
-      # They are not free, and this file already records the price in three
-      # places: 'a 2.0 GB mangosd before the five static module targets' (the
-      # reason the disk-reclaim step exists), translation units peaking at
-      # 1.5-2.5 GiB resident each (the reason parallelism is pinned to 4), and
-      # a compiler cache too big to survive the repository's 10 GB budget -
-      # which is why a warm build kept coming out cold.
-      #
-      # NOT changed for the published image (deploy/docker/Dockerfile.core),
-      # the MSVC job or nightly: a shipped artifact is where a symbol earns
-      # its size.
       - name: Configure
         run: |
           bash ops/ci/in-builder.sh 'cmake -S /src -B /build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DDEBUG_SYMBOLS=OFF \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
             -DTW_ARCH=x86-64-v2 \
             -DMODULES=static \
