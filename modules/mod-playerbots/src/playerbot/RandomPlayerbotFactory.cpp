@@ -944,6 +944,19 @@ void RandomPlayerbotFactory::CreateRandomBots()
 	            uint8 cls = key.first;
 	            uint8 race = key.second;
 
+	            // fixedClassRaceCounts (and therefore `remaining`) can hold an
+	            // explicit 0 entry -- an admin asking for exactly zero bots of
+	            // this class/race. Without this guard we'd still create a bot
+	            // for it below, then `--remaining[key]` on a 0 uint32 wraps to
+	            // 0xFFFFFFFF instead of going negative, so the entry looks
+	            // like it still wants four billion more bots and is never
+	            // removed from `remaining`/shuffledKeys again.
+	            if (remaining[key] == 0)
+	            {
+	                remaining.erase(key);
+	                continue;
+	            }
+
 	            if (!((1 << (cls - 1)) & CLASSMASK_ALL_PLAYABLE))
 	                continue;
 

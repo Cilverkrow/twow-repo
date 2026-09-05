@@ -729,15 +729,26 @@ uint32 PlayerBotLoginMgr::GetMaxOnlineBotCount()
     return sRandomPlayerbotMgr.GetValue(uint32(0), "bot_count");
 }
 
-uint32 PlayerBotLoginMgr::GetClassRaceBucketSize(uint8 cls, uint8 race) 
+uint32 PlayerBotLoginMgr::GetClassRaceBucketSize(uint8 cls, uint8 race)
 {
+    if (sPlayerbotAIConfig.useFixedClassRaceCounts)
+    {
+        // Fixed mode has its own map, populated in PlayerbotAIConfig only for
+        // the class/race pairs an admin explicitly listed. Reading
+        // classRaceProbability here (the old code) meant any pair the admin
+        // did not list fell back to that array's implicit default probability
+        // (100), i.e. the bucket silently target-populated with bots the fixed
+        // config never asked for. A pair missing from fixedClassRaceCounts
+        // must mean "zero bots of this class/race", not "use the probability
+        // default".
+        auto it = sPlayerbotAIConfig.fixedClassRaceCounts.find({cls, race});
+        return it != sPlayerbotAIConfig.fixedClassRaceCounts.end() ? it->second : 0;
+    }
+
     uint32 prob = sPlayerbotAIConfig.classRaceProbability[cls][race];
 
     if (prob == 0)
         return 0;
-
-    if (sPlayerbotAIConfig.useFixedClassRaceCounts)
-        return sPlayerbotAIConfig.classRaceProbability[cls][race];
 
     return GetMaxOnlineBotCount() * sPlayerbotAIConfig.classRaceProbability[cls][race] / sPlayerbotAIConfig.classRaceProbabilityTotal;
 }
