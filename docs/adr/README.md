@@ -12,8 +12,8 @@ Chat text is provenance, not runtime truth. When evidence conflicts, use the pre
 
 | ADR | Decision | Status | Primary workstream |
 |---|---|---|---|
-| [0001](ADR-0001-canonical-workstreams-and-governance.md) | Nine canonical workstreams and stable IDs | Accepted | WS-00 |
-| [0002](ADR-0002-evidence-authority-and-change-gates.md) | Evidence precedence and explicit mutation gates | Accepted | WS-00 |
+| [0001](ADR-0001-canonical-workstreams-and-governance.md) | Nine stable workstream labels; historical hub gate retired | Accepted; amended 2026-09-05 | WS-00 |
+| [0002](ADR-0002-evidence-authority-and-change-gates.md) | Evidence precedence and explicit mutation gates | Accepted; amended 2026-09-05 | WS-00 |
 | [0003](ADR-0003-historical-chat-cross-references.md) | Historical chats are retained by cross-reference only | Accepted | WS-00 |
 | [0004](ADR-0004-separate-source-repository-and-content-boundary.md) | Separate source repository with no binaries or secrets | Accepted | WS-00 / WS-80 |
 | [0005](ADR-0005-preserve-upstream-history-and-modularize-incrementally.md) | Preserve upstream history; modularize incrementally | Superseded 2026-09-02 by ADR-0020 | WS-10 / WS-40 |

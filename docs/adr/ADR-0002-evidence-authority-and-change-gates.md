@@ -1,6 +1,6 @@
 # ADR-0002: Evidence authority and explicit change gates
 
-- Status: Accepted
+- Status: Accepted; amended 2026-09-05 (retired workstream-hub preflight)
 - Date: 2026-08-30
 - Primary: WS-00
 
@@ -13,12 +13,14 @@ The project combines mutable runtime state, a dirty live source tree, compacted 
 Use this precedence when sources conflict:
 
 1. current runtime and database evidence captured under an authorized scope;
-2. current filesystem, Git, byte-count, and hash evidence;
-3. the canonical workstream registry and global hub;
-4. the owning workstream README;
-5. verified reports, handoffs, and manifests;
-6. other documentation;
-7. chat recollection or summaries.
+2. an explicitly approved current technical baseline;
+3. current filesystem, Git, byte-count, and hash evidence;
+4. project documentation, including verified reports, handoffs, and manifests;
+5. chat recollection or summaries.
+
+The historical collaboration-hub registry, workstream READMEs, and their checksum manifest
+remain immutable evidence under `runbooks/`; they are not a current preflight, routing
+authority, or prerequisite for work. `AGENTS.md` is the current repository workflow.
 
 Facts, assumptions, proposals, and user decisions must be labeled separately. A contradiction is documented and blocks the affected action; it is not silently reconciled.
 
@@ -36,6 +38,5 @@ Secrets are never copied to chat, evidence, scripts, or Git. Existing local chan
 ## Evidence
 
 - `AGENTS.md`
-- `runbooks/workstreams/README.md`
 - `runbooks/project-collab-hub-source-metadata-correction-20260830T190536Z/`
 - `runbooks/project-collab-hub-local-enforcement-20260830T175518Z/`
