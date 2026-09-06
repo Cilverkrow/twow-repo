@@ -34,6 +34,8 @@ unchanged. No automatic retries, redirects, fallback LLM, or model switching.
   `bot` (integer 0), `kind`, `certainty` (0..1) and conditional `poi_id` alias.
   No free rationale, tools, expiry supplied by model, null/defaulted fields,
   unknown/case-variant/duplicate keys, extra choices, fences or trailing prose.
+  Lane A2 additionally permits the optional exact `usage` accounting triple
+  documented in TOKEN-BUDGET.md; it never refunds the reservation.
   This projection is intentionally NOT compatibility certification for a real
   provider's richer response envelope. Existing provider auth adapters are reused.
 - Strict checks precede existing `validate`, so its normalization/clamping is
@@ -77,5 +79,6 @@ go test -count=1 -timeout=60s ./...
 ```
 
 All inference is `httptest`; all retrieval is a fixture. No model or database
-is contacted. Token/cost budgets, rate-limit handling, metrics, offline eval,
+is contacted. Local token accounting is described in TOKEN-BUDGET.md; cost
+budgets, rate-limit handling, metrics, offline eval,
 full README cleanup and real provider integration are separate later packages.

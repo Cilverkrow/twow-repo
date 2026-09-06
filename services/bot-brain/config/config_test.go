@@ -25,6 +25,61 @@ func TestDefaultsProduceAWorkingRulesOnlyService(t *testing.T) {
 	if cfg.ListenAddr == "" || cfg.MaxBatch <= 0 || cfg.IntentTTL <= 0 {
 		t.Errorf("defaults are not usable: %+v", cfg)
 	}
+	if cfg.LLM.TokenBudget == nil || cfg.LLM.TokenBudget.Limits() != llm.DefaultTokenLimits() {
+		t.Fatal("default token budget missing")
+	}
+}
+
+// llmOn is the minimum env that turns inference on and passes validate().
+// MaxTokens is only checked against the output ceiling when the LLM is enabled,
+// so any test of that ceiling has to enable it.
+func llmOn(extra map[string]string) func(string) string {
+	m := map[string]string{
+		"BOT_BRAIN_LLM_ENABLED":  "true",
+		"BOT_BRAIN_LLM_BASE_URL": "http://vllm:8000/v1",
+		"BOT_BRAIN_LLM_MODEL":    "qwen2.5-7b-instruct",
+		"BOT_BRAIN_LLM_TIMEOUT":  "800ms",
+	}
+	for k, v := range extra {
+		m[k] = v
+	}
+	return env(m)
+}
+
+func TestTokenBudgetConfiguration(t *testing.T) {
+	for _, key := range []string{"BOT_BRAIN_LLM_INPUT_TOKEN_BUDGET", "BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET", "BOT_BRAIN_LLM_HOURLY_TOKEN_BUDGET", "BOT_BRAIN_LLM_DAILY_TOKEN_BUDGET", "BOT_BRAIN_LLM_MAX_TOKENS"} {
+		for _, value := range []string{"0", "-1", "garbage", "9223372036854775808"} {
+			if _, err := config.Load(llmOn(map[string]string{key: value})); err == nil {
+				t.Errorf("accepted %s=%s", key, value)
+			}
+		}
+	}
+	if _, err := config.Load(llmOn(map[string]string{"BOT_BRAIN_LLM_MAX_TOKENS": "1025"})); err == nil {
+		t.Fatal("output ceiling not enforced")
+	}
+	c, err := config.Load(env(map[string]string{"BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET": "2048", "BOT_BRAIN_LLM_MAX_TOKENS": "2048"}))
+	if err != nil || c.LLM.TokenBudget.Limits().OutputPerRequest != 2048 || c.LLM.Enabled {
+		t.Fatal("explicit limit config", err)
+	}
+}
+
+// A cost control for a feature that is switched off must not be able to stop
+// the service. BOT_BRAIN_LLM_MAX_TOKENS above the output ceiling was legal
+// before token budgets existed and is inert while the LLM is disabled, so an
+// existing deployment carrying one has to keep booting -- otherwise the
+// rules-only deterministic planner, the thing this design guarantees, is taken
+// down by a check for a feature nobody turned on.
+func TestDisabledLLMCannotBlockStartup(t *testing.T) {
+	for _, value := range []string{"1025", "999999", "0", "-1"} {
+		cfg, err := config.Load(env(map[string]string{"BOT_BRAIN_LLM_MAX_TOKENS": value}))
+		if err != nil {
+			t.Errorf("BOT_BRAIN_LLM_MAX_TOKENS=%s stopped a rules-only service from starting: %v", value, err)
+			continue
+		}
+		if cfg.LLM.Enabled {
+			t.Errorf("BOT_BRAIN_LLM_MAX_TOKENS=%s turned inference on", value)
+		}
+	}
 }
 
 func TestLoad(t *testing.T) {
