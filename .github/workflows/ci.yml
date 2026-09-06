@@ -433,6 +433,11 @@ jobs:
       # checks out submodules already.
       - name: No duplicate of the core SQL tree
         if: always()
+        # structural only: this job deliberately checks out no submodules, so it
+        # cannot compare against core/sql. The bootstrap job does, and runs the
+        # content half there.
+        env:
+          TW_SQL_GUARD: structural
         run: bash ops/audit/no-duplicate-core-sql.sh
 
       - name: hadolint
