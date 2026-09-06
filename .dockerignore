@@ -36,3 +36,14 @@ ops/
 .ci/
 test-results/
 image/
+
+# Rendered runtime config and the environment it is rendered from. These are
+# generated artefacts, never inputs to the image, and mangosd.conf carries the
+# database password in cleartext:
+#     LoginDatabaseInfo = "db;3306;turtle;<password>;tw_logon"
+# The runtime stage only copies ${PREFIX}, so a released image is unaffected --
+# but `COPY . /src` puts them in the BUILDER layer, and any pushed builder or
+# cache image would carry the credential.
+deploy/compose/config/
+deploy/compose/.env
+**/.env
