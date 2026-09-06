@@ -1,11 +1,12 @@
 # OPS-009-R1 sanitized semantic matrix; no configuration values or secrets.
-# Counts: KEEP=95 INTENTIONAL_CHANGE=14 DEPRECATED_OR_REMOVED=0 MACHINE_SECRET=6 TOTAL=115
+# Counts: KEEP=95 INTENTIONAL_CHANGE=16 DEPRECATED_OR_REMOVED=0 MACHINE_SECRET=6 TOTAL=117
 service	key	classification	canonical_source	evidence
 aiplayerbot	AiPlayerbot.AutoLearnDroppedSpells	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.AutoLearnQuestSpells	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.BoostFollow	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.DisableBotOptimizations	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.DisableRandomLevels	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
+aiplayerbot	AiPlayerbot.EventStoreTable	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	deployment-schema-topology
 aiplayerbot	AiPlayerbot.GlobalSoundEffects	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.GuildRepliesRate	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.LLMApiEndpoint	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
