@@ -42,8 +42,8 @@ Point these at a MySQL/MariaDB 10.6+ server. Adjust host/user/password as needed
 examples below assume a local server with user `mangos`/password `mangos`:
 
 ```
-mysql -u mangos -p < sql/create_databases.sql        # creates tw_logon/tw_char/tw_world/tw_logs schemas
-for f in sql/base/*.sql; do mysql -u mangos -p tw_world < "$f"; done
+mysql -u mangos -p < core/sql/create_databases.sql        # creates tw_logon/tw_char/tw_world/tw_logs schemas
+for f in core/sql/base/*.sql; do mysql -u mangos -p tw_world < "$f"; done
 
 # Playerbot-specific tables (not part of the base dump above):
 for f in modules/mod-playerbots/sql/world/ai_playerbot_indexes.sql \
@@ -58,7 +58,7 @@ done
 ```
 
 `Database.AutoUpdate.Enabled = 1` in `mangosd.conf` (see below) applies anything
-under `sql/database_updates/` automatically on subsequent starts — the steps above
+under `core/sql/database_updates/` automatically on subsequent starts — the steps above
 are only needed once, for a brand-new database.
 
 ## 4. Configure
@@ -78,7 +78,7 @@ Edit `mangosd.conf`:
 - `LoginDatabase.Info` / `WorldDatabase.Info` / `CharacterDatabase.Info` /
   `LogsDatabase.Info` → `"host;port;user;password;dbname"` (tw_logon / tw_world /
   tw_char / tw_logs respectively)
-- `Database.AutoUpdate.Path` → absolute path to this repo's `sql/` directory (a
+- `Database.AutoUpdate.Path` → absolute path to this repo's `core/sql/` directory (a
   relative path is resolved against the server's current working directory, not
   the binary's location, so an absolute path is safer)
 

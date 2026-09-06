@@ -145,7 +145,6 @@ Do not use `libboost-all-dev`: it pulls ~230 packages including OpenMPI. Only `t
 |---|---|
 | `core/` | The server, as a submodule: `core/src/game`, `core/src/shared`, `core/sql`. Not ours to edit here - changes go to twow-core and come back as a pin bump. |
 | `modules/` | Every module (`mod-*`), each with its own `src/`, `conf/`, `data/sql/`, `t/`. The vendored bot tree is one of them: `mod-playerbots`. |
-| `sql/` | Schema and migrations |
 | `deploy/` | `docker/`, `compose/`, `helm/` |
 | `test/` | `smoke/`, and unit/integration targets registered with ctest |
 | `docs/` | ADRs, footguns, external requirements, issue manifests |

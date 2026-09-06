@@ -222,8 +222,12 @@ jobs:
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: db-init
     steps:
+      # Recursive: the SQL this image ships is core/sql, in the submodule. A
+      # non-recursive checkout leaves core/ empty and the COPY below silently
+      # produces an image with no schema in it.
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 1
 
       - uses: docker/setup-buildx-action@v3
@@ -239,7 +243,7 @@ jobs:
       # assembled here from the pieces compose already bind-mounts, so the same
       # script runs in both places rather than diverging into two bootstraps.
       #
-      # sql/base is ~130 MB and goes into the image on purpose: an init Job in
+      # core/sql/base is ~130 MB and goes into the image on purpose: an init Job in
       # Kubernetes has no host directory to read it from, and the alternative is
       # a second volume to provision before the first install can run.
       - id: dockerfile
@@ -252,22 +256,34 @@ jobs:
           mkdir -p .ci
           cat > .ci/Dockerfile.db-init <<'EOF'
           FROM mariadb:11.8
-          # Paths match the bind mounts in deploy/compose/docker-compose.yml, so
-          # db-init.sh needs no environment change to run from the image.
+          # Paths match the bind mounts in deploy/compose/docker-compose.yml,
+          # except where one tree serves several of them - see the ENV below.
           COPY deploy/compose/db-init.sh /db-init.sh
-          COPY sql /sql
-          COPY sql/base /sql-base
+          COPY core/sql /sql
           COPY modules/mod-playerbots/sql /sql-playerbots
           # mod-bot-brain's cv_brain schema (ADR-0039). db-init skips the stage when
           # this path is absent, so the image stays correct either way - but the
           # published one should carry it, or a compose deployment gets a brain with
           # no schema and the first mint fails at runtime instead of at bootstrap.
           COPY modules/mod-bot-brain/sql /sql-bot-brain
+          # One tree, three names. db-init.sh reads the platform migration
+          # stream, the pinned core's stream and the world base from three
+          # separate variables; in this image all three are core/sql. It
+          # REQUIRES the core one -- it exits on a missing
+          # $CORE_SQL_DIR/create_databases.sql -- and no /sql-core was ever
+          # copied here, so this image could not complete a bootstrap at all.
+          #
+          # Environment rather than two more COPYs: core/sql/base is ~130 MB and
+          # copying it under a second and third name triples the image for no
+          # content. Symlinks are not an option either -- stage 20 runs
+          # `find "$SQL_BASE_DIR"`, and find does not descend into a symlinked
+          # directory given as its starting point.
+          ENV CORE_SQL_DIR=/sql SQL_BASE_DIR=/sql/base
           RUN chmod +x /db-init.sh
           VOLUME ["/state"]
           ENTRYPOINT ["/bin/bash", "/db-init.sh"]
           EOF
-          # The repository's .dockerignore excludes sql/ - correct for
+          # The repository's .dockerignore excludes core/sql/ - correct for
           # Dockerfile.core, which does not want 130 MB it never reads, and
           # fatal here. BuildKit prefers <dockerfile>.dockerignore when it
           # exists, so this image gets its own without touching the shared one.

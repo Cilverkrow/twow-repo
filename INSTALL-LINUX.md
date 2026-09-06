@@ -11,7 +11,7 @@ one this tree is actually built and served on:
 Ubuntu 22.04 or newer works the same way; the package names are identical.
 
 **What is in the repository:** the server source and the full world database
-(131 MB under `sql/base`, 186 files).
+(131 MB under `core/sql/base`, 186 files).
 
 **What is not:** the client data. Maps, DBC and vmaps come out of a game client
 — see step 4. You need a **Turtle WoW 1.18.1 client, build 7272**.
@@ -88,17 +88,17 @@ Point `DataDir` in `mangosd.conf` at wherever you put the four directories.
 Four of them: `tw_world`, `tw_char`, `tw_logon`, `tw_logs`.
 
 ```bash
-mysql -u root -p < sql/create_databases.sql
+mysql -u root -p < core/sql/create_databases.sql
 ```
 
 That one file does more than its name suggests: besides creating the four
 databases it brings 415 table definitions with it, the complete schema for
 `tw_char`, `tw_logon` and `tw_logs` included. Only the world *content* is
-kept separate, which is what `sql/base` holds — all 186 files there are
+kept separate, which is what `core/sql/base` holds — all 186 files there are
 `tw_world_*`, so there is no `characters.sql` to look for.
 
-Then import **every file in `sql/base`** into `tw_world` — that is the actual
-world content. `sql/setup_databases.sh` exists but skips `sql/base` entirely, so
+Then import **every file in `core/sql/base`** into `tw_world` — that is the actual
+world content. `core/sql/setup_databases.sh` exists but skips `core/sql/base` entirely, so
 if you use it, import the base data yourself in between.
 
 ### The migrations, and why the auto-updater cannot do this for you
@@ -112,20 +112,20 @@ Database.AutoUpdate.Enabled = 0
 Then apply the migrations yourself, tolerating errors:
 
 ```bash
-for f in sql/database_updates/*.sql; do mysql --force -u root -p tw_world < "$f"; done
+for f in core/sql/database_updates/*.sql; do mysql --force -u root -p tw_world < "$f"; done
 ```
 
 Record them as applied so the updater does not retry, then switch it back on for
 future updates:
 
 ```bash
-for f in sql/database_updates/*.sql; do
+for f in core/sql/database_updates/*.sql; do
   n=$(basename "$f" .sql)
   mysql -u root -p -e "INSERT IGNORE INTO tw_world.migrations (Name, Hash, AppliedAt) VALUES ('$n','manual',NOW());"
 done
 ```
 
-**Why the detour.** `sql/base` is not the state "the first N migrations were
+**Why the detour.** `core/sql/base` is not the state "the first N migrations were
 applied". It is a mixed snapshot: of the 101 migration files, 37 contain keys
 that are already in the base data — some entirely, one to 91%, another to 5% —
 while 38 are wholly new and 26 only change the schema. So there is no set of
@@ -143,7 +143,7 @@ mysql -u root -p -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE
 
 A `1` means the schema changes went in.
 
-`sql/tools/probe_migration_overlap.py` is the script those numbers come from; run
+`core/sql/tools/probe_migration_overlap.py` is the script those numbers come from; run
 it against a checkout to re-derive them.
 
 ### Playerbot tables
@@ -161,7 +161,7 @@ cat characters/*.sql | mysql -u root -p tw_char
 
 Eight files into the world database, six into the characters one. `world/classic`
 is the vanilla set; the `tbc` and `wotlk` siblings do not apply here. Anything
-under `sql/other` is maintenance — deleting and resetting bots — not part of a
+under the module's `sql/other` is maintenance — deleting and resetting bots — not part of a
 first install.
 
 
@@ -331,4 +331,4 @@ have older CSVs lying around, that is where the mangled lines came from.
 | `No premade specs found!!` | old `aiplayerbot.conf` with the stock talent links |
 | `Illegal mix of collations` | MariaDB 11.8 default vs an older dump |
 | Refuses to start after migrations | auto-updater against a dump-restored database |
-| World is empty, no creatures | `sql/base` was never imported |
+| World is empty, no creatures | `core/sql/base` was never imported |

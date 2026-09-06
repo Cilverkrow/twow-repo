@@ -13,8 +13,8 @@
 #    (deploy/docker/entrypoint-mangosd.sh) already solves that with a FIFO;
 #    nothing here should try to bolt on a tty.
 #  * The build context is the repo root, because Dockerfile.core copies the whole
-#    source tree. .dockerignore strips sql/ from that context, which is why
-#    db-init bind-mounts sql/ rather than expecting it inside the image.
+#    source tree. .dockerignore strips core/sql/ from that context, which is why
+#    db-init bind-mounts it rather than expecting it inside the image.
 
 name: twow
 
@@ -50,7 +50,7 @@ services:
     # 11.8 is pinned, not "latest": it is the version INSTALL-LINUX.md verifies,
     # and the LTS with native VECTOR, which bot memory needs later (ADR-0027).
     # Its default collation (utf8mb4_uca1400_ai_ci) differs from the utf8mb3
-    # dumps under sql/, which is where "Illegal mix of collations" comes from --
+    # dumps under core/sql/, which is where "Illegal mix of collations" comes from --
     # hence the explicit server collation below.
     restart: unless-stopped
     command:
@@ -98,9 +98,13 @@ services:
     volumes:
       - db-init-state:/state
       - ./db-init.sh:/db-init.sh:ro
-      # Core owns schema/base; platform SQL contributes project migrations.
-      # Shared migrations must agree before the bootstrap connects to the DB.
-      - ${SQL_PATH:-../../sql}:/sql:ro
+      # The pinned core owns every migration stream. /sql and /sql-core resolve
+      # to the same tree by default: db-init.sh reconciles the two, and the
+      # platform-side mount stays as a seam for a deployment that overrides
+      # SQL_PATH with extra project migrations. There is no platform sql/ tree
+      # in this repository -- there was, it drifted behind core, and a published
+      # image bootstrapped from it died on a table core had already added.
+      - ${SQL_PATH:-../../core/sql}:/sql:ro
       - ${CORE_SQL_PATH:-../../core/sql}:/sql-core:ro
       - ${SQL_BASE_PATH:-../../core/sql/base}:/sql-base:ro
       - ${PLAYERBOTS_SQL_PATH:-../../modules/mod-playerbots/sql}:/sql-playerbots:ro
@@ -169,8 +173,10 @@ services:
       - ${DATA_PATH:-./data}:/opt/turtle/data:ro
       - server-logs:/var/log/turtle
       # Read only by the auto-updater, which ships disabled -- see config/ and
-      # the note in render-config.sh about the 'manual' migration hashes.
-      - ${SQL_PATH:-../../sql}:/opt/turtle/sql:ro
+      # the note in render-config.sh about the 'manual' migration hashes. Same
+      # tree db-init reads: the updater must not see an older copy than the one
+      # the bootstrap applied.
+      - ${SQL_PATH:-../../core/sql}:/opt/turtle/sql:ro
     ports:
       - "${BIND_ADDR:-127.0.0.1}:${WORLD_PORT:-8090}:8090"
     healthcheck:
