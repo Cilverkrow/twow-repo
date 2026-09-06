@@ -68,7 +68,7 @@ All off by default, all in `mangosd.conf`:
 | Feature | Config keys | Also required |
 |---|---|---|
 | Zone-restricted world buffs on a timer | `AutoWorldBuff.*` | – |
-| Hourly donation points | `AutoDonationPoints.*` | `sql/logon/donation_point_progress.sql` on the **login** database |
+| Hourly donation points | `AutoDonationPoints.*` | `core/sql/logon/donation_point_progress.sql` on the **login** database |
 | Beginners guild for new characters | `BeginnersGuilds`, `BeginnersGuildHorde/Alliance` | the guilds must exist; the shipped ids are placeholders |
 | Guild bank in every capital | `GuildBank.NpcEntriesAlliance/Horde` | nothing — the gossip trigger ships as a migration |
 | Dungeon finder fills with bots | `LFT.BotFill.Enable`, `.DelaySeconds`, `.LevelRangeBelow/Above`, `.SeedRuns`, `.SeedDungeons`, `.SeedTeleport` | – |
@@ -110,7 +110,7 @@ Ship as migrations, so a fresh setup gets them automatically:
 - Hellador Swiftluck, who pointed at equipment that does not exist
 - The guild bank gossip trigger, and the PvP trinket no longer dropping the flag
 
-Two are deliberately manual, in `sql/tools/`, because both depend on per-server data:
+Two are deliberately manual, in `core/sql/tools/`, because both depend on per-server data:
 
 - `graveyards_turtle_dungeons.sql` — the five Turtle-built dungeons with no graveyard on
   their map. Run `core/tools/dbc/add_worldsafelocs.py` first; it references WorldSafeLocs ids a
@@ -130,8 +130,8 @@ listed here so it is not mistaken for work done in this repository.
 - `INSTALL-LINUX.md` and `INSTALL-WINDOWS.md` are start-to-finish walkthroughs, including
   the OpenSSL 3 legacy provider, the database procedure that actually works, and reading a
   crash dump
-- The **world database is in this repository** — `sql/base` holds 186 files, 131 MB, plus
-  the migrations under `sql/database_updates`. Only client data (maps, DBC, vmaps, mmaps)
+- The **world database is in the pinned core submodule** — `core/sql/base` holds 186 files, 131 MB, plus
+  the migrations under `core/sql/database_updates`. Only client data (maps, DBC, vmaps, mmaps)
   has to be extracted from a game client, with the tools under `core/tools/`
 
 Several of the fixes below are also kept as standalone patches, each one
@@ -189,8 +189,8 @@ To build this project follow any MaNGOS/MaNGOS Zero build guide, with the additi
 
 ## Database Setup
 
-1. Manually import sql/create_databases.sql
-2. Manually import all sql scripts in the sql/base folder
+1. Manually import core/sql/create_databases.sql
+2. Manually import all sql scripts in the core/sql/base folder
 3. Run mangosd to automatically import and track updates  
 
 This will be streamlined once the core is more up to date
@@ -199,7 +199,7 @@ This will be streamlined once the core is more up to date
 > (`Database.AutoUpdate.Enabled` in mangosd.conf). That works on a database
 > built up through the auto-updater from the start. On a database that was
 > instead restored from a full dump, the `migrations` table won't line up with
-> the files in `sql/database_updates/`, and enabling the auto-updater makes it
+> the files in `core/sql/database_updates/`, and enabling the auto-updater makes it
 > try to replay old migrations until one fails on a duplicate key — the server
 > then refuses to start. If that applies to you, keep it disabled and apply new
 > migration files by hand, recording each one afterwards:

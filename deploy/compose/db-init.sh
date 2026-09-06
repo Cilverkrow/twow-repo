@@ -3,11 +3,11 @@
 #
 # This is the awkward part of the project and it is not worth hiding:
 #
-#  * sql/setup_databases.sh skips sql/base entirely -- 190 files, ~130 MB, the
+#  * core/sql/setup_databases.sh skips core/sql/base entirely -- 190 files, ~130 MB, the
 #    entire world content -- and does not recurse into database_updates/{world,
 #    character}. Using it alone gets you an empty world. This script does the
 #    whole job instead; it does not call it.
-#  * sql/base is a mixed snapshot, not "the first N migrations applied". Of the
+#  * core/sql/base is a mixed snapshot, not "the first N migrations applied". Of the
 #    migration files, some are already fully contained in it, some partially,
 #    some not at all. The migration files themselves absorb that: they are
 #    written with IF NOT EXISTS / IF EXISTS / INSERT IGNORE, so replaying one
@@ -116,7 +116,7 @@ mysql_root -e 'SELECT 1' >/dev/null || { log "cannot reach $DB_HOST:$DB_PORT as 
 # ---------------------------------------------------------------- 00 schemas
 # create_databases.sql does far more than its name says: four databases plus 415
 # table definitions, i.e. the complete schema for tw_char, tw_logon and tw_logs.
-# Only world *content* is separate (sql/base).
+# Only world *content* is separate (core/sql/base).
 stage_schemas() {
     mysql_root < "$CORE_SQL_DIR/create_databases.sql"
     mysql_root -e "CREATE DATABASE IF NOT EXISTS \`$BOT_DB\` CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci;"
@@ -169,7 +169,7 @@ SQL
 }
 
 # ------------------------------------------------------------- 20 world base
-# The slow one: ~130 MB across 190 files. All of sql/base is tw_world_*, which
+# The slow one: ~130 MB across 190 files. All of core/sql/base is tw_world_*, which
 # is why there is no characters.sql to look for. Without this the server starts
 # and the world is empty.
 stage_base() {
@@ -214,7 +214,7 @@ migration_hash() { sha1sum "$1" | cut -d' ' -f1 | tr 'a-f' 'A-F'; }
 # database whose ledger disagrees with its schema.
 #
 # The insert is guarded by a SELECT rather than INSERT IGNORE because
-# migrations.Name carries no unique key (sql/create_databases.sql: the PRIMARY
+# migrations.Name carries no unique key (core/sql/create_databases.sql: the PRIMARY
 # KEY is the autoincrement Id), so IGNORE would cheerfully duplicate every row.
 apply_migration() {
     local db=$1 f=$2 name hash recorded
@@ -244,8 +244,8 @@ SELECT '${name}', '${hash}', NOW()
 SQL
 }
 
-# tw_world's migrations are split across TWO directories -- sql/database_updates/
-# and sql/database_updates/world/ -- and they are one chronological stream, not
+# tw_world's migrations are split across TWO directories -- core/sql/database_updates/
+# and core/sql/database_updates/world/ -- and they are one chronological stream, not
 # two. Applying one directory and then the other is what broke four of them.
 # world/20260721013813_world.sql is the migration that ADDS
 # spell_template.script_name; 20260731120000, 20260731180000, 20260731190000 and
@@ -310,14 +310,14 @@ stage_updates() {
 # Without these the server aborts on startup with "Table
 # 'ai_playerbot_weightscales' doesn't exist" -- through an assertion, so the
 # message scrolls past inside a stack trace. world/classic is the vanilla set;
-# the tbc and wotlk siblings do not apply to this core. sql/other is
-# maintenance tooling, not part of an install.
+# the tbc and wotlk siblings do not apply to this core. The module's own
+# sql/other is maintenance tooling, not part of an install.
 #
 # These files are module schema, not migrations: they are the CREATE statements
 # for the module's own tables, no `migrations` ledger tracks them, and
 # ai_playerbot_random_bots.sql leads with DROP TABLE IF EXISTS. That last point
 # is why the index on ai_playerbot_random_bots belongs here rather than in
-# sql/character_updates. Applied in stage 30 it would be dropped again one stage
+# core/sql/character_updates. Applied in stage 30 it would be dropped again one stage
 # later by that DROP+CREATE, so swapping the order of stages 30 and 40 does not
 # fix it either -- it only moves the breakage. A file that adds an index to a
 # module's table has to travel with the table.
@@ -413,7 +413,7 @@ stage 60-realmlist  stage_realmlist
 # Verification. Every stage above now fails loudly, so this is no longer the only
 # thing between a broken bootstrap and a server that starts anyway. It is kept as
 # an end-to-end assertion that the migrations reached the schema and not merely
-# the ledger: this column is added by a migration and is absent from sql/base, so
+# the ledger: this column is added by a migration and is absent from core/sql/base, so
 # a 1 proves the schema changes landed.
 probe=$(mysql_root -N -B -e "SELECT COUNT(*) FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA='tw_world' AND TABLE_NAME='spell_template' AND COLUMN_NAME='script_name';")

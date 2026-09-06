@@ -421,6 +421,20 @@ jobs:
         if: always()
         run: bash ops/audit/issue-tooling-guard.sh
 
+      # The platform used to carry sql/ at the root: a near-duplicate of
+      # core/sql that nothing kept in step, that db-init.sh read in preference
+      # to the core's, and that killed a published server at world load on a
+      # table core had already added. It is gone; this stops it coming back.
+      #
+      # This job checks out no submodules, so what runs here is the structural
+      # half - "sql/ is back at the root", which is the regression that
+      # actually happened and the cheap one to catch on every push. The
+      # content half needs core/sql and runs in `bootstrap from empty`, which
+      # checks out submodules already.
+      - name: No duplicate of the core SQL tree
+        if: always()
+        run: bash ops/audit/no-duplicate-core-sql.sh
+
       - name: hadolint
         if: always()
         run: |
@@ -771,7 +785,7 @@ jobs:
       IMPORT_PLAYERBOTS: 'ON'
       # db-init.sh reads these to find the SQL. In the container they are bind
       # mounts; here they are the tree itself.
-      SQL_DIR: sql
+      SQL_DIR: core/sql
       CORE_SQL_DIR: core/sql
       SQL_BASE_DIR: core/sql/base
       PB_SQL_DIR: modules/mod-playerbots/sql
@@ -812,6 +826,14 @@ jobs:
         with:
           fetch-depth: 1
           submodules: recursive
+
+      # The content half of the lint job's structural check, run here because
+      # this is the job that has core/sql checked out. Placed before anything
+      # touches the database: if a platform copy of a core migration is back,
+      # the bootstrap this job measures is testing the wrong tree and the
+      # ninety minutes after this point prove nothing.
+      - name: No duplicate of the core SQL tree
+        run: bash ops/audit/no-duplicate-core-sql.sh
 
       - name: Install the MariaDB client
         run: |
@@ -919,15 +941,15 @@ jobs:
               "SELECT COUNT(*) FROM $1.migrations;"
           }
 
-          world_files=$(count_files sql/database_updates)
-          char_files=$(count_files sql/character_updates)
-          logon_files=$(count_files sql/logon)
+          world_files=$(count_files core/sql/database_updates)
+          char_files=$(count_files core/sql/character_updates)
+          logon_files=$(count_files core/sql/logon)
           world_rows=$(rows tw_world)
           char_rows=$(rows tw_char)
           logon_rows=$(rows tw_logon)
-          echo "tw_world : $world_rows ledger rows for $world_files files in sql/database_updates"
-          echo "tw_char  : $char_rows ledger rows for $char_files files in sql/character_updates"
-          echo "tw_logon : $logon_rows ledger rows for $logon_files files in sql/logon"
+          echo "tw_world : $world_rows ledger rows for $world_files files in core/sql/database_updates"
+          echo "tw_char  : $char_rows ledger rows for $char_files files in core/sql/character_updates"
+          echo "tw_logon : $logon_rows ledger rows for $logon_files files in core/sql/logon"
 
           # A ledger with fewer rows than files means something is unrecorded,
           # which is how a migration silently reapplies later.
@@ -942,9 +964,9 @@ jobs:
               fail=1
             fi
           }
-          check tw_world "$world_files" "$world_rows" sql/database_updates
-          check tw_char  "$char_files"  "$char_rows"  sql/character_updates
-          check tw_logon "$logon_files" "$logon_rows" sql/logon
+          check tw_world "$world_files" "$world_rows" core/sql/database_updates
+          check tw_char  "$char_files"  "$char_rows"  core/sql/character_updates
+          check tw_logon "$logon_files" "$logon_rows" core/sql/logon
           exit $fail
 
       - name: Assert the project tables landed in the schema that owns them
@@ -953,7 +975,7 @@ jobs:
           fail=0
           # ADR-0024 invariant 1 rests on these four tables and ADR-0021 puts
           # them in tw_char. They ship in
-          # sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql.
+          # core/sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql.
           for t in ai_playerbot_roster_version ai_playerbot_roster_member \
                    ai_playerbot_roster_current ai_playerbot_roster_change; do
             found=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
@@ -1658,7 +1680,7 @@ jobs:
       - name: Apply the roster schema (twice, to prove replay safety)
         run: |
           set -eu
-          mig=sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql
+          mig=core/sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql
           # utf8mb4_bin, matching what the roster tables declare - a differently
           # collated schema is the "Illegal mix of collations" trap.
           for pass in 1 2; do

@@ -2,14 +2,15 @@
 # (for the revision header); it does not need 189MB of SQL, 24MB of runbook
 # evidence, or any local build tree.
 #
-# Every pattern here is anchored at the context root -- `sql/` matches ./sql and
-# nothing else. That mattered the moment the core moved into the core/
-# submodule (ADR-0020): upstream's world data went with it, so the 130MB this
-# file exists to keep out of the context came back as core/sql/ and had to be
-# named again. The same trap waits for anything added below: check whether the
-# core has one too.
+# Every pattern here is anchored at the context root -- `core/sql/` matches
+# ./core/sql and nothing else. That mattered the moment the core moved into the
+# core/ submodule (ADR-0020): upstream's world data went with it, so the 130MB
+# this file exists to keep out of the context came back as core/sql/ and had to
+# be named again. The same trap waits for anything added below: check whether
+# the core has one too. There is deliberately no root `sql/` entry any more --
+# that tree was a stale duplicate of core/sql and is gone; ops/audit/
+# no-duplicate-core-sql.sh fails the build if one reappears.
 runbooks/
-sql/
 core/sql/
 docs/
 core/docs/

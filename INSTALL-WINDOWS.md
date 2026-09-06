@@ -5,7 +5,7 @@ nothing else set up yet. Written against the `playerbots-integration-gh`
 branch.
 
 **What is in the repository:** the server source and the full world database
-(131 MB under `sql/base`, 186 files).
+(131 MB under `core/sql/base`, 186 files).
 
 **What is not:** the client data. Maps, DBC and vmaps have to be extracted from
 a game client — see step 4. You need a **Turtle WoW 1.18.1 client, build
@@ -197,7 +197,7 @@ mariadb -u root -p < sql\create_databases.sql
 That one file does more than its name suggests: besides creating the four
 databases it brings 415 table definitions with it, the complete schema for
 `tw_char`, `tw_logon` and `tw_logs` included. Only the world *content* is
-kept separate, which is what `sql/base` holds — all 186 files there are
+kept separate, which is what `core/sql/base` holds — all 186 files there are
 `tw_world_*`, so there is no `characters.sql` to look for.
 
 On MariaDB the client is called `mariadb`; `mysql` is the older name and may not
@@ -239,7 +239,7 @@ for %f in (database_updates\*.sql) do mariadb -u root -p tw_world -e "INSERT IGN
 Afterwards switch `Database.AutoUpdate.Enabled` back on, and future updates apply
 normally.
 
-**Why the detour.** `sql/base` is not the state "the first N migrations were
+**Why the detour.** `core/sql/base` is not the state "the first N migrations were
 applied". It is a mixed snapshot: of the 101 migration files, 37 contain keys
 that are already in the base data — some entirely, one to 91%, another to 5% —
 while 38 are wholly new and 26 only change the schema. So there is no set of
