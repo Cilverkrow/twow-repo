@@ -125,6 +125,77 @@ func (p *Planner) reserveTokens(ctx context.Context, body []byte) (*tokenReserva
 	return p.cfg.TokenBudget.reserve(ctx, int64(len(body)), int64(p.cfg.MaxTokens))
 }
 
+// usageObject decodes a provider's `usage` object: strict about the accounting
+// triple, tolerant of everything else.
+//
+// It replaces a call to exactObject with an empty optional list, which rejected
+// ANY key it had not been told about. Every mainstream OpenAI-compatible
+// provider now returns prompt_tokens_details and completion_tokens_details
+// inside usage, so the first ordinary 200 OK failed validation and the caller
+// latched the budget -- process-wide, with no reset, for the life of the
+// process. A provider adding a field became a permanent outage.
+//
+// Listing today's extra keys as optional would have fixed today's providers and
+// re-broken on the next one. An unrecognised key is not evidence about the
+// numbers, so it is skipped. The three accounting fields keep exactObject's full
+// strictness -- no duplicates, no nulls, no wrong types, all three required --
+// because those ARE the evidence, and disagreement there is what the latch is
+// for.
+func usageObject(raw []byte) (map[string]json.RawMessage, error) {
+	if !utf8.Valid(raw) {
+		return nil, errors.New("poc: invalid UTF-8")
+	}
+	required := []string{"prompt_tokens", "completion_tokens", "total_tokens"}
+	want := make(map[string]bool, len(required))
+	for _, k := range required {
+		want[k] = true
+	}
+	d := json.NewDecoder(bytes.NewReader(raw))
+	t, err := d.Token()
+	if err != nil || t != json.Delim('{') {
+		return nil, errors.New("poc: expected object")
+	}
+	fields := make(map[string]json.RawMessage)
+	for d.More() {
+		t, err := d.Token()
+		if err != nil {
+			return nil, err
+		}
+		k, ok := t.(string)
+		if !ok {
+			return nil, errors.New("poc: invalid field")
+		}
+		var value json.RawMessage
+		if err := d.Decode(&value); err != nil {
+			return nil, err
+		}
+		// Skipped AFTER decoding, so the value is still consumed and a
+		// malformed one is still a parse error.
+		if !want[k] {
+			continue
+		}
+		if fields[k] != nil {
+			return nil, errors.New("poc: invalid field")
+		}
+		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return nil, errors.New("poc: null field")
+		}
+		fields[k] = value
+	}
+	if _, err := d.Token(); err != nil {
+		return nil, err
+	}
+	if _, err := d.Token(); err != io.EOF {
+		return nil, errors.New("poc: trailing content")
+	}
+	for _, k := range required {
+		if fields[k] == nil {
+			return nil, errors.New("poc: missing field")
+		}
+	}
+	return fields, nil
+}
+
 // observeUsage NEVER refunds. Missing/null usage, cancellation, HTTP failure,
 // decoding failure and uncertain execution all retain the complete reservation.
 // If usage is supplied, require a consistent integer triple. Any contradictory
@@ -139,7 +210,7 @@ func (r *tokenReservation) observeUsage(raw []byte) error {
 	if len(usage) == 0 || bytes.Equal(bytes.TrimSpace(usage), []byte("null")) {
 		return nil
 	}
-	fields, err := exactObject(usage, []string{"prompt_tokens", "completion_tokens", "total_tokens"}, nil)
+	fields, err := usageObject(usage)
 	var input, output, total int64
 	if err != nil || json.Unmarshal(fields["prompt_tokens"], &input) != nil || json.Unmarshal(fields["completion_tokens"], &output) != nil || json.Unmarshal(fields["total_tokens"], &total) != nil || input < 0 || output < 0 || input > math.MaxInt64-output || total != input+output || input > r.input || output > r.output {
 		r.budget.Stop()

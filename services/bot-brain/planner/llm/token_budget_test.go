@@ -138,6 +138,37 @@ func TestTokenBudgetInvalidUsageLatches(t *testing.T) {
 	}
 }
 
+// Every other usage fixture in this file is the bare three-key triple, which is
+// not what any current provider sends. OpenAI, Azure OpenAI, OpenRouter and
+// vLLM >= 0.6 all nest prompt_tokens_details / completion_tokens_details inside
+// usage. Rejecting an unrecognised key latched the budget process-wide on the
+// first ordinary 200 OK, with no reset, so this fixture is the difference
+// between a red test and a silent production outage.
+//
+// Not latching is asserted the way the sibling tests assert the opposite: a
+// further reserve must still succeed.
+func TestTokenBudgetAcceptsProviderUsageDetails(t *testing.T) {
+	for _, usage := range []string{
+		`{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0}}`,
+		`{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2,"some_future_field":"whatever"}`,
+		`{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2,"nullable_extra":null}`,
+		`{"prompt_tokens_details":{"cached_tokens":0},"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}`,
+	} {
+		b := testBudget(t, TokenLimits{10, 5, 30, 60}, nil)
+		r, err := b.reserve(context.Background(), 1, 1)
+		if err != nil {
+			t.Fatalf("reserve: %v", err)
+		}
+		if err := r.observeUsage([]byte(`{"usage":` + usage + `}`)); err != nil {
+			t.Errorf("rejected a realistic provider usage object: %v -- %s", err, usage)
+			continue
+		}
+		if _, err := b.reserve(context.Background(), 1, 1); err != nil {
+			t.Errorf("budget latched on an unrecognised key: %v -- %s", err, usage)
+		}
+	}
+}
+
 func TestTokenBudgetLateUsageCannotRefundNewWindow(t *testing.T) {
 	now := time.Unix(0, 0)
 	b := testBudget(t, TokenLimits{10, 5, 15, 15}, func() time.Time { return now })

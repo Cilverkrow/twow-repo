@@ -134,7 +134,13 @@ func Load(getenv func(string) string) (Config, error) {
 	if err != nil {
 		return c, err
 	}
-	if c.LLM.MaxTokens <= 0 || int64(c.LLM.MaxTokens) > limits.OutputPerRequest {
+	// Gated on Enabled, like the Timeout check in validate() below. Without the
+	// gate, a deployment carrying a previously-legal BOT_BRAIN_LLM_MAX_TOKENS
+	// above the new 1024 default fails Load and never starts -- taking down the
+	// rules-only deterministic planner over a setting that is inert while the
+	// LLM is off. That contradicts this package's own promise at the top of the
+	// file: every value has a default that produces a working service.
+	if c.LLM.Enabled && (c.LLM.MaxTokens <= 0 || int64(c.LLM.MaxTokens) > limits.OutputPerRequest) {
 		return c, fmt.Errorf("BOT_BRAIN_LLM_MAX_TOKENS must be positive and within BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET")
 	}
 	return c, c.validate()
