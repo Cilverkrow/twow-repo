@@ -250,21 +250,32 @@ jobs:
             UPSTREAM_BASE="${UPSTREAM_BASE:?}"
             echo "read UPSTREAM.lock"
 
-            # The gitlink in the tree is the authority on which core commit
-            # this platform is pinned to; UPSTREAM.lock is the readable copy.
-            # If the two disagree somebody moved the submodule without
-            # recording it, and a tag stops reproducing its own build.
-            # `rev-parse HEAD:core` reads the gitlink out of the tree object,
-            # so this needs no submodule checkout.
+            # Which core commit is this platform pinned to? The gitlink, and
+            # only the gitlink. `rev-parse HEAD:core` reads it out of the tree
+            # object, so this needs no submodule checkout.
+            #
+            # This used to compare the gitlink against a CORE_COMMIT copy in
+            # UPSTREAM.lock. That copy went stale three separate times -- most
+            # recently when the submodule was advanced 85 commits and the file
+            # was not touched -- and each drift was a red nightly reporting a
+            # bookkeeping slip, never a real problem with the pin. The field is
+            # gone; there is nothing left to disagree with.
             linked=$(git rev-parse HEAD:core 2>/dev/null || echo "")
             if [ -z "$linked" ]; then
               echo "::error::no gitlink at core/ - the submodule is not in the tree"
               exit 1
-            elif [ "$linked" != "${CORE_COMMIT:-}" ]; then
-              echo "::error::core/ gitlink is $linked but UPSTREAM.lock says ${CORE_COMMIT:-<unset>}"
+            fi
+            echo "core pinned at   : $linked"
+
+            # CORE_URL is still worth asserting, because unlike the fields that
+            # were removed it names something a person can edit independently:
+            # .gitmodules is what git actually clones from, this is what the
+            # file claims. Both are in the tree, so the check is free.
+            gm_url=$(git config -f .gitmodules --get submodule.core.url 2>/dev/null || echo "")
+            if [ -n "$gm_url" ] && [ "$gm_url" != "${CORE_URL:-}" ]; then
+              echo "::error::.gitmodules clones $gm_url but UPSTREAM.lock says ${CORE_URL:-<unset>}"
               exit 1
             fi
-            echo "core pin agrees  : $linked"
           fi
 
           # A bare mirror of the branch only. Cloning the working tree would pull
