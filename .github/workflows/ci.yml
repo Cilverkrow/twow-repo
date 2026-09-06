@@ -433,6 +433,11 @@ jobs:
       # checks out submodules already.
       - name: No duplicate of the core SQL tree
         if: always()
+        # structural only: this job deliberately checks out no submodules, so it
+        # cannot compare against core/sql. The bootstrap job does, and runs the
+        # content half there.
+        env:
+          TW_SQL_GUARD: structural
         run: bash ops/audit/no-duplicate-core-sql.sh
 
       - name: hadolint
@@ -513,10 +518,20 @@ jobs:
           # its sources went into the shared library, so its include paths and
           # its AcCompat.h force-include had nowhere else to go. Every module
           # owns a target in static linkage now, so it configures its own.
+          #
+          # Both roots are globbed. mod-playerbots and mod-dungeon-clear build
+          # from core/modules/ now (ADR-0040) and are exactly the two modules
+          # this check exists for, so a glob that only saw modules/ would have
+          # stopped watching the code that motivated it.
+          #
+          # The `^[^#]*` prefix skips comment lines. core's mod-playerbots.cmake
+          # spells out the very call this rejects, twice, in the comment saying
+          # why it does not make it -- and a check that fires on the explanation
+          # of its own rule teaches the next person to delete the explanation.
           fail=0
-          for f in modules/*/*.cmake; do
+          for f in modules/*/*.cmake core/modules/*/*.cmake; do
             [ -f "$f" ] || continue
-            grep -nE 'target_(link_libraries|include_directories|compile_options|compile_definitions|sources)\([[:space:]]*modules[^a-zA-Z0-9_]' "$f" || continue
+            grep -nE '^[^#]*target_(link_libraries|include_directories|compile_options|compile_definitions|sources)\([[:space:]]*modules[^a-zA-Z0-9_]' "$f" || continue
             echo "::error file=$f::module cmake mutates the shared 'modules' target; configure mod_<name> instead"
             fail=1
           done
@@ -788,7 +803,8 @@ jobs:
       SQL_DIR: core/sql
       CORE_SQL_DIR: core/sql
       SQL_BASE_DIR: core/sql/base
-      PB_SQL_DIR: modules/mod-playerbots/sql
+      PB_SQL_DIR: core/modules/mod-playerbots/sql
+      PB_OVERLAY_SQL_DIR: deploy/sql/playerbots
       MYSQL_PWD: ci-root
 
     steps:

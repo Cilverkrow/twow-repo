@@ -32,7 +32,9 @@ cmake --build build --target mangosd -j$(nproc)
 > Login without `-DALLOW_TURTLE_ADDONS=ON` can throw a client-side login error —
 > a known issue, so build with that flag on.
 
-The bot module is `modules/mod-playerbots` and builds by default.
+The bot module is `core/modules/mod-playerbots` -- it comes from the core
+submodule (ADR-0040), not from this repository's `modules/` -- and builds by
+default.
 `-DMODULE_MOD_PLAYERBOTS=disabled` leaves it out, and the core still links: the
 call sites fall back to the no-op stubs in `core/src/game/PlayerbotStubs.cpp`.
 
@@ -46,14 +48,23 @@ mysql -u mangos -p < core/sql/create_databases.sql        # creates tw_logon/tw_
 for f in core/sql/base/*.sql; do mysql -u mangos -p tw_world < "$f"; done
 
 # Playerbot-specific tables (not part of the base dump above):
-for f in modules/mod-playerbots/sql/world/ai_playerbot_indexes.sql \
-         modules/mod-playerbots/sql/world/ai_playerbot_rpg_races.sql \
-         modules/mod-playerbots/sql/world/ai_playerbot_texts.sql \
-         modules/mod-playerbots/sql/world/classic/*.sql; do
+for f in core/modules/mod-playerbots/sql/world/ai_playerbot_indexes.sql \
+         core/modules/mod-playerbots/sql/world/ai_playerbot_rpg_races.sql \
+         core/modules/mod-playerbots/sql/world/ai_playerbot_texts.sql \
+         core/modules/mod-playerbots/sql/world/classic/*.sql; do
   mysql -u mangos -p tw_world < "$f"
 done
-for f in modules/mod-playerbots/sql/characters/*.sql; do
+# The module's own character tables first, then this repository's overlay on
+# them. The order is load-bearing: ai_playerbot_random_bots.sql opens with
+# DROP TABLE IF EXISTS, so the index has to be added after it, not before.
+for f in core/modules/mod-playerbots/sql/characters/*.sql \
+         deploy/sql/playerbots/characters/*.sql; do
   mysql -u mangos -p tw_char < "$f"
+done
+# cv_bots is the module's event store and lives in a database of its own.
+mysql -u mangos -p -e 'CREATE DATABASE IF NOT EXISTS cv_bots;'
+for f in deploy/sql/playerbots/cv_bots/*.sql; do
+  mysql -u mangos -p cv_bots < "$f"
 done
 ```
 
@@ -65,7 +76,7 @@ are only needed once, for a brand-new database.
 
 ```
 cp build/src/mangosd/mangosd.conf.dist build/src/mangosd/mangosd.conf
-cp modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in <SYSCONFDIR>/aiplayerbot.conf
+cp core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in <SYSCONFDIR>/aiplayerbot.conf
 ```
 
 `<SYSCONFDIR>` is the path baked in at configure time (defaults to

@@ -18,7 +18,7 @@ if(TORTOISE_MODULE_CMAKE_PHASE STREQUAL "POST_TARGETS")
   # This module subclasses ChooseTravelTargetAction and registers into the bot
   # AI context, so it compiles mod-playerbots' headers and links its objects.
   # Linking the target is the whole statement: CollectModuleIncludeDirectories
-  # publishes every directory under modules/mod-playerbots/src that holds a
+  # publishes every directory under core/modules/mod-playerbots/src that holds a
   # header, PUBLIC on that target, and CMake carries them here.
   if(NOT TARGET ${BB_PLAYERBOTS_TARGET})
     message(FATAL_ERROR
@@ -31,8 +31,12 @@ if(TORTOISE_MODULE_CMAKE_PHASE STREQUAL "POST_TARGETS")
 
   # The same three vendor feature gates mod-playerbots compiles itself with.
   #
-  # They are PRIVATE on that target, so they do not travel over the link, and
-  # this module compiles the very same headers. That is not a style question
+  # Set here explicitly rather than relied on. They used to be PRIVATE on that
+  # target, so they did not travel over the link at all; core's copy of the
+  # module -- the one built now (ADR-0040) -- declares them PUBLIC, so they do
+  # arrive. Stating them anyway costs nothing, says the same thing twice rather
+  # than differently, and keeps this module compiling if that visibility ever
+  # changes back upstream. That is not a style question
   # here: this module DERIVES from ChooseTravelTargetAction and passes
   # TravelTarget and TravelDestination objects back into that library. The
   # macros gate member declarations (ServerFacade.h's ArenaType block is the
@@ -45,8 +49,8 @@ if(TORTOISE_MODULE_CMAKE_PHASE STREQUAL "POST_TARGETS")
   # because that declaration sits behind #ifndef MANGOSBOT_ZERO and the type
   # exists nowhere in this tree.
   #
-  # mod-dungeon-clear does NOT set these and subclasses the same classes. That
-  # predates this module and is not ours to change here, but it is the reason
-  # this comment is long: the pattern to copy is this one, not that one.
+  # mod-dungeon-clear did NOT set these and subclassed the same classes; core
+  # fixed that (twow-repo #215) and its copy now sets all three. The pattern to
+  # copy is this one, and it is finally the only one in the tree.
   target_compile_definitions(${BB_TARGET} PRIVATE CMANGOS MANGOSBOT_ZERO ENABLE_PLAYERBOTS)
 endif()

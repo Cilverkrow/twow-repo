@@ -16,8 +16,10 @@
 #      ran in the updates stage, one stage before the playerbot tables were
 #      created, so on a fresh database it failed with ERROR 1146 every single
 #      time - and was recorded as applied every single time. It now ships as
-#      modules/mod-playerbots/sql/characters/ai_playerbot_random_bots_index.sql,
-#      beside the CREATE it depends on.
+#      deploy/sql/playerbots/characters/ai_playerbot_random_bots_index.sql,
+#      applied straight after the CREATE it depends on. The module itself is
+#      core/modules/mod-playerbots now (ADR-0040), so the index lives in the
+#      platform's overlay rather than inside the module's own sql/ tree.
 #   2. spell_template.script_name in the world schema. Four top-level world
 #      migrations write that column and the migration that ADDS it lives in
 #      sql/database_updates/world/, which the bootstrap used to apply second.

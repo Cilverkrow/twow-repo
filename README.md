@@ -33,7 +33,9 @@ commit messages read like bug reports rather than feature notes.
 ### Playerbots
 
 Inherited from [upstream's `playerbots-integration-gh` branch](https://github.com/Shyalya/tortoise-wow/tree/playerbots-integration-gh),
-which vendors [ike3's playerbots][20]; here they live in `modules/mod-playerbots/`. Built
+which vendors [ike3's playerbots][20]; here they live in
+`core/modules/mod-playerbots/`, tracked in the core submodule rather than
+copied into this repository (ADR-0040). Built
 by default (`-DMODULES=static`); runtime activation is gated by `AiPlayerbot.Enabled`.
 
 Fixes made **in this fork** while running them. Upstream has since fixed some of the same
@@ -75,7 +77,7 @@ All off by default, all in `mangosd.conf`:
 | Solo dungeon resurrection, leech limits | `SoloDungeonRepopAlive.Enable`, `Leech.*` | – |
 | Keep navmesh tiles loaded | `MMapTileUnload` | off by default; `removeTile` zeroes `tile->polys` and Detour reads it unvalidated, so a surviving polyRef resolves to `nullptr + index` |
 
-Playerbot keys live in `modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in`, the
+Playerbot keys live in `core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in`, the
 rest in `core/src/mangosd/mangosd.conf.dist.in`. A config generated from an older checkout
 will not contain them — regenerate it or copy the blocks across.
 
@@ -120,7 +122,7 @@ Two are deliberately manual, in `core/sql/tools/`, because both depend on per-se
 
 ### Not ours
 
-`modules/mod-dungeon-clear` was **written by shyalya**, not by this project — commits
+`core/modules/mod-dungeon-clear` was **written by shyalya**, not by this project — commits
 `1792e0cf`, `f65898ec` and `0638fe21` (August 2026). It arrived with the fork and is
 listed here so it is not mistaken for work done in this repository.
 

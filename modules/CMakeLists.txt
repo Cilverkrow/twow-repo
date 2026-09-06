@@ -144,7 +144,17 @@ foreach(SOURCE_MODULE ${MODULES_MODULE_LIST})
     set(TORTOISE_CURRENT_MODULE "${SOURCE_MODULE}")
     set(TORTOISE_CURRENT_MODULE_VARIABLE "${MODULE_VARIABLE}")
     set(TORTOISE_CURRENT_MODULE_LINKAGE "${MODULE_LINKAGE}")
-    include("${TW_MODULES_DIR}/${SOURCE_MODULE}/${SOURCE_MODULE}.cmake" OPTIONAL)
+    # Resolve through TW_MODULE_ROOTS rather than assuming the first root.
+    # GetModuleSourceList discovers modules across every root, so spelling this
+    # "${TW_MODULES_DIR}/${SOURCE_MODULE}" meant a module found under any OTHER
+    # root had its .cmake looked for in a directory it is not in -- and because
+    # the include is OPTIONAL, that is a silent skip, not an error. The module
+    # compiles with none of its own wiring: no compile definitions, no link
+    # libraries, no install rules, and no diagnostic. This is the core's #57
+    # fix, applied to this copy of the driver now that mod-playerbots and
+    # mod-dungeon-clear come from core/modules/ rather than from here.
+    GetPathToModule("${SOURCE_MODULE}" MODULE_CMAKE_DIR)
+    include("${MODULE_CMAKE_DIR}/${SOURCE_MODULE}.cmake" OPTIONAL)
     unset(TORTOISE_CURRENT_MODULE_LINKAGE)
     unset(TORTOISE_CURRENT_MODULE_VARIABLE)
     unset(TORTOISE_CURRENT_MODULE)
@@ -163,8 +173,9 @@ foreach(SOURCE_MODULE ${MODULES_MODULE_LIST})
   endif()
 
   if(NOT MODULE_LINKAGE STREQUAL "disabled")
+    GetPathToModule("${SOURCE_MODULE}" MODULE_CONF_DIR)
     file(GLOB MODULE_CONFIG_DIST_FILES CONFIGURE_DEPENDS
-      "${TW_MODULES_DIR}/${SOURCE_MODULE}/conf/*.conf.dist")
+      "${MODULE_CONF_DIR}/conf/*.conf.dist")
 
     foreach(MODULE_CONFIG_DIST_FILE ${MODULE_CONFIG_DIST_FILES})
       CopyModuleConfig("${MODULE_CONFIG_DIST_FILE}")
@@ -290,7 +301,8 @@ foreach(SOURCE_MODULE ${MODULES_ENABLED_MODULES})
   endif()
   set(TORTOISE_CURRENT_MODULE "${SOURCE_MODULE}")
   set(TORTOISE_CURRENT_MODULE_VARIABLE "${MODULE_VARIABLE}")
-  include("${TW_MODULES_DIR}/${SOURCE_MODULE}/${SOURCE_MODULE}.cmake" OPTIONAL)
+  GetPathToModule("${SOURCE_MODULE}" MODULE_CMAKE_DIR)
+  include("${MODULE_CMAKE_DIR}/${SOURCE_MODULE}.cmake" OPTIONAL)
   unset(TORTOISE_CURRENT_MODULE_VARIABLE)
   unset(TORTOISE_CURRENT_MODULE)
   unset(TORTOISE_CURRENT_MODULE_LINKAGE)

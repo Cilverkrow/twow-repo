@@ -118,7 +118,8 @@ cmake --build build --config Release
 ```
 
 - **Modules build by default** (`-DMODULES=static`), the bots among them
-  (`modules/mod-playerbots`). `-DMODULES=disabled` gives a server with no bots,
+  (`core/modules/mod-playerbots`, from the core submodule — ADR-0040).
+  `-DMODULES=disabled` gives a server with no bots,
   no donation points and no world buffs, with no warning anywhere;
   `-DMODULE_MOD_PLAYERBOTS=disabled` drops just the bots.
 - **`USE_EXTRACTORS`** builds the tools you need in step 4. Skip it only if you

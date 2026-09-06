@@ -6,7 +6,8 @@ export DB_ROOT_PASSWORD="$MARIADB_ROOT_PASSWORD"
 export DB_USER=bootstrap_test DB_PASSWORD="$MARIADB_ROOT_PASSWORD"
 export REALM_NAME=BootstrapTest REALM_ADDRESS=127.0.0.1 WORLD_PORT=8090
 export SQL_DIR=/work/core/sql CORE_SQL_DIR=/work/core/sql
-export SQL_BASE_DIR=/work/core/sql/base PB_SQL_DIR=/work/modules/mod-playerbots/sql
+export SQL_BASE_DIR=/work/core/sql/base PB_SQL_DIR=/work/core/modules/mod-playerbots/sql
+export PB_OVERLAY_SQL_DIR=/work/deploy/sql/playerbots
 export IMPORT_PLAYERBOTS=ON MYSQL_PWD="$MARIADB_ROOT_PASSWORD"
 sql() { mariadb -h 127.0.0.1 -P 3306 -uroot -NB "$@"; }
 for _ in $(seq 1 60); do

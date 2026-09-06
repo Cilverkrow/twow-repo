@@ -260,7 +260,11 @@ jobs:
           # except where one tree serves several of them - see the ENV below.
           COPY deploy/compose/db-init.sh /db-init.sh
           COPY core/sql /sql
-          COPY modules/mod-playerbots/sql /sql-playerbots
+          COPY core/modules/mod-playerbots/sql /sql-playerbots
+          # The platform's overlay on that schema (ADR-0040): the index, the
+          # cv_bots migration, and the maintenance scripts rewritten for the
+          # cv_bots database. db-init applies it after the core's files.
+          COPY deploy/sql/playerbots /sql-playerbots-overlay
           # mod-bot-brain's cv_brain schema (ADR-0039). db-init skips the stage when
           # this path is absent, so the image stays correct either way - but the
           # published one should carry it, or a compose deployment gets a brain with

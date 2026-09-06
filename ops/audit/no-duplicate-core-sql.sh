@@ -47,11 +47,30 @@ fi
 candidates=$(git ls-files -- '*.sql' | grep -Ev '^(core|modules|runbooks)/' || true)
 
 if [ -n "$candidates" ]; then
-    # Reported rather than skipped: a job that forgot `submodules: recursive`
-    # must not turn an uncheckable guard into a silent green.
+    # A job that FORGOT `submodules: recursive` must not turn an uncheckable
+    # guard into a silent green -- but a job that legitimately has no submodule
+    # must still be able to run the structural half. Those two are told apart by
+    # an explicit mode, not by guessing from the absence of a directory:
+    #
+    #   TW_SQL_GUARD=structural  - run the structural half only; the caller
+    #                              states that it has no submodule on purpose
+    #                              and that another job covers the content half.
+    #   (unset, or anything else) - run both, and fail loudly if core/sql is
+    #                              missing, which is the forgot-the-submodule
+    #                              case.
+    #
+    # The lint job is the first kind and the bootstrap job the second. This used
+    # to fail closed for both, which was invisible only because the repo had no
+    # candidate files outside core/ -- the moment one appeared, lint went red
+    # for a submodule it never wanted.
+    if [ "${TW_SQL_GUARD:-}" = "structural" ]; then
+        echo "duplicate-content check skipped: TW_SQL_GUARD=structural (the bootstrap job runs it)"
+        exit 0
+    fi
     if [ ! -d core/sql ]; then
         err "core/sql is not checked out, so the duplicate-content check cannot run"
-        err "add 'submodules: recursive' to this job's checkout"
+        err "add 'submodules: recursive' to this job's checkout, or set"
+        err "TW_SQL_GUARD=structural if another job covers the content half"
         exit "$fail"
     fi
 

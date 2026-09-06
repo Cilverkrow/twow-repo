@@ -2,7 +2,7 @@
  * mod-bot-brain -- unit tests for the wire contract.
  *
  * Hand-rolled assertions, one plain main(), no test framework: the same shape
- * as modules/mod-playerbots/t/persistent_active_roster_tests.cpp, and for the
+ * as core/modules/mod-playerbots/t/persistent_active_roster_tests.cpp, and for the
  * same reason -- it keeps the suite compilable in the default configuration
  * with no dependency to fetch.
  *

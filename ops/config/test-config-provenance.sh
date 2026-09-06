@@ -143,7 +143,7 @@ assert_semantics() {
             aiplayerbot)
                 rendered="$CONFIG_OUT_DIR/aiplayerbot.conf"
                 baseline="$ROOT/config/examples/aiplayerbot.local.example.conf"
-                template="$ROOT/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in"
+                template="$ROOT/core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in"
                 overlay="$CANONICAL/aiplayerbot.overlay.conf"
                 ;;
             *) echo "ERROR: unknown semantic-matrix service" >&2; exit 1 ;;

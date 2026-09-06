@@ -60,28 +60,35 @@ endif()
 # ---------------------------------------------------------------------------
 # 1. Which modules get built.
 #
-# TW_MODULES_DIR is the core's one input on this subject: it defaults to the
-# core's own modules/ and is FORCEd here to ours. One directory wins, whole --
-# the two are not merged, and core/modules/ is not built.
+# Two roots, searched in order, first match wins (ADR-0040).
 #
-# Ours wins because it is the superset and the maintained one: four modules the
-# core's copy does not have (mod-donation, mod-leech, mod-solo-dungeon,
-# mod-worldbuff -- all four extracted out of World.cpp and Unit.cpp here), the
-# persistent-active-roster feature in mod-playerbots, and every test suite.
-# tests.cmake exists only on this side, so consuming the core's copy would mean
-# `ctest` finding nothing. Our modules/CMakeLists.txt is also ahead: one static
-# target per module, so a module's compile options stop leaking into every
-# other module's translation units.
+# This used to be one directory: TW_MODULES_DIR was FORCEd to ours and
+# core/modules/ was never compiled, so a module we wanted from upstream had to
+# be VENDORED here as a copy. That is how mod-playerbots and mod-dungeon-clear
+# came to exist twice and drift in both directions, and why upstream's work on
+# them had to be hand-carried instead of merged. The core grew TW_MODULE_ROOTS
+# to end that; those two copies are deleted and the core's are built instead.
 #
-# core/modules/ stays where it is rather than being deleted, and that is a
-# deliberate reversal of an earlier "pure core" rule: upstream built a module
-# system of its own, so deleting the directory re-wins the same argument on
-# every merge and silently drops upstream's framework whenever the delete does
-# NOT conflict. See the long note in twow-core's .github/workflows/ci.yml. It
-# is inbound upstream content that this build supersedes, not a second live
-# copy: nothing under core/modules/ is ever compiled here.
+# TW_MODULES_DIR stays OURS, and stays index 0, because the core requires both:
+# it is the directory whose CMakeLists.txt DRIVES the module build (the core
+# inserts it at the head of TW_MODULE_ROOTS if a caller leaves it out), and our
+# driver is the one that is ahead -- one static target per module, so a module's
+# compile options stop leaking into every other module's translation units.
+#
+# The FORCE is gone with it. TW_MODULES_DIR is a plain cache default now, so
+# `-DTW_MODULES_DIR=...` on the command line is honoured rather than silently
+# overwritten on the next configure.
+#
+# Platform first, core second: our five own modules (mod-bot-brain,
+# mod-donation, mod-leech, mod-solo-dungeon, mod-worldbuff) exist nowhere else,
+# and putting our root first also means a module we ever need to fork again can
+# be re-vendored here and win without touching the submodule. Nothing is
+# provided by both roots today, and the core WARNS if that ever changes rather
+# than picking one quietly.
 set(TW_MODULES_DIR "${CMAKE_SOURCE_DIR}/modules" CACHE PATH
-    "Directory containing the modules to build." FORCE)
+    "Directory whose CMakeLists.txt drives the module build.")
+set(TW_MODULE_ROOTS "${CMAKE_SOURCE_DIR}/modules;${CMAKE_SOURCE_DIR}/core/modules"
+    CACHE STRING "Directories searched for modules, in order; first match wins.")
 
 # Default `static`, not the core's `disabled`.
 #
@@ -143,8 +150,18 @@ set_property(DIRECTORY APPEND PROPERTY
 # default configuration - exactly the configuration CI wants to run tests in.
 # The suite is source-level: it compiles the module's own .cpp files directly,
 # so it needs the sources on disk, not the `modules` library.
+#
+# Each suite is included from the root that owns its module: mod-bot-brain is
+# ours, mod-dungeon-clear and mod-playerbots are the core's now. The core wires
+# those two itself only when it is the top-level project
+# (`CMAKE_SOURCE_DIR STREQUAL TW_CORE_ROOT`), precisely so that a consumer which
+# has made its own choice registers them once, here, deliberately -- rather than
+# defining persistent_active_roster_tests twice and failing configure.
+#
+# Target names and ctest names are unchanged by the move, so the -R/-L filters
+# in .github/workflows/ci.yml keep matching.
 if(BUILD_TESTING)
   include("${CMAKE_SOURCE_DIR}/modules/mod-bot-brain/tests.cmake")
-  include("${CMAKE_SOURCE_DIR}/modules/mod-dungeon-clear/tests.cmake")
-  include("${CMAKE_SOURCE_DIR}/modules/mod-playerbots/tests.cmake")
+  include("${CMAKE_SOURCE_DIR}/core/modules/mod-dungeon-clear/tests.cmake")
+  include("${CMAKE_SOURCE_DIR}/core/modules/mod-playerbots/tests.cmake")
 endif()
