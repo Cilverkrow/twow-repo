@@ -42,6 +42,6 @@ Uncommitted PlayerBot/LLM changes from the live source tree are imported in a se
 
 ## Third-party content in this repository
 
-`modules/mod-dungeon-clear` was authored by shyalya (commits `1792e0cf`, `f65898ec`,
+`core/modules/mod-dungeon-clear` was authored by shyalya (commits `1792e0cf`, `f65898ec`,
 `0638fe21`, 2026-08-22 / 2026-08-24), not by this project. It arrived with the import.
 See ADR-0026.

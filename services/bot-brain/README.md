@@ -11,7 +11,7 @@ else is a working demonstration that the contract is implementable.
 
 ## Why this exists
 
-Bot AI today is `modules/mod-playerbots/`, 462 C++ files of which 413 are the
+Bot AI today is `core/modules/mod-playerbots/`, 462 C++ files of which 413 are the
 decision engine under `src/playerbot/strategy/`. **Changing one of those files
 costs 326 seconds of rebuild and relink.** That is the number this service
 exists to remove: a policy change here is an environment variable and a
@@ -427,4 +427,4 @@ contained behind `metrics/`.
 - `docs/adr/ADR-0012` — external LLM process, fail-closed admission, the worker boundary
 - `docs/adr/ADR-0013` — wire and lifecycle contract for the existing bridge
 - `docs/adr/ADR-0023` — containerization and the one-command contract
-- `modules/mod-playerbots/src/playerbot/PersistentActiveRoster.h` — the identity/behaviour line a planner must never cross
+- `core/modules/mod-playerbots/src/playerbot/PersistentActiveRoster.h` — the identity/behaviour line a planner must never cross

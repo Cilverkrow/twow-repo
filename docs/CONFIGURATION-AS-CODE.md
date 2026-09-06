@@ -12,7 +12,7 @@ The complete source for the Compose configuration is:
 |---|---|---|
 | Worldserver | `core/src/mangosd/mangosd.conf.dist.in` | `config/canonical/compose/mangosd.overlay.conf` |
 | Realmserver | `core/src/realmd/realmd.conf.dist.in` | `config/canonical/compose/realmd.overlay.conf` |
-| PlayerBots | `modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in` | `config/canonical/compose/aiplayerbot.overlay.conf` |
+| PlayerBots | `core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in` | `config/canonical/compose/aiplayerbot.overlay.conf` |
 
 [`semantic-baseline.tsv`](../config/canonical/compose/semantic-baseline.tsv)
 classifies all 115 original service-key differences: 95 preserve verified

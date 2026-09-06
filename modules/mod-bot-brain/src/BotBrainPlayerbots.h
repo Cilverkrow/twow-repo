@@ -3,7 +3,7 @@
  *
  * mod-playerbots' headers are not self-contained, and nothing in that tree
  * pretends otherwise: its own translation units get their prerequisites from
- * modules/mod-playerbots/botpch.h, applied as a precompiled header on that
+ * core/modules/mod-playerbots/botpch.h, applied as a precompiled header on that
  * target only (mod-playerbots.cmake:160). A module that includes a playerbot
  * header without the same prelude collects a screenful of errors out of headers
  * it does not own -- WorldPosition.h alone wants <random> for

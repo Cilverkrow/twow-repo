@@ -29,7 +29,7 @@ level is kept rather than flattened into `services/llm-bridge/src/`.
 
 ## Before integrating — read this first
 
-**`client-cpp/` is not dropped back into `modules/mod-playerbots/`, and should not be.**
+**`client-cpp/` is not dropped back into `core/modules/mod-playerbots/`, and should not be.**
 
 As written it modifies six files in the vendored bot tree — `PlayerbotAI.{h,cpp}`,
 `PlayerbotAIConfig.{h,cpp}`, `PlayerbotScripts.cpp`, `SayAction.cpp` — for a total of **325
@@ -39,7 +39,7 @@ in-process LLM plumbing reverses a lot of work.
 
 **`modules/mod-bot-brain` already solves the same shape of problem with zero bot-tree delta.**
 It attaches through `RegisterAiContextAugmenter` and the `ScriptObjects.h` hooks, talks to
-`services/bot-brain` out of process, and `git diff --stat modules/mod-playerbots` is empty.
+`services/bot-brain` out of process, and `git diff --stat core/modules/mod-playerbots` is empty.
 That is the seam this should use.
 
 Three things to settle before any integration:

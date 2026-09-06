@@ -2,7 +2,7 @@
  * mod-bot-brain -- attaching to every bot's AI context.
  *
  * This uses the seam that already exists. RegisterAiContextAugmenter (see
- * modules/mod-playerbots/src/playerbot/AiContextAugment.h) is called for every
+ * core/modules/mod-playerbots/src/playerbot/AiContextAugment.h) is called for every
  * bot context as it is built at PlayerbotAI.cpp:150, and registering also walks
  * the bots that already exist -- so this module does not care whether it ran
  * before or after the random-bot factory. mod-dungeon-clear does the same thing

@@ -11,7 +11,7 @@ stock chooser.
 
 ## The seam it uses
 
-Nothing under `modules/mod-playerbots` is edited. That tree is a vendored copy
+Nothing under `core/modules/mod-playerbots` is edited. That tree is a vendored copy
 of upstream (`Shyalya/tortoise-wow`, `playerbots-integration-gh`) and every line
 changed in it is permanent merge friction.
 

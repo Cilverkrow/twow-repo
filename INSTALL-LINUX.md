@@ -38,7 +38,8 @@ cmake --build build -j$(nproc)
 ```
 
 **Modules build by default** (`-DMODULES=static`), and the bots are one of them:
-`modules/mod-playerbots`. `-DMODULES=disabled` gives you a server with no bots,
+`core/modules/mod-playerbots` -- it comes from the core submodule (ADR-0040),
+not from this repository's `modules/`. `-DMODULES=disabled` gives you a server with no bots,
 no donation points and no world buffs, with no warning anywhere. To drop just the
 bots, use `-DMODULE_MOD_PLAYERBOTS=disabled`.
 
@@ -154,15 +155,23 @@ doesn't exist` — and it aborts through an assertion, so the message scrolls pa
 in a stack trace rather than telling you plainly what to do.
 
 ```bash
-cd modules/mod-playerbots/sql
+cd core/modules/mod-playerbots/sql
 cat world/*.sql world/classic/*.sql | mysql -u root -p tw_world
 cat characters/*.sql | mysql -u root -p tw_char
+cd -
+# This repository's overlay on that schema, applied after it (ADR-0040).
+# ai_playerbot_random_bots.sql above opens with DROP TABLE IF EXISTS, so an
+# index on that table added any earlier is dropped again a moment later.
+cat deploy/sql/playerbots/characters/*.sql | mysql -u root -p tw_char
+mysql -u root -p -e 'CREATE DATABASE IF NOT EXISTS cv_bots;'
+cat deploy/sql/playerbots/cv_bots/*.sql | mysql -u root -p cv_bots
 ```
 
-Eight files into the world database, six into the characters one. `world/classic`
-is the vanilla set; the `tbc` and `wotlk` siblings do not apply here. Anything
-under the module's `sql/other` is maintenance — deleting and resetting bots — not part of a
-first install.
+Eight files into the world database, six into the characters one, plus this
+repository's overlay: one more character file (the index) and the `cv_bots`
+migration. `world/classic` is the vanilla set; the `tbc` and `wotlk` siblings
+do not apply here. Anything under `sql/other` on either side is maintenance —
+deleting and resetting bots — not part of a first install.
 
 
 > **Caveat.** The auto-updater only works on a database built through it from the

@@ -65,7 +65,7 @@ services:
       # --- deterministic planner thresholds -----------------------------------
       # These are the whole reason this service exists: changing bot policy here
       # is an environment variable and a restart, where changing it in
-      # modules/mod-playerbots is 326 seconds of C++ rebuild and relink.
+      # core/modules/mod-playerbots is 326 seconds of C++ rebuild and relink.
       BOT_BRAIN_RULE_REST_BELOW_HP_PCT: ${BOT_BRAIN_RULE_REST_BELOW_HP_PCT:-45}
       BOT_BRAIN_RULE_REPAIR_BELOW_DUR_PCT: ${BOT_BRAIN_RULE_REPAIR_BELOW_DUR_PCT:-25}
       BOT_BRAIN_RULE_VENDOR_FREE_SLOTS: ${BOT_BRAIN_RULE_VENDOR_FREE_SLOTS:-1}

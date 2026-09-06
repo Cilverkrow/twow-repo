@@ -11,7 +11,7 @@ OUT="${CONFIG_OUT_DIR:-$HERE/config}"
 
 MANGOSD_TEMPLATE="$ROOT/core/src/mangosd/mangosd.conf.dist.in"
 REALMD_TEMPLATE="$ROOT/core/src/realmd/realmd.conf.dist.in"
-AIPLAYERBOT_TEMPLATE="$ROOT/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in"
+AIPLAYERBOT_TEMPLATE="$ROOT/core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in"
 MANGOSD_OVERLAY="$CANONICAL/mangosd.overlay.conf"
 REALMD_OVERLAY="$CANONICAL/realmd.overlay.conf"
 AIPLAYERBOT_OVERLAY="$CANONICAL/aiplayerbot.overlay.conf"

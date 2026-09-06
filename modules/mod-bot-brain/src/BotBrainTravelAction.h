@@ -8,7 +8,7 @@
  * the first context that answers (NamedObjectContext.h:283-287).
  *
  * ChooseTravelTargetAction.cpp is not touched, and neither is anything else
- * under modules/mod-playerbots. That tree is a vendored copy of upstream and
+ * under core/modules/mod-playerbots. That tree is a vendored copy of upstream and
  * every line changed in it is permanent merge friction.
  *
  * Behaviour when there is no intent -- no service, slow service, expired

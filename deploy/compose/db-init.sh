@@ -36,6 +36,16 @@ SQL_DIR=${SQL_DIR:-/sql}
 CORE_SQL_DIR=${CORE_SQL_DIR:-/sql-core}
 SQL_BASE_DIR=${SQL_BASE_DIR:-/sql-base}
 PB_SQL_DIR=${PB_SQL_DIR:-/sql-playerbots}
+# The platform's overlay on top of mod-playerbots' schema (ADR-0040).
+#
+# The module lives in core/modules/ now, so PB_SQL_DIR is the core's copy and is
+# not ours to edit. Three things this deployment needs are not in it and are not
+# upstream's business: the index on ai_playerbot_random_bots, the cv_bots
+# migration for that table, and the maintenance scripts rewritten to name the
+# cv_bots database. They live in deploy/sql/playerbots/ and are applied AFTER the
+# core's files -- apply_module_sql walks its arguments in order, which is what
+# makes "index after the table that DROP+CREATEs itself" a fact rather than luck.
+PB_OVERLAY_SQL_DIR=${PB_OVERLAY_SQL_DIR:-/sql-playerbots-overlay}
 # mod-bot-brain's own schema (ADR-0039). Optional: the directory is only mounted
 # where the brain is deployed, and its absence must not fail a bootstrap.
 BRAIN_SQL_DIR=${BRAIN_SQL_DIR:-/sql-bot-brain}
@@ -332,11 +342,13 @@ stage_updates() {
 # comparing would not guarantee it.
 apply_module_sql() {
     local db=$1; shift
-    local dir f
+    local dir f short
     for dir in "$@"; do
         [ -d "$dir" ] || { log "missing $dir"; exit 1; }
         while IFS= read -r f; do
-            log "module sql ($db) ${f#"$PB_SQL_DIR"/}"
+            short=${f#"$PB_SQL_DIR"/}
+            short=${short#"$PB_OVERLAY_SQL_DIR"/}
+            log "module sql ($db) $short"
             mysql_root "$db" < "$f" || {
                 log "FAILED: module schema $f did not apply to $db."
                 exit 1
@@ -352,7 +364,12 @@ stage_playerbots() {
     fi
     [ -d "$PB_SQL_DIR" ] || { log "missing $PB_SQL_DIR"; exit 1; }
     apply_module_sql tw_world "$PB_SQL_DIR/world" "$PB_SQL_DIR/world/classic"
-    apply_module_sql tw_char  "$PB_SQL_DIR/characters"
+    # Core's characters/ first, then ours. Argument order is the apply order, and
+    # ai_playerbot_random_bots_index.sql (ours) has to follow
+    # ai_playerbot_random_bots.sql (core's), which opens with DROP TABLE IF
+    # EXISTS. The LC_ALL=C sort inside apply_module_sql orders each directory;
+    # this ordering is between them, and only the argument order provides it.
+    apply_module_sql tw_char  "$PB_SQL_DIR/characters" "$PB_OVERLAY_SQL_DIR/characters"
     apply_migration tw_char "$CORE_SQL_DIR/character_updates/20260708055500_ai_playerbot_random_bots_index.sql"
 }
 
@@ -362,12 +379,17 @@ stage_playerbots() {
 # deliberately live in their own directory rather than in characters/: stage 40
 # applies every *.sql under characters/ to tw_char, so a cv_bots migration
 # parked there would be loaded into the wrong database as well as the right one.
+#
+# cv_bots/ comes from the overlay ALONE: the core's copy of the module has no
+# such directory, and apply_module_sql hard-fails on a directory that is not
+# there rather than skipping it. Naming both roots here would break every
+# bootstrap.
 stage_playerbot_migrations() {
     if [ "${IMPORT_PLAYERBOTS:-ON}" != "ON" ]; then
         log "IMPORT_PLAYERBOTS is not ON; skipping PlayerBot migrations"
         return 0
     fi
-    apply_module_sql "$BOT_DB" "$PB_SQL_DIR/cv_bots"
+    apply_module_sql "$BOT_DB" "$PB_OVERLAY_SQL_DIR/cv_bots"
 }
 
 # -------------------------------------------------------------- 60 realmlist

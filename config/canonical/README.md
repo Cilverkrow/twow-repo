@@ -10,7 +10,7 @@ The complete configuration is the combination of:
 | --- | --- | --- |
 | world server | `core/src/mangosd/mangosd.conf.dist.in` | `compose/mangosd.overlay.conf` |
 | realm server | `core/src/realmd/realmd.conf.dist.in` | `compose/realmd.overlay.conf` |
-| PlayerBots | `modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in` | `compose/aiplayerbot.overlay.conf` |
+| PlayerBots | `core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in` | `compose/aiplayerbot.overlay.conf` |
 
 The base templates are complete and move with the server source. The overlays
 contain every verified non-secret semantic deviation needed to retain the
