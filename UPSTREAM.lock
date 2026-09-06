@@ -5,15 +5,21 @@
 # submodule. Three questions have to have written answers, and this file is
 # where they live:
 #
-#   1. which core commit is this platform pinned to?            -> CORE_COMMIT
+#   1. which core commit is this platform pinned to?   -> NOT HERE. The
+#      gitlink is the authority and the only record: `git rev-parse HEAD:core`.
+#      This file used to carry a copy and the copy went stale three times; see
+#      the note further down.
 #   2. which upstream is that core a fork of?          -> UPSTREAM_URL/BRANCH
 #   3. which upstream commit does the fork delta sit on?        -> UPSTREAM_BASE
 #
-# Question 1 is also answered by the gitlink in the tree, and THAT is the
-# authority -- this file is the human- and shell-readable copy of it.
-# Questions 2 and 3 cannot be answered from this repository at all: its history
-# was rewritten with git-filter-repo to strip binaries, so its hashes
-# correspond to nothing upstream (docs/PROVENANCE.md, FG-005/FG-006).
+# Questions 2 and 3 are the reason this file still exists. They cannot be
+# answered from this repository at all: its history was rewritten with
+# git-filter-repo to strip binaries, so its hashes correspond to nothing
+# upstream (docs/PROVENANCE.md, FG-005/FG-006). Their authority is
+# core/UPSTREAM.lock -- which lives inside the submodule, and the nightly drift
+# job deliberately does not check the submodule out, because cloning it would
+# pull 130 MB of world SQL to count commits. So these three values are copied
+# here on purpose: it is the only place the job can reach them.
 #
 # FORMAT: POSIX shell assignments, no spaces around `=`, values unquoted or
 # single-quoted, so that a workflow can `. ./UPSTREAM.lock` directly. Anything
@@ -22,33 +28,42 @@
 # NOT sourceable; it is the core's own record and nothing here reads it.
 
 # ---------------------------------------------------------------------------
-# The core submodule.
+# The core submodule. Asserted against .gitmodules by the nightly drift job --
+# both are in the tree, so that check needs no network and no submodule
+# checkout, and unlike the fields removed below it compares two things that can
+# genuinely be edited independently.
 CORE_URL=https://github.com/Cilverkrow/twow-core.git
 
-# The branch the submodule tracks. Recorded here as well as in .gitmodules so
-# `git submodule update --remote` and this file cannot disagree silently.
+# NOT recorded here: the branch, the pinned commit, and Eluna's path/url.
 #
-# This pointed at the twow-core pull request the ADR-0020 split depended on
-# ("build: make the core consumable by a platform repository"), with a note
-# saying to set it back to `main` once that merged. It merged, as twow-core
-# #10, and .gitmodules has said `main` ever since -- so the two files were
-# disagreeing in exactly the way the paragraph above says they must not.
-CORE_BRANCH=main
-
-# The pinned commit. Must equal `git -C core rev-parse HEAD` on a clean
-# checkout; a mismatch means somebody moved the submodule without recording it,
-# which is how a build stops being reproducible from a tag.
+# They used to be. Every one of them was a copy of a value whose authority is
+# somewhere else in this same checkout -- the branch and url live in
+# .gitmodules, the pinned commit IS the gitlink, and Eluna's coordinates are
+# core's own .gitmodules. A copy of the truth is not a second source of truth;
+# it is a thing that can disagree with the truth, and all three did:
 #
-# It was mismatched: the gitlink said e898d338 (twow-core #10 as merged) while
-# this line still named e9ff42cf, the pre-merge tip of the branch that became
-# it. nightly.yml compares the two and errors on a difference, so that had been
-# a standing red. Both are now e3ab7b0d.
-CORE_COMMIT=e3ab7b0d7e77fc32009c664618d7ec7e58c511de
-
-# The core's own nested submodule, recorded so that "did the checkout go deep
-# enough?" has a written answer. BUILD_ELUNA defaults ON and FATAL_ERRORs
-# without it, so every checkout of this repository has to be recursive to two
-# levels.
+#   - CORE_BRANCH said the twow-core pull request that ADR-0020 depended on,
+#     with a note to set it back to `main` once that merged. It merged as
+#     twow-core #10 and .gitmodules said `main` from then on, so the two files
+#     disagreed for as long as the note went unread.
+#   - CORE_COMMIT said e9ff42cf, the pre-merge tip of the branch that became
+#     twow-core #10, while the gitlink said e898d338. Fixed to e3ab7b0d.
+#   - CORE_COMMIT then said e3ab7b0d while the gitlink said 7b8d8b2d, because
+#     the submodule was advanced 85 commits and this file was not touched.
+#
+# Three drifts, all the same shape, and the third happened after the file had
+# already documented the first two as cautionary tales. The lesson the comments
+# kept drawing was "remember to update both". The lesson that actually holds is
+# that a field whose only job is to be compared against the authority carries
+# no information the authority does not, and removing it removes the entire
+# class of bug. `git rev-parse HEAD:core` answers "which commit?" from the tree
+# object alone, with no submodule checkout, which is exactly what the nightly
+# drift job already does.
+# The core's own nested submodule. Prose, not configuration: nothing reads
+# these, and core/.gitmodules is the authority. They are here so that "did the
+# checkout go deep enough?" has a written answer -- BUILD_ELUNA defaults ON and
+# FATAL_ERRORs without it, so every checkout of this repository has to be
+# recursive to two levels.
 CORE_SUBMODULE_ELUNA_PATH=core/src/modules/Eluna
 CORE_SUBMODULE_ELUNA_URL=https://github.com/ElunaLuaEngine/Eluna.git
 
