@@ -21,6 +21,19 @@ name: twow
 x-core-build: &core-build
   context: ../..
   dockerfile: deploy/docker/Dockerfile.core
+  # REQUIRED. Without it BuildKit builds the LAST stage in the Dockerfile,
+  # which is `ci-staged` -- a CI-only stage whose body is `COPY ${STAGE}
+  # ${PREFIX}` from ./stage, a directory that exists only after ci.yml has
+  # staged an install into it. In a normal checkout that copies nothing, so the
+  # image comes out with an EMPTY /opt/turtle/bin and both servers die on
+  # startup:
+  #     realmd:  exec /opt/turtle/bin/realmd failed: No such file or directory
+  #     mangosd: /opt/turtle/bin/mangosd: not found
+  # The failure is silent at build time -- the image builds fine, it just has
+  # no binaries in it -- so `make up --build` produced a broken stack with no
+  # error to search for. publish.yml has always pinned `target: runtime`;
+  # compose never did.
+  target: runtime
   args:
     TW_ARCH: ${TW_ARCH:-x86-64-v2}
     MODULES: ${MODULES:-static}

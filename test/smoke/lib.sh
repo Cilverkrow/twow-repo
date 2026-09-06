@@ -23,6 +23,29 @@ SMOKE_SKIP=77
 # rather than relying on the working directory, because these scripts are run
 # from the repository root.
 : "${TWOW_ENV_FILE:=deploy/compose/.env}"
+
+# Load it, rather than only handing it to `docker compose --env-file`.
+#
+# TWOW_DB_PASSWORD below defaults from $DB_ROOT_PASSWORD in the ENVIRONMENT,
+# and nothing populated that environment: the file was passed to compose and
+# never sourced. So following the README literally -- `sh test/smoke/run-all.sh`
+# -- left the password empty and every database check failed with "database
+# query failed", while the same checks passed the moment DB_ROOT_PASSWORD was
+# exported by hand. A harness whose documented invocation cannot work is worse
+# than no harness.
+#
+# `set -a` so the values are exported for `docker compose exec -e` and for the
+# child scripts. Existing environment wins: the file is loaded only to fill
+# gaps, so an explicit override on the command line still takes precedence.
+if [ -f "$TWOW_ENV_FILE" ]; then
+    __twow_saved_env=$(export -p)
+    set -a
+    # shellcheck disable=SC1090  # runtime path, by design
+    . "$TWOW_ENV_FILE"
+    set +a
+    eval "$__twow_saved_env"
+    unset __twow_saved_env
+fi
 : "${TWOW_DB_SERVICE:=db}"
 : "${TWOW_WORLD_SERVICE:=mangosd}"
 : "${TWOW_REALM_SERVICE:=realmd}"
