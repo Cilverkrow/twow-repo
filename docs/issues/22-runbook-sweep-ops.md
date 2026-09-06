@@ -598,6 +598,8 @@ priority: p1
 existing_ot: none
 source: docs/adr/ADR-0023-containerization-and-one-command-contract.md
 superseded_by: none
+status: done
+status_note: Completed by the sanitized WS-50 playable Docker candidate attestation and linked WS-60 golden-state restore record dated 2026-09-06.
 body: |
   **Goal:** reproduce the complete modular Linux runtime locally on Docker Desktop
   from the proven platform and core revisions, using externally held extracted
