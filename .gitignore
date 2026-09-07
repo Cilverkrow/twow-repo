@@ -140,3 +140,9 @@ Thumbs.db
 /.ci/
 /image/
 /test-results/
+
+# Cygwin/MSYS crash dumps. Git Bash drops these in the working directory when a
+# tool it forked dies, so they appear at the repo root rather than anywhere
+# chosen. They are debris from the shell, never from the build, and having them
+# untracked-but-visible means every `git status` on Windows looks dirty.
+*.stackdump
