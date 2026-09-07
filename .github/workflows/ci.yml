@@ -209,6 +209,45 @@ env:
   CORE_IMAGE: twow/core:dev
 
 jobs:
+  # ------------------------------------------------- config provenance
+  #
+  # The configuration renderer is deliberately tested in its own small job.
+  # A green result guarantees deterministic rendering and rejects rendered-file
+  # drift, mixed generations, and incomplete provenance.  It does NOT prove a
+  # Docker runtime, a database, a realmd/mangosd start, a production
+  # configuration, or a full C++ build.
+  config-provenance:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    name: config provenance
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The renderer reads core templates; recursive checkout keeps this
+          # job independent of local runner state and supplies that input.
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Render and verify synthetic configuration provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The script owns its synthetic credentials and all positive and
+          # negative cases.  Do not duplicate its test logic here.
+          bash ops/config/test-config-provenance.sh
+
+      - name: State the check boundary
+        shell: bash
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## Configuration provenance
+
+          This check proves deterministic rendering and rejects drift, mixed
+          generations, and incomplete provenance with synthetic inputs only.
+          It does not start Docker, a database, `realmd`, or `mangosd`; it does
+          not read a production configuration and does not build the server.
+          EOF
+
   # A normal job's service containers start before its first step. Capacity
   # therefore has to be its own dependency if a full disk is to stop MariaDB,
   # BuildKit and the compiler before any of them allocate more space.
