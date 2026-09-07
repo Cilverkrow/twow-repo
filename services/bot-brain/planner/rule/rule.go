@@ -17,6 +17,7 @@ import (
 
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/contract"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity"
 )
 
 // Thresholds are the tunable numbers of the ladder. They are a struct rather
@@ -267,6 +268,7 @@ func avoidPOI(s *contract.Snapshot) string {
 // the moment this service is scaled horizontally.
 func (p *Planner) nearest(s *contract.Snapshot, kind string) *contract.PointOfInterest {
 	avoid := avoidPOI(s)
+	maxYards := p.maxYards(s)
 	candidates := make([]*contract.PointOfInterest, 0, 4)
 	for i := range s.POIs {
 		poi := &s.POIs[i]
@@ -285,7 +287,7 @@ func (p *Planner) nearest(s *contract.Snapshot, kind string) *contract.PointOfIn
 			// arrives anyway, refuse it rather than compare incomparable frames.
 			continue
 		}
-		if p.Th.MaxTravelYards > 0 && poi.DistanceYards != nil && *poi.DistanceYards > p.Th.MaxTravelYards {
+		if maxYards > 0 && poi.DistanceYards != nil && *poi.DistanceYards > maxYards {
 			continue
 		}
 		candidates = append(candidates, poi)
@@ -300,7 +302,67 @@ func (p *Planner) nearest(s *contract.Snapshot, kind string) *contract.PointOfIn
 		}
 		return candidates[a].ID < candidates[b].ID
 	})
-	return candidates[0]
+	return preferred(candidates, s.Bot.UUID)
+}
+
+// maxYards is the travel ceiling for THIS bot: the configured bound scaled by
+// how bold the bot is.
+//
+// Scaled, not replaced. MaxTravelYards exists for a server-load reason -- a very
+// long walk is a decision the server's own travel system should make -- and that
+// reason does not care about personality. So a bold bot ranges further than a
+// homebound one while the operator still sets the order of magnitude, and
+// disabling the limit (0) stays disabled for everyone.
+func (p *Planner) maxYards(s *contract.Snapshot) float64 {
+	if p.Th.MaxTravelYards <= 0 {
+		return 0
+	}
+	return p.Th.MaxTravelYards * identity.Derive(s.Bot.UUID).RangeScale()
+}
+
+const (
+	// comparableBandPct: how much further than the closest candidate a POI may
+	// be and still count as "about as good". Within the band the bot's own
+	// preference decides; outside it, distance still wins outright.
+	//
+	// 0.25 is deliberately narrow. The point is to stop a crowd converging on
+	// one POI, not to let personality send a bot past somewhere obviously
+	// nearer -- that would look like a pathing bug, not a character.
+	comparableBandPct = 0.25
+	// comparableBandFloorYards keeps the band meaningful when the closest
+	// candidate is very near or its distance is unknown. A purely proportional
+	// band collapses to nothing at zero distance, which would make preference
+	// silently stop working exactly where several POIs sit on top of each other.
+	comparableBandFloorYards = 25
+)
+
+// preferred picks this bot's favourite among the candidates that are about as
+// close as the closest one. Candidates must already be sorted by (distance, id).
+//
+// An empty UUID returns candidates[0] -- the plain nearest-first answer this
+// planner has always given. That is not a special case bolted on: [identity.Affinity]
+// returns 0 for every POI when the UUID is empty, and the loop below replaces the
+// incumbent only on a STRICTLY greater affinity, so it never fires. An unminted
+// bot therefore behaves exactly as it did before traits existed, which is the
+// property that lets this ship without a migration.
+func preferred(candidates []*contract.PointOfInterest, uuid string) *contract.PointOfInterest {
+	best := candidates[0]
+	if uuid == "" || len(candidates) == 1 {
+		return best
+	}
+
+	band := dist(best)*(1+comparableBandPct) + comparableBandFloorYards
+	bestAffinity := identity.Affinity(uuid, best.ID)
+	for _, poi := range candidates[1:] {
+		if dist(poi) > band {
+			// Sorted by distance, so nothing after this is in the band either.
+			break
+		}
+		if a := identity.Affinity(uuid, poi.ID); a > bestAffinity {
+			best, bestAffinity = poi, a
+		}
+	}
+	return best
 }
 
 // questPOI finds a POI of the given kind whose related quest is in the log with
@@ -317,6 +379,7 @@ func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string) *co
 		return nil
 	}
 	avoid := avoidPOI(s)
+	maxYards := p.maxYards(s)
 	var best *contract.PointOfInterest
 	for i := range s.POIs {
 		poi := &s.POIs[i]
@@ -333,7 +396,7 @@ func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string) *co
 		if !poi.Pos.SameMap(s.Pos) {
 			continue
 		}
-		if p.Th.MaxTravelYards > 0 && poi.DistanceYards != nil && *poi.DistanceYards > p.Th.MaxTravelYards {
+		if maxYards > 0 && poi.DistanceYards != nil && *poi.DistanceYards > maxYards {
 			continue
 		}
 		if best == nil || dist(poi) < dist(best) || (dist(poi) == dist(best) && poi.ID < best.ID) {
