@@ -128,9 +128,50 @@ reconcile_stream() {
 reconcile_stream "$STATE/world-inputs" \
     "$SQL_DIR/database_updates" "$SQL_DIR/database_updates/world" \
     "$CORE_SQL_DIR/database_updates" "$CORE_SQL_DIR/database_updates/world"
-reconcile_stream "$STATE/character-inputs" \
+# TRANSITIONAL (issue #205, REF-004). core/sql/character_updates/ is read by
+# nothing in core -- AutoUpdater::ProcessUpdates walks sql/database_updates/<target>/
+# only -- so its four migrations are being moved into
+# core/sql/database_updates/character/. That move happens in the core submodule,
+# in a separate PR, and the moment it lands the directory disappears from every
+# checkout.
+#
+# reconcile_stream returns 1 on a missing directory, outside any stage, on every
+# run and before the script has even reached the database. So without this
+# filter the core-side move would kill `docker compose up` on every existing
+# volume, including ones that finished bootstrapping months ago. The platform
+# has to tolerate the absence BEFORE core removes the directory; the reverse
+# order is an outage.
+#
+# The tolerance is deliberately narrow: ONLY a path whose basename is
+# character_updates may be absent. Any other missing directory -- an unmounted
+# volume, a typo in a compose file -- still reaches reconcile_stream and still
+# fails loudly. reconcile_stream itself is unchanged, so the contract asserted
+# by test/smoke/bootstrap-stream-contract.sh (MISSING_DIRECTORY_REJECTED) holds.
+#
+# REMOVE THIS once core's move has landed and every deployment has bootstrapped
+# against a core that no longer ships character_updates/: delete the
+# character_updates arguments below and call reconcile_stream directly again.
+stream_dirs=()
+select_stream_dirs() {
+    stream_dirs=()
+    local d
+    for d in "$@"; do
+        case "$d" in
+            */character_updates)
+                if [ ! -d "$d" ]; then
+                    log "transitional: $d is absent (issue #205 move); continuing"
+                    continue
+                fi
+                ;;
+        esac
+        stream_dirs+=("$d")
+    done
+}
+
+select_stream_dirs \
     "$SQL_DIR/database_updates/character" "$SQL_DIR/character_updates" \
     "$CORE_SQL_DIR/database_updates/character" "$CORE_SQL_DIR/character_updates"
+reconcile_stream "$STATE/character-inputs" "${stream_dirs[@]}"
 reconcile_stream "$STATE/logon-inputs" "$SQL_DIR/logon" "$CORE_SQL_DIR/logon"
 
 # The healthcheck says the server is up; this says it will actually talk to us.
@@ -401,6 +442,7 @@ apply_module_sql() {
 }
 
 stage_playerbots() {
+    local bot_index
     if [ "${IMPORT_PLAYERBOTS:-ON}" != "ON" ]; then
         log "IMPORT_PLAYERBOTS is not ON; skipping playerbot schema"
         return 0
@@ -413,7 +455,20 @@ stage_playerbots() {
     # EXISTS. The LC_ALL=C sort inside apply_module_sql orders each directory;
     # this ordering is between them, and only the argument order provides it.
     apply_module_sql tw_char  "$PB_SQL_DIR/characters" "$PB_OVERLAY_SQL_DIR/characters"
-    apply_migration tw_char "$CORE_SQL_DIR/character_updates/20260708055500_ai_playerbot_random_bots_index.sql"
+    # TRANSITIONAL (issue #205): this file is moving from core/sql/character_updates/
+    # to core/sql/database_updates/character/. Accept either location for the
+    # duration of the move; drop the fallback once core's move has landed and
+    # been deployed everywhere. Absent from both is still a hard failure.
+    bot_index=$CORE_SQL_DIR/character_updates/20260708055500_ai_playerbot_random_bots_index.sql
+    if [ ! -f "$bot_index" ]; then
+        bot_index=$CORE_SQL_DIR/database_updates/character/20260708055500_ai_playerbot_random_bots_index.sql
+    fi
+    [ -f "$bot_index" ] || {
+        log "missing 20260708055500_ai_playerbot_random_bots_index.sql in both"
+        log "character_updates/ and database_updates/character/ under $CORE_SQL_DIR"
+        exit 1
+    }
+    apply_migration tw_char "$bot_index"
 }
 
 # ------------------------------------------------- 45 playerbot migrations
