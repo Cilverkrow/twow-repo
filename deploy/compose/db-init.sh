@@ -128,50 +128,9 @@ reconcile_stream() {
 reconcile_stream "$STATE/world-inputs" \
     "$SQL_DIR/database_updates" "$SQL_DIR/database_updates/world" \
     "$CORE_SQL_DIR/database_updates" "$CORE_SQL_DIR/database_updates/world"
-# TRANSITIONAL (issue #205, REF-004). core/sql/character_updates/ is read by
-# nothing in core -- AutoUpdater::ProcessUpdates walks sql/database_updates/<target>/
-# only -- so its four migrations are being moved into
-# core/sql/database_updates/character/. That move happens in the core submodule,
-# in a separate PR, and the moment it lands the directory disappears from every
-# checkout.
-#
-# reconcile_stream returns 1 on a missing directory, outside any stage, on every
-# run and before the script has even reached the database. So without this
-# filter the core-side move would kill `docker compose up` on every existing
-# volume, including ones that finished bootstrapping months ago. The platform
-# has to tolerate the absence BEFORE core removes the directory; the reverse
-# order is an outage.
-#
-# The tolerance is deliberately narrow: ONLY a path whose basename is
-# character_updates may be absent. Any other missing directory -- an unmounted
-# volume, a typo in a compose file -- still reaches reconcile_stream and still
-# fails loudly. reconcile_stream itself is unchanged, so the contract asserted
-# by test/smoke/bootstrap-stream-contract.sh (MISSING_DIRECTORY_REJECTED) holds.
-#
-# REMOVE THIS once core's move has landed and every deployment has bootstrapped
-# against a core that no longer ships character_updates/: delete the
-# character_updates arguments below and call reconcile_stream directly again.
-stream_dirs=()
-select_stream_dirs() {
-    stream_dirs=()
-    local d
-    for d in "$@"; do
-        case "$d" in
-            */character_updates)
-                if [ ! -d "$d" ]; then
-                    log "transitional: $d is absent (issue #205 move); continuing"
-                    continue
-                fi
-                ;;
-        esac
-        stream_dirs+=("$d")
-    done
-}
-
-select_stream_dirs \
-    "$SQL_DIR/database_updates/character" "$SQL_DIR/character_updates" \
-    "$CORE_SQL_DIR/database_updates/character" "$CORE_SQL_DIR/character_updates"
-reconcile_stream "$STATE/character-inputs" "${stream_dirs[@]}"
+reconcile_stream "$STATE/character-inputs" \
+    "$SQL_DIR/database_updates/character" \
+    "$CORE_SQL_DIR/database_updates/character"
 reconcile_stream "$STATE/logon-inputs" "$SQL_DIR/logon" "$CORE_SQL_DIR/logon"
 
 # The healthcheck says the server is up; this says it will actually talk to us.
@@ -380,13 +339,15 @@ stage_updates() {
     done < "$STATE/world-inputs"
 
 
-    # There are three competing conventions for "a character migration" in this
-    # tree -- database_updates/character/, character_updates/ and wip_updates/ --
-    # and only the first was applied here originally. That silently omitted
+    # There used to be three competing conventions for "a character migration"
+    # in this tree -- database_updates/character/, character_updates/ and
+    # wip_updates/ -- and only the first was applied here. That silently omitted
     # 20260830230336_ai_playerbot_persistent_active_roster.sql, so a freshly
     # bootstrapped stack had no ai_playerbot_roster_* tables at all and ADR-0024
-    # invariant 1 had nowhere to store a roster. Collapsing the conventions is
-    # REF-004; include both committed character directories, but not wip_updates.
+    # invariant 1 had nowhere to store a roster. REF-004 collapsed them: core's
+    # character_updates/ is gone, its migrations now live in
+    # database_updates/character/, and that is the only committed character
+    # directory this stream reads. wip_updates/ is still deliberately excluded.
     while IFS= read -r f; do
         # Core's legacy bot index requires the module table from stage 40.
         # Apply its actual SQL and record its hash after that table exists.
@@ -411,10 +372,10 @@ stage_updates() {
 # for the module's own tables, no `migrations` ledger tracks them, and
 # ai_playerbot_random_bots.sql leads with DROP TABLE IF EXISTS. That last point
 # is why the index on ai_playerbot_random_bots belongs here rather than in
-# core/sql/character_updates. Applied in stage 30 it would be dropped again one stage
-# later by that DROP+CREATE, so swapping the order of stages 30 and 40 does not
-# fix it either -- it only moves the breakage. A file that adds an index to a
-# module's table has to travel with the table.
+# core/sql/database_updates/character. Applied in stage 30 it would be dropped
+# again one stage later by that DROP+CREATE, so swapping the order of stages 30
+# and 40 does not fix it either -- it only moves the breakage. A file that adds
+# an index to a module's table has to travel with the table.
 #
 # Applied one file at a time rather than `cat *.sql | mariadb`, for two reasons.
 # Five of these files end without a trailing newline, so concatenation splices
@@ -455,17 +416,10 @@ stage_playerbots() {
     # EXISTS. The LC_ALL=C sort inside apply_module_sql orders each directory;
     # this ordering is between them, and only the argument order provides it.
     apply_module_sql tw_char  "$PB_SQL_DIR/characters" "$PB_OVERLAY_SQL_DIR/characters"
-    # TRANSITIONAL (issue #205): this file is moving from core/sql/character_updates/
-    # to core/sql/database_updates/character/. Accept either location for the
-    # duration of the move; drop the fallback once core's move has landed and
-    # been deployed everywhere. Absent from both is still a hard failure.
-    bot_index=$CORE_SQL_DIR/character_updates/20260708055500_ai_playerbot_random_bots_index.sql
-    if [ ! -f "$bot_index" ]; then
-        bot_index=$CORE_SQL_DIR/database_updates/character/20260708055500_ai_playerbot_random_bots_index.sql
-    fi
+    bot_index=$CORE_SQL_DIR/database_updates/character/20260708055500_ai_playerbot_random_bots_index.sql
     [ -f "$bot_index" ] || {
-        log "missing 20260708055500_ai_playerbot_random_bots_index.sql in both"
-        log "character_updates/ and database_updates/character/ under $CORE_SQL_DIR"
+        log "missing 20260708055500_ai_playerbot_random_bots_index.sql in"
+        log "database_updates/character/ under $CORE_SQL_DIR"
         exit 1
     }
     apply_migration tw_char "$bot_index"
