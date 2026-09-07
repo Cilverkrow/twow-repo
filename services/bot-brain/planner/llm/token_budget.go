@@ -69,6 +69,25 @@ func (b *TokenBudget) Limits() TokenLimits { return b.limits }
 // when they share it. It cannot recall provider requests already admitted.
 func (b *TokenBudget) Stop() { b.mu.Lock(); b.stopped = true; b.mu.Unlock() }
 
+// Stopped reports whether this budget has latched shut.
+//
+// Worth having a name of its own, because it is the one failure in this service
+// that is completely invisible from outside: when it fires there is no error, no
+// retry and no restart, and the only difference is that intents stop being
+// sourced from the model. A deployment in that state looks exactly like a
+// healthy rules-only deployment.
+//
+// It is also NOT the circuit breaker, and conflating the two has already caused
+// one wrong conclusion in this repository's issue tracker. The breaker reopens
+// on a timer; this does not reopen at all -- there is deliberately no re-enable
+// API -- so an alert on one says "the endpoint had a bad minute" and an alert on
+// the other says "this process will never call the model again".
+func (b *TokenBudget) Stopped() bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.stopped
+}
+
 var defaultTokenBudget = func() *TokenBudget {
 	b, err := NewTokenBudget(DefaultTokenLimits(), nil)
 	if err != nil {
