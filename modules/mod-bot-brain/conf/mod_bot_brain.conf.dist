@@ -47,6 +47,18 @@ BotBrain.IntervalMs = 15000
 # matter and restarting the service does not require restarting the realm.
 BotBrain.BackoffMs = 60000
 
+# How long a partially-filled batch waits for more snapshots before it is sent
+# anyway. Snapshots accumulate until either MaxBatch is reached or this
+# deadline elapses, so it is the ceiling on how long one bot's request waits
+# for its neighbours. Lower means fresher plans and more round trips; higher
+# means fuller batches and staler positions.
+#
+# Clamped to 10..10000. The module read this key from the first batching
+# commit but the template never documented it, so an operator could not
+# discover or set it -- a default that could only be changed by reading the
+# source is not really a setting.
+BotBrain.BatchFlushMs = 200
+
 # Ceiling on concurrent worker threads across all bots. A service that stops
 # answering must cost a bounded number of threads.
 BotBrain.MaxInFlight = 8
