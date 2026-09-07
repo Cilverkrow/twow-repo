@@ -57,6 +57,16 @@ type Config struct {
 	LLM llm.Config
 	// LogLevel is "debug", "info" or "warn".
 	LogLevel string
+	// TraitDSN points at cv_brain, where traits that have CHANGED are stored.
+	//
+	// Empty means no store, and that is a supported mode rather than a broken
+	// one: traits fall back to the value derived from each bot's UUID, so bots
+	// still differ from each other, they just do not change over time. The
+	// service must start and plan without a database.
+	//
+	// go-sql-driver form, e.g.
+	//   brain:secret@tcp(db:3306)/cv_brain?timeout=5s
+	TraitDSN string
 	// MaxBodyBytes caps the request body the plan endpoint will read.
 	//
 	// MaxBatch caps snapshots, but only AFTER the body has been read into
@@ -97,6 +107,7 @@ func Load(getenv func(string) string) (Config, error) {
 		Workers:         e.num("BOT_BRAIN_WORKERS", 32),
 		ShutdownGrace:   e.dur("BOT_BRAIN_SHUTDOWN_GRACE", 10*time.Second),
 		LogLevel:        e.str("BOT_BRAIN_LOG_LEVEL", "info"),
+		TraitDSN:        e.str("BOT_BRAIN_TRAIT_DSN", ""),
 		MaxBodyBytes:    int64(e.num("BOT_BRAIN_MAX_BODY_BYTES", contract.DefaultMaxBodyBytes)),
 		Rule: rule.Thresholds{
 			RestBelowHealthPct:           e.flt("BOT_BRAIN_RULE_REST_BELOW_HP_PCT", 45),

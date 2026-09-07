@@ -103,6 +103,20 @@ services:
       # local endpoint and is not fine for a metered one.
       BOT_BRAIN_LLM_ALLOWED_MODELS: ${BOT_BRAIN_LLM_ALLOWED_MODELS:-}
 
+      # Where traits that have CHANGED are stored (cv_brain.bot_trait).
+      #
+      # Empty is the default and is a supported mode, not a broken one: traits
+      # fall back to the value derived from each bot's UUID, so bots still differ
+      # from each other, they just stop changing over time. The service starts
+      # and plans either way, and a database that goes down mid-run degrades to
+      # the same place rather than stalling the batch.
+      #
+      # BRAIN_DB_USER deliberately, not DB_USER: db-init grants that account
+      # rights to cv_brain and nothing else, so a bug or a compromise here cannot
+      # reach tw_char. Leave BRAIN_DB_USER unset and both the grant and this DSN
+      # stay empty together, which is the consistent "no brain storage" state.
+      BOT_BRAIN_TRAIT_DSN: ${BOT_BRAIN_TRAIT_DSN:-}
+
       # Must stay shorter than BOT_BRAIN_DEFAULT_DEADLINE or the deterministic
       # fallback has no budget to answer in -- the service refuses to start if
       # it is not. A local 7B on CPU takes about 8 s (LLM-011), so with this
