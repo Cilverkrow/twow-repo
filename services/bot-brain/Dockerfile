@@ -28,7 +28,23 @@ ARG VERSION=dev
 ARG COMMIT=unknown
 ENV CGO_ENABLED=0 GOOS=linux
 
-RUN go vet ./... && go test ./... && \
+# `go vet` only -- deliberately NOT `go test`.
+#
+# The build context is this directory (deploy/compose/bot-brain.yml explains
+# why: a small context is what makes this build in seconds). But
+# contract/golden_test.go reads ../../../contracts/bot-brain/v1/golden/, which
+# is OUTSIDE that context, so `go test ./...` here failed with
+#   open ../../../contracts/bot-brain/v1/golden/plan-response.json:
+#   no such file or directory
+# and the image could not be built at all -- `docker compose up bot-brain`
+# died on the build step.
+#
+# The tests are not lost: ci.yml runs `go test -race -count=1 ./...` for this
+# module against the full repository, where the fixtures exist. The golden
+# test compares the Go types against fixtures the C++ side also reads, so it
+# belongs where both trees are present. An image build is the wrong place to
+# re-run a suite whose inputs it cannot see.
+RUN go vet ./... && \
     go build -trimpath \
       -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
       -o /out/bot-brain ./cmd/bot-brain
