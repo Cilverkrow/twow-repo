@@ -26,12 +26,17 @@ type AsyncRecorder struct {
 	queue chan entry
 	wg    sync.WaitGroup
 
-	// OnError is called for a write that failed, and for a drop (with a nil
+	// onError is called for a write that failed, and for a drop (with a nil
 	// error and a non-zero dropped count). Nil means silence. The recorder does
 	// not log for itself: it is used from the request path, and a component that
 	// logs per-observation would be a log flood the first time the database
 	// blinks.
-	OnError func(err error, dropped uint64)
+	//
+	// Constructor-only, deliberately unexported. As an exported field it was a
+	// data race by construction: the workers that read it are started by
+	// NewAsyncRecorder, so any caller assigning it afterwards -- which is the
+	// obvious way to use a struct field -- races every drain goroutine.
+	onError func(err error, dropped uint64)
 
 	mu      sync.Mutex
 	dropped uint64
@@ -49,7 +54,7 @@ type entry struct {
 // A nil store yields a nil recorder, which is safe to call: that is the
 // configuration the service runs in with no database, and it must be a normal
 // mode rather than a branch at every call site.
-func NewAsyncRecorder(store Recorder, queueSize, workers int) *AsyncRecorder {
+func NewAsyncRecorder(store Recorder, queueSize, workers int, onError func(err error, dropped uint64)) *AsyncRecorder {
 	if store == nil {
 		return nil
 	}
@@ -61,8 +66,9 @@ func NewAsyncRecorder(store Recorder, queueSize, workers int) *AsyncRecorder {
 	}
 
 	r := &AsyncRecorder{
-		store: store,
-		queue: make(chan entry, queueSize),
+		store:   store,
+		queue:   make(chan entry, queueSize),
+		onError: onError,
 	}
 	for i := 0; i < workers; i++ {
 		r.wg.Add(1)
@@ -87,8 +93,8 @@ func (r *AsyncRecorder) Record(_ context.Context, uuid string, o Observation) er
 		r.dropped++
 		dropped := r.dropped
 		r.mu.Unlock()
-		if r.OnError != nil {
-			r.OnError(nil, dropped)
+		if r.onError != nil {
+			r.onError(nil, dropped)
 		}
 	}
 	return nil
@@ -124,8 +130,8 @@ func (r *AsyncRecorder) drain() {
 		ctx, cancel := context.WithTimeout(context.Background(), RecordTimeout)
 		err := r.store.Record(ctx, e.uuid, e.obs)
 		cancel()
-		if err != nil && r.OnError != nil {
-			r.OnError(err, 0)
+		if err != nil && r.onError != nil {
+			r.onError(err, 0)
 		}
 	}
 }

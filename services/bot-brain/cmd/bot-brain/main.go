@@ -25,8 +25,8 @@ import (
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity/mysqlstore"
-	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/memory"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/llm"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/memory"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/rule"
 )
 
@@ -98,19 +98,21 @@ func run() error {
 		// tables live in the same schema and a second pool would double the
 		// connection count against a database that is also carrying the
 		// worldserver's traffic.
-		recorder := memory.NewAsyncRecorder(traitStore, 4096, 2)
-		defer recorder.Stop()
-		recorder.OnError = func(err error, dropped uint64) {
+		// onError is passed in rather than assigned afterwards: the workers that
+		// read it start inside the constructor, so a later assignment would race
+		// every one of them.
+		recorder := memory.NewAsyncRecorder(traitStore, 4096, 2, func(err error, dropped uint64) {
 			if err != nil {
 				log.Warn("could not record what happened to a bot", "err", err)
 				return
 			}
 			// A drop is not an error: the queue is bounded on purpose so a slow
-			// database costs history rather than a late tick. Logged at warn
+			// database costs history rather than a late tick. Warned anyway,
 			// because losing history silently is how you end up trusting a
 			// record that has holes in it.
 			log.Warn("observation dropped; memory has a hole in it", "dropped_total", dropped)
-		}
+		})
+		defer recorder.Stop()
 		memoryRecorder = recorder
 		ruleP.Memory = traitStore
 		ruleP.OnMemoryError = func(err error) {

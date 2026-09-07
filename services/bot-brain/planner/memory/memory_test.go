@@ -135,7 +135,7 @@ func (f *fakeRecorder) count() int {
 func TestAsyncRecorderDoesNotBlockOnASlowStore(t *testing.T) {
 	hold := make(chan struct{})
 	store := &fakeRecorder{hold: hold}
-	r := NewAsyncRecorder(store, 8, 1)
+	r := NewAsyncRecorder(store, 8, 1, nil)
 
 	done := make(chan struct{})
 	go func() {
@@ -162,17 +162,15 @@ func TestAsyncRecorderDoesNotBlockOnASlowStore(t *testing.T) {
 func TestAsyncRecorderDropsRatherThanGrows(t *testing.T) {
 	hold := make(chan struct{})
 	store := &fakeRecorder{hold: hold}
-	r := NewAsyncRecorder(store, 2, 1)
-
 	var reported uint64
 	var mu sync.Mutex
-	r.OnError = func(err error, dropped uint64) {
+	r := NewAsyncRecorder(store, 2, 1, func(err error, dropped uint64) {
 		if err == nil {
 			mu.Lock()
 			reported = dropped
 			mu.Unlock()
 		}
-	}
+	})
 
 	for i := 0; i < 200; i++ {
 		_ = r.Record(context.Background(), "uuid", Observation{Result: "failed"})
@@ -194,7 +192,7 @@ func TestAsyncRecorderDropsRatherThanGrows(t *testing.T) {
 // A cancelled REQUEST must not cancel a write that is no longer part of it.
 func TestRequestCancellationDoesNotCancelTheWrite(t *testing.T) {
 	store := &fakeRecorder{}
-	r := NewAsyncRecorder(store, 8, 1)
+	r := NewAsyncRecorder(store, 8, 1, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -210,17 +208,15 @@ func TestRequestCancellationDoesNotCancelTheWrite(t *testing.T) {
 func TestStoreErrorsAreReportedNotSwallowed(t *testing.T) {
 	boom := errors.New("table is gone")
 	store := &fakeRecorder{err: boom}
-	r := NewAsyncRecorder(store, 4, 1)
-
 	var mu sync.Mutex
 	var seen error
-	r.OnError = func(err error, _ uint64) {
+	r := NewAsyncRecorder(store, 4, 1, func(err error, _ uint64) {
 		if err != nil {
 			mu.Lock()
 			seen = err
 			mu.Unlock()
 		}
-	}
+	})
 	_ = r.Record(context.Background(), "uuid", Observation{Result: "failed"})
 	r.Stop()
 
@@ -233,7 +229,7 @@ func TestStoreErrorsAreReportedNotSwallowed(t *testing.T) {
 
 // No store is a supported configuration, not a branch every caller must make.
 func TestNilRecorderIsUsable(t *testing.T) {
-	if r := NewAsyncRecorder(nil, 4, 1); r != nil {
+	if r := NewAsyncRecorder(nil, 4, 1, nil); r != nil {
 		t.Fatal("a nil store should yield a nil recorder")
 	}
 	var r *AsyncRecorder
@@ -248,7 +244,7 @@ func TestNilRecorderIsUsable(t *testing.T) {
 
 func TestEmptyUUIDIsNotRecorded(t *testing.T) {
 	store := &fakeRecorder{}
-	r := NewAsyncRecorder(store, 4, 1)
+	r := NewAsyncRecorder(store, 4, 1, nil)
 	_ = r.Record(context.Background(), "", Observation{Result: "failed"})
 	r.Stop()
 	if store.count() != 0 {

@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/contract"
-	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/memory"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/metrics"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/memory"
 )
 
 // Options configure a [Server].
