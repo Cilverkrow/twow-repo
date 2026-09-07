@@ -98,19 +98,45 @@ func run() error {
 		// tables live in the same schema and a second pool would double the
 		// connection count against a database that is also carrying the
 		// worldserver's traffic.
-		// onError is passed in rather than assigned afterwards: the workers that
-		// read it start inside the constructor, so a later assignment would race
-		// every one of them.
-		recorder := memory.NewAsyncRecorder(traitStore, 4096, 2, func(err error, dropped uint64) {
-			if err != nil {
-				log.Warn("could not record what happened to a bot", "err", err)
-				return
-			}
-			// A drop is not an error: the queue is bounded on purpose so a slow
-			// database costs history rather than a late tick. Warned anyway,
-			// because losing history silently is how you end up trusting a
-			// record that has holes in it.
-			log.Warn("observation dropped; memory has a hole in it", "dropped_total", dropped)
+		// What a bot becomes, from what happened to it. Runs on the recorder's
+		// worker, never on the planning path: it reads history and writes a trait,
+		// which is more database work than a plan can afford to wait for.
+		learner := &memory.Learner{
+			Reader:  traitStore,
+			Traits:  traitStore,
+			Values:  traitStore,
+			Derived: func(uuid string) float64 { return identity.Derive(uuid).Boldness },
+			OnChange: func(uuid, trait string, from, to float64, reason string) {
+				// Logged at info, not debug. A bot's personality changing is a
+				// rare and consequential event, and the reason is in words so the
+				// question "why is this bot timid" has an answer.
+				log.Info("a bot changed", "bot", uuid, "trait", trait,
+					"from", from, "to", to, "because", reason)
+			},
+		}
+
+		// Callbacks are passed in rather than assigned afterwards: the workers
+		// that read them start inside the constructor, so a later assignment
+		// would race every one of them.
+		recorder := memory.NewAsyncRecorder(traitStore, memory.AsyncOptions{
+			QueueSize: 4096,
+			Workers:   2,
+			OnError: func(err error, dropped uint64) {
+				if err != nil {
+					log.Warn("could not record what happened to a bot", "err", err)
+					return
+				}
+				// A drop is not an error: the queue is bounded on purpose so a
+				// slow database costs history rather than a late tick. Warned
+				// anyway, because losing history silently is how you end up
+				// trusting a record that has holes in it.
+				log.Warn("observation dropped; memory has a hole in it", "dropped_total", dropped)
+			},
+			AfterRecord: func(ctx context.Context, uuid string) {
+				if err := learner.Observe(ctx, uuid); err != nil {
+					log.Warn("could not update what a bot has become", "bot", uuid, "err", err)
+				}
+			},
 		})
 		defer recorder.Stop()
 		memoryRecorder = recorder

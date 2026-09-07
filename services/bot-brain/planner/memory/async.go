@@ -38,6 +38,12 @@ type AsyncRecorder struct {
 	// obvious way to use a struct field -- races every drain goroutine.
 	onError func(err error, dropped uint64)
 
+	// afterRecord runs on the worker once an observation is safely stored. It
+	// is where learning happens: reading a bot's history and adjusting its
+	// traits is more database work, and it belongs on this side of the queue
+	// with the write, not on the planning path with the read.
+	afterRecord func(ctx context.Context, uuid string)
+
 	mu      sync.Mutex
 	dropped uint64
 
@@ -49,28 +55,45 @@ type entry struct {
 	obs  Observation
 }
 
+// AsyncOptions configures an [AsyncRecorder].
+//
+// A struct rather than positional arguments: OnError and AfterRecord are both
+// optional callbacks of similar shape, and a call site passing two bare funcs
+// is one transposition away from silently swapping them.
+type AsyncOptions struct {
+	// QueueSize bounds pending observations. Zero means 4096.
+	QueueSize int
+	// Workers drain the queue. Zero means 2.
+	Workers int
+	// OnError reports a failed write, and a drop (nil error, non-zero count).
+	OnError func(err error, dropped uint64)
+	// AfterRecord runs once an observation is stored, for learning.
+	AfterRecord func(ctx context.Context, uuid string)
+}
+
 // NewAsyncRecorder starts workers draining into store.
 //
 // A nil store yields a nil recorder, which is safe to call: that is the
 // configuration the service runs in with no database, and it must be a normal
 // mode rather than a branch at every call site.
-func NewAsyncRecorder(store Recorder, queueSize, workers int, onError func(err error, dropped uint64)) *AsyncRecorder {
+func NewAsyncRecorder(store Recorder, opts AsyncOptions) *AsyncRecorder {
 	if store == nil {
 		return nil
 	}
-	if queueSize <= 0 {
-		queueSize = 4096
+	if opts.QueueSize <= 0 {
+		opts.QueueSize = 4096
 	}
-	if workers <= 0 {
-		workers = 2
+	if opts.Workers <= 0 {
+		opts.Workers = 2
 	}
 
 	r := &AsyncRecorder{
-		store:   store,
-		queue:   make(chan entry, queueSize),
-		onError: onError,
+		store:       store,
+		queue:       make(chan entry, opts.QueueSize),
+		onError:     opts.OnError,
+		afterRecord: opts.AfterRecord,
 	}
-	for i := 0; i < workers; i++ {
+	for i := 0; i < opts.Workers; i++ {
 		r.wg.Add(1)
 		go r.drain()
 	}
@@ -129,9 +152,19 @@ func (r *AsyncRecorder) drain() {
 	for e := range r.queue {
 		ctx, cancel := context.WithTimeout(context.Background(), RecordTimeout)
 		err := r.store.Record(ctx, e.uuid, e.obs)
-		cancel()
-		if err != nil && r.onError != nil {
-			r.onError(err, 0)
+		if err != nil {
+			if r.onError != nil {
+				r.onError(err, 0)
+			}
+			// Nothing was stored, so there is nothing new to learn from. Running
+			// the hook anyway would draw a conclusion from a history missing the
+			// event that prompted it.
+			cancel()
+			continue
 		}
+		if r.afterRecord != nil {
+			r.afterRecord(ctx, e.uuid)
+		}
+		cancel()
 	}
 }
