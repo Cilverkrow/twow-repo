@@ -11,11 +11,22 @@ The complete configuration is the combination of:
 | world server | `core/src/mangosd/mangosd.conf.dist.in` | `compose/mangosd.overlay.conf` |
 | realm server | `core/src/realmd/realmd.conf.dist.in` | `compose/realmd.overlay.conf` |
 | PlayerBots | `core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in` | `compose/aiplayerbot.overlay.conf` |
+| Bot brain | `modules/mod-bot-brain/conf/mod_bot_brain.conf.dist` | `compose/bot-brain.overlay.conf` |
+
+The bot-brain row is the one whose template is not in the core submodule:
+mod-bot-brain is this repository's own module, so its `.dist` is tracked here.
+Its rendered file is published as `deploy/compose/config/mod_bot_brain.conf` and
+bind-mounted onto `/opt/turtle/etc/modules/mod_bot_brain.conf`, because mangosd
+resolves a module config as `<directory of the main conf>/modules/<name>.conf`.
+Before it joined this contract the file existed only inside the container, seeded
+from its `.dist` by the image entrypoint, so `BotBrain.Enable` was not merely off
+-- it was unreachable without `docker exec`. `BOT_BRAIN_ENABLE` in
+`deploy/compose/.env` is the switch, and it defaults to 0.
 
 The base templates are complete and move with the server source. The overlays
 contain every verified non-secret semantic deviation needed to retain the
 sanitized project baseline, plus reviewed Compose path changes. The complete
-115-row classification is `compose/semantic-baseline.tsv`: 95 `KEEP`, 14
+120-row classification is `compose/semantic-baseline.tsv`: 96 `KEEP`, 18
 `INTENTIONAL_CHANGE`, no unproven removal, and 6 `MACHINE_SECRET` entries.
 
 The protected machine input in `deploy/compose/.env` supplies database
@@ -24,7 +35,7 @@ range. The renderer replaces or inserts each secret key exactly once in its
 private staging directory. Secret values never enter a tracked file, matrix, or
 provenance record.
 
-Run `make config` from a clean checkout to render the three files through a
+Run `make config` from a clean checkout to render the four files through a
 private staging directory into `deploy/compose/config/` and write
 `config-provenance.txt`. Publication is deliberately file-by-file rather than
 claimed to be set-atomic: all configs publish first and provenance publishes

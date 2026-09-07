@@ -13,11 +13,19 @@ The complete source for the Compose configuration is:
 | Worldserver | `core/src/mangosd/mangosd.conf.dist.in` | `config/canonical/compose/mangosd.overlay.conf` |
 | Realmserver | `core/src/realmd/realmd.conf.dist.in` | `config/canonical/compose/realmd.overlay.conf` |
 | PlayerBots | `core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in` | `config/canonical/compose/aiplayerbot.overlay.conf` |
+| Bot brain | `modules/mod-bot-brain/conf/mod_bot_brain.conf.dist` | `config/canonical/compose/bot-brain.overlay.conf` |
 
 [`semantic-baseline.tsv`](../config/canonical/compose/semantic-baseline.tsv)
-classifies all 115 original service-key differences: 95 preserve verified
-behaviour, 14 are reviewed Compose or disabled-source changes, no value is
-removed without evidence, and 6 are protected machine secrets.
+classifies all 120 service-key differences: 96 preserve verified behaviour, 18
+are reviewed Compose, machine or disabled-source changes, no value is removed
+without evidence, and 6 are protected machine secrets.
+
+The bot-brain row is the only one whose complete versioned base lives in this
+repository rather than the core submodule: mod-bot-brain is the project's own
+module. Its rendered file is `deploy/compose/config/mod_bot_brain.conf` and is
+bind-mounted onto `/opt/turtle/etc/modules/mod_bot_brain.conf`, the path
+`Config::LoadModulesConfigs` derives from the main conf. `BOT_BRAIN_ENABLE` in
+the protected `.env` input renders `BotBrain.Enable` and defaults to 0.
 
 The renderer rejects duplicate overlay definitions, replaces existing keys in
 place, appends only source-supported keys absent from the complete template, and
@@ -44,7 +52,7 @@ make config
 make config-verify
 ```
 
-`make config` stages all three generated files, publishes them file by file,
+`make config` stages all four generated files, publishes them file by file,
 publishes a secret-free `config-provenance.txt` last, and immediately verifies
 the set. This is explicitly not a set-atomic rename. A partial or mixed publish
 has missing or mismatched provenance and fails closed before `make up`. By

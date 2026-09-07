@@ -73,7 +73,8 @@ if [[ "$POSIX_MODE_ENFORCEMENT" == YES ]]; then
     dir_mode=$(stat -c '%a' "$OUT")
     (( 8#$dir_mode == 8#700 )) || { echo "ERROR: generated configuration directory is not 0700" >&2; exit 1; }
 fi
-for file in "$PROVENANCE" "$OUT/mangosd.conf" "$OUT/realmd.conf" "$OUT/aiplayerbot.conf"; do
+for file in "$PROVENANCE" "$OUT/mangosd.conf" "$OUT/realmd.conf" "$OUT/aiplayerbot.conf" \
+    "$OUT/mod_bot_brain.conf"; do
     [[ -f "$file" && ! -L "$file" ]] || { echo "ERROR: generated configuration set is missing or unsafe" >&2; exit 1; }
     if [[ "$POSIX_MODE_ENFORCEMENT" == YES ]]; then
         mode=$(stat -c '%a' "$file")
@@ -119,5 +120,13 @@ require_bytes AIPLAYERBOT_OVERLAY_BYTES "$CANONICAL/aiplayerbot.overlay.conf"
 require_hash AIPLAYERBOT_OVERLAY_SHA256 "$CANONICAL/aiplayerbot.overlay.conf"
 require_bytes AIPLAYERBOT_RENDERED_BYTES "$OUT/aiplayerbot.conf"
 require_hash AIPLAYERBOT_RENDERED_SHA256 "$OUT/aiplayerbot.conf"
+# mod-bot-brain is this repository's own module, so unlike the three above its
+# complete base template is tracked here rather than in the core submodule.
+require_bytes BOT_BRAIN_TEMPLATE_BYTES "$ROOT/modules/mod-bot-brain/conf/mod_bot_brain.conf.dist"
+require_hash BOT_BRAIN_TEMPLATE_SHA256 "$ROOT/modules/mod-bot-brain/conf/mod_bot_brain.conf.dist"
+require_bytes BOT_BRAIN_OVERLAY_BYTES "$CANONICAL/bot-brain.overlay.conf"
+require_hash BOT_BRAIN_OVERLAY_SHA256 "$CANONICAL/bot-brain.overlay.conf"
+require_bytes BOT_BRAIN_RENDERED_BYTES "$OUT/mod_bot_brain.conf"
+require_hash BOT_BRAIN_RENDERED_SHA256 "$OUT/mod_bot_brain.conf"
 
 echo "configuration provenance verified"

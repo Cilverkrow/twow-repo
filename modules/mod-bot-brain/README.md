@@ -83,6 +83,23 @@ the brain before the worldserver.
    `botAI->ChangeStrategy("+bot brain", BOT_STATE_NON_COMBAT)` from your own
    `PlayerScript::OnLogin`.
 
+### In the Compose stack
+
+The three steps above are a local build. Under `deploy/compose` they are one
+setting, because the rendered config supplies the other two:
+
+1. `BOT_BRAIN_ENABLE=1` in `deploy/compose/.env`.
+2. `docker compose -f deploy/compose/docker-compose.yml -f deploy/compose/bot-brain.yml up -d`
+   (this is what `make up` runs, plus the planner's own file).
+
+`make config` renders `deploy/compose/config/mod_bot_brain.conf` from
+`conf/mod_bot_brain.conf.dist` plus `config/canonical/compose/bot-brain.overlay.conf`
+and bind-mounts it onto `/opt/turtle/etc/modules/mod_bot_brain.conf`; that
+overlay also points `BotBrain.Endpoint` at the `bot-brain` Compose service, and
+`config/canonical/compose/aiplayerbot.overlay.conf` already carries the
+`,+bot brain` strategy. Until this existed the file was seeded inside the
+container from its `.dist` and there was no supported way to change it.
+
 Applied intents are logged at BASIC level with the intent id and the POI id.
 Note where they land: `playerbot.h` redefines `sLog` to `BotLog::Instance()`,
 so this line goes to `logs/bots.log` when `AiPlayerbot.BotLogFile` is set, and
