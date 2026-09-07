@@ -345,6 +345,33 @@ namespace
         CHECK(!botbrain::IsPoiDirectedKind("idle"));
         CHECK(!botbrain::IsPoiDirectedKind("rest"));
         CHECK(!botbrain::IsPoiDirectedKind("abandon_quest"));
+
+        // The two appliers must never claim the same kind. If they overlap, one
+        // consumes an intent the other was going to act on and the loser reports
+        // a rejection for work that was in fact done -- so this is checked over
+        // the whole vocabulary rather than for the kinds that happen to exist
+        // today.
+        char const* const everyKind[] = {
+            "idle", "travel_to", "pick_quest", "turn_in_quest", "abandon_quest",
+            "grind_area", "vendor_sell", "repair", "rest"
+        };
+        for (char const* kind : everyKind)
+            CHECK(!(botbrain::IsPoiDirectedKind(kind) && botbrain::IsAppliedKind(kind)));
+
+        // What this build can actually carry out where the bot stands.
+        CHECK(botbrain::IsAppliedKind("rest"));
+
+        // Doing nothing is what happens when no intent applies; it never needs an
+        // applier of its own.
+        CHECK(!botbrain::IsAppliedKind("idle"));
+
+        // Known to the contract, not yet implemented here. These must stay false
+        // until an applier exists, so they are rejected as unsupported rather
+        // than accepted and silently dropped.
+        CHECK(!botbrain::IsAppliedKind("abandon_quest"));
+
+        CHECK(!botbrain::IsAppliedKind("delete_bot"));
+        CHECK(!botbrain::IsAppliedKind(""));
     }
 
     // ---------------------------------------------------------------- goldens

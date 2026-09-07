@@ -24,6 +24,7 @@
 
 #include "BotBrainPlayerbots.h"
 
+#include "BotBrainApplyAction.h"
 #include "BotBrainStrategy.h"
 #include "BotBrainTravelAction.h"
 
@@ -42,13 +43,32 @@ namespace botbrain
         BotBrainActionContext() : ai::NamedObjectContext<ai::Action>(false, false)
         {
             creators["choose travel target"] = &BotBrainActionContext::choose_travel_target;
+            // Registered under a NEW name, unlike the override above: this
+            // action has no stock counterpart to shadow, and the strategy
+            // below is what points a trigger at it.
+            creators["bot brain apply"] = &BotBrainActionContext::bot_brain_apply;
         }
 
     private:
+        static ai::Action* bot_brain_apply(PlayerbotAI* botAI) { return new BotBrainApplyAction(botAI); }
+
         static ai::Action* choose_travel_target(PlayerbotAI* botAI)
         {
             return new ChooseTravelTargetFromIntentAction(botAI);
         }
+    };
+
+    // Triggers, same ownership rule as the rest: a fresh instance per bot.
+    class BotBrainTriggerContext : public ai::NamedObjectContext<ai::Trigger>
+    {
+    public:
+        BotBrainTriggerContext() : ai::NamedObjectContext<ai::Trigger>(false, false)
+        {
+            creators["bot brain intent"] = &BotBrainTriggerContext::bot_brain_intent;
+        }
+
+    private:
+        static ai::Trigger* bot_brain_intent(PlayerbotAI* botAI) { return new BotBrainIntentTrigger(botAI); }
     };
 
     class BotBrainStrategyContext : public ai::NamedObjectContext<ai::Strategy>
@@ -67,6 +87,7 @@ namespace botbrain
     {
         context->AddShared(new BotBrainStrategyContext());
         context->AddShared(new BotBrainActionContext());
+        context->AddShared(new BotBrainTriggerContext());
     }
 
     inline void RegisterBotBrainContexts()

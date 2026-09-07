@@ -234,7 +234,14 @@ type IntentOutcome struct {
 	Result string `json:"result"`
 	// Reason is a short stable machine code when Result is "rejected" or
 	// "failed": "unreachable", "in_combat", "not_group_leader", "stale_poi",
-	// "unknown_poi", "unsupported_kind", "identity_protected". Empty otherwise.
+	// "unknown_poi", "unsupported_kind", "action_refused", "identity_protected".
+	// Empty otherwise.
+	//
+	// "action_refused" means the server tried to carry the intent out where the
+	// bot stood and the in-core action declined -- no food to eat, nothing to
+	// sell, already doing it. It is distinct from "unsupported_kind", which means
+	// nothing even attempted it, and the difference matters to a planner: one
+	// says "not now", the other says "never, stop sending this".
 	//
 	// "identity_protected" means the server refused an intent that would have
 	// touched bot identity. A brain that ever sees it has a bug; this service
