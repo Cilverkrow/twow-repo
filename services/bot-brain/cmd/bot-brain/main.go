@@ -26,6 +26,7 @@ import (
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity/mysqlstore"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/llm"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/memory"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/rule"
 )
 
@@ -60,6 +61,9 @@ func run() error {
 	slog.SetDefault(log)
 
 	reg := metrics.New()
+	// Nil unless a store is configured; httpapi treats that as "do not keep
+	// observations", which is the mode the service runs in without a database.
+	var memoryRecorder memory.Recorder
 	ruleP := rule.New(cfg.Rule)
 
 	// Per-bot identity. Without a DSN the resolver is nil, traits come from the
@@ -88,6 +92,57 @@ func run() error {
 				"err", err)
 		} else {
 			log.Info("trait store connected", "traits", "cv_brain.bot_trait")
+		}
+
+		// The same store serves memory. One connection pool, because the two
+		// tables live in the same schema and a second pool would double the
+		// connection count against a database that is also carrying the
+		// worldserver's traffic.
+		// What a bot becomes, from what happened to it. Runs on the recorder's
+		// worker, never on the planning path: it reads history and writes a trait,
+		// which is more database work than a plan can afford to wait for.
+		learner := &memory.Learner{
+			Reader:  traitStore,
+			Traits:  traitStore,
+			Values:  traitStore,
+			Derived: func(uuid string) float64 { return identity.Derive(uuid).Boldness },
+			OnChange: func(uuid, trait string, from, to float64, reason string) {
+				// Logged at info, not debug. A bot's personality changing is a
+				// rare and consequential event, and the reason is in words so the
+				// question "why is this bot timid" has an answer.
+				log.Info("a bot changed", "bot", uuid, "trait", trait,
+					"from", from, "to", to, "because", reason)
+			},
+		}
+
+		// Callbacks are passed in rather than assigned afterwards: the workers
+		// that read them start inside the constructor, so a later assignment
+		// would race every one of them.
+		recorder := memory.NewAsyncRecorder(traitStore, memory.AsyncOptions{
+			QueueSize: 4096,
+			Workers:   2,
+			OnError: func(err error, dropped uint64) {
+				if err != nil {
+					log.Warn("could not record what happened to a bot", "err", err)
+					return
+				}
+				// A drop is not an error: the queue is bounded on purpose so a
+				// slow database costs history rather than a late tick. Warned
+				// anyway, because losing history silently is how you end up
+				// trusting a record that has holes in it.
+				log.Warn("observation dropped; memory has a hole in it", "dropped_total", dropped)
+			},
+			AfterRecord: func(ctx context.Context, uuid string) {
+				if err := learner.Observe(ctx, uuid); err != nil {
+					log.Warn("could not update what a bot has become", "bot", uuid, "err", err)
+				}
+			},
+		})
+		defer recorder.Stop()
+		memoryRecorder = recorder
+		ruleP.Memory = traitStore
+		ruleP.OnMemoryError = func(err error) {
+			log.Warn("memory lookup failed; planning without history", "err", err)
 		}
 
 		ruleP.Traits = &identity.Resolver{
@@ -144,6 +199,7 @@ func run() error {
 		MaxBodyBytes:    cfg.MaxBodyBytes,
 		DefaultDeadline: cfg.DefaultDeadline,
 		IntentTTL:       cfg.IntentTTL,
+		Memory:          memoryRecorder,
 		Metrics:         reg,
 		Logger:          log,
 	})

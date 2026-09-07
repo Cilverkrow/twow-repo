@@ -18,6 +18,7 @@ import (
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/contract"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/memory"
 )
 
 // Thresholds are the tunable numbers of the ladder. They are a struct rather
@@ -59,6 +60,41 @@ type Planner struct {
 	// supported mode rather than a degraded one: bots still differ from each
 	// other, they just do not change over time.
 	Traits *identity.Resolver
+
+	// Memory is what these bots have learned from what happened to them. Nil
+	// means no memory, which is how this planner has always worked: it still
+	// avoids the destination its LAST outcome refused, it simply cannot
+	// remember the one that refuses it every single time.
+	Memory memory.Reader
+
+	// OnMemoryError is called when a lookup fails, once per batch. The planner
+	// does not log for itself: giving a pure decision path a logger is how a
+	// function that can be tested without a world stops being one.
+	OnMemoryError func(error)
+}
+
+// recall fetches history for the batch, once.
+//
+// A failure degrades to no memory rather than to no plan -- the same trade the
+// trait store makes, for the same reason: unlike admission, there IS a safe
+// answer here, and it is the behaviour this planner had before it could
+// remember anything at all.
+func (p *Planner) recall(ctx context.Context, uuids []string) map[string]memory.History {
+	if p.Memory == nil || len(uuids) == 0 {
+		return nil
+	}
+	raw, err := p.Memory.Recent(ctx, uuids, memory.DefaultRecentLimit)
+	if err != nil {
+		if p.OnMemoryError != nil {
+			p.OnMemoryError(err)
+		}
+		return nil
+	}
+	out := make(map[string]memory.History, len(raw))
+	for uuid, observations := range raw {
+		out[uuid] = memory.Build(observations)
+	}
+	return out
 }
 
 // New returns a rule planner with the given thresholds. A zero Thresholds means
@@ -93,6 +129,7 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 		uuids = append(uuids, req.Snapshots[i].Bot.UUID)
 	}
 	traits := p.Traits.Resolve(ctx, uuids)
+	histories := p.recall(ctx, uuids)
 
 	for i := range req.Snapshots {
 		// Respect cancellation even here. This planner is fast, but it is also
@@ -103,7 +140,8 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 			return out, ctx.Err()
 		default:
 		}
-		in := p.planOne(&req.Snapshots[i], traits[req.Snapshots[i].Bot.UUID])
+		in := p.planOne(&req.Snapshots[i], traits[req.Snapshots[i].Bot.UUID],
+			histories[req.Snapshots[i].Bot.UUID])
 		in.ExpiresAtMS = expiry
 		if err := in.Validate(); err != nil {
 			// Belt and braces: a bug in the ladder must not ship a malformed
@@ -118,7 +156,7 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 
 // planOne is the priority ladder. Read it top to bottom; the first rung that
 // matches wins.
-func (p *Planner) planOne(s *contract.Snapshot, tr identity.Traits) contract.Intent {
+func (p *Planner) planOne(s *contract.Snapshot, tr identity.Traits, hist memory.History) contract.Intent {
 	id := planner.NewIntentID()
 	idle := func(why string) contract.Intent {
 		return contract.Idle(s.Bot, id, p.Name(), why)
@@ -150,7 +188,7 @@ func (p *Planner) planOne(s *contract.Snapshot, tr identity.Traits) contract.Int
 	// worth directing.
 	if p.Th.RepairBelowDurabilityPct > 0 && s.Vit.DurabilityPct != nil &&
 		*s.Vit.DurabilityPct < p.Th.RepairBelowDurabilityPct {
-		if poi := p.nearest(s, "repair", tr); poi != nil {
+		if poi := p.nearest(s, "repair", tr, hist); poi != nil {
 			return p.travel(s, id, contract.IntentRepair, poi, 0.9, "durability below threshold")
 		}
 		// No repair POI in range is not a reason to do something else clever;
@@ -159,7 +197,7 @@ func (p *Planner) planOne(s *contract.Snapshot, tr identity.Traits) contract.Int
 
 	// Rung 2: full bags. Loot stops mattering once there is nowhere to put it.
 	if s.Char.FreeBagSlots <= p.Th.VendorWhenFreeBagSlotsAtMost {
-		if poi := p.nearest(s, "vendor", tr); poi != nil {
+		if poi := p.nearest(s, "vendor", tr, hist); poi != nil {
 			return p.travel(s, id, contract.IntentVendorSell, poi, 0.8, "bags full")
 		}
 	}
@@ -175,12 +213,12 @@ func (p *Planner) planOne(s *contract.Snapshot, tr identity.Traits) contract.Int
 
 	// Rung 4: finish what is already started. A completed quest sitting in the
 	// log is free progression, so turning in beats picking up.
-	if poi := p.questPOI(s, "quest_turnin", statusComplete, tr); poi != nil {
+	if poi := p.questPOI(s, "quest_turnin", statusComplete, tr, hist); poi != nil {
 		return p.travel(s, id, contract.IntentTurnInQuest, poi, 0.85, "quest ready to hand in")
 	}
 
 	// Rung 5: make progress on an incomplete quest with a known hotspot.
-	if poi := p.questPOI(s, "quest_objective", statusIncomplete, tr); poi != nil {
+	if poi := p.questPOI(s, "quest_objective", statusIncomplete, tr, hist); poi != nil {
 		return p.travel(s, id, contract.IntentTravelTo, poi, 0.7, "quest objective outstanding")
 	}
 
@@ -188,13 +226,13 @@ func (p *Planner) planOne(s *contract.Snapshot, tr identity.Traits) contract.Int
 	// enforces the real 1.12 quest log cap; 20 is here only so this planner does
 	// not propose pickups that are certain to be refused.
 	if len(s.Quests) < 20 {
-		if poi := p.nearest(s, "quest_giver", tr); poi != nil {
+		if poi := p.nearest(s, "quest_giver", tr, hist); poi != nil {
 			return p.travel(s, id, contract.IntentPickQuest, poi, 0.6, "quest log has room")
 		}
 	}
 
 	// Rung 7: grind. The coarse "just level" answer.
-	if poi := p.nearest(s, "grind_area", tr); poi != nil {
+	if poi := p.nearest(s, "grind_area", tr, hist); poi != nil {
 		return p.travel(s, id, contract.IntentGrindArea, poi, 0.5, "no quest work available")
 	}
 
@@ -281,7 +319,7 @@ func avoidPOI(s *contract.Snapshot) string {
 // nearest picks the closest POI of a kind, deterministically. Ties break on the
 // POI id so that two replicas planning the same snapshot agree, which matters
 // the moment this service is scaled horizontally.
-func (p *Planner) nearest(s *contract.Snapshot, kind string, tr identity.Traits) *contract.PointOfInterest {
+func (p *Planner) nearest(s *contract.Snapshot, kind string, tr identity.Traits, hist memory.History) *contract.PointOfInterest {
 	avoid := avoidPOI(s)
 	maxYards := p.maxYards(tr)
 	candidates := make([]*contract.PointOfInterest, 0, 4)
@@ -295,6 +333,19 @@ func (p *Planner) nearest(s *contract.Snapshot, kind string, tr identity.Traits)
 			// fixes. Skipping it rather than ranking it last is deliberate: a
 			// penalty would still choose it when it is the only candidate, which
 			// is exactly the case that loops.
+			continue
+		}
+		if hist.DiscouragedCount(poi.ID) >= memory.DiscouragedThreshold {
+			// This bot has failed to get here repeatedly, in ways that were
+			// the destination's fault rather than the plan's. The avoid
+			// above only remembers the LAST outcome, so without this the
+			// same unreachable place is chosen again the moment one other
+			// intent intervenes -- which is exactly the loop the outcome
+			// channel was added to break, and could not.
+			//
+			// Skipped rather than ranked last, for the same reason the avoid
+			// above skips: a penalty still picks it when it is the only
+			// candidate, which is the case that loops.
 			continue
 		}
 		if !poi.Pos.SameMap(s.Pos) {
@@ -383,7 +434,7 @@ func preferred(candidates []*contract.PointOfInterest, uuid string) *contract.Po
 // questPOI finds a POI of the given kind whose related quest is in the log with
 // the wanted status. Requiring the link in both directions is what stops the
 // planner acting on a POI the server offered speculatively.
-func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string, tr identity.Traits) *contract.PointOfInterest {
+func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string, tr identity.Traits, hist memory.History) *contract.PointOfInterest {
 	wanted := make(map[uint32]bool, len(s.Quests))
 	for _, q := range s.Quests {
 		if q.Status == wantStatus {
@@ -406,6 +457,14 @@ func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string, tr 
 		// unreachable objective would be re-proposed every tick for as long as
 		// the bot carries the quest.
 		if avoid != "" && poi.ID == avoid {
+			continue
+		}
+		if hist.DiscouragedCount(poi.ID) >= memory.DiscouragedThreshold {
+			// Same skip as nearest(), and it matters more here: a quest POI
+			// stays in the log until the quest is done, so an unreachable
+			// objective is re-proposed every tick for as long as the bot
+			// carries the quest. The one-tick avoid cannot break that; only
+			// history can.
 			continue
 		}
 		if !poi.Pos.SameMap(s.Pos) {
