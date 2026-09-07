@@ -61,6 +61,23 @@ BRAIN_DB=cv_brain
 mysql_root() { mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -p"$DB_ROOT_PASSWORD" "$@"; }
 log() { printf '[db-init] %s\n' "$*" >&2; }
 
+# THE RULE, and it is the one this file gets wrong most often:
+#
+#   A stage marker records that a stage NAME ran, not what it did. Changing the
+#   body of an existing stage therefore never reaches a volume that already ran
+#   it -- the marker is there, the stage is skipped, and the new statement is
+#   applied to fresh volumes only. That is exactly how cv_bots and cv_brain went
+#   missing on every volume bootstrapped before they were added to stage_schemas
+#   (issue #207), which then made stage 45 fail with Unknown database 'cv_bots'.
+#
+#   So: a new schema, table, grant or file set gets a NEW STAGE NAME. Do not add
+#   it to a stage that already exists. If it must also reach volumes that have
+#   already run everything, put the narrow, idempotent, non-destructive form of
+#   it in preflight() as well.
+#
+# The markers are deliberately NOT content-addressed -- see the comment on
+# preflight() for why hashing the stage body would be actively dangerous here.
+#
 # Run stage $1 (marker name) with the rest as the command, once.
 stage() {
     local name=$1; shift
@@ -129,6 +146,20 @@ mysql_root -e 'SELECT 1' >/dev/null || { log "cannot reach $DB_HOST:$DB_PORT as 
 # Only world *content* is separate (core/sql/base).
 stage_schemas() {
     mysql_root < "$CORE_SQL_DIR/create_databases.sql"
+}
+
+# --------------------------------------------------------- 05 module schemas
+# cv_bots and cv_brain are module-owned schemas (ADR-0021/ADR-0039) and were
+# added to stage_schemas long after 00-schemas had run everywhere. Every volume
+# bootstrapped before that kept its 00-schemas marker, skipped the stage, and so
+# never got them -- and stage 45 then died on Unknown database 'cv_bots'
+# (issue #207).
+#
+# Their own stage name is the fix: no volume has a 05-module-schemas marker yet,
+# so this runs on the next start of an existing volume as well as on a new one,
+# and 00-schemas -- which is create_databases.sql, i.e. DROP TABLE IF EXISTS on
+# 415 tables -- is not re-run to get there.
+stage_module_schemas() {
     mysql_root -e "CREATE DATABASE IF NOT EXISTS \`$BOT_DB\` CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci;"
     # utf8mb4, not utf8mb3: cv_bots inherited utf8mb3 from the upstream table it
     # was moved out of, and there is no reason to carry that into a new schema.
@@ -147,12 +178,24 @@ GRANT ALL PRIVILEGES ON tw_world.*  TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_char.*   TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_logon.*  TO '${DB_USER}'@'%';
 GRANT ALL PRIVILEGES ON tw_logs.*   TO '${DB_USER}'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON cv_bots.* TO '${DB_USER}'@'%';
--- mod-bot-brain runs inside the worldserver and mints the identity row on first
--- sight of a bot, so ${DB_USER} needs cv_brain. It gets the same narrow set as
--- cv_bots: enough to create its tables and maintain rows, not enough to DROP the
--- schema if a script goes wrong.
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON cv_brain.* TO '${DB_USER}'@'%';
+FLUSH PRIVILEGES;
+SQL
+}
+
+# ---------------------------------------------------------- 15 module grants
+# The grants half of issue #207, and a separate stage for the same reason
+# 05-module-schemas is: these two lines were added to stage_grants after
+# 10-grants had already run on every existing volume, so those volumes never got
+# them and never would have.
+#
+# mod-bot-brain runs inside the worldserver and mints the identity row on first
+# sight of a bot, so ${DB_USER} needs cv_brain as well as cv_bots. Both get the
+# same narrow set: enough to create their tables and maintain rows, not enough to
+# DROP the schema if a script goes wrong.
+stage_module_grants() {
+    mysql_root <<SQL
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON \`${BOT_DB}\`.*   TO '${DB_USER}'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON \`${BRAIN_DB}\`.* TO '${DB_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL
 }
@@ -414,22 +457,73 @@ SQL
 # (ADR-0039). Skipped entirely when the directory is not mounted, because the
 # worldserver runs perfectly well with the brain absent and a bootstrap must not
 # fail over a service nobody deployed.
+#
+# The mount check is OUTSIDE stage() on purpose. It used to be the first thing in
+# this function, so the skip path still fell through to `date > $STATE/46-bot-brain`
+# -- and a deployment that skipped the brain once and mounted it later found the
+# marker in place and never applied the schema at all. Same defect class as issue
+# #207: the marker recorded "46-bot-brain was considered", not "46-bot-brain was
+# applied". With the check out at the call site, the skip writes no marker and
+# mounting the directory later just works.
 stage_bot_brain() {
-    if [ ! -d "$BRAIN_SQL_DIR/cv_brain" ]; then
-        log "bot-brain sql: $BRAIN_SQL_DIR/cv_brain not mounted - skipping"
-        return 0
-    fi
     apply_module_sql "$BRAIN_DB" "$BRAIN_SQL_DIR/cv_brain"
 }
 
-stage 00-schemas    stage_schemas
-stage 10-grants     stage_grants
+# ----------------------------------------------------------------- preflight
+# Runs EVERY time, before any stage, and is deliberately the one thing in this
+# file with no marker.
+#
+# On a fresh volume it is a no-op that 05-module-schemas and 15-module-grants
+# repeat a moment later, and that redundancy is the point: on a volume
+# bootstrapped before those stages existed, this is what makes the repair need no
+# operator action at all. cv_bots and cv_brain are back before stage 45 asks for
+# them, with no marker deleted and no `make clean`. The stages still earn their
+# place -- they are what a new volume records, and where the intent is legible.
+#
+# WHY NOT CONTENT-ADDRESSED MARKERS, which is the obvious general fix and the one
+# the next reader will reach for: hashing a stage's body means editing that body
+# re-runs it, and stage_schemas runs create_databases.sql, which opens with DROP
+# TABLE IF EXISTS on 415 tables. Adding a *comment* to that function would then
+# silently wipe a populated realm. That trades today's loud, recoverable failure
+# for quiet data loss. Not here.
+#
+# THIS FUNCTION MUST STAY NARROW. Cheap, idempotent, non-destructive statements
+# only -- CREATE ... IF NOT EXISTS and GRANT. Never a DROP, never a schema load,
+# never anything whose cost scales with the size of the database: it pays its
+# price on every container start and has no marker to hide behind. Anything
+# bigger than that belongs in a new stage.
+preflight() {
+    # CREATE USER IF NOT EXISTS is here not because preflight owns the user but
+    # because GRANT to an unknown user is an error, and on a fresh volume
+    # 10-grants has not run yet. IF NOT EXISTS leaves an existing user's password
+    # alone; stage_grants remains the only thing that sets or rotates it.
+    mysql_root <<SQL
+CREATE DATABASE IF NOT EXISTS \`${BOT_DB}\`   CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci;
+CREATE DATABASE IF NOT EXISTS \`${BRAIN_DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON \`${BOT_DB}\`.*   TO '${DB_USER}'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON \`${BRAIN_DB}\`.* TO '${DB_USER}'@'%';
+SQL
+}
+
+preflight
+
+stage 00-schemas        stage_schemas
+stage 05-module-schemas stage_module_schemas
+stage 10-grants         stage_grants
+stage 15-module-grants  stage_module_grants
 stage 11-brain-user stage_brain_user
 stage 20-world-base stage_base
 stage 30-updates    stage_updates
 stage 40-playerbots stage_playerbots
 stage 45-playerbot-migrations stage_playerbot_migrations
-stage 46-bot-brain  stage_bot_brain
+# See stage_bot_brain: the mount check lives here rather than inside the stage,
+# so that skipping an unmounted brain writes no marker.
+if [ -d "$BRAIN_SQL_DIR/cv_brain" ]; then
+    stage 46-bot-brain stage_bot_brain
+else
+    log "bot-brain sql: $BRAIN_SQL_DIR/cv_brain not mounted - skipping (no marker written)"
+fi
 stage 60-realmlist  stage_realmlist
 
 # Verification. Every stage above now fails loudly, so this is no longer the only

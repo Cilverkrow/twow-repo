@@ -925,6 +925,33 @@ jobs:
             exit 1
           fi
 
+      # Issue #207, and the only step in this job that does NOT start from a
+      # clean state - which is exactly why the bug survived every test here. A
+      # stage marker records that a stage NAME ran, not what it did, so a schema
+      # added to an already-run stage never reaches an existing volume. Simulate
+      # one bootstrapped before 05-module-schemas / 15-module-grants existed:
+      # drop the two module schemas and remove ONLY those two markers. Every
+      # other marker stays, so 00-schemas is still skipped and
+      # create_databases.sql (DROP TABLE IF EXISTS on 415 tables) must not re-run
+      # to effect the repair.
+      - name: A volume bootstrapped before the module stages repairs itself
+        run: |
+          set -eu
+          mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -e \
+            "DROP DATABASE cv_bots; DROP DATABASE cv_brain;"
+          rm -f /state/05-module-schemas /state/15-module-grants
+          creatures_before=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B \
+            -e "SELECT COUNT(*) FROM tw_world.creature;")
+          bash deploy/compose/db-init.sh
+          back=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM information_schema.SCHEMATA
+             WHERE SCHEMA_NAME IN ('cv_bots','cv_brain');")
+          [ "$back" = "2" ] || { echo "::error::cv_bots/cv_brain did not come back ($back of 2)"; exit 1; }
+          creatures_after=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B \
+            -e "SELECT COUNT(*) FROM tw_world.creature;")
+          [ "$creatures_before" = "$creatures_after" ] \
+            || { echo "::error::the repair re-ran create_databases.sql and wiped the world"; exit 1; }
+
       - name: Assert the schemas exist and are populated
         run: |
           set -eu
