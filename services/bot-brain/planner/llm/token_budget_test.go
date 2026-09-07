@@ -205,3 +205,49 @@ func TestTokenBudgetCancelledAndStopped(t *testing.T) {
 		t.Fatal("stopped admitted")
 	}
 }
+
+// The distinction #16 turned on, and which I got wrong once in writing: this
+// latch is not the circuit breaker. The breaker reopens on a timer; this has no
+// re-enable path at all, and that asymmetry is the whole reason it deserves an
+// alert of its own.
+func TestStoppedIsObservableAndIrreversible(t *testing.T) {
+	b, err := NewTokenBudget(DefaultTokenLimits(), nil)
+	if err != nil {
+		t.Fatalf("NewTokenBudget: %v", err)
+	}
+	if b.Stopped() {
+		t.Fatal("a fresh budget reports itself stopped")
+	}
+
+	b.Stop()
+	if !b.Stopped() {
+		t.Fatal("Stop() did not latch")
+	}
+
+	// There is deliberately no re-enable API. The closest thing to one is
+	// calling Stop again, and a successful reserve would mean the latch had
+	// somehow lifted.
+	b.Stop()
+	if !b.Stopped() {
+		t.Fatal("the latch lifted")
+	}
+	if _, err := b.reserve(context.Background(), 1, 1); err == nil {
+		t.Fatal("a stopped budget still granted a reservation")
+	}
+}
+
+// A budget that has latched must stay latched across every subsequent call, so
+// a monitor polling it can never see a stale "healthy".
+func TestStoppedStaysTrueUnderRepeatedUse(t *testing.T) {
+	b, err := NewTokenBudget(DefaultTokenLimits(), nil)
+	if err != nil {
+		t.Fatalf("NewTokenBudget: %v", err)
+	}
+	b.Stop()
+	for i := 0; i < 100; i++ {
+		_, _ = b.reserve(context.Background(), 1, 1)
+		if !b.Stopped() {
+			t.Fatalf("latch lifted after %d reserves", i)
+		}
+	}
+}

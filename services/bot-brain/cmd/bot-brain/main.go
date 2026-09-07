@@ -61,6 +61,13 @@ func run() error {
 	slog.SetDefault(log)
 
 	reg := metrics.New()
+	// Two gauges, deliberately separate, because they have OPPOSITE recovery
+	// semantics and a dashboard that merges them reproduces the mistake this
+	// repository has already made once in writing.
+	reg.Describe("botbrain_llm_breaker_open",
+		"1 while the LLM circuit breaker is open. Reopens by itself on a timer; a spike here is a bad minute at the endpoint.")
+	reg.Describe("botbrain_llm_token_budget_stopped",
+		"1 once the token budget has latched shut. NEVER reopens: this process will not call the model again until it is restarted. Alert on this.")
 	// Nil unless a store is configured; httpapi treats that as "do not keep
 	// observations", which is the mode the service runs in without a database.
 	var memoryRecorder memory.Recorder
@@ -216,6 +223,9 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// Read and written only by the ticker goroutine below.
+	budgetLatchLogged := false
+
 	// Periodically reopen the LLM circuit breaker so a recovered endpoint comes
 	// back without a restart.
 	if llmP != nil && llmErr == nil {
@@ -227,6 +237,23 @@ func run() error {
 				case <-ctx.Done():
 					return
 				case <-t.C:
+					// Published on the same timer that already exists rather
+					// than on one of its own: these are slow-moving states, and
+					// a second ticker to watch two booleans would be more
+					// machinery than the thing it observes.
+					reg.SetGauge("botbrain_llm_breaker_open", boolGauge(!llmP.Ready()))
+					if budget := cfg.LLM.TokenBudget; budget != nil {
+						stopped := budget.Stopped()
+						reg.SetGauge("botbrain_llm_token_budget_stopped", boolGauge(stopped))
+						if stopped && !budgetLatchLogged {
+							// Once, not every tick. The state never changes back,
+							// so repeating it would be a log line every 30
+							// seconds for the life of the process.
+							budgetLatchLogged = true
+							log.Error("llm token budget has latched shut; this process will not call the model again",
+								"remedy", "restart the service after deciding whether the provider's usage accounting is trustworthy")
+						}
+					}
 					if !llmP.Ready() {
 						log.Info("reopening llm circuit breaker for a trial batch")
 						llmP.MarkHealthy()
@@ -285,6 +312,15 @@ func healthcheck() int {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		return 1
+	}
+	return 0
+}
+
+// boolGauge renders a state as a gauge value. Prometheus has no boolean, and
+// 0/1 is the convention every dashboard already expects.
+func boolGauge(b bool) float64 {
+	if b {
 		return 1
 	}
 	return 0
