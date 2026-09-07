@@ -74,6 +74,13 @@ namespace botbrain
                 intent.confidence);
 
         RecordOutcome(bot, intent.intentId, intent.kind, "accepted", std::string(), poi.id);
+
+        // "accepted" only says the destination was set. Remember the intent so
+        // Tick can watch the travel and report how it actually ended -- arrived,
+        // gave up, or was re-targeted by something else. Without this second
+        // half, a POI the bot can never reach is indistinguishable from one it
+        // reaches every time.
+        NoteTravelStarted(bot, intent.intentId, intent.kind, poi.id, poi.destination);
         return true;
     }
 }

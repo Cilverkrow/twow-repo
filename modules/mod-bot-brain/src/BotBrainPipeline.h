@@ -105,6 +105,20 @@ namespace botbrain
     // offered once.
     bool TakeTravelIntent(Player* bot, Intent& intent, ResolvedPoi& poi);
 
+    // Remembers which intent the bot has just started carrying out, so that how
+    // it ENDS can be reported later.
+    //
+    // Without this the last thing anyone ever heard about a travel intent was
+    // "accepted", which means a destination variable was set -- not that the bot
+    // arrived, and not that it ever could. A planner cannot learn from that: a
+    // POI it can never reach looks exactly like one it reaches every time.
+    //
+    // `destination` is sTravelMgr's and process-lifetime; it is only ever
+    // compared, never dereferenced, and only on the map thread -- the same
+    // contract ResolvedPoi states for the same pointers.
+    void NoteTravelStarted(Player* bot, std::string const& intentId, std::string const& kind,
+        std::string const& poiId, ai::TravelDestination* destination);
+
     // True when a pending intent is waiting whose kind is applied by something
     // OTHER than the travel chooser.
     //
