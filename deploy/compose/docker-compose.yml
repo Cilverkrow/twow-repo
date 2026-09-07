@@ -169,6 +169,15 @@ services:
       # See the note on realmd: files, not the directory.
       - ./config/mangosd.conf:/opt/turtle/etc/mangosd.conf:ro
       - ./config/aiplayerbot.conf:/opt/turtle/etc/aiplayerbot.conf:ro
+      # The bot-brain module config. mangosd resolves every module config as
+      # <directory of the -c file>/modules/<name>.conf (Config::LoadModulesConfigs
+      # in core/src/shared/Config/Config.cpp, where <name> comes from the .dist
+      # filename), so the TARGET path is fixed by the main conf being at
+      # /opt/turtle/etc/mangosd.conf and is not a free choice. Mounting the file
+      # and not the directory leaves the image's other *.conf.dist templates in
+      # place, so the entrypoint still seeds the modules that supply nothing --
+      # and its "copy, never overwrite" rule leaves this one alone.
+      - ./config/mod_bot_brain.conf:/opt/turtle/etc/modules/mod_bot_brain.conf:ro
       # Client data: extracted from a game client, read-only, never in an image.
       # `make extract` (tools profile) produces it.
       - ${DATA_PATH:-./data}:/opt/turtle/data:ro

@@ -73,8 +73,15 @@ fi
 #
 # Copy, never overwrite: an operator or a bind mount that supplies its own
 # <name>.conf keeps it, the same way $CONF above is left alone when it exists.
-# Every .dist ships its module switched off, so seeding changes no behaviour --
-# it only stops the server dying on a file nothing was ever told to create.
+# That is now load-bearing rather than merely polite -- deploy/compose renders
+# modules/mod_bot_brain.conf and bind-mounts it read-only onto
+# ${PREFIX}/etc/modules/mod_bot_brain.conf, and a `cp` over it would both undo
+# the operator's setting and fail on a read-only mount. The [ -f ] test below
+# is what makes the supplied file win; it is not an optimisation.
+#
+# Seeding still covers every module that supplies nothing. Those .dist files
+# ship switched off, so seeding them changes no behaviour -- it only stops the
+# server dying on a file nothing was ever told to create.
 MODULE_CONF_DIR="$(dirname "$CONF")/modules"
 if [ -d "$MODULE_CONF_DIR" ]; then
     for dist in "$MODULE_CONF_DIR"/*.conf.dist; do

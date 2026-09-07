@@ -1,5 +1,8 @@
 # OPS-009-R1 sanitized semantic matrix; no configuration values or secrets.
-# Counts: KEEP=95 INTENTIONAL_CHANGE=16 DEPRECATED_OR_REMOVED=0 MACHINE_SECRET=6 TOTAL=117
+# Counts: KEEP=96 INTENTIONAL_CHANGE=18 DEPRECATED_OR_REMOVED=0 MACHINE_SECRET=6 TOTAL=120
+# This line is prose: nothing parses it, and it had already drifted from the
+# rows below once. The counts that are enforced are the literals in
+# ops/config/test-config-provenance.sh's assert_matrix; keep the two in step.
 service	key	classification	canonical_source	evidence
 aiplayerbot	AiPlayerbot.AutoLearnDroppedSpells	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.AutoLearnQuestSpells	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
@@ -29,6 +32,7 @@ aiplayerbot	AiPlayerbot.RandomBotGuildNearby	KEEP	aiplayerbot.overlay.conf	verif
 aiplayerbot	AiPlayerbot.RandomBotInvitePlayer	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.RandomBotMaxLevelChance	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.RandomBotMinLevel	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
+aiplayerbot	AiPlayerbot.RandomBotNonCombatStrategies	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.RandomBotRaidNearby	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.SyncLevelMaxAbove	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.SyncLevelNoPlayer	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
@@ -39,6 +43,8 @@ aiplayerbot	AiPlayerbot.ToxicLinksRepliesChance	KEEP	aiplayerbot.overlay.conf	ve
 aiplayerbot	AiPlayerbot.TurnInRpg	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.UsePotionChance	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.XPRate	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
+bot-brain	BotBrain.Enable	INTENTIONAL_CHANGE	bot-brain.overlay.conf	reviewed-machine-parameter
+bot-brain	BotBrain.Endpoint	INTENTIONAL_CHANGE	bot-brain.overlay.conf	reviewed-compose-path
 mangosd	AiPlayerbot.ConfigFile	INTENTIONAL_CHANGE	mangosd.overlay.conf	reviewed-compose-path
 mangosd	AllFlightPaths	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	AutoDonationPoints.Amount	KEEP	mangosd.overlay.conf	verified-sanitized-baseline

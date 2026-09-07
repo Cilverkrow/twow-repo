@@ -18,6 +18,10 @@ export WORLD_PORT=18090
 export REALM_PORT=13724
 export AIPLAYERBOT_MIN_BOTS=3
 export AIPLAYERBOT_MAX_BOTS=7
+# Deliberately 1, while the shipped default in .env.example is 0: the point of
+# the switch is that an operator can reach BotBrain.Enable at all, and the only
+# way to test that is to render it in the ON position here.
+export BOT_BRAIN_ENABLE=1
 
 if test -n "$(git -C "$ROOT" status --porcelain --untracked-files=all)"; then
     unset ALLOW_DIRTY_CONFIG_SOURCE
@@ -114,8 +118,8 @@ assert_matrix() {
             total++
         }
         END {
-            if (total != 115 || count["KEEP"] != 95 ||
-                count["INTENTIONAL_CHANGE"] != 14 ||
+            if (total != 120 || count["KEEP"] != 96 ||
+                count["INTENTIONAL_CHANGE"] != 18 ||
                 count["DEPRECATED_OR_REMOVED"] != 0 ||
                 count["MACHINE_SECRET"] != 6) exit 13
         }
@@ -146,6 +150,15 @@ assert_semantics() {
                 template="$ROOT/core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in"
                 overlay="$CANONICAL/aiplayerbot.overlay.conf"
                 ;;
+            bot-brain)
+                rendered="$CONFIG_OUT_DIR/mod_bot_brain.conf"
+                # No sanitized upstream baseline: mod-bot-brain is this
+                # project's own module, so every row here is a reviewed
+                # deviation from our own template and none can be KEEP.
+                baseline=""
+                template="$ROOT/modules/mod-bot-brain/conf/mod_bot_brain.conf.dist"
+                overlay="$CANONICAL/bot-brain.overlay.conf"
+                ;;
             *) echo "ERROR: unknown semantic-matrix service" >&2; exit 1 ;;
         esac
 
@@ -167,6 +180,7 @@ assert_semantics() {
             case "$key" in
                 AiPlayerbot.MinRandomBots) expected=3 ;;
                 AiPlayerbot.MaxRandomBots) expected=7 ;;
+                BotBrain.Enable) expected=$BOT_BRAIN_ENABLE ;;
                 *)
                     if [[ "$canonical_source" == complete-base-template ]]; then
                         expected=$(key_value "$template" "$key")
@@ -193,14 +207,27 @@ assert_rendered_contract() {
     assert_no_duplicate_keys "$CONFIG_OUT_DIR/mangosd.conf"
     assert_no_duplicate_keys "$CONFIG_OUT_DIR/realmd.conf"
     assert_no_duplicate_keys "$CONFIG_OUT_DIR/aiplayerbot.conf"
+    assert_no_duplicate_keys "$CONFIG_OUT_DIR/mod_bot_brain.conf"
     assert_overlay_keys_once "$CANONICAL/mangosd.overlay.conf" "$CONFIG_OUT_DIR/mangosd.conf"
     assert_overlay_keys_once "$CANONICAL/realmd.overlay.conf" "$CONFIG_OUT_DIR/realmd.conf"
     assert_overlay_keys_once "$CANONICAL/aiplayerbot.overlay.conf" "$CONFIG_OUT_DIR/aiplayerbot.conf"
+    assert_overlay_keys_once "$CANONICAL/bot-brain.overlay.conf" "$CONFIG_OUT_DIR/mod_bot_brain.conf"
     for key in LoginDatabase.Info WorldDatabase.Info CharacterDatabase.Info LogsDatabase.Info; do
         assert_key_once "$CONFIG_OUT_DIR/mangosd.conf" "$key"
     done
     assert_key_once "$CONFIG_OUT_DIR/realmd.conf" LoginDatabaseInfo
     assert_key_once "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.LLMApiKey
+
+    # The module config is useless without its [worldserver] header: ACE's INI
+    # importer rejects a file whose first key precedes a section header, and
+    # mangosd turns that into "Could not load module configuration files" and
+    # exits before it reaches the database.
+    head -n 1 "$CONFIG_OUT_DIR/mod_bot_brain.conf" | grep -Fqx '[worldserver]'
+    # Both halves of the switch, together: the module setting an operator can
+    # now reach, and the strategy without which enabling it plans for no bots.
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_bot_brain.conf" BotBrain.Enable)" == 1 ]]
+    key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.RandomBotNonCombatStrategies |
+        grep -Fq '+bot brain'
 
     [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.MinRandomBots)" == 3 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.MaxRandomBots)" == 7 ]]
@@ -242,7 +269,7 @@ cp -- "$CONFIG_OUT_DIR"/*.conf "$TMP/first/"
 grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > "$TMP/first/provenance.normalized"
 bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
 bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
-for name in mangosd.conf realmd.conf aiplayerbot.conf; do
+for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf; do
     cmp -s "$TMP/first/$name" "$CONFIG_OUT_DIR/$name" || {
         echo "ERROR: repeated render changed canonical output" >&2
         exit 1

@@ -12,9 +12,13 @@ OUT="${CONFIG_OUT_DIR:-$HERE/config}"
 MANGOSD_TEMPLATE="$ROOT/core/src/mangosd/mangosd.conf.dist.in"
 REALMD_TEMPLATE="$ROOT/core/src/realmd/realmd.conf.dist.in"
 AIPLAYERBOT_TEMPLATE="$ROOT/core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in"
+# The only complete base template that is NOT in the core submodule:
+# mod-bot-brain is this repository's own module, so its .dist ships here.
+BOT_BRAIN_TEMPLATE="$ROOT/modules/mod-bot-brain/conf/mod_bot_brain.conf.dist"
 MANGOSD_OVERLAY="$CANONICAL/mangosd.overlay.conf"
 REALMD_OVERLAY="$CANONICAL/realmd.overlay.conf"
 AIPLAYERBOT_OVERLAY="$CANONICAL/aiplayerbot.overlay.conf"
+BOT_BRAIN_OVERLAY="$CANONICAL/bot-brain.overlay.conf"
 SEMANTIC_MATRIX="$CANONICAL/semantic-baseline.tsv"
 VERIFIER="$HERE/verify-config.sh"
 
@@ -25,6 +29,10 @@ REALM_PORT=${REALM_PORT:-3724}
 AIPLAYERBOT_MIN_BOTS=${AIPLAYERBOT_MIN_BOTS:-10}
 AIPLAYERBOT_MAX_BOTS=${AIPLAYERBOT_MAX_BOTS:-10}
 AIPLAYERBOT_LLM_API_KEY=${AIPLAYERBOT_LLM_API_KEY:-}
+# Off unless deploy/compose/.env says otherwise. This is the whole switch: it
+# makes BotBrain.Enable reachable without exec'ing into a running container,
+# and it makes it reachable in the OFF position by default.
+BOT_BRAIN_ENABLE=${BOT_BRAIN_ENABLE:-0}
 
 for tool in git sha256sum awk sed stat mktemp sort uniq grep; do
     command -v "$tool" >/dev/null 2>&1 || { echo "ERROR: required tool missing: $tool" >&2; exit 1; }
@@ -60,10 +68,14 @@ require_integer AIPLAYERBOT_MAX_BOTS "$AIPLAYERBOT_MAX_BOTS"
 reject_reserved_value DB_USER "$DB_USER"
 reject_reserved_value DB_PASSWORD "$DB_PASSWORD"
 reject_reserved_value AIPLAYERBOT_LLM_API_KEY "$AIPLAYERBOT_LLM_API_KEY"
+case "$BOT_BRAIN_ENABLE" in
+    0|1) ;;
+    *) echo "ERROR: BOT_BRAIN_ENABLE must be 0 or 1" >&2; exit 1 ;;
+esac
 
 for file in \
-    "$MANGOSD_TEMPLATE" "$REALMD_TEMPLATE" "$AIPLAYERBOT_TEMPLATE" \
-    "$MANGOSD_OVERLAY" "$REALMD_OVERLAY" "$AIPLAYERBOT_OVERLAY" \
+    "$MANGOSD_TEMPLATE" "$REALMD_TEMPLATE" "$AIPLAYERBOT_TEMPLATE" "$BOT_BRAIN_TEMPLATE" \
+    "$MANGOSD_OVERLAY" "$REALMD_OVERLAY" "$AIPLAYERBOT_OVERLAY" "$BOT_BRAIN_OVERLAY" \
     "$SEMANTIC_MATRIX" "$VERIFIER"; do
     [[ -f "$file" && ! -L "$file" ]] || { echo "ERROR: required tracked configuration input is missing or unsafe: $file" >&2; exit 1; }
 done
@@ -145,6 +157,7 @@ require_template_key() {
 validate_overlay_keys "$MANGOSD_OVERLAY"
 validate_overlay_keys "$REALMD_OVERLAY"
 validate_overlay_keys "$AIPLAYERBOT_OVERLAY"
+validate_overlay_keys "$BOT_BRAIN_OVERLAY"
 require_template_key "$MANGOSD_TEMPLATE" LoginDatabase.Info
 require_template_key "$MANGOSD_TEMPLATE" WorldDatabase.Info
 require_template_key "$MANGOSD_TEMPLATE" CharacterDatabase.Info
@@ -208,10 +221,15 @@ sed \
     -e "s|@AIPLAYERBOT_MIN_BOTS@|$AIPLAYERBOT_MIN_BOTS|g" \
     -e "s|@AIPLAYERBOT_MAX_BOTS@|$AIPLAYERBOT_MAX_BOTS|g" \
     "$AIPLAYERBOT_OVERLAY" > "$STAGE/aiplayerbot.overlay.conf"
+sed -e "s|@BOT_BRAIN_ENABLE@|$BOT_BRAIN_ENABLE|g" \
+    "$BOT_BRAIN_OVERLAY" > "$STAGE/bot-brain.overlay.conf"
 
 apply_overlay "$MANGOSD_TEMPLATE" "$MANGOSD_OVERLAY" "$STAGE/mangosd.nonsecret.conf"
 apply_overlay "$REALMD_TEMPLATE" "$REALMD_OVERLAY" "$STAGE/realmd.nonsecret.conf"
 apply_overlay "$AIPLAYERBOT_TEMPLATE" "$STAGE/aiplayerbot.overlay.conf" "$STAGE/aiplayerbot.nonsecret.conf"
+# No machine pass: nothing in the module config is a credential, so the
+# non-secret document IS the rendered file.
+apply_overlay "$BOT_BRAIN_TEMPLATE" "$STAGE/bot-brain.overlay.conf" "$STAGE/mod_bot_brain.conf"
 
 # The service parser has no external secret provider. These are the only secret
 # machine-overlay values and are intentionally absent from provenance output.
@@ -267,7 +285,9 @@ assert_keys_once "$STAGE/realmd.conf" "$REALMD_OVERLAY"
 assert_keys_once "$STAGE/realmd.conf" "$STAGE/realmd.machine.conf"
 assert_keys_once "$STAGE/aiplayerbot.conf" "$STAGE/aiplayerbot.overlay.conf"
 assert_keys_once "$STAGE/aiplayerbot.conf" "$STAGE/aiplayerbot.machine.conf"
-for config in "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.conf"; do
+assert_keys_once "$STAGE/mod_bot_brain.conf" "$STAGE/bot-brain.overlay.conf"
+for config in "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.conf" \
+    "$STAGE/mod_bot_brain.conf"; do
     assert_no_duplicate_keys "$config"
     if grep -Eq '@[A-Z0-9_]+@' "$config"; then
         echo "ERROR: unresolved canonical configuration token" >&2
@@ -275,7 +295,8 @@ for config in "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.con
     fi
 done
 
-chmod 600 "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.conf"
+chmod 600 "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.conf" \
+    "$STAGE/mod_bot_brain.conf"
 hash_file() { sha256sum "$1" | awk '{print $1}'; }
 file_bytes() { stat -c '%s' "$1"; }
 
@@ -309,12 +330,23 @@ AIPLAYERBOT_OVERLAY_BYTES=$(file_bytes "$AIPLAYERBOT_OVERLAY")
 AIPLAYERBOT_OVERLAY_SHA256=$(hash_file "$AIPLAYERBOT_OVERLAY")
 AIPLAYERBOT_RENDERED_BYTES=$(file_bytes "$STAGE/aiplayerbot.conf")
 AIPLAYERBOT_RENDERED_SHA256=$(hash_file "$STAGE/aiplayerbot.conf")
+BOT_BRAIN_TEMPLATE_BYTES=$(file_bytes "$BOT_BRAIN_TEMPLATE")
+BOT_BRAIN_TEMPLATE_SHA256=$(hash_file "$BOT_BRAIN_TEMPLATE")
+BOT_BRAIN_OVERLAY_BYTES=$(file_bytes "$BOT_BRAIN_OVERLAY")
+BOT_BRAIN_OVERLAY_SHA256=$(hash_file "$BOT_BRAIN_OVERLAY")
+BOT_BRAIN_RENDERED_BYTES=$(file_bytes "$STAGE/mod_bot_brain.conf")
+BOT_BRAIN_RENDERED_SHA256=$(hash_file "$STAGE/mod_bot_brain.conf")
 EOF
 chmod 600 "$STAGE/config-provenance.txt"
 
 # Files publish one by one; provenance publishes last. Any interrupted or mixed
 # set therefore fails verification before `make up` can consume it.
-for name in mangosd.conf realmd.conf aiplayerbot.conf config-provenance.txt; do
+# mod_bot_brain.conf publishes into $OUT beside the others rather than into a
+# modules/ subdirectory. The mount TARGET is what has to live under
+# /opt/turtle/etc/modules/; keeping the host file flat is what keeps the 0700
+# directory guarantee, the *.conf permission fix-ups below, `make clean` and
+# the verifier file list working on it unchanged.
+for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf config-provenance.txt; do
     mv -f -- "$STAGE/$name" "$OUT/$name"
 done
 
