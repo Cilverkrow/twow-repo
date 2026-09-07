@@ -200,6 +200,15 @@ namespace botbrain
             uint32 nextIdentityAttemptMs = 0;             // backoff after a failed attempt
         };
 
+        // How many bots are carrying a brain intent right now.
+        //
+        // Purely so ObserveActiveTravel can decline in one relaxed load. It runs
+        // ahead of the ShouldPlanFor gate, so it is called for EVERY bot on
+        // every tick -- including the thousands that have no brain state at all
+        // -- and without this each of those would take the global mutex to be
+        // told there is nothing to do.
+        std::atomic<uint32_t> g_activeTravels{0};
+
         std::mutex g_statesMutex;
         std::unordered_map<uint64, BotPlanState> g_states;   // keyed by ObjectGuid raw value
 
@@ -747,15 +756,40 @@ namespace botbrain
         // context. Called from Tick rather than from the action, because the
         // action only runs while the travel machine is CHOOSING -- the moment
         // this needs to observe is every moment after that.
-        void ObserveActiveTravel(Player* bot, PlayerbotAI* botAI, uint32 now)
+        void ObserveActiveTravel(Player* bot, PlayerbotAI* botAI)
         {
+            // Runs ahead of ShouldPlanFor, so it validates its own arguments
+            // rather than inheriting that gate's checks.
+            if (!bot || !botAI || !bot->IsInWorld())
+                return;
+
+            // The overwhelming majority of calls end here, without a lock.
+            if (g_activeTravels.load(std::memory_order_relaxed) == 0)
+                return;
+
+            uint32 const now = WorldTimer::getMSTime();
+            uint64 const raw = bot->GetObjectGuid().GetRawValue();
+
+            // Is this particular bot carrying one? Answered under the lock, then
+            // the lock is dropped: the AI context read below is a map lookup
+            // inside another subsystem, and holding a mutex shared by every map
+            // thread across it would serialise them all on one bot's context.
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                BotPlanState const* state = Find(raw);
+                if (!state || !state->hasActiveTravel)
+                    return;
+            }
+
             TravelTarget* target = nullptr;
             if (ai::Value<TravelTarget*>* value =
                     botAI->GetAiObjectContext()->GetValue<TravelTarget*>("travel target"))
                 target = value->Get();
 
             std::lock_guard<std::mutex> lock(g_statesMutex);
-            BotPlanState* state = Find(bot->GetObjectGuid().GetRawValue());
+            // Re-checked, not assumed: the state can have been resolved or the
+            // bot forgotten while the lock was down.
+            BotPlanState* state = Find(raw);
             if (!state || !state->hasActiveTravel)
                 return;
 
@@ -809,8 +843,14 @@ namespace botbrain
 
             if (!result && Elapsed(now, state->activeTravelAtMs + kActiveTravelTimeoutMs))
             {
-                result = "failed";
-                reason = "unreachable";
+                // "superseded", not "failed/unreachable". A travel that never
+                // reached a terminal status is an ending nobody observed, and
+                // that is not the same as evidence the place cannot be reached.
+                // Calling it a failure would let a stalled tick, a restart or a
+                // disabled module teach the planner to avoid a perfectly good
+                // POI -- and memory (Phase C) is about to start believing these.
+                result = "superseded";
+                reason = "";
             }
 
             if (!result)
@@ -820,6 +860,7 @@ namespace botbrain
                 state->activePoiId);
             state->hasActiveTravel = false;
             state->activeDestination = nullptr;
+            g_activeTravels.fetch_sub(1, std::memory_order_relaxed);
         }
 
         // The transport half of a handshake: no logging, no globals touched.
@@ -1069,6 +1110,15 @@ namespace botbrain
     {
         std::lock_guard<std::mutex> lock(g_statesMutex);
         uint64 const raw = guid.GetRawValue();
+
+        // Keep the active-travel count honest. A bot that logs out mid-travel
+        // would otherwise leak its entry: the count never returns to zero, and
+        // ObserveActiveTravel's fast path stops being fast for every bot on the
+        // server, permanently, for the life of the process.
+        auto const existing = g_states.find(raw);
+        if (existing != g_states.end() && existing->second.hasActiveTravel)
+            g_activeTravels.fetch_sub(1, std::memory_order_relaxed);
+
         g_states.erase(raw);
 
         // A bot that logs out while its snapshot is still sitting in
@@ -1255,6 +1305,13 @@ namespace botbrain
         if (!state)
             return;
 
+        // Only count a bot once, however many intents it is given: a second
+        // NoteTravelStarted before the first resolved replaces the intent rather
+        // than adding one, and double-counting would leave the fast path
+        // permanently non-zero.
+        if (!state->hasActiveTravel)
+            g_activeTravels.fetch_add(1, std::memory_order_relaxed);
+
         state->hasActiveTravel = true;
         state->activeIntentId = intentId;
         state->activeKind = kind;
@@ -1278,20 +1335,24 @@ namespace botbrain
         // sends it -- the batch does not care which map thread does the work.
         MaybeFlushPendingBatch();
 
+        // Before the gate as well, and this one matters more than it looks.
+        //
+        // It reports how the LAST intent ended, which happens across many ticks
+        // while this pipeline sits in AwaitingPlan or Idle with nothing else to
+        // do -- so it cannot live inside a phase. But putting it after
+        // ShouldPlanFor would mean an intent already in flight stops being
+        // watched the moment the module is disabled or the bot loses the
+        // strategy, and the timeout below would then attribute that GAP IN
+        // OBSERVATION to the destination. A config toggle would manufacture
+        // evidence against POIs that were never the problem.
+        ObserveActiveTravel(bot, botAI);
+
         if (!ShouldPlanFor(bot, botAI))
             return;
 
         Settings const& cfg = GetSettings();
         uint32 const now = WorldTimer::getMSTime();
         uint64 const raw = bot->GetObjectGuid().GetRawValue();
-
-        // Before any phase work: report how the LAST intent ended.
-        //
-        // It has to run every tick rather than inside a phase, because the thing
-        // it watches -- the bot walking -- happens across many ticks while this
-        // pipeline sits in AwaitingPlan or Idle with nothing else to do. Its
-        // outcome then rides the next snapshot like any other.
-        ObserveActiveTravel(bot, botAI, now);
 
         // Phase A/D bookkeeping happens under the lock; the two expensive
         // steps (building the snapshot, spawning a worker) happen after it.
