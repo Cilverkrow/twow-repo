@@ -24,6 +24,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <deque>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -116,6 +117,23 @@ namespace botbrain
             std::string error;       // transport or decode failure
         };
 
+        // Two per intent is the normal maximum ("accepted" then a terminal
+        // outcome), so four leaves room for one intent's pair to still be
+        // waiting when the next one starts. Beyond that the bot is producing
+        // outcomes faster than it produces snapshots, which is a fact worth
+        // reporting rather than a backlog worth keeping.
+        std::size_t constexpr kMaxQueuedOutcomes = 4;
+
+        // How long a travel may sit unresolved before it is called a failure.
+        //
+        // The status machine reports arrival and expiry on its own, so this is
+        // only for the case where neither ever comes -- a bot parked by
+        // something outside this module, or a status that stops advancing. Ten
+        // minutes is far longer than any legitimate walk and short enough that
+        // the intent does not stay "in progress" for the life of the process,
+        // which would silently stop this bot ever reporting again.
+        uint32 constexpr kActiveTravelTimeoutMs = 10 * 60 * 1000;
+
         enum class Phase
         {
             Idle,
@@ -143,8 +161,33 @@ namespace botbrain
             bool hasIntent = false;
             Intent intent;
 
-            bool hasOutcome = false;
-            IntentOutcome outcome;
+            // A QUEUE, not a slot. One intent now produces up to two outcomes --
+            // "accepted" when the target is set and a terminal one when the bot
+            // arrives, gives up, or is re-targeted -- while the wire carries a
+            // single last_outcome per snapshot. A slot would silently drop
+            // whichever came second, and that is always the more informative one.
+            //
+            // Bounded and counted rather than unbounded: a bot that somehow
+            // outproduces its own snapshots must cost a number in the log, not
+            // memory. Oldest is dropped on overflow, keeping the freshest
+            // history, and outcomesDropped rides the next snapshot's hints so
+            // the loss is visible rather than inferred.
+            std::deque<IntentOutcome> outcomes;
+            uint32_t outcomesDropped = 0;
+
+            // The intent currently being carried out, if any. Watched on later
+            // ticks so its terminal outcome can be reported: before this,
+            // "accepted" was the last thing anyone ever heard about an intent,
+            // and it means "a variable was set", not "the bot got there".
+            bool hasActiveTravel = false;
+            std::string activeIntentId;
+            std::string activeKind;
+            std::string activePoiId;
+            uint32 activeTravelAtMs = 0;
+            // sTravelMgr's, process-lifetime, compared and never dereferenced --
+            // the same contract ResolvedPoi already states for these pointers.
+            // Held only to notice that something re-targeted the bot.
+            ai::TravelDestination* activeDestination = nullptr;
 
             // ADR-0039 identity cache. Empty means "not yet minted" -- still
             // in flight, backing off after a failed attempt, or genuinely
@@ -156,6 +199,15 @@ namespace botbrain
             std::shared_ptr<IdentityExchange> identity;   // non-null while a mint/lookup is in flight
             uint32 nextIdentityAttemptMs = 0;             // backoff after a failed attempt
         };
+
+        // How many bots are carrying a brain intent right now.
+        //
+        // Purely so ObserveActiveTravel can decline in one relaxed load. It runs
+        // ahead of the ShouldPlanFor gate, so it is called for EVERY bot on
+        // every tick -- including the thousands that have no brain state at all
+        // -- and without this each of those would take the global mutex to be
+        // told there is nothing to do.
+        std::atomic<uint32_t> g_activeTravels{0};
 
         std::mutex g_statesMutex;
         std::unordered_map<uint64, BotPlanState> g_states;   // keyed by ObjectGuid raw value
@@ -677,13 +729,138 @@ namespace botbrain
             if (intentId.empty())
                 return;
 
-            state.hasOutcome = true;
-            state.outcome.intentId = intentId;
-            state.outcome.kind = kind;
-            state.outcome.result = result;
-            state.outcome.reason = reason;
-            state.outcome.poiId = poiId;
-            state.outcome.issuedAtMs = NowUnixMs();
+            IntentOutcome next;
+            next.intentId = intentId;
+            next.kind = kind;
+            next.result = result;
+            next.reason = reason;
+            next.poiId = poiId;
+            next.issuedAtMs = NowUnixMs();
+
+            // Drop the OLDEST on overflow, not the newest. The queue only fills
+            // when outcomes outpace snapshots, and in that case the stale entry
+            // is the one worth losing -- discarding the arrival that just
+            // happened to keep an "accepted" from a minute ago would invert the
+            // value of the whole channel.
+            while (state.outcomes.size() >= kMaxQueuedOutcomes)
+            {
+                state.outcomes.pop_front();
+                ++state.outcomesDropped;
+            }
+            state.outcomes.push_back(next);
+        }
+
+        // Watches the intent the bot is carrying out and reports how it ended.
+        //
+        // Map thread only: it reads the bot's travel target through the AI
+        // context. Called from Tick rather than from the action, because the
+        // action only runs while the travel machine is CHOOSING -- the moment
+        // this needs to observe is every moment after that.
+        void ObserveActiveTravel(Player* bot, PlayerbotAI* botAI)
+        {
+            // Runs ahead of ShouldPlanFor, so it validates its own arguments
+            // rather than inheriting that gate's checks.
+            if (!bot || !botAI || !bot->IsInWorld())
+                return;
+
+            // The overwhelming majority of calls end here, without a lock.
+            if (g_activeTravels.load(std::memory_order_relaxed) == 0)
+                return;
+
+            uint32 const now = WorldTimer::getMSTime();
+            uint64 const raw = bot->GetObjectGuid().GetRawValue();
+
+            // Is this particular bot carrying one? Answered under the lock, then
+            // the lock is dropped: the AI context read below is a map lookup
+            // inside another subsystem, and holding a mutex shared by every map
+            // thread across it would serialise them all on one bot's context.
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                BotPlanState const* state = Find(raw);
+                if (!state || !state->hasActiveTravel)
+                    return;
+            }
+
+            TravelTarget* target = nullptr;
+            if (ai::Value<TravelTarget*>* value =
+                    botAI->GetAiObjectContext()->GetValue<TravelTarget*>("travel target"))
+                target = value->Get();
+
+            std::lock_guard<std::mutex> lock(g_statesMutex);
+            // Re-checked, not assumed: the state can have been resolved or the
+            // bot forgotten while the lock was down.
+            BotPlanState* state = Find(raw);
+            if (!state || !state->hasActiveTravel)
+                return;
+
+            char const* result = nullptr;
+            char const* reason = "";
+
+            if (!target)
+            {
+                // No travel target at all: whatever the bot is doing now, it is
+                // not the thing that was asked for.
+                result = "superseded";
+            }
+            else if (target->GetDestination() != state->activeDestination)
+            {
+                // Something re-targeted this bot -- the stock chooser, a group
+                // leader, an admin command. Not a failure of the plan, and
+                // worth distinguishing from one: the planner should not learn
+                // to avoid a POI because a human moved the bot.
+                result = "superseded";
+            }
+            else
+            {
+                switch (target->GetStatus())
+                {
+                    case TravelStatus::TRAVEL_STATUS_WORK:
+                    case TravelStatus::TRAVEL_STATUS_COOLDOWN:
+                        // Arrived and began doing whatever the destination is
+                        // for. This is the first outcome this module has ever
+                        // been able to report that means the bot GOT there.
+                        result = "completed";
+                        break;
+
+                    case TravelStatus::TRAVEL_STATUS_EXPIRED:
+                        // The travel system gave up. From the planner's side
+                        // that is the same actionable fact as an unreachable
+                        // destination: do not send this bot here again.
+                        result = "failed";
+                        reason = "unreachable";
+                        break;
+
+                    default:
+                        // PREPARE, READY, TRAVEL -- and NONE, which appears
+                        // transiently between the action clearing the old target
+                        // and the new one being taken up. Treating NONE as
+                        // "superseded" would report a failure for every intent
+                        // this module successfully applied, on the very next
+                        // tick.
+                        break;
+                }
+            }
+
+            if (!result && Elapsed(now, state->activeTravelAtMs + kActiveTravelTimeoutMs))
+            {
+                // "superseded", not "failed/unreachable". A travel that never
+                // reached a terminal status is an ending nobody observed, and
+                // that is not the same as evidence the place cannot be reached.
+                // Calling it a failure would let a stalled tick, a restart or a
+                // disabled module teach the planner to avoid a perfectly good
+                // POI -- and memory (Phase C) is about to start believing these.
+                result = "superseded";
+                reason = "";
+            }
+
+            if (!result)
+                return;
+
+            StoreOutcome(*state, state->activeIntentId, state->activeKind, result, reason,
+                state->activePoiId);
+            state->hasActiveTravel = false;
+            state->activeDestination = nullptr;
+            g_activeTravels.fetch_sub(1, std::memory_order_relaxed);
         }
 
         // The transport half of a handshake: no logging, no globals touched.
@@ -933,6 +1110,15 @@ namespace botbrain
     {
         std::lock_guard<std::mutex> lock(g_statesMutex);
         uint64 const raw = guid.GetRawValue();
+
+        // Keep the active-travel count honest. A bot that logs out mid-travel
+        // would otherwise leak its entry: the count never returns to zero, and
+        // ObserveActiveTravel's fast path stops being fast for every bot on the
+        // server, permanently, for the life of the process.
+        auto const existing = g_states.find(raw);
+        if (existing != g_states.end() && existing->second.hasActiveTravel)
+            g_activeTravels.fetch_sub(1, std::memory_order_relaxed);
+
         g_states.erase(raw);
 
         // A bot that logs out while its snapshot is still sitting in
@@ -1108,6 +1294,32 @@ namespace botbrain
         return true;
     }
 
+    void NoteTravelStarted(Player* bot, std::string const& intentId, std::string const& kind,
+        std::string const& poiId, ai::TravelDestination* destination)
+    {
+        if (!bot || intentId.empty())
+            return;
+
+        std::lock_guard<std::mutex> lock(g_statesMutex);
+        BotPlanState* state = Find(bot->GetObjectGuid().GetRawValue());
+        if (!state)
+            return;
+
+        // Only count a bot once, however many intents it is given: a second
+        // NoteTravelStarted before the first resolved replaces the intent rather
+        // than adding one, and double-counting would leave the fast path
+        // permanently non-zero.
+        if (!state->hasActiveTravel)
+            g_activeTravels.fetch_add(1, std::memory_order_relaxed);
+
+        state->hasActiveTravel = true;
+        state->activeIntentId = intentId;
+        state->activeKind = kind;
+        state->activePoiId = poiId;
+        state->activeDestination = destination;
+        state->activeTravelAtMs = WorldTimer::getMSTime();
+    }
+
     void Tick(Player* bot, PlayerbotAI* botAI)
     {
         // Before the admission gate, deliberately: this is the call that can
@@ -1123,6 +1335,18 @@ namespace botbrain
         // sends it -- the batch does not care which map thread does the work.
         MaybeFlushPendingBatch();
 
+        // Before the gate as well, and this one matters more than it looks.
+        //
+        // It reports how the LAST intent ended, which happens across many ticks
+        // while this pipeline sits in AwaitingPlan or Idle with nothing else to
+        // do -- so it cannot live inside a phase. But putting it after
+        // ShouldPlanFor would mean an intent already in flight stops being
+        // watched the moment the module is disabled or the bot loses the
+        // strategy, and the timeout below would then attribute that GAP IN
+        // OBSERVATION to the destination. A config toggle would manufacture
+        // evidence against POIs that were never the problem.
+        ObserveActiveTravel(bot, botAI);
+
         if (!ShouldPlanFor(bot, botAI))
             return;
 
@@ -1137,6 +1361,7 @@ namespace botbrain
         bool startRequest = false;
         bool hasOutcome = false;
         IntentOutcome outcome;
+        uint32_t droppedOutcomes = 0;
         std::string uuid;
 
         {
@@ -1158,8 +1383,18 @@ namespace botbrain
                         return;
                     readyDestinations = state.destinations;
                     state.destinations.reset();
-                    hasOutcome = state.hasOutcome;
-                    outcome = state.outcome;
+                    // One per snapshot, oldest first, because the wire carries
+                    // a single last_outcome. Popped rather than peeked: the
+                    // snapshot below is what delivers it, so leaving it queued
+                    // would resend the same outcome every interval.
+                    if (!state.outcomes.empty())
+                    {
+                        hasOutcome = true;
+                        outcome = state.outcomes.front();
+                        state.outcomes.pop_front();
+                    }
+                    droppedOutcomes = state.outcomesDropped;
+                    state.outcomesDropped = 0;
 
                     // ADR-0039: this is "the pipeline is about to build a
                     // snapshot" -- absorb a finished mint/lookup first, then
@@ -1243,6 +1478,15 @@ namespace botbrain
                 snapshot.hasLastOutcome = true;
                 snapshot.lastOutcome = outcome;
             }
+            if (droppedOutcomes)
+            {
+                // Say so on the wire rather than only in a counter here. A
+                // planner reading history needs to know it has a hole in it;
+                // silently thinner feedback looks exactly like a quieter bot.
+                char hint[64];
+                std::snprintf(hint, sizeof(hint), "dropped_outcomes=%u", droppedOutcomes);
+                snapshot.hints.push_back(hint);
+            }
 
             std::string error;
             if (!ValidateSnapshot(snapshot, error))
@@ -1272,7 +1516,10 @@ namespace botbrain
                 BotPlanState& state = g_states[raw];
                 state.poiTable = table;
                 state.poiTableAtMs = now;
-                state.hasOutcome = false;
+                // Deliberately does NOT clear the outcome queue. The snapshot
+                // above took exactly the one it delivers; anything that arrived
+                // since belongs to the next snapshot, and clearing here would
+                // throw away an outcome nobody has heard about yet.
                 state.phase = Phase::AwaitingPlan;
                 state.batch.reset();   // not dispatched yet; MaybeFlushPendingBatch or the size check below will set it
 
