@@ -33,6 +33,13 @@ namespace botbrain
                kind == kIntentRepair || kind == kIntentPickQuest || kind == kIntentTurnInQuest;
     }
 
+    bool IsAppliedKind(std::string const& kind)
+    {
+        // One kind so far. The list is the honest statement of what this build
+        // can do, not of what the contract allows -- see the header.
+        return kind == kIntentRest;
+    }
+
     bool ValidateSnapshot(Snapshot const& s, std::string& error)
     {
         if (s.bot.guid == 0)

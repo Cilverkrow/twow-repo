@@ -1,9 +1,15 @@
 /*
  * mod-bot-brain -- the per-bot opt-in.
  *
- * A strategy with no triggers and no actions of its own. It exists purely as a
- * per-bot flag: the pipeline plans only for bots that carry it, so turning the
- * feature on for a population is a config line rather than a code change.
+ * A per-bot flag first and foremost: the pipeline plans only for bots that carry
+ * it, so turning the feature on for a population is a config line rather than a
+ * code change.
+ *
+ * It also carries the one trigger that lets an intent be applied where the bot
+ * stands rather than by walking somewhere. That is the module's second entry
+ * point into the AI; the first is the travel-chooser override, which only runs
+ * while the travel state machine is choosing. Without a trigger, a kind like
+ * `rest` would have no tick at which anything asked about it.
  *
  * Enable it for random bots by appending ",+bot brain" to
  * AiPlayerbot.RandomBotNonCombatStrategies, or per bot from your own
@@ -23,6 +29,7 @@
 
 #include "playerbot/strategy/Strategy.h"
 
+#include <list>
 #include <string>
 
 class PlayerbotAI;
@@ -36,6 +43,9 @@ namespace botbrain
 
         std::string getName() override { return "bot brain"; }
         int GetType() override { return ai::STRATEGY_TYPE_NONCOMBAT; }
+
+    private:
+        void InitNonCombatTriggers(std::list<ai::TriggerNode*>& triggers) override;
     };
 }
 

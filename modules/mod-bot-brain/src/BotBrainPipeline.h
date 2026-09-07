@@ -105,6 +105,24 @@ namespace botbrain
     // offered once.
     bool TakeTravelIntent(Player* bot, Intent& intent, ResolvedPoi& poi);
 
+    // True when a pending intent is waiting whose kind is applied by something
+    // OTHER than the travel chooser.
+    //
+    // Non-consuming, and it has to be: this answers a Trigger, which the engine
+    // evaluates every tick and may evaluate without ever running the action that
+    // follows it. A peek that consumed would throw the intent away on the ticks
+    // where a higher-relevance action won, and the bot would act on a fraction of
+    // what the brain sent with no record of the rest.
+    //
+    // The travel kinds are deliberately excluded: they already have an applier,
+    // and reporting them here would make the two compete for the same intent.
+    bool HasPendingAppliedIntent(Player* bot);
+
+    // Takes a pending non-travel intent, if there is one of a kind this build can
+    // apply. Same contract as TakeTravelIntent: the intent is consumed whatever
+    // happens next, and every path that is not "applied" records why.
+    bool TakeAppliedIntent(Player* bot, Intent& intent);
+
     // Records what happened to the last intent so the next snapshot can carry
     // it as last_outcome. This is how the loop closes without the brain
     // holding any state: the server remembers, and the brain is told.

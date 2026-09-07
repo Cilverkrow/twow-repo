@@ -56,10 +56,20 @@ namespace botbrain
 
     bool IsKnownIntentKind(std::string const& kind);
 
-    // A kind whose destination is a POI in the same snapshot. These are the
-    // only kinds this module can currently act on, because the only applier it
-    // has is the travel-target chooser.
+    // A kind whose destination is a POI in the same snapshot. These are applied
+    // by the travel-target chooser: the bot walks there.
     bool IsPoiDirectedKind(std::string const& kind);
+
+    // A kind applied by something other than the travel chooser -- an action the
+    // bot performs where it stands, rather than a place to go.
+    //
+    // This is deliberately NOT "every kind that is not POI-directed". It names
+    // what this build can actually carry out, so a kind the planner may legally
+    // send but nothing here implements is still rejected as "unsupported_kind"
+    // rather than silently accepted and dropped. The set grows as appliers are
+    // written; `idle` will never join it, because doing nothing is what the bot
+    // does when no intent applies at all.
+    bool IsAppliedKind(std::string const& kind);
 
     struct BotId
     {
@@ -160,7 +170,11 @@ namespace botbrain
     {
         std::string intentId;
         std::string kind;
-        std::string result;              // "accepted" | "rejected" | ...
+        std::string result;              // "accepted" | "completed" | "rejected" | "failed" | "expired"
+        // "unreachable" | "stale_poi" | "unknown_poi" | "unsupported_kind" |
+        // "action_refused". The last means the intent was attempted where the bot
+        // stood and the in-core action declined -- "not now", as against
+        // "unsupported_kind" which means nothing tried at all and never will.
         std::string reason;
         int64_t issuedAtMs = 0;
         // The destination the intent named, so the planner learns WHERE it was

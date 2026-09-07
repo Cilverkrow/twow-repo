@@ -980,6 +980,15 @@ namespace botbrain
         if (!state || !state->hasIntent)
             return false;
 
+        // An intent that belongs to another applier is left alone, and crucially
+        // NOT consumed. This check has to come before the consume below: the
+        // travel chooser runs on most ticks, so without it a `rest` intent would
+        // be eaten here and rejected as "unsupported_kind" before the action that
+        // can actually carry it out ever ran -- the brain would appear to send
+        // kinds that never happen, with a rejection to prove it.
+        if (IsAppliedKind(state->intent.kind))
+            return false;
+
         // Offered once, whatever happens next: a rejected intent that stayed in
         // the mailbox would be retried on every tick forever.
         Intent const candidate = state->intent;
@@ -1049,6 +1058,54 @@ namespace botbrain
         // never offered.
         StoreOutcome(*state, candidate.intentId, candidate.kind, "rejected", "unknown_poi", candidate.travelPoiId);
         return false;
+    }
+
+    bool HasPendingAppliedIntent(Player* bot)
+    {
+        if (!bot)
+            return false;
+
+        std::lock_guard<std::mutex> lock(g_statesMutex);
+        BotPlanState const* state = Find(bot->GetObjectGuid().GetRawValue());
+        if (!state || !state->hasIntent)
+            return false;
+
+        // Peek only. See the header: the engine asks a trigger far more often
+        // than it runs the action behind it, so consuming here would discard
+        // intents on every tick a higher-relevance action happened to win.
+        return IsAppliedKind(state->intent.kind);
+    }
+
+    bool TakeAppliedIntent(Player* bot, Intent& intent)
+    {
+        if (!bot)
+            return false;
+
+        std::lock_guard<std::mutex> lock(g_statesMutex);
+        BotPlanState* state = Find(bot->GetObjectGuid().GetRawValue());
+        if (!state || !state->hasIntent)
+            return false;
+
+        // Look before consuming. Unlike TakeTravelIntent, this applier is not the
+        // only one: a travel intent belongs to the travel chooser, and eating it
+        // here would leave that intent unapplied and unreported.
+        if (!IsAppliedKind(state->intent.kind))
+            return false;
+
+        Intent const candidate = state->intent;
+        state->hasIntent = false;
+
+        int64_t const now = NowUnixMs();
+        if (candidate.expiresAtMs && candidate.expiresAtMs < now)
+        {
+            // Same reading as the travel path: nothing was wrong with the plan,
+            // it simply arrived too late. "be faster", not "choose differently".
+            StoreOutcome(*state, candidate.intentId, candidate.kind, "expired", "", std::string());
+            return false;
+        }
+
+        intent = candidate;
+        return true;
     }
 
     void Tick(Player* bot, PlayerbotAI* botAI)
