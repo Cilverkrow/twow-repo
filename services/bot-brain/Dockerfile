@@ -9,8 +9,16 @@
 #
 #   docker build -t twow/bot-brain:dev services/bot-brain
 #
-# The module has zero external dependencies, so there is no `go mod download`
-# layer and no module proxy to reach: the build works on a disconnected machine.
+# Dependencies are vendored, so there is no `go mod download` layer and no module
+# proxy to reach: the build works on a disconnected machine.
+#
+# That property was true for free while the module had no dependencies at all.
+# It stopped being free when the trait store needed a MySQL driver, and vendoring
+# is what buys it back for 434 KB -- cheaper than discovering on a bad day that
+# the image cannot be rebuilt because proxy.golang.org is unreachable.
+#
+# Go uses vendor/ automatically when it is present and go.mod declares go >= 1.14,
+# so no -mod flag is needed here or anywhere else.
 
 ARG GO_VERSION=1.23
 
@@ -18,7 +26,7 @@ ARG GO_VERSION=1.23
 FROM golang:${GO_VERSION}-alpine AS builder
 
 WORKDIR /src
-COPY go.mod ./
+COPY go.mod go.sum ./
 COPY . .
 
 # CGO off so the result is a static binary that runs in a scratch image.

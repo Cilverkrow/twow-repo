@@ -9,6 +9,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -22,6 +23,8 @@ import (
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/httpapi"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/metrics"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity/mysqlstore"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/llm"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/rule"
 )
@@ -58,6 +61,45 @@ func run() error {
 
 	reg := metrics.New()
 	ruleP := rule.New(cfg.Rule)
+
+	// Per-bot identity. Without a DSN the resolver is nil, traits come from the
+	// UUID alone, and bots differ from each other without changing over time --
+	// a supported mode, not a degraded one, and the one the service ran in
+	// before cv_brain was reachable from here.
+	if cfg.TraitDSN != "" {
+		traitStore, err := mysqlstore.Open(cfg.TraitDSN)
+		if err != nil {
+			// A malformed DSN is an operator typo, and starting anyway would
+			// mean traits silently never load. That is the same reasoning as
+			// the rest of Load(): a value someone actually typed is held to
+			// being meaningful.
+			return fmt.Errorf("trait store: %w", err)
+		}
+		defer traitStore.Close()
+
+		// Reachability is checked but NOT required. A brain that refuses to
+		// start because the trait store is down is a brain that cannot plan for
+		// want of a value it has a safe default for.
+		pingCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err = traitStore.Ping(pingCtx)
+		cancel()
+		if err != nil {
+			log.Warn("trait store unreachable; bots keep the traits they were born with",
+				"err", err)
+		} else {
+			log.Info("trait store connected", "traits", "cv_brain.bot_trait")
+		}
+
+		ruleP.Traits = &identity.Resolver{
+			Store: traitStore,
+			// Logged here rather than inside the resolver: the planner is a
+			// pure decision path, and handing it a logger is how a function
+			// that can be tested without a world stops being one.
+			OnStoreError: func(err error) {
+				log.Warn("trait lookup failed; falling back to derived traits", "err", err)
+			},
+		}
+	}
 
 	// The planner chain. The rule planner is always the last word: whatever sits
 	// in front of it may be slow, wrong or absent, and bots still get planned.

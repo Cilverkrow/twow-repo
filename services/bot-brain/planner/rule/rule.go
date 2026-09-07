@@ -17,6 +17,7 @@ import (
 
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/contract"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity"
 )
 
 // Thresholds are the tunable numbers of the ladder. They are a struct rather
@@ -53,6 +54,11 @@ func DefaultThresholds() Thresholds {
 // Planner is the deterministic planner.
 type Planner struct {
 	Th Thresholds
+
+	// Traits resolves per-bot identity. Nil means derived-only, which is a
+	// supported mode rather than a degraded one: bots still differ from each
+	// other, they just do not change over time.
+	Traits *identity.Resolver
 }
 
 // New returns a rule planner with the given thresholds. A zero Thresholds means
@@ -78,6 +84,16 @@ func (p *Planner) Ready() bool { return true }
 func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Intent, error) {
 	out := make([]contract.Intent, 0, len(req.Snapshots))
 	expiry := req.ExpiryMS()
+
+	// One resolution for the whole batch. A batch may carry 2048 bots, and a
+	// per-bot lookup would be 2048 round trips inside one planning tick -- the
+	// deadline would go before the plan did.
+	uuids := make([]string, 0, len(req.Snapshots))
+	for i := range req.Snapshots {
+		uuids = append(uuids, req.Snapshots[i].Bot.UUID)
+	}
+	traits := p.Traits.Resolve(ctx, uuids)
+
 	for i := range req.Snapshots {
 		// Respect cancellation even here. This planner is fast, but it is also
 		// the fallback for a whole batch, and a 2000-snapshot batch under an
@@ -87,7 +103,7 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 			return out, ctx.Err()
 		default:
 		}
-		in := p.planOne(&req.Snapshots[i])
+		in := p.planOne(&req.Snapshots[i], traits[req.Snapshots[i].Bot.UUID])
 		in.ExpiresAtMS = expiry
 		if err := in.Validate(); err != nil {
 			// Belt and braces: a bug in the ladder must not ship a malformed
@@ -102,7 +118,7 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 
 // planOne is the priority ladder. Read it top to bottom; the first rung that
 // matches wins.
-func (p *Planner) planOne(s *contract.Snapshot) contract.Intent {
+func (p *Planner) planOne(s *contract.Snapshot, tr identity.Traits) contract.Intent {
 	id := planner.NewIntentID()
 	idle := func(why string) contract.Intent {
 		return contract.Idle(s.Bot, id, p.Name(), why)
@@ -134,7 +150,7 @@ func (p *Planner) planOne(s *contract.Snapshot) contract.Intent {
 	// worth directing.
 	if p.Th.RepairBelowDurabilityPct > 0 && s.Vit.DurabilityPct != nil &&
 		*s.Vit.DurabilityPct < p.Th.RepairBelowDurabilityPct {
-		if poi := p.nearest(s, "repair"); poi != nil {
+		if poi := p.nearest(s, "repair", tr); poi != nil {
 			return p.travel(s, id, contract.IntentRepair, poi, 0.9, "durability below threshold")
 		}
 		// No repair POI in range is not a reason to do something else clever;
@@ -143,7 +159,7 @@ func (p *Planner) planOne(s *contract.Snapshot) contract.Intent {
 
 	// Rung 2: full bags. Loot stops mattering once there is nowhere to put it.
 	if s.Char.FreeBagSlots <= p.Th.VendorWhenFreeBagSlotsAtMost {
-		if poi := p.nearest(s, "vendor"); poi != nil {
+		if poi := p.nearest(s, "vendor", tr); poi != nil {
 			return p.travel(s, id, contract.IntentVendorSell, poi, 0.8, "bags full")
 		}
 	}
@@ -159,12 +175,12 @@ func (p *Planner) planOne(s *contract.Snapshot) contract.Intent {
 
 	// Rung 4: finish what is already started. A completed quest sitting in the
 	// log is free progression, so turning in beats picking up.
-	if poi := p.questPOI(s, "quest_turnin", statusComplete); poi != nil {
+	if poi := p.questPOI(s, "quest_turnin", statusComplete, tr); poi != nil {
 		return p.travel(s, id, contract.IntentTurnInQuest, poi, 0.85, "quest ready to hand in")
 	}
 
 	// Rung 5: make progress on an incomplete quest with a known hotspot.
-	if poi := p.questPOI(s, "quest_objective", statusIncomplete); poi != nil {
+	if poi := p.questPOI(s, "quest_objective", statusIncomplete, tr); poi != nil {
 		return p.travel(s, id, contract.IntentTravelTo, poi, 0.7, "quest objective outstanding")
 	}
 
@@ -172,13 +188,13 @@ func (p *Planner) planOne(s *contract.Snapshot) contract.Intent {
 	// enforces the real 1.12 quest log cap; 20 is here only so this planner does
 	// not propose pickups that are certain to be refused.
 	if len(s.Quests) < 20 {
-		if poi := p.nearest(s, "quest_giver"); poi != nil {
+		if poi := p.nearest(s, "quest_giver", tr); poi != nil {
 			return p.travel(s, id, contract.IntentPickQuest, poi, 0.6, "quest log has room")
 		}
 	}
 
 	// Rung 7: grind. The coarse "just level" answer.
-	if poi := p.nearest(s, "grind_area"); poi != nil {
+	if poi := p.nearest(s, "grind_area", tr); poi != nil {
 		return p.travel(s, id, contract.IntentGrindArea, poi, 0.5, "no quest work available")
 	}
 
@@ -265,8 +281,9 @@ func avoidPOI(s *contract.Snapshot) string {
 // nearest picks the closest POI of a kind, deterministically. Ties break on the
 // POI id so that two replicas planning the same snapshot agree, which matters
 // the moment this service is scaled horizontally.
-func (p *Planner) nearest(s *contract.Snapshot, kind string) *contract.PointOfInterest {
+func (p *Planner) nearest(s *contract.Snapshot, kind string, tr identity.Traits) *contract.PointOfInterest {
 	avoid := avoidPOI(s)
+	maxYards := p.maxYards(tr)
 	candidates := make([]*contract.PointOfInterest, 0, 4)
 	for i := range s.POIs {
 		poi := &s.POIs[i]
@@ -285,7 +302,7 @@ func (p *Planner) nearest(s *contract.Snapshot, kind string) *contract.PointOfIn
 			// arrives anyway, refuse it rather than compare incomparable frames.
 			continue
 		}
-		if p.Th.MaxTravelYards > 0 && poi.DistanceYards != nil && *poi.DistanceYards > p.Th.MaxTravelYards {
+		if maxYards > 0 && poi.DistanceYards != nil && *poi.DistanceYards > maxYards {
 			continue
 		}
 		candidates = append(candidates, poi)
@@ -300,13 +317,73 @@ func (p *Planner) nearest(s *contract.Snapshot, kind string) *contract.PointOfIn
 		}
 		return candidates[a].ID < candidates[b].ID
 	})
-	return candidates[0]
+	return preferred(candidates, s.Bot.UUID)
+}
+
+// maxYards is the travel ceiling for THIS bot: the configured bound scaled by
+// how bold the bot is.
+//
+// Scaled, not replaced. MaxTravelYards exists for a server-load reason -- a very
+// long walk is a decision the server's own travel system should make -- and that
+// reason does not care about personality. So a bold bot ranges further than a
+// homebound one while the operator still sets the order of magnitude, and
+// disabling the limit (0) stays disabled for everyone.
+func (p *Planner) maxYards(tr identity.Traits) float64 {
+	if p.Th.MaxTravelYards <= 0 {
+		return 0
+	}
+	return p.Th.MaxTravelYards * tr.RangeScale()
+}
+
+const (
+	// comparableBandPct: how much further than the closest candidate a POI may
+	// be and still count as "about as good". Within the band the bot's own
+	// preference decides; outside it, distance still wins outright.
+	//
+	// 0.25 is deliberately narrow. The point is to stop a crowd converging on
+	// one POI, not to let personality send a bot past somewhere obviously
+	// nearer -- that would look like a pathing bug, not a character.
+	comparableBandPct = 0.25
+	// comparableBandFloorYards keeps the band meaningful when the closest
+	// candidate is very near or its distance is unknown. A purely proportional
+	// band collapses to nothing at zero distance, which would make preference
+	// silently stop working exactly where several POIs sit on top of each other.
+	comparableBandFloorYards = 25
+)
+
+// preferred picks this bot's favourite among the candidates that are about as
+// close as the closest one. Candidates must already be sorted by (distance, id).
+//
+// An empty UUID returns candidates[0] -- the plain nearest-first answer this
+// planner has always given. That is not a special case bolted on: [identity.Affinity]
+// returns 0 for every POI when the UUID is empty, and the loop below replaces the
+// incumbent only on a STRICTLY greater affinity, so it never fires. An unminted
+// bot therefore behaves exactly as it did before traits existed, which is the
+// property that lets this ship without a migration.
+func preferred(candidates []*contract.PointOfInterest, uuid string) *contract.PointOfInterest {
+	best := candidates[0]
+	if uuid == "" || len(candidates) == 1 {
+		return best
+	}
+
+	band := dist(best)*(1+comparableBandPct) + comparableBandFloorYards
+	bestAffinity := identity.Affinity(uuid, best.ID)
+	for _, poi := range candidates[1:] {
+		if dist(poi) > band {
+			// Sorted by distance, so nothing after this is in the band either.
+			break
+		}
+		if a := identity.Affinity(uuid, poi.ID); a > bestAffinity {
+			best, bestAffinity = poi, a
+		}
+	}
+	return best
 }
 
 // questPOI finds a POI of the given kind whose related quest is in the log with
 // the wanted status. Requiring the link in both directions is what stops the
 // planner acting on a POI the server offered speculatively.
-func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string) *contract.PointOfInterest {
+func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string, tr identity.Traits) *contract.PointOfInterest {
 	wanted := make(map[uint32]bool, len(s.Quests))
 	for _, q := range s.Quests {
 		if q.Status == wantStatus {
@@ -317,6 +394,7 @@ func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string) *co
 		return nil
 	}
 	avoid := avoidPOI(s)
+	maxYards := p.maxYards(tr)
 	var best *contract.PointOfInterest
 	for i := range s.POIs {
 		poi := &s.POIs[i]
@@ -333,7 +411,7 @@ func (p *Planner) questPOI(s *contract.Snapshot, poiKind, wantStatus string) *co
 		if !poi.Pos.SameMap(s.Pos) {
 			continue
 		}
-		if p.Th.MaxTravelYards > 0 && poi.DistanceYards != nil && *poi.DistanceYards > p.Th.MaxTravelYards {
+		if maxYards > 0 && poi.DistanceYards != nil && *poi.DistanceYards > maxYards {
 			continue
 		}
 		if best == nil || dist(poi) < dist(best) || (dist(poi) == dist(best) && poi.ID < best.ID) {
