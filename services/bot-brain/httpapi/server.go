@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/contract"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/memory"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/metrics"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
 )
@@ -44,6 +45,15 @@ type Options struct {
 	Metrics *metrics.Registry
 	// Logger. Nil means slog.Default.
 	Logger *slog.Logger
+	// Memory records what happened to each bot, so later plans can depend on
+	// it. Nil means observations are not kept, which is the configuration the
+	// service runs in with no database and is a supported mode.
+	//
+	// It is written to from the request path, so it must not block: see
+	// memory.AsyncRecorder. The worldserver is waiting on this response to
+	// decide what a thousand bots do next, and a slow database must cost a
+	// little history rather than a late tick.
+	Memory memory.Recorder
 	// Now is injectable for tests. Nil means time.Now. It is used only for
 	// measuring the service's own latency, never for stamping intent expiry --
 	// that always comes from the server's clock in the request.
@@ -191,6 +201,32 @@ func (s *Server) handleContract(w http.ResponseWriter, r *http.Request) {
 }
 
 // handlePlan is the batch endpoint.
+// remember keeps the outcome a snapshot carries, if it carries one.
+//
+// This is the whole write path for bot memory, and it deliberately reads only
+// what already arrived: the worldserver reports how the last intent ended, and
+// until now the planner used that for exactly one tick and dropped it.
+//
+// Keyed on the UUID alone. A snapshot whose bot has not been minted yet has
+// nothing to key on, and inventing one from (realm, guid) is precisely what
+// ADR-0039 forbids -- a realm merge would rename the bot and orphan its history.
+func (s *Server) remember(ctx context.Context, snap *contract.Snapshot) {
+	if s.opts.Memory == nil || snap.LastOutcome == nil || snap.Bot.UUID == "" {
+		return
+	}
+	o := snap.LastOutcome
+	_ = s.opts.Memory.Record(ctx, snap.Bot.UUID, memory.Observation{
+		Kind:   string(o.Kind),
+		POIID:  o.POIID,
+		Result: o.Result,
+		Reason: o.Reason,
+		// The server's clock, not ours. Ages must stay comparable with
+		// everything else the brain records, and this process may be on a
+		// different machine.
+		ObservedAtMS: o.IssuedAtMS,
+	})
+}
+
 func (s *Server) handlePlan(w http.ResponseWriter, r *http.Request) {
 	start := s.now()
 	// Cap the body BEFORE decoding. This endpoint has no authentication by
@@ -235,6 +271,7 @@ func (s *Server) handlePlan(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		plannable = append(plannable, req.Snapshots[i])
+		s.remember(r.Context(), &req.Snapshots[i])
 	}
 
 	deadline := s.opts.DefaultDeadline
