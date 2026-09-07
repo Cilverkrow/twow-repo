@@ -978,20 +978,30 @@ jobs:
         run: |
           set -eu
           fail=0
-          count_files() { find "$1" -maxdepth 1 -name '*.sql' 2>/dev/null | wc -l; }
+          # TRANSITIONAL (issue #205): core/sql/character_updates/ is moving into
+          # core/sql/database_updates/character/, so the character stream lives in
+          # one directory or the other (or, mid-move, both). Count the union by
+          # basename -- the bootstrap dedupes by basename too, so this stays a
+          # like-for-like comparison against the ledger. A directory that is not
+          # there contributes nothing rather than failing the step. Collapse this
+          # back to a single directory once the move has landed.
+          count_files() {
+            find "$@" -maxdepth 1 -name '*.sql' 2>/dev/null |
+              sed 's#.*/##' | LC_ALL=C sort -u | wc -l
+          }
           rows() {
             mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
               "SELECT COUNT(*) FROM $1.migrations;"
           }
 
           world_files=$(count_files core/sql/database_updates)
-          char_files=$(count_files core/sql/character_updates)
+          char_files=$(count_files core/sql/character_updates core/sql/database_updates/character)
           logon_files=$(count_files core/sql/logon)
           world_rows=$(rows tw_world)
           char_rows=$(rows tw_char)
           logon_rows=$(rows tw_logon)
           echo "tw_world : $world_rows ledger rows for $world_files files in core/sql/database_updates"
-          echo "tw_char  : $char_rows ledger rows for $char_files files in core/sql/character_updates"
+          echo "tw_char  : $char_rows ledger rows for $char_files files in core/sql/{character_updates,database_updates/character}"
           echo "tw_logon : $logon_rows ledger rows for $logon_files files in core/sql/logon"
 
           # A ledger with fewer rows than files means something is unrecorded,
@@ -1008,7 +1018,7 @@ jobs:
             fi
           }
           check tw_world "$world_files" "$world_rows" core/sql/database_updates
-          check tw_char  "$char_files"  "$char_rows"  core/sql/character_updates
+          check tw_char  "$char_files"  "$char_rows"  "core/sql/{character_updates,database_updates/character}"
           check tw_logon "$logon_files" "$logon_rows" core/sql/logon
           exit $fail
 
@@ -1018,7 +1028,9 @@ jobs:
           fail=0
           # ADR-0024 invariant 1 rests on these four tables and ADR-0021 puts
           # them in tw_char. They ship in
-          # core/sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql.
+          # 20260830230336_ai_playerbot_persistent_active_roster.sql, under
+          # core/sql/character_updates/ or, after the issue #205 move,
+          # core/sql/database_updates/character/.
           for t in ai_playerbot_roster_version ai_playerbot_roster_member \
                    ai_playerbot_roster_current ai_playerbot_roster_change; do
             found=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
@@ -1723,7 +1735,16 @@ jobs:
       - name: Apply the roster schema (twice, to prove replay safety)
         run: |
           set -eu
-          mig=core/sql/character_updates/20260830230336_ai_playerbot_persistent_active_roster.sql
+          # TRANSITIONAL (issue #205): accept the migration in either its old or
+          # its new home while core's move is in flight. Drop the fallback once
+          # the move has landed.
+          name=20260830230336_ai_playerbot_persistent_active_roster.sql
+          mig=core/sql/character_updates/$name
+          [ -f "$mig" ] || mig=core/sql/database_updates/character/$name
+          [ -f "$mig" ] || {
+            echo "::error::$name is in neither core/sql/character_updates nor core/sql/database_updates/character"
+            exit 1
+          }
           # utf8mb4_bin, matching what the roster tables declare - a differently
           # collated schema is the "Illegal mix of collations" trap.
           for pass in 1 2; do
