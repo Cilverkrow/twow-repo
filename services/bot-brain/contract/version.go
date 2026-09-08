@@ -69,9 +69,19 @@ import (
 //
 // The C++ side and this service are deployed separately and WILL skew. The
 // design assumption is that skew is normal, not exceptional.
+// Minor 4 adds the visit_trainer intent kind. It is 4 and not 3 because 1.3 is
+// claimed by the dialogue endpoint (twow-repo#265), which was open when this
+// was written. Two additive changes in flight at once cannot both be 1.3: the
+// number is what a peer negotiates on, so a collision would have one build
+// stamping a version whose vocabulary it does not have. Skipping a number costs
+// nothing -- Negotiate compares minors, it does not enumerate them -- while
+// reusing one is not recoverable once either has shipped.
+//
+// If #265 is closed unmerged, this must become 3 (and with it kContractMinor
+// and all three golden fixtures) rather than leaving a permanent hole.
 const (
 	VersionMajor = 1
-	VersionMinor = 2
+	VersionMinor = 4
 )
 
 // Version is the canonical "MAJOR.MINOR" string carried on every request and

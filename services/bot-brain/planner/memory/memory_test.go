@@ -253,3 +253,82 @@ func TestEmptyUUIDIsNotRecorded(t *testing.T) {
 		t.Fatal("an observation was stored against an empty uuid")
 	}
 }
+
+// The mirror of TestOnlyDestinationFailuresCountAgainstAPOI. Exactly the
+// outcomes that test excludes as "about the kind" are the ones this includes,
+// and nothing that is about the destination may leak across: an unreachable
+// place must not read as a kind the server cannot do, or one bad road would
+// silently disable a whole rung of the ladder.
+func TestOnlyKindRefusalsCountAgainstAKind(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		obs     Observation
+		against bool
+		why     string
+	}{
+		{"the in-core action declined", Observation{Result: "failed", Reason: "action_refused"}, true,
+			"the bot got there and the thing asked for was not available"},
+		{"this build cannot do that kind", Observation{Result: "rejected", Reason: "unsupported_kind"}, true,
+			"the strongest form of the same statement; no destination fixes it"},
+		{"refused before it started", Observation{Result: "rejected", Reason: "action_refused"}, true,
+			"still about the action rather than the place"},
+
+		{"could not path there", Observation{Result: "failed", Reason: "unreachable"}, false,
+			"the road was bad, not the errand"},
+		{"failure with no reason given", Observation{Result: "failed", Reason: ""}, false,
+			"a bare failure is already counted against the POI; counting it twice would disable the rung too"},
+		{"server does not know the place", Observation{Result: "rejected", Reason: "unknown_poi"}, false,
+			"about the place"},
+		{"the bot was busy", Observation{Result: "rejected", Reason: "in_combat"}, false,
+			"about the bot's moment, not the kind"},
+		{"identity was protected", Observation{Result: "rejected", Reason: "identity_protected"}, false,
+			"a brain bug to surface, never a rung to quietly close"},
+		{"the plan arrived too late", Observation{Result: "expired"}, false, "about latency"},
+		{"it worked", Observation{Result: "completed"}, false, "success is not evidence against anything"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.obs.RefusedTheKind(); got != tc.against {
+				t.Fatalf("RefusedTheKind() = %v, want %v -- %s", got, tc.against, tc.why)
+			}
+		})
+	}
+}
+
+// Counted per kind, and an observation with no kind is counted against none.
+func TestHistoryCountsRefusalsPerKind(t *testing.T) {
+	h := Build([]Observation{
+		{Kind: "visit_trainer", POIID: "tr1", Result: "failed", Reason: "action_refused"},
+		{Kind: "visit_trainer", POIID: "tr2", Result: "failed", Reason: "action_refused"},
+		{Kind: "vendor_sell", POIID: "v1", Result: "failed", Reason: "action_refused"},
+		{Kind: "", POIID: "tr1", Result: "failed", Reason: "action_refused"},
+		{Kind: "visit_trainer", POIID: "tr1", Result: "completed"},
+	})
+
+	if got := h.KindRefusedCount("visit_trainer"); got != 2 {
+		t.Errorf("visit_trainer = %d, want 2", got)
+	}
+	if got := h.KindRefusedCount("vendor_sell"); got != 1 {
+		t.Errorf("vendor_sell = %d, want 1", got)
+	}
+	if got := h.KindRefusedCount("repair"); got != 0 {
+		t.Errorf("repair = %d, want 0", got)
+	}
+	if got := h.KindRefusedCount(""); got != 0 {
+		t.Errorf("empty kind = %d, want 0: an observation with no kind is evidence about nothing", got)
+	}
+	// And none of it touched the POI counters.
+	for _, id := range []string{"tr1", "tr2", "v1"} {
+		if got := h.DiscouragedCount(id); got != 0 {
+			t.Errorf("DiscouragedCount(%q) = %d, want 0", id, got)
+		}
+	}
+}
+
+// The zero History must answer both questions, so no caller has to branch on
+// "this bot has no history".
+func TestZeroHistoryAnswersKindRefusals(t *testing.T) {
+	var h History
+	if got := h.KindRefusedCount("visit_trainer"); got != 0 {
+		t.Fatalf("KindRefusedCount on a zero History = %d, want 0", got)
+	}
+}

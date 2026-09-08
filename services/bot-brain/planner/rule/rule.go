@@ -236,12 +236,44 @@ func (p *Planner) planOne(s *contract.Snapshot, tr identity.Traits, hist memory.
 		}
 	}
 
-	// Rung 7: grind. The coarse "just level" answer.
+	// Rung 7: train. Below every rung above it and above the one below it, and
+	// both halves of that are the decision.
+	//
+	// Below the quest rungs because the snapshot carries no "this bot has
+	// untrained ranks" signal -- there is no such field, and inventing one is a
+	// bigger change than this kind. So the planner cannot know training is DUE;
+	// it can only know a trainer is near. A maybe must not outrank a completed
+	// quest sitting in the log, an objective already half done, or work waiting
+	// to be picked up at the hub the bot is very likely already standing in.
+	//
+	// Above grinding because grinding is what a bot does when it has nothing
+	// better, and a bot that grinds several levels behind its spellbook grinds
+	// badly -- slower kills, more downtime, more deaths. Everything after a
+	// trainer visit is cheaper for having made it, which is exactly the argument
+	// that does NOT apply to putting it above work the bot has already started.
+	//
+	// The refusal count is what makes the rung terminate. The server reports a
+	// trainer that had nothing to teach as failed/action_refused, which is about
+	// the KIND, not the place: memory deliberately does not count it against the
+	// POI, because the trainer is exactly where it always was. Without reading
+	// it here, "a trainer is near" would stay true forever and this rung would
+	// send a fully-trained bot back to the same NPC every tick instead of ever
+	// reaching rung 8. Two refusals age out of the read window after
+	// memory.DefaultRecentLimit plans, so the rung throttles itself rather than
+	// latching off.
+	if hist.KindRefusedCount(string(contract.IntentVisitTrainer)) < memory.KindRefusedThreshold {
+		if poi := p.nearest(s, "trainer", tr, hist); poi != nil {
+			return p.travel(s, id, contract.IntentVisitTrainer, poi, 0.55,
+				"a trainer is near and nothing more urgent is outstanding")
+		}
+	}
+
+	// Rung 8: grind. The coarse "just level" answer.
 	if poi := p.nearest(s, "grind_area", tr, hist); poi != nil {
 		return p.travel(s, id, contract.IntentGrindArea, poi, 0.5, "no quest work available")
 	}
 
-	// Rung 8: nothing to suggest. Always reachable, always valid.
+	// Rung 9: nothing to suggest. Always reachable, always valid.
 	return idle("no rung matched; in-core AI continues")
 }
 
