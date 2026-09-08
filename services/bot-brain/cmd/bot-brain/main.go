@@ -225,15 +225,53 @@ func run() error {
 			"async", cfg.LLMAsync)
 	}
 
+	// Dialogue, if it is on. It is built from llmP rather than from a config,
+	// which is what makes the endpoint, the credential, the circuit breaker and
+	// the token budget genuinely shared rather than merely configured the same:
+	// there is one *llm.Planner in this process and both callers go through it.
+	//
+	// Nil is a supported state and reaches httpapi as one: the route still
+	// exists, and every bot answers with reason "dialogue_disabled". The C++
+	// side then has one shape to handle instead of a 404 as a third outcome.
+	var speaker httpapi.Speaker
+	if llmP != nil && llmErr == nil {
+		dialogueP, dialogueErr := llm.NewDialogue(llmP, cfg.Dialogue)
+		switch {
+		case errors.Is(dialogueErr, llm.ErrDialogueDisabled):
+			log.Info("bot dialogue disabled; bots will not talk")
+		case dialogueErr != nil:
+			// Same reasoning as the planner above: a misconfigured dialogue is
+			// not a reason to refuse to start a service whose main job is
+			// planning. It says so loudly and carries on.
+			log.Error("bot dialogue misconfigured; bots will not talk", "err", dialogueErr)
+		default:
+			speaker = dialogueP
+			log.Info("bot dialogue enabled",
+				"model", cfg.LLM.Model,
+				"max_tokens", cfg.Dialogue.MaxTokens,
+				"timeout", cfg.Dialogue.Timeout,
+				"max_in_flight", cfg.MaxDialogueInFlight,
+				// Named because "why did planning stop using the model" and
+				// "why are the bots quiet" have the same answer often enough
+				// that the log should say the two share a budget.
+				"token_budget", "shared with the planner")
+		}
+	} else if cfg.Dialogue.Enabled {
+		log.Error("bot dialogue is enabled but there is no llm planner to borrow an endpoint from; bots will not talk")
+	}
+
 	srv := httpapi.New(httpapi.Options{
-		Planner:         active,
-		MaxBatch:        cfg.MaxBatch,
-		MaxBodyBytes:    cfg.MaxBodyBytes,
-		DefaultDeadline: cfg.DefaultDeadline,
-		IntentTTL:       cfg.IntentTTL,
-		Memory:          memoryRecorder,
-		Metrics:         reg,
-		Logger:          log,
+		Planner:              active,
+		MaxBatch:             cfg.MaxBatch,
+		MaxBodyBytes:         cfg.MaxBodyBytes,
+		DefaultDeadline:      cfg.DefaultDeadline,
+		IntentTTL:            cfg.IntentTTL,
+		Memory:               memoryRecorder,
+		Metrics:              reg,
+		Logger:               log,
+		Dialogue:             speaker,
+		MaxDialogueBodyBytes: cfg.MaxDialogueBodyBytes,
+		MaxDialogueInFlight:  cfg.MaxDialogueInFlight,
 	})
 
 	httpServer := &http.Server{

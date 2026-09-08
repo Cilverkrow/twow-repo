@@ -117,6 +117,35 @@ type Config struct {
 	// TokenBudget is shared local admission state. Nil uses a finite process-
 	// shared default, never unlimited. Share the same pointer between custom
 	// planners and PoCs; constructing one per request defeats window limits.
+	//
+	// DIALOGUE SHARES THIS BUDGET, and that was a decision rather than an
+	// accident, so here is the reasoning in the place someone will look for it.
+	//
+	// The budget's purpose is a ceiling on what this process can spend at a
+	// metered endpoint. A ceiling that a second caller can add its own quota to
+	// is not a ceiling: two budgets of 262144 tokens an hour is a budget of
+	// 524288, and the number an operator configured would silently mean half of
+	// what it says. So the hourly and daily windows are one window.
+	//
+	// The cost of sharing is real and worth naming: dialogue is triggered by
+	// players, so it is the higher-volume and more attacker-reachable of the two
+	// paths, and a busy evening in guild chat can leave the LLM planner denied
+	// admission. Planning degrades to the rule planner when that happens, which
+	// is a designed outcome and not an outage; dialogue degrades to silence.
+	// Both are survivable, and the alternative -- a separate dialogue budget --
+	// buys planning that protection by removing the cost cap, which is the wrong
+	// trade for the failure that actually costs money.
+	//
+	// What is NOT shared is the per-call ceiling: dialogue reserves its own
+	// (much smaller) max_tokens, so it consumes the shared window in proportion
+	// to what it actually uses. See reserveTokensFor.
+	//
+	// The latch deserves a separate note, because "dialogue can latch the budget
+	// and kill planning" sounds worse than it is. Stop() fires on inconsistent
+	// provider token accounting, which is a property of the PROVIDER, not of the
+	// caller. A dialogue call that trips it would have been tripped by the next
+	// plan call just the same. It is not a cross-caller kill; it is one process
+	// noticing that the endpoint's numbers cannot be trusted.
 	TokenBudget *TokenBudget `json:"-"`
 }
 

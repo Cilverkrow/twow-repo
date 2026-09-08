@@ -127,6 +127,44 @@ services:
       BOT_BRAIN_LLM_TEMPERATURE: ${BOT_BRAIN_LLM_TEMPERATURE:-0}
       BOT_BRAIN_LLM_MAX_BOTS_PER_CALL: ${BOT_BRAIN_LLM_MAX_BOTS_PER_CALL:-16}
 
+      # Bot speech (POST /v1/dialogue).
+      #
+      # Gated separately from BOT_BRAIN_LLM_ENABLED and requiring it, because the
+      # two have different cost shapes: planning is one call per tick for a
+      # thousand bots, dialogue is one call every time a player types. An
+      # operator has to be able to run planning on a model without also handing
+      # every player in the world a button that spends tokens.
+      #
+      # Silence is the failure mode, all the way down. A bot whose model is
+      # unreachable, whose budget has run out, or who was shed for being over the
+      # in-flight limit simply says nothing, and the endpoint still answers 200.
+      # Watch botbrain_dialogue_silence_total{reason} to tell those apart from a
+      # bot that correctly had nothing to say.
+      BOT_BRAIN_DIALOGUE_ENABLED: ${BOT_BRAIN_DIALOGUE_ENABLED:-false}
+
+      # A reply is at most 255 bytes of German, so this is far below the
+      # planner's 1024 on purpose. Dialogue and planning SHARE the hourly and
+      # daily token windows -- a cost cap a second caller can add its own quota
+      # to is not a cost cap -- but not the per-call ceiling, so a one-sentence
+      # answer does not charge the shared window like a sixteen-bot batch.
+      BOT_BRAIN_DIALOGUE_MAX_TOKENS: ${BOT_BRAIN_DIALOGUE_MAX_TOKENS:-192}
+
+      # May be longer than BOT_BRAIN_LLM_TIMEOUT, and usually should be. Nothing
+      # in the world is waiting on a reply the way a planning tick waits on an
+      # intent: a player answered two seconds later has been answered.
+      BOT_BRAIN_DIALOGUE_TIMEOUT: ${BOT_BRAIN_DIALOGUE_TIMEOUT:-4s}
+
+      # One line of chat, not a batch of 2048 snapshots. Three orders of
+      # magnitude below BOT_BRAIN_MAX_BODY_BYTES, and applied before decoding for
+      # the same reason: the endpoint is unauthenticated by design.
+      BOT_BRAIN_DIALOGUE_MAX_BODY_BYTES: ${BOT_BRAIN_DIALOGUE_MAX_BODY_BYTES:-16384}
+
+      # Concurrent replies. Over the limit requests are shed immediately as
+      # "busy" rather than queued: a queue here would accumulate load during
+      # exactly the incident where accumulating load is fatal, while holding the
+      # worldserver's connections open to do it.
+      BOT_BRAIN_DIALOGUE_MAX_IN_FLIGHT: ${BOT_BRAIN_DIALOGUE_MAX_IN_FLIGHT:-8}
+
       # Run inference OFF the planning tick.
       #
       # Turn this on when the endpoint cannot answer inside BOT_BRAIN_LLM_TIMEOUT.

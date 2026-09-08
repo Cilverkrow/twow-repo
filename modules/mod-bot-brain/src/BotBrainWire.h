@@ -41,7 +41,7 @@ namespace botbrain
     // services/bot-brain/contract/version.go (VersionMajor.VersionMinor).
     extern char const* const kContractVersion;
     int constexpr kContractMajor = 1;
-    int constexpr kContractMinor = 2;
+    int constexpr kContractMinor = 3;
 
     // Intent kinds this build understands. Anything else is dropped silently.
     extern char const* const kIntentIdle;
