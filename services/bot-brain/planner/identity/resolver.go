@@ -109,6 +109,7 @@ const TraitBoldness = "boldness"
 func (t Traits) apply(stored map[string]float64) Traits {
 	if v, ok := stored[TraitBoldness]; ok {
 		t.Boldness = clamp(v, boldnessMin, boldnessMax)
+		t.Learned = true
 	}
 	return t
 }
