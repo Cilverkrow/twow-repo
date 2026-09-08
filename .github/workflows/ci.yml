@@ -2375,6 +2375,37 @@ jobs:
           sed -e 's/^DB_ROOT_PASSWORD=.*/DB_ROOT_PASSWORD=ci-root/' \
               -e 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-app/' \
               deploy/compose/.env.example > "$TWOW_ENV_FILE"
+
+          # Inference, pointed at the stub model server. CI has no GPU, no
+          # weights and no API key, so without something to answer, the
+          # dialogue path cannot be exercised past the point where it makes the
+          # HTTP request -- see test/stub/llm-stub.py for why substituting the
+          # model does not weaken what 60-bot-dialogue.sh proves.
+          #
+          # This turns inference ON for bot-brain only. It does NOT touch
+          # AiPlayerbot.LLMEnabled or the rendered server configs: the
+          # worldserver's own LLM chat path funnels through
+          # PlayerbotLLMInterface::Generate, whose network client has been
+          # removed and which returns an empty string unconditionally, so
+          # pointing the server at a model would prove nothing. That reasoning
+          # is written out in full in the check's header.
+          #
+          # The /dialogue/v1 base URL is deliberate: the stub answers there with
+          # the {"reply": "..."} document bot-brain's dialogue planner requires,
+          # and on /v1 with a plain sentence for every other OpenAI client.
+          {
+            echo ''
+            echo '# --- CI only: inference against the deterministic stub model'
+            echo 'BOT_BRAIN_LLM_ENABLED=true'
+            echo 'BOT_BRAIN_LLM_BASE_URL=http://llm-stub:8099/dialogue/v1'
+            echo 'BOT_BRAIN_LLM_MODEL=stub-model'
+            echo 'BOT_BRAIN_LLM_PROVIDER=openai'
+            # Inert until twow-repo#265 adds the key to bot-brain.yml; set here
+            # so that the day it lands, 60-bot-dialogue.sh goes green with no
+            # change to this file.
+            echo 'BOT_BRAIN_DIALOGUE_ENABLED=true'
+          } >> "$TWOW_ENV_FILE"
+
           docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" config >/dev/null
           echo "compose config parses"
 
@@ -2439,6 +2470,44 @@ jobs:
 
           $C ps -a
 
+      # bot-brain and the stub model, for test/smoke/60-bot-dialogue.sh.
+      #
+      # Both live in their own compose files ON PURPOSE: docker-compose.yml must
+      # keep starting and playing with them absent (ADR-0024 invariant 4), and
+      # the cleanest guarantee of that is that it never mentions them. All three
+      # declare `name: twow`, so composing them together lands them in one
+      # project on one network -- which is what lets the check address
+      # `bot-brain:8085` and `llm-stub:8099` by service name with no published
+      # port, and what will let the worldserver do the same.
+      #
+      # --build is only for bot-brain: its context is one small Go service, not
+      # the C++ tree, and it builds in seconds. The stub needs no build at all,
+      # which is the point of it being a stock image plus one stdlib file.
+      #
+      # A failure here is NOT fatal to the job. The dialogue check skips with a
+      # stated reason when either service is absent, and losing every other
+      # smoke check because a stub would not start would be the wrong trade.
+      - name: Start bot-brain and the stub model
+        continue-on-error: true
+        run: |
+          set -eu
+          C="docker compose -f $TWOW_COMPOSE_FILE \
+             -f deploy/compose/bot-brain.yml \
+             -f deploy/compose/llm-stub.yml \
+             --env-file $TWOW_ENV_FILE"
+          $C up -d --build bot-brain llm-stub
+          # Poll their own health checks; a fixed sleep would test the sleep.
+          for svc in bot-brain llm-stub; do
+            h=starting
+            for _ in $(seq 1 60); do
+              h=$(docker inspect -f '{{.State.Health.Status}}' "$($C ps -aq $svc)" 2>/dev/null || echo starting)
+              [ "$h" = "healthy" ] && break
+              sleep 2
+            done
+            echo "$svc: $h"
+          done
+          $C ps -a
+
       - name: Run the smoke suite
         env:
           # Explicit rather than probed: mangosd is not running, and the suite
@@ -2454,10 +2523,18 @@ jobs:
         if: always()
         run: |
           mkdir -p smoke-logs
-          C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
+          # All three files, so bot-brain's and the stub's logs are collected
+          # too -- a dialogue check that failed is undiagnosable without them,
+          # and the stub logs every call it served.
+          C="docker compose -f $TWOW_COMPOSE_FILE \
+             -f deploy/compose/bot-brain.yml \
+             -f deploy/compose/llm-stub.yml \
+             --env-file $TWOW_ENV_FILE"
           $C ps -a > smoke-logs/ps.txt 2>&1 || true
           $C logs --no-color --timestamps > smoke-logs/compose.log 2>&1 || true
           $C logs --no-color --timestamps db-init > smoke-logs/db-init.log 2>&1 || true
+          $C logs --no-color --timestamps bot-brain > smoke-logs/bot-brain.log 2>&1 || true
+          $C logs --no-color --timestamps llm-stub > smoke-logs/llm-stub.log 2>&1 || true
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -2472,5 +2549,11 @@ jobs:
       - name: Tear down
         if: always()
         run: |
-          docker compose -f "$TWOW_COMPOSE_FILE" --env-file "$TWOW_ENV_FILE" \
+          # All three files. `--remove-orphans` alone would take bot-brain and
+          # the stub down anyway (they share `name: twow`), but naming them is
+          # what makes a leftover container a bug rather than luck.
+          docker compose -f "$TWOW_COMPOSE_FILE" \
+            -f deploy/compose/bot-brain.yml \
+            -f deploy/compose/llm-stub.yml \
+            --env-file "$TWOW_ENV_FILE" \
             down -v --remove-orphans || true
