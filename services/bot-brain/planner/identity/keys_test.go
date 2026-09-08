@@ -47,7 +47,7 @@ func TestTheKeysThatDoMove(t *testing.T) {
 	}
 }
 
-// Most of the contract's 142 keys are about conversation. An unrecognised key
+// Most of the contract's 124 keys are about conversation. An unrecognised key
 // must produce no opinion, the same way an unknown STORED trait is dropped
 // rather than guessed at.
 func TestUnknownKeysAreIgnored(t *testing.T) {

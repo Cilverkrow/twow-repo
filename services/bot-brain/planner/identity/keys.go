@@ -12,7 +12,7 @@ package identity
 //
 // This maps the handful of keys that are genuinely about *going places* onto
 // the one numeric trait the rule planner already understands. It is deliberately
-// a handful: of the contract's 142 keys, most describe how a bot talks, and
+// a handful: of the contract's 124 keys, most describe how a bot talks, and
 // inventing a movement meaning for them would be making up data.
 //
 // The readings below come from the contract's own §8 definitions, not from the
