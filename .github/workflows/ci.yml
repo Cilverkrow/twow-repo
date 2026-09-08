@@ -1760,6 +1760,23 @@ jobs:
       # (it dies at its final close() with ESTALE - see the long note in
       # ops/ci/in-builder.sh). Sources may live on the network mount; the things
       # the linker writes may not.
+      # Zero the counters so the figure printed after the build describes THIS
+      # run.
+      #
+      # Without this, `ccache --show-stats` reports the cache's lifetime totals,
+      # accumulated across every run that ever restored it. That is not a subtle
+      # difference: this job printed "70,568 cacheable calls, 7,995 misses" and it
+      # was read -- by me -- as this run compiling eight thousand files, when it
+      # was the history of the cache. A number that cannot distinguish a cold
+      # build from a busy history is not a measurement, and the conclusions drawn
+      # from it are worth nothing.
+      #
+      # The sibling repository already does this (twow-core's ci.yml calls
+      # `ccache --zero-stats` before configuring), which is why ITS numbers are
+      # per-run and comparable. This makes the two comparable with each other.
+      - name: Zero the compiler cache statistics
+        run: bash ops/ci/in-builder.sh 'ccache --zero-stats'
+
       - name: Configure
         run: |
           bash ops/ci/in-builder.sh 'cmake -S /src -B /build -G Ninja \
