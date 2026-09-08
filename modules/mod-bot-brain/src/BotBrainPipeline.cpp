@@ -192,6 +192,15 @@ namespace botbrain
             AwaitingPlan
         };
 
+        // One strategy the brain has taken over on one bot, in one bot state.
+        struct OwnedStrategy
+        {
+            std::string name;
+            std::string state;      // the WIRE name, e.g. "non_combat"
+            bool desired = false;   // what the brain wants it to be
+            bool prior = false;     // what it was when the brain first took it
+        };
+
         struct BotPlanState
         {
             Phase phase = Phase::Idle;
@@ -211,6 +220,44 @@ namespace botbrain
 
             bool hasIntent = false;
             Intent intent;
+
+            // The standing intent (set_strategies) gets a slot of its OWN, and
+            // that is the load-bearing decision in this feature.
+            //
+            // A strategy set is not an errand: it is a condition the brain
+            // re-asserts every planning cycle, because ResetStrategies wipes
+            // the whole set from a dozen call sites and restores nothing for a
+            // free random bot. If it shared `intent` above, a bot whose brain
+            // re-asserts strategies would never have room for a travel_to
+            // again -- the strategy intent would evict the errand, every cycle,
+            // forever. Two slots, two appliers, no competition.
+            bool hasStandingIntent = false;
+            Intent standingIntent;
+
+            // Set whenever a plan response for this bot decodes, whether or not
+            // it carried a standing intent. That is what makes RELEASE exact
+            // rather than a timeout: the brain answering and naming no strategy
+            // is the brain giving back everything it held, and it is
+            // distinguishable from the brain not answering at all -- which must
+            // change nothing, because a dead brain is the case the whole module
+            // is built to degrade quietly through.
+            bool standingAnswered = false;
+
+            // What the brain currently OWNS on this bot, and what each of those
+            // strategies looked like before it took it over.
+            //
+            // Ownership is per (name, state) and nothing else: this module adds
+            // and removes NAMED strategies on top of whatever AiFactory built.
+            // It never calls removeAllStrategies and never claims the set as a
+            // whole, because a brain that blanked a bot's defaults and then
+            // went away would leave an inert bot with nothing to restore it.
+            //
+            // `prior` is what makes releasing possible. When a later cycle
+            // stops naming a strategy, the brain is giving it back, and giving
+            // it back means putting it where it was -- not guessing at the
+            // factory default, and not leaving a bot permanently missing a
+            // behaviour because the policy that suppressed it moved on.
+            std::vector<OwnedStrategy> ownedStrategies;
 
             // A QUEUE, not a slot. One intent now produces up to two outcomes --
             // "accepted" when the target is set and a terminal one when the bot
@@ -276,6 +323,15 @@ namespace botbrain
         // -- and without this each of those would take the global mutex to be
         // told there is nothing to do.
         std::atomic<uint32_t> g_activeTravels{0};
+
+        // How many bots either have a standing intent waiting or hold strategies
+        // the brain has taken over.
+        //
+        // Same job as g_activeTravels above it, for the same reason: the
+        // reconciler runs ahead of the ShouldPlanFor gate on EVERY bot's tick,
+        // and without this each of the thousands with no brain state at all
+        // would take the global mutex to be told there is nothing to do.
+        std::atomic<uint32_t> g_standingBots{0};
 
         std::mutex g_statesMutex;
         std::unordered_map<uint64, BotPlanState> g_states;   // keyed by ObjectGuid raw value
@@ -1086,6 +1142,306 @@ namespace botbrain
             return false;
         }
 
+        // ------------------------------------------------------------------
+        // set_strategies: the standing-condition reconciler.
+        // ------------------------------------------------------------------
+        //
+        // Map thread only. It calls into PlayerbotAI, which owns the engines it
+        // edits, and it is invoked from Tick() -- PLAYERHOOK_ON_UPDATE, i.e. the
+        // map thread that owns this bot and the one its AI ticks on. Nothing
+        // here crosses a worker boundary and no Player* is captured anywhere.
+        //
+        // WHY IT IS CHEAP, which is the design and not an optimisation. This
+        // runs for potentially a thousand bots, every planning cycle, forever,
+        // and the overwhelmingly common case is "the brain asked for exactly
+        // what the bot already has". So the cost of THAT case is what matters,
+        // and it is paid down in four steps:
+        //
+        //   1. One relaxed atomic load rejects every bot that has no standing
+        //      intent and owns no strategies. That is nearly all of them, and it
+        //      does not touch g_statesMutex.
+        //   2. A bot with nothing NEW to assert returns before doing any engine
+        //      work at all. Re-assertion happens when a cycle delivers a set,
+        //      not on every tick in between.
+        //   3. The diff is HasStrategy(), which is one std::map::find per named
+        //      strategy -- at most kMaxStrategyChanges of them, in practice two
+        //      or three. ChangeStrategy() is never called for a strategy that is
+        //      already where it should be.
+        //
+        //      That ordering is what keeps the steady state free. ChangeStrategy
+        //      parses a comma-separated string, and every entry it accepts runs
+        //      addStrategy -> GetStrategy -> GetSiblingStrategy -> removeStrategy
+        //      per sibling, then Init() rebuilds the engine's trigger and
+        //      multiplier lists if the set token moved. Paying a string parse per
+        //      bot per cycle to discover that nothing changed is exactly the kind
+        //      of cost that turns a good idea into a stall.
+        //   4. When something HAS moved, the directives are batched into one
+        //      string per bot state, so at most four ChangeStrategy calls happen
+        //      and each engine rebuilds at most once.
+        //
+        // Validation sits downstream of the diff, and that falls out nicely:
+        // asking to DISABLE a strategy this build never registered is already a
+        // no-op by the diff (HasStrategy is false, desired is false), so it never
+        // reaches the existence check. Only an ENABLE of an unknown name pays for
+        // a lookup, and it is dropped and logged rather than passed through -- an
+        // unknown name reaching Engine::ChangeStrategy is silently ignored there
+        // (addStrategy's GetStrategy returns null and the function falls straight
+        // through), which would leave the brain believing a change landed when
+        // nothing happened at all.
+        BotState BotStateFromWireName(std::string const& name)
+        {
+            if (name == kBotStateCombat)
+                return BotState::BOT_STATE_COMBAT;
+            if (name == kBotStateNonCombat)
+                return BotState::BOT_STATE_NON_COMBAT;
+            if (name == kBotStateDead)
+                return BotState::BOT_STATE_DEAD;
+            return BotState::BOT_STATE_REACTION;
+        }
+
+        // One (name, state) the reconciler has decided to move, and where to.
+        struct StrategyTarget
+        {
+            std::string name;
+            std::string state;
+            bool want = false;
+        };
+
+        void ReconcileStrategies(Player* bot, PlayerbotAI* botAI)
+        {
+            if (!bot || !botAI || !bot->IsInWorld())
+                return;
+
+            // Step 1: the fast path out, for every bot the brain has never
+            // touched. No lock taken.
+            if (g_standingBots.load(std::memory_order_relaxed) == 0)
+                return;
+
+            // A disabled module or a failed handshake means the stock AI owns
+            // this bot completely -- including the strategies the brain had
+            // taken over, which must go BACK rather than latch. That is why the
+            // reconciler runs ahead of the ShouldPlanFor gate: the gate closing
+            // is exactly when the release has to happen.
+            bool release = !GetSettings().enabled || !IsAdmitted();
+
+            uint64 const raw = bot->GetObjectGuid().GetRawValue();
+
+            Intent pending;
+            bool havePending = false;
+            bool answered = false;
+            std::vector<OwnedStrategy> owned;
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                BotPlanState* state = Find(raw);
+                if (!state)
+                    return;
+                if (!state->hasStandingIntent && state->ownedStrategies.empty())
+                    return;
+
+                havePending = state->hasStandingIntent;
+                pending = state->standingIntent;
+                state->hasStandingIntent = false;
+                answered = state->standingAnswered;
+                state->standingAnswered = false;
+                owned = state->ownedStrategies;
+            }
+
+            // Step 2: nothing new to assert. Either the brain answered this
+            // cycle and named no strategies -- which is it handing back
+            // everything it held -- or no answer has arrived, in which case the
+            // set stands exactly as it is.
+            //
+            // That distinction is the whole reason `answered` exists. Lapsing
+            // on a timer instead would mean a brain that merely went slow
+            // reverted a bot it was still perfectly happy with, and a brain that
+            // died would be indistinguishable from one that changed its mind.
+            if (!havePending && !release)
+            {
+                if (!answered || owned.empty())
+                    return;
+                release = true;
+            }
+
+            if (havePending && pending.expiresAtMs && pending.expiresAtMs < NowUnixMs())
+            {
+                // Same reading as everywhere else: nothing was wrong with the
+                // plan, it arrived too late. Drop it and leave what the brain
+                // last successfully asserted standing -- reverting on a late
+                // intent would make a slow brain worse than an absent one.
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                if (BotPlanState* state = Find(raw))
+                    StoreOutcome(*state, pending.intentId, pending.kind, "expired", std::string(), std::string());
+                return;
+            }
+
+            // What the brain owns after this cycle. On release that is nothing,
+            // and every currently-owned strategy goes back.
+            std::vector<OwnedStrategy> next;
+            if (!release && havePending)
+            {
+                for (StrategyChange const& change : pending.strategies)
+                {
+                    OwnedStrategy entry;
+                    entry.name = change.name;
+                    entry.state = change.state;
+                    entry.desired = change.enable;
+
+                    // Carry `prior` forward from an existing ownership rather
+                    // than re-reading it. Re-reading would capture the value the
+                    // brain itself put there and make the eventual release a
+                    // no-op: the FIRST cycle's observation is the only honest
+                    // one, so it is the one that is kept.
+                    bool carried = false;
+                    for (OwnedStrategy const& previous : owned)
+                    {
+                        if (previous.name != entry.name || previous.state != entry.state)
+                            continue;
+                        entry.prior = previous.prior;
+                        carried = true;
+                        break;
+                    }
+                    if (!carried)
+                        entry.prior = botAI->HasStrategy(entry.name, BotStateFromWireName(entry.state));
+
+                    next.push_back(entry);
+                }
+            }
+
+            // Everything the brain owned and no longer names is handed back to
+            // the value it had before the brain touched it. This is the other
+            // half of "never removeAllStrategies": the module gives back exactly
+            // what it took, and nothing it did not take.
+            std::vector<StrategyTarget> targets;
+            for (OwnedStrategy const& previous : owned)
+            {
+                bool stillOwned = false;
+                for (OwnedStrategy const& entry : next)
+                {
+                    if (entry.name == previous.name && entry.state == previous.state)
+                    {
+                        stillOwned = true;
+                        break;
+                    }
+                }
+                if (stillOwned)
+                    continue;
+
+                StrategyTarget target;
+                target.name = previous.name;
+                target.state = previous.state;
+                target.want = previous.prior;
+                targets.push_back(target);
+            }
+            for (OwnedStrategy const& entry : next)
+            {
+                StrategyTarget target;
+                target.name = entry.name;
+                target.state = entry.state;
+                target.want = entry.desired;
+                targets.push_back(target);
+            }
+
+            // Step 3: diff first. One map lookup per named strategy; anything
+            // already where it belongs costs nothing more than that.
+            std::string directives[(uint8)BotState::BOT_STATE_ALL];
+            std::string applied;
+            uint32_t unknown = 0;
+            AiObjectContext* const context = botAI->GetAiObjectContext();
+
+            for (StrategyTarget const& target : targets)
+            {
+                BotState const state = BotStateFromWireName(target.state);
+                if (botAI->HasStrategy(target.name, state) == target.want)
+                    continue;
+
+                if (target.want && (!context || !context->GetStrategy(target.name)))
+                {
+                    ++unknown;
+                    sLog.outError("mod-bot-brain: %s (guid %u) was asked to enable strategy '%s' (%s), "
+                        "which this build does not register; dropped",
+                        bot->GetName(), bot->GetGUIDLow(), target.name.c_str(), target.state.c_str());
+                    continue;
+                }
+
+                std::string& directive = directives[(uint8)state];
+                if (!directive.empty())
+                    directive += ',';
+                directive += target.want ? '+' : '-';
+                directive += target.name;
+
+                if (!applied.empty())
+                    applied += ", ";
+                applied += target.want ? '+' : '-';
+                applied += target.name;
+                applied += " (";
+                applied += target.state;
+                applied += ')';
+            }
+
+            // Step 4: at most one ChangeStrategy per bot state, so each engine
+            // rebuilds at most once however many names moved inside it.
+            for (uint8 i = 0; i < (uint8)BotState::BOT_STATE_ALL; ++i)
+            {
+                if (directives[i].empty())
+                    continue;
+                botAI->ChangeStrategy(directives[i], BotState(i));
+            }
+
+            // A name that could not be enabled is not owned. Recording it would
+            // make the next cycle believe it had been handed a strategy it never
+            // got, and releasing it later would "restore" a value nobody set.
+            if (unknown)
+            {
+                std::vector<OwnedStrategy> kept;
+                kept.reserve(next.size());
+                for (OwnedStrategy const& entry : next)
+                {
+                    if (entry.desired && (!context || !context->GetStrategy(entry.name)))
+                        continue;
+                    kept.push_back(entry);
+                }
+                next.swap(kept);
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                BotPlanState* state = Find(raw);
+                if (!state)
+                    return;
+
+                bool const countedBefore = state->hasStandingIntent || !state->ownedStrategies.empty();
+                state->ownedStrategies = next;
+                bool const countedAfter = state->hasStandingIntent || !state->ownedStrategies.empty();
+                if (countedBefore && !countedAfter)
+                    g_standingBots.fetch_sub(1, std::memory_order_relaxed);
+                else if (!countedBefore && countedAfter)
+                    g_standingBots.fetch_add(1, std::memory_order_relaxed);
+
+                // Reported only when the applied set actually MOVED, or when
+                // something was refused. An unchanged re-assertion is the normal
+                // case for every bot on every cycle, and recording it would push
+                // a genuine outcome out of the bounded queue -- the channel would
+                // get quieter the busier it got.
+                if (havePending && (!applied.empty() || unknown))
+                {
+                    StoreOutcome(*state, pending.intentId, pending.kind,
+                        (unknown && applied.empty()) ? "rejected" : "completed",
+                        unknown ? std::string("unknown_strategy") : std::string(), std::string());
+                }
+            }
+
+            // Same rule for the log, and the same reason: a line per bot per
+            // cycle is a thousand lines a cycle and nobody reads any of them. A
+            // line when a bot's behaviour actually changed is what answers "why
+            // has this bot stopped fighting".
+            if (!applied.empty())
+            {
+                sLog.outBasic("mod-bot-brain: %s (guid %u) strategies %s [%s]",
+                    bot->GetName(), bot->GetGUIDLow(), applied.c_str(),
+                    release ? "released" : pending.source.c_str());
+            }
+        }
+
         // Watches the intent the bot is carrying out and reports how it ended.
         //
         // Map thread only: it reads the bot's travel target through the AI
@@ -1488,6 +1844,17 @@ namespace botbrain
         if (existing != g_states.end() && existing->second.hasActiveTravel)
             g_activeTravels.fetch_sub(1, std::memory_order_relaxed);
 
+        // And g_standingBots, for exactly the same reason: a leaked entry there
+        // costs every bot on the server the global mutex on every tick, forever.
+        //
+        // Nothing is restored on the way out. The strategies the brain owned die
+        // with the AI object, and the bot's next login runs ResetStrategies and
+        // rebuilds the factory set from scratch -- so "restoring" here would be
+        // writing to engines that are about to be thrown away.
+        if (existing != g_states.end() &&
+            (existing->second.hasStandingIntent || !existing->second.ownedStrategies.empty()))
+            g_standingBots.fetch_sub(1, std::memory_order_relaxed);
+
         g_states.erase(raw);
 
         // A bot that logs out while its snapshot is still sitting in
@@ -1628,7 +1995,12 @@ namespace botbrain
         // Peek only. See the header: the engine asks a trigger far more often
         // than it runs the action behind it, so consuming here would discard
         // intents on every tick a higher-relevance action happened to win.
-        return IsAppliedKind(state->intent.kind);
+        // Standing kinds are excluded although they are applied kinds: they
+        // never reach this slot (Phase D routes them elsewhere), and saying so
+        // here means a routing mistake shows up as a bot that does not act on a
+        // strategy set rather than as BotBrainApplyAction reporting
+        // "unsupported_kind" for work the reconciler already did.
+        return IsAppliedKind(state->intent.kind) && !IsStandingKind(state->intent.kind);
     }
 
     bool TakeAppliedIntent(Player* bot, Intent& intent)
@@ -1644,7 +2016,7 @@ namespace botbrain
         // Look before consuming. Unlike TakeTravelIntent, this applier is not the
         // only one: a travel intent belongs to the travel chooser, and eating it
         // here would leave that intent unapplied and unreported.
-        if (!IsAppliedKind(state->intent.kind))
+        if (!IsAppliedKind(state->intent.kind) || IsStandingKind(state->intent.kind))
             return false;
 
         Intent const candidate = state->intent;
@@ -1715,6 +2087,14 @@ namespace botbrain
         // OBSERVATION to the destination. A config toggle would manufacture
         // evidence against POIs that were never the problem.
         ObserveActiveTravel(bot, botAI);
+
+        // Ahead of the gate too, and for a reason ObserveActiveTravel's comment
+        // half states already: this is the call that hands a bot's strategies
+        // BACK. If it sat below ShouldPlanFor, disabling the module or taking
+        // the "bot brain" strategy off a bot would strand every strategy the
+        // brain had suppressed on it, with nothing left running that could ever
+        // put them back.
+        ReconcileStrategies(bot, botAI);
 
         if (!ShouldPlanFor(bot, botAI))
             return;
@@ -2001,21 +2381,53 @@ namespace botbrain
 
             state.nextRequestMs = now + cfg.intervalMs;
 
-            // At most one intent per snapshot (contract/wire.go:81), and the
-            // Go planner keys its results in a map[BotID]Intent -- so this
-            // `break` on first match is correct as-is, batched or not. It is
-            // NOT "only look at bot 0's intent": the filter above it discards
-            // every intent not addressed to guidLow/realmID first, so the
-            // first match found IS this bot's one intent, never another bot's.
+            // The filter discards every intent not addressed to
+            // guidLow/realmID first, so a match here IS this bot's, never
+            // another bot's.
+            //
+            // Two slots, so the loop no longer stops at the first match: a bot
+            // may be handed one ERRAND and one STANDING condition in the same
+            // response, and they do not compete. A set_strategies is re-sent
+            // every cycle by design, so sharing the errand slot with it would
+            // mean a bot whose brain manages its strategies could never be sent
+            // anywhere again. Within each slot the first match still wins,
+            // which keeps the old behaviour for every kind that had it.
             uint64 const guidLow = bot->GetGUIDLow();
+            bool const countedBefore = state.hasStandingIntent || !state.ownedStrategies.empty();
             for (Intent const& intent : readyPlan->response.intents)
             {
                 if (intent.bot.guid != guidLow || intent.bot.realm != realmID)
                     continue;   // never apply an intent addressed to another bot
-                state.hasIntent = true;
-                state.intent = intent;
-                break;
+
+                if (IsStandingKind(intent.kind))
+                {
+                    if (!state.hasStandingIntent)
+                    {
+                        state.hasStandingIntent = true;
+                        state.standingIntent = intent;
+                    }
+                    continue;
+                }
+
+                if (!state.hasIntent)
+                {
+                    state.hasIntent = true;
+                    state.intent = intent;
+                }
+
+                // Both slots filled: nothing later in the batch can change
+                // this bot's outcome, and a batch may carry 2048 intents that
+                // every bot's map thread would otherwise walk to the end.
+                if (state.hasIntent && state.hasStandingIntent)
+                    break;
             }
+
+            // The brain answered for this bot. Whether or not that answer named
+            // any strategies is what the reconciler reads to tell "keep holding
+            // what you hold" from "give it all back".
+            state.standingAnswered = true;
+            if (!countedBefore && (state.hasStandingIntent || !state.ownedStrategies.empty()))
+                g_standingBots.fetch_add(1, std::memory_order_relaxed);
         }
     }
 }

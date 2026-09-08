@@ -286,10 +286,26 @@ func TestRuleLadder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Plan returned an error: %v", err)
 			}
-			if len(intents) != 1 {
-				t.Fatalf("got %d intents, want exactly 1 (the rule planner always answers)", len(intents))
+			// Exactly one ERRAND, plus at most one standing condition. The
+			// two are different things and they are allowed to travel
+			// together: set_strategies states what should be true of the bot
+			// until the brain says otherwise, and if it had to compete for the
+			// bot's one intent it would starve every rung of this ladder.
+			var errands, standing []contract.Intent
+			for _, in := range intents {
+				if in.Kind == contract.IntentSetStrategies {
+					standing = append(standing, in)
+					continue
+				}
+				errands = append(errands, in)
 			}
-			got := intents[0]
+			if len(errands) != 1 {
+				t.Fatalf("got %d errand intents, want exactly 1 (the rule planner always answers)", len(errands))
+			}
+			if len(standing) > 1 {
+				t.Fatalf("got %d set_strategies intents for one bot; a bot has one strategy set, not several", len(standing))
+			}
+			got := errands[0]
 			if got.Kind != tc.wantKind {
 				t.Fatalf("kind = %q, want %q (%s); rationale was %q", got.Kind, tc.wantKind, tc.why, got.Rationale)
 			}

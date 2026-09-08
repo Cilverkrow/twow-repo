@@ -79,9 +79,18 @@ import (
 //
 // If #265 is closed unmerged, this must become 3 (and with it kContractMinor
 // and all three golden fixtures) rather than leaving a permanent hole.
+//
+// 1.6 adds [IntentSetStrategies].
+//
+// It takes 1.6 and not 1.5 deliberately. main is at 1.4; PR #265 is open and
+// still declares 1.3, which is stale and becomes 1.5 before it merges. Skipping
+// a number is free -- [Negotiate] compares minors, it never enumerates them --
+// and reusing one is not recoverable: two different wire shapes would both call
+// themselves 1.5 and no peer could tell which it was talking to. If #265 closes
+// unmerged, this renumbers down to 1.5.
 const (
 	VersionMajor = 1
-	VersionMinor = 4
+	VersionMinor = 6
 )
 
 // Version is the canonical "MAJOR.MINOR" string carried on every request and

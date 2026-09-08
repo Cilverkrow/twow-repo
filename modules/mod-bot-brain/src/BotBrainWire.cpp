@@ -8,7 +8,16 @@
 
 namespace botbrain
 {
-    char const* const kContractVersion = "1.0";
+    // Built from BOT_BRAIN_CONTRACT_MAJOR/MINOR in the header rather than
+    // written out a third time. See the comment there: this literal read "1.0"
+    // while the constants said 1.4, and nothing failed loudly enough for anyone
+    // to notice.
+#define BOT_BRAIN_STRINGIFY2(x) #x
+#define BOT_BRAIN_STRINGIFY(x) BOT_BRAIN_STRINGIFY2(x)
+    char const* const kContractVersion =
+        BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MAJOR) "." BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MINOR);
+#undef BOT_BRAIN_STRINGIFY
+#undef BOT_BRAIN_STRINGIFY2
 
     char const* const kIntentIdle = "idle";
     char const* const kIntentTravelTo = "travel_to";
@@ -20,13 +29,47 @@ namespace botbrain
     char const* const kIntentTurnInQuest = "turn_in_quest";
     char const* const kIntentAbandonQuest = "abandon_quest";
     char const* const kIntentVisitTrainer = "visit_trainer";
+    char const* const kIntentSetStrategies = "set_strategies";
+
+    char const* const kBotStateCombat = "combat";
+    char const* const kBotStateNonCombat = "non_combat";
+    char const* const kBotStateDead = "dead";
+    char const* const kBotStateReaction = "reaction";
 
     bool IsKnownIntentKind(std::string const& kind)
     {
         return kind == kIntentIdle || kind == kIntentTravelTo || kind == kIntentGrindArea ||
                kind == kIntentVendorSell || kind == kIntentRepair || kind == kIntentRest ||
                kind == kIntentPickQuest || kind == kIntentTurnInQuest || kind == kIntentAbandonQuest ||
-               kind == kIntentVisitTrainer;
+               kind == kIntentVisitTrainer || kind == kIntentSetStrategies;
+    }
+
+    bool IsKnownBotState(std::string const& state)
+    {
+        return state == kBotStateCombat || state == kBotStateNonCombat ||
+               state == kBotStateDead || state == kBotStateReaction;
+    }
+
+    bool IsPossibleStrategyName(std::string const& name)
+    {
+        if (name.empty() || name.size() > kMaxStrategyNameBytes)
+            return false;
+        if (name.front() == ' ' || name.back() == ' ')
+            return false;
+        for (std::size_t i = 0; i < name.size(); ++i)
+        {
+            char const c = name[i];
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
+                continue;
+            if (c == ' ')
+            {
+                if (i > 0 && name[i - 1] == ' ')
+                    return false;
+                continue;
+            }
+            return false;
+        }
+        return true;
     }
 
     bool IsPoiDirectedKind(std::string const& kind)
@@ -62,7 +105,16 @@ namespace botbrain
         // So the honest answer is that this build cannot carry the kind out, and
         // the planner is told so with "unsupported_kind" rather than being lied
         // to with a completion.
-        return kind == kIntentRest;
+        //
+        // set_strategies is applied where the bot stands too, but by the
+        // reconciler rather than by BotBrainApplyAction -- see IsStandingKind,
+        // which is a subset of this one and not a rival to it.
+        return kind == kIntentRest || kind == kIntentSetStrategies;
+    }
+
+    bool IsStandingKind(std::string const& kind)
+    {
+        return kind == kIntentSetStrategies;
     }
 
     bool ValidateSnapshot(Snapshot const& s, std::string& error)
@@ -490,6 +542,67 @@ namespace botbrain
                 intent.hasQuest = true;
                 intent.questId = static_cast<uint32_t>(GetUint64(quest->value, "quest_id", 0));
             }
+
+            rapidjson::Value::ConstMemberIterator strat = it->FindMember("strategies");
+            if (strat != it->MemberEnd() && strat->value.IsObject())
+            {
+                rapidjson::Value::ConstMemberIterator changes = strat->value.FindMember("changes");
+                if (changes != strat->value.MemberEnd() && changes->value.IsArray())
+                {
+                    for (rapidjson::Value::ConstValueIterator c = changes->value.Begin();
+                         c != changes->value.End(); ++c)
+                    {
+                        if (!c->IsObject())
+                            continue;
+
+                        StrategyChange change;
+                        change.name = GetString(*c, "name");
+                        change.state = GetString(*c, "state");
+                        rapidjson::Value::ConstMemberIterator en = c->FindMember("enable");
+                        change.enable = en != c->MemberEnd() && en->value.IsBool() && en->value.GetBool();
+
+                        // Dropped one entry at a time, not by failing the
+                        // intent. This is the same rule as for unknown intent
+                        // kinds and for the same reason: a newer brain naming a
+                        // bot state or a name shape this build has never heard
+                        // of must cost that one change, never the rest of a set
+                        // the server does understand.
+                        //
+                        // Existence is NOT checked here. Only the live
+                        // AiObjectContext knows which strategies this build
+                        // registers, and this file is not allowed to include a
+                        // playerbot header. The applier does that check.
+                        if (!IsPossibleStrategyName(change.name) || !IsKnownBotState(change.state))
+                            continue;
+                        if (intent.strategies.size() >= kMaxStrategyChanges)
+                            break;
+
+                        // Last writer would otherwise win on a duplicated
+                        // (name, state), and which one that is depends on
+                        // array order -- so a set with no single meaning would
+                        // be applied with an arbitrary one. Keep the first and
+                        // drop the rest, deterministically.
+                        bool duplicate = false;
+                        for (StrategyChange const& seen : intent.strategies)
+                        {
+                            if (seen.name == change.name && seen.state == change.state)
+                            {
+                                duplicate = true;
+                                break;
+                            }
+                        }
+                        if (!duplicate)
+                            intent.strategies.push_back(change);
+                    }
+                }
+            }
+
+            // A set_strategies that survived the filtering above with nothing
+            // left names no work. Dropping it here rather than downstream keeps
+            // the applier's contract simple: a standing intent it is handed
+            // always has at least one change in it.
+            if (intent.kind == kIntentSetStrategies && intent.strategies.empty())
+                continue;
 
             intent.priority = static_cast<int32_t>(GetInt64(*it, "priority", 0));
             intent.confidence = GetDouble(*it, "confidence", 0.0);

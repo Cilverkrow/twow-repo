@@ -38,10 +38,22 @@
 namespace botbrain
 {
     // The contract version this build speaks. Must track
-    // services/bot-brain/contract/version.go (VersionMajor.VersionMinor).
+    // services/bot-brain/contract/version.go (VersionMajor.VersionMinor);
+    // ops/ci/check-contract-version.sh enforces that from outside.
+    //
+    // Declared as macros so the "MAJOR.MINOR" string can be BUILT from them
+    // rather than written out a third time. It used to be written out, and it
+    // had drifted: kContractVersion read "1.0" while kContractMinor said 4, so
+    // every plan request went out claiming a vocabulary four minors behind the
+    // one this build speaks. Nothing failed -- Negotiate() serves an older peer
+    // happily and stamps the reply back down -- which is exactly why nobody
+    // noticed. A macro cannot drift from itself.
+#define BOT_BRAIN_CONTRACT_MAJOR 1
+#define BOT_BRAIN_CONTRACT_MINOR 6
+
     extern char const* const kContractVersion;
-    int constexpr kContractMajor = 1;
-    int constexpr kContractMinor = 4;
+    int constexpr kContractMajor = BOT_BRAIN_CONTRACT_MAJOR;
+    int constexpr kContractMinor = BOT_BRAIN_CONTRACT_MINOR;
 
     // Intent kinds this build understands. Anything else is dropped silently.
     extern char const* const kIntentIdle;
@@ -54,6 +66,7 @@ namespace botbrain
     extern char const* const kIntentTurnInQuest;
     extern char const* const kIntentAbandonQuest;
     extern char const* const kIntentVisitTrainer;
+    extern char const* const kIntentSetStrategies;
 
     bool IsKnownIntentKind(std::string const& kind);
 
@@ -79,6 +92,64 @@ namespace botbrain
     // written; `idle` will never join it, because doing nothing is what the bot
     // does when no intent applies at all.
     bool IsAppliedKind(std::string const& kind);
+
+    // A STANDING kind: applied where the bot stands, like the other applied
+    // kinds, but by the reconciler in BotBrainPipeline rather than by
+    // BotBrainApplyAction -- and it is a SUBSET of IsAppliedKind, never a
+    // fourth disjoint class.
+    //
+    // The distinction is not bookkeeping. Every other kind is an errand: it is
+    // offered once, carried out or refused once, and reported once. A strategy
+    // set is a CONDITION -- it states what should be true of the bot until the
+    // brain says otherwise -- and the brain re-sends it every planning cycle
+    // because PlayerbotAI::ResetStrategies wipes the whole set from a dozen
+    // call sites and restores nothing for a free random bot
+    // (its restore is gated on HasPlayerRelation(), which is false for the
+    // entire population this module plans for).
+    //
+    // That is why it cannot share the single pending-intent slot with the
+    // errands. A bot whose brain re-asserts strategies every cycle would
+    // otherwise never have room for a travel_to again: the strategy intent
+    // would evict it, every time, forever. So the pipeline keeps a second slot
+    // for standing kinds and BotBrainApplyAction never sees them.
+    bool IsStandingKind(std::string const& kind);
+
+    // ---------------------------------------------------------------------
+    // set_strategies
+    // ---------------------------------------------------------------------
+    //
+    // Bot states, by NAME. The enum next door is BotState in
+    // core/modules/mod-playerbots/src/playerbot/BotState.h and its ordinals are
+    // deliberately not what travels: upstream inserting a value would silently
+    // repoint every change at a different engine.
+    extern char const* const kBotStateCombat;
+    extern char const* const kBotStateNonCombat;
+    extern char const* const kBotStateDead;
+    extern char const* const kBotStateReaction;
+
+    bool IsKnownBotState(std::string const& state);
+
+    // Mirrors contract.MaxStrategyChanges / MaxStrategyNameBytes.
+    std::size_t constexpr kMaxStrategyChanges = 16;
+    std::size_t constexpr kMaxStrategyNameBytes = 64;
+
+    // Mirrors contract.ValidStrategyName, and it is a SAFETY check before it is
+    // a tidiness one. PlayerbotAI::ChangeStrategy takes one string, splits it
+    // on ',' and reads the first byte of each part as the operator ('+', '-',
+    // '~'). A name carrying a comma would smuggle in a second directive nobody
+    // reviewed; one starting with an operator would invert the entry. Neither
+    // gets past here, and neither reaches ChangeStrategy.
+    //
+    // It does NOT check that the strategy exists -- only the live
+    // AiObjectContext knows that, and the applier asks it.
+    bool IsPossibleStrategyName(std::string const& name);
+
+    struct StrategyChange
+    {
+        std::string name;    // in-core strategy name, e.g. "grind"
+        std::string state;   // one of the kBotState* above
+        bool enable = false;
+    };
 
     struct BotId
     {
@@ -181,7 +252,11 @@ namespace botbrain
         std::string kind;
         std::string result;              // "accepted" | "completed" | "rejected" | "failed" | "expired"
         // "unreachable" | "stale_poi" | "unknown_poi" | "unsupported_kind" |
-        // "action_refused". The last means the intent was attempted where the bot
+        // "action_refused" | "unknown_strategy". The last is set_strategies'
+        // own: a name this build does not register, dropped rather than passed
+        // through to an engine that would ignore it silently.
+        //
+        // "action_refused" means the intent was attempted where the bot
         // stood and the in-core action declined -- "not now", as against
         // "unsupported_kind" which means nothing tried at all and never will.
         std::string reason;
@@ -228,6 +303,12 @@ namespace botbrain
         double stopWithinYards = 0.0;
         bool hasQuest = false;
         uint32_t questId = 0;
+
+        // Set only for kIntentSetStrategies; empty for every other kind. An
+        // empty set on a set_strategies is REFUSED rather than read as "clear
+        // everything": this module never takes ownership of a bot's whole
+        // strategy set, only of the names it is asked about.
+        std::vector<StrategyChange> strategies;
         int32_t priority = 0;
         double confidence = 0.0;         // 0..1, unlike the percentages
         int64_t expiresAtMs = 0;
