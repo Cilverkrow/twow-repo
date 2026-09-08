@@ -4,8 +4,13 @@ Operational follow-up is maintained in [Open project threads](../OPEN-THREADS.md
 
 ## Accepted decisions
 
-The accepted durable decisions are recorded by **ADR-0001 through ADR-0030**, **ADR-0038** through **ADR-0040**, minus the
+The accepted durable decisions are recorded by **ADR-0001 through ADR-0031**, **ADR-0038** through **ADR-0040**, minus the
 supersessions listed at the bottom of this page.
+
+**ADR-0031 states the project's goal**, which until now was not written down anywhere -- it existed
+only as four partial statements in documents that do not reference each other, one of which two other
+documents disavow. It is Proposed rather than Accepted because what the project is *for* is the
+owner's to accept; the draft exists to make the gap visible and offer specific words to argue with.
 
 **ADR-0001 to ADR-0019** cover project governance, evidence authority, chat-history
 policy, repository boundaries, provenance, modularization, operational ownership,
@@ -29,6 +34,7 @@ this register until 2026-09-02:
 | ADR-0028 | Linux and Docker are the deployment platform; Windows is compile-only | Accepted (amended 2026-09-02: Windows CI disabled) |
 | ADR-0029 | Work tracking: reviewable issue manifests in `docs/issues/` drive the GitHub tracker | Proposed |
 | ADR-0030 | A narrowly bounded local MariaDB loopback plaintext client transport profile | Accepted |
+| ADR-0031 | What this project is for: a bot population indistinguishable from a living one, planned out of process, never at the cost of losing a bot | Proposed |
 | ADR-0038 | Version shared server configuration and deploy it with provenance | Accepted |
 | ADR-0039 | Out-of-process bot planning, with a stored-UUID identity and a `cv_brain` store | Accepted |
 | ADR-0040 | Module ownership: upstream-tracked modules stay in core; only code we wrote lives in the platform | Accepted |
