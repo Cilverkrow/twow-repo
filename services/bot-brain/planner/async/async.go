@@ -29,6 +29,7 @@ package async
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -67,6 +68,15 @@ type Planner struct {
 	// newer one, and holding both would mean serving a stale plan first and the
 	// fresh one a tick later.
 	ready map[contract.BotID]contract.Intent
+	// lastAsked is when each bot was last handed to the model, in the
+	// server's clock. It is what makes attention FAIR.
+	//
+	// Without it the round was the first N of the batch, and the worldserver
+	// sends bots in a stable order -- so the same sixteen bots received every
+	// inference the service ever performed and the rest of the population was
+	// never planned for by the model at all. That is invisible from outside:
+	// the metrics show inference happening, at the configured rate, forever.
+	lastAsked map[contract.BotID]int64
 	// inFlight marks bots already queued, so a bot is not asked about twice
 	// while the model is still thinking about it. Without this, a bot that the
 	// model is slow on gets re-queued on every tick and crowds out every other
@@ -108,11 +118,12 @@ func New(slow planner.Planner, opts Options) *Planner {
 	}
 
 	p := &Planner{
-		slow:     slow,
-		opts:     opts,
-		queue:    make(chan []contract.Snapshot, opts.QueueDepth),
-		ready:    make(map[contract.BotID]contract.Intent),
-		inFlight: make(map[contract.BotID]bool),
+		slow:      slow,
+		opts:      opts,
+		queue:     make(chan []contract.Snapshot, opts.QueueDepth),
+		ready:     make(map[contract.BotID]contract.Intent),
+		inFlight:  make(map[contract.BotID]bool),
+		lastAsked: make(map[contract.BotID]int64),
 	}
 	p.wg.Add(1)
 	go p.run()
@@ -187,27 +198,52 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 	}
 	p.mu.Unlock()
 
-	p.enqueue(askAbout)
+	p.enqueue(askAbout, now)
 	return out, nil
 }
 
-// enqueue hands a round to the background worker, newest snapshots winning.
-func (p *Planner) enqueue(snaps []contract.Snapshot) {
+// enqueue hands a round to the background worker, choosing who gets asked.
+func (p *Planner) enqueue(snaps []contract.Snapshot, now int64) {
 	if len(snaps) == 0 {
 		return
 	}
+
+	p.mu.Lock()
 	if n := p.opts.MaxBotsPerRound; n > 0 && len(snaps) > n {
-		// Truncation is deliberate and the remainder is NOT carried over: the
-		// bots left out are asked about on the next tick with a fresher
-		// snapshot, which is better than planning them now from one that will
-		// be stale by the time the model answers.
+		// LEAST RECENTLY ASKED first, not the first N of the batch.
+		//
+		// The batch arrives in a stable order, so taking a prefix means the same
+		// bots are chosen every single time and everyone else is never planned
+		// for by the model. Sorting by when each bot was last asked spreads the
+		// budget across the population instead: a bot that has never been asked
+		// sorts first (zero), and one asked a moment ago sorts last.
+		//
+		// Stable sort with the bot id as the tie-break, so a tie -- which is the
+		// normal case on the first tick, when nobody has been asked -- resolves
+		// the same way every run rather than by map iteration order.
+		sort.SliceStable(snaps, func(a, b int) bool {
+			la, lb := p.lastAsked[snaps[a].Bot], p.lastAsked[snaps[b].Bot]
+			if la != lb {
+				return la < lb
+			}
+			if snaps[a].Bot.Realm != snaps[b].Bot.Realm {
+				return snaps[a].Bot.Realm < snaps[b].Bot.Realm
+			}
+			return snaps[a].Bot.GUID < snaps[b].Bot.GUID
+		})
+		// The remainder is NOT carried over: those bots are asked on a later
+		// tick with a fresher snapshot, which beats planning them now from one
+		// that will be stale by the time the model answers.
 		snaps = snaps[:n]
 	}
 
-	p.mu.Lock()
 	for i := range snaps {
 		p.inFlight[snaps[i].Bot] = true
+		if now > 0 {
+			p.lastAsked[snaps[i].Bot] = now
+		}
 	}
+	p.forgetDepartedLocked(now)
 	p.mu.Unlock()
 
 	select {
@@ -224,6 +260,10 @@ func (p *Planner) enqueue(snaps []contract.Snapshot) {
 		for i := range snaps {
 			delete(p.inFlight, snaps[i].Bot)
 		}
+		// lastAsked is deliberately NOT rolled back. The bot was chosen fairly
+		// and lost to a full queue; rewinding it would make the same bot win
+		// the next round too, and a permanently busy worker would starve the
+		// population exactly as the old prefix did.
 		p.mu.Unlock()
 	}
 }
@@ -271,6 +311,35 @@ func (p *Planner) round(snaps []contract.Snapshot) {
 		p.opts.OnError(err)
 	}
 }
+
+// forgetDepartedLocked bounds lastAsked. Caller holds the mutex.
+//
+// The map grows with every bot ever seen, and bots log out, change realm or are
+// deleted -- so without this it is a slow leak keyed by something that never
+// comes back. Entries are dropped once they are older than the window, which
+// costs a bot its place in the queue at worst: it sorts first next time, which
+// is exactly what a bot nobody has asked about in an hour deserves.
+func (p *Planner) forgetDepartedLocked(now int64) {
+	if now <= 0 || len(p.lastAsked) <= lastAskedSoftLimit {
+		return
+	}
+	for bot, at := range p.lastAsked {
+		if now-at > lastAskedRetentionMS {
+			delete(p.lastAsked, bot)
+		}
+	}
+}
+
+const (
+	// lastAskedSoftLimit is when pruning starts. Comfortably above any realistic
+	// bot population, so the scan is rare rather than per-tick.
+	lastAskedSoftLimit = 8192
+	// lastAskedRetentionMS is how long a bot is remembered after it was last
+	// asked about. An hour: long enough that a bot logging out and back in keeps
+	// its place, short enough that a departed one does not linger for the life
+	// of the process.
+	lastAskedRetentionMS = 60 * 60 * 1000
+)
 
 // Stats returns a snapshot of the counters.
 func (p *Planner) Stats() Stats {
