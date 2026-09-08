@@ -191,6 +191,8 @@ func run() error {
 			asyncP = async.New(llmP, async.Options{
 				MaxBotsPerRound: cfg.LLM.MaxBotsPerCall,
 				Timeout:         cfg.LLMAsyncTimeout,
+				MaxAttempts:     cfg.LLMMaxAttempts,
+				MinInterval:     cfg.LLMMinInterval,
 				OnError: func(err error) {
 					log.Warn("background inference round failed", "err", err)
 				},

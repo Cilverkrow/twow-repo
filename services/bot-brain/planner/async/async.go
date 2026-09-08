@@ -35,6 +35,7 @@ import (
 
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/contract"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/llm"
 )
 
 // Options configures a [Planner].
@@ -47,6 +48,14 @@ type Options struct {
 	Timeout time.Duration
 	// QueueDepth bounds rounds waiting to be planned. Zero means 4.
 	QueueDepth int
+	// MaxAttempts bounds tries per round when the provider says "later".
+	// Zero means 3. One disables retrying.
+	MaxAttempts int
+	// MinInterval is the floor between background calls -- a rate limit
+	// expressed as spacing rather than as a bucket, because rounds are already
+	// the unit of calling and one knob is easier to reason about than three.
+	// Zero means no floor.
+	MinInterval time.Duration
 	// OnError reports a failed background call. Nil means silence.
 	OnError func(error)
 	// Now is injectable for tests. Nil means time.Now.
@@ -99,6 +108,12 @@ type Stats struct {
 	Queued uint64
 	// Dropped is rounds refused because the queue was full.
 	Dropped uint64
+	// Retried is attempts made after a provider asked us to wait. Rising with
+	// no matching rise in Served means the endpoint is rate limiting harder
+	// than this lane can absorb.
+	Retried uint64
+	// Throttled is rounds delayed by MinInterval.
+	Throttled uint64
 }
 
 // New wraps a slow planner. A nil slow planner yields nil, which callers may
@@ -109,6 +124,9 @@ func New(slow planner.Planner, opts Options) *Planner {
 	}
 	if opts.Timeout <= 0 {
 		opts.Timeout = 30 * time.Second
+	}
+	if opts.MaxAttempts <= 0 {
+		opts.MaxAttempts = 3
 	}
 	if opts.QueueDepth <= 0 {
 		opts.QueueDepth = 4
@@ -270,10 +288,87 @@ func (p *Planner) enqueue(snaps []contract.Snapshot, now int64) {
 
 func (p *Planner) run() {
 	defer p.wg.Done()
+	var last time.Time
 	for snaps := range p.queue {
+		// Spacing is applied HERE rather than at enqueue, so a rate limit delays
+		// inference without delaying the caller: Plan has already returned by
+		// the time this waits.
+		if p.opts.MinInterval > 0 && !last.IsZero() {
+			if wait := p.opts.MinInterval - p.opts.Now().Sub(last); wait > 0 {
+				p.mu.Lock()
+				p.stats.Throttled++
+				p.mu.Unlock()
+				time.Sleep(wait)
+			}
+		}
+		last = p.opts.Now()
 		p.round(snaps)
 	}
 }
+
+// attempt calls the slow planner, waiting out a provider that asked us to.
+//
+// Retrying is affordable HERE and nowhere else. The planner refuses to retry
+// inside a call that may be racing a tick, because the deterministic fallback
+// needs the remaining budget -- but this runs between ticks with a timeout of
+// its own, so the only thing a wait costs is one round arriving later, which is
+// the trade this whole lane already makes.
+//
+// Only a provider's own "later" is retried. A 400, a bad key or a missing model
+// fails identically forever, and retrying those turns one mistake into a stream
+// of them -- billed, on a metered endpoint.
+func (p *Planner) attempt(ctx context.Context, req planner.Request) ([]contract.Intent, error) {
+	var lastErr error
+	for attempt := 0; attempt < p.opts.MaxAttempts; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				// The round's own deadline. Returning the provider's error
+				// rather than the context's keeps the log's reason the thing
+				// that actually went wrong.
+				return nil, lastErr
+			case <-time.After(backoff(attempt, llm.RetryAfter(lastErr))):
+			}
+			p.mu.Lock()
+			p.stats.Retried++
+			p.mu.Unlock()
+		}
+
+		intents, err := p.slow.Plan(ctx, req)
+		if err == nil || !llm.Retryable(err) {
+			return intents, err
+		}
+		lastErr = err
+	}
+	return nil, lastErr
+}
+
+// backoff is how long to wait before trying again.
+//
+// The provider's instruction wins whenever it gave one. A backoff of our own
+// choosing that is shorter than what it asked for is how a rate limit becomes a
+// ban, and it is the one number here we have no business guessing at.
+func backoff(attempt int, requested time.Duration) time.Duration {
+	if requested > 0 {
+		if requested > maxBackoff {
+			return maxBackoff
+		}
+		return requested
+	}
+	// Otherwise double from a second, capped. Not jittered: this is one process
+	// making one call at a time, so there is no herd to spread, and unjittered
+	// backoff is easier to follow in a log.
+	d := time.Second << (attempt - 1)
+	if d > maxBackoff {
+		return maxBackoff
+	}
+	return d
+}
+
+// maxBackoff bounds a wait, including one the provider asked for. A round that
+// sat for ten minutes would answer from a snapshot the world has long since
+// moved past, and its intent would expire unused anyway.
+const maxBackoff = 30 * time.Second
 
 func (p *Planner) round(snaps []contract.Snapshot) {
 	// Background context, not a request's: this work outlives the request that
@@ -289,7 +384,7 @@ func (p *Planner) round(snaps []contract.Snapshot) {
 		ServerNowMS: serverNow(snaps),
 		IntentTTLMS: intentTTL(snaps),
 	}
-	intents, err := p.slow.Plan(ctx, req)
+	intents, err := p.attempt(ctx, req)
 
 	p.mu.Lock()
 	for i := range snaps {

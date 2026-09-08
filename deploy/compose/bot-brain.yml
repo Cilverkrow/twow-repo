@@ -147,6 +147,23 @@ services:
       # Bounds one background call. May be generous: it is not inside a tick.
       BOT_BRAIN_LLM_ASYNC_TIMEOUT: ${BOT_BRAIN_LLM_ASYNC_TIMEOUT:-30s}
 
+      # Retry and rate limiting, and they apply ONLY to the async lane.
+      #
+      # A call that races a tick still never retries -- the deterministic
+      # fallback needs the remaining budget, which is why the planner refuses.
+      # Between ticks there is no budget to protect, so a provider that says
+      # "later" can simply be waited out. Only 429 and 5xx are retried: a 400, a
+      # bad key or a missing model fails identically forever, and retrying those
+      # turns one mistake into a billed stream of them.
+      #
+      # The provider's own Retry-After always wins when it sends one. Choosing a
+      # shorter wait than it asked for is how a rate limit becomes a ban.
+      BOT_BRAIN_LLM_MAX_ATTEMPTS: ${BOT_BRAIN_LLM_MAX_ATTEMPTS:-3}
+      # A floor between background calls, for a metered endpoint with a
+      # requests-per-minute limit. Empty means no floor, which is right for a
+      # local endpoint that bills nothing.
+      BOT_BRAIN_LLM_MIN_INTERVAL: ${BOT_BRAIN_LLM_MIN_INTERVAL:-}
+
     ports:
       # Loopback by default. This endpoint takes unauthenticated POSTs that
       # drive bot behaviour; it belongs on a private network, not on a public
