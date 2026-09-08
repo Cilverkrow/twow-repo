@@ -461,13 +461,38 @@ func (p *Planner) parseIntents(content string, batch []contract.Snapshot, expiry
 	if jsonText == "" {
 		return nil
 	}
-	var reply modelReply
+	// The ENVELOPE is parsed loosely and the INTENTS strictly, and the split is
+	// the whole point.
+	//
+	// Loose outside, because the shape out there is not ours: providers add
+	// fields (id, object, created, model, system_fingerprint), choices carry
+	// index and finish_reason, and models wrap answers in markdown fences. The
+	// PoC decoder rejects every one of those, which is correct for a fixture and
+	// would reject every real provider response in production -- POC.md says so
+	// itself: "not compatibility certification for a real provider envelope".
+	//
+	// Strict inside, because the intent objects ARE ours. We publish that schema
+	// in the system prompt, so an unknown field, a duplicate key or a
+	// case-variant one is not a provider being generous -- it is the model
+	// answering a question we did not ask, and encoding/json would silently
+	// accept all three.
+	var reply struct {
+		Intents []json.RawMessage `json:"intents"`
+	}
 	if err := json.Unmarshal([]byte(jsonText), &reply); err != nil {
 		return nil
 	}
 	seen := make(map[int]bool, len(reply.Intents))
 	out := make([]contract.Intent, 0, len(reply.Intents))
-	for _, mi := range reply.Intents {
+	for _, rawIntent := range reply.Intents {
+		mi, ok := strictIntent(rawIntent)
+		if !ok {
+			// One intent dropped, not the batch. A model that adds a field to
+			// one entry should cost that bot its plan, not every bot in the
+			// call -- the rule planner covers whoever is left, and that is a
+			// far better outcome than an all-or-nothing reply.
+			continue
+		}
 		if mi.Bot < 0 || mi.Bot >= len(batch) || seen[mi.Bot] {
 			continue
 		}
@@ -495,7 +520,11 @@ func validate(mi modelIntent, s *contract.Snapshot) (contract.Intent, bool) {
 	}
 	certainty := mi.Certainty
 	if certainty < 0 || certainty > 1 {
-		certainty = 0.5
+		// Rejected, not clamped. A model that reports 5 or -1 has misunderstood
+		// the scale it was asked for, and 0.5 is a number nobody produced --
+		// inventing one launders a broken answer into a plausible-looking plan
+		// and hides the misunderstanding from every metric downstream.
+		return contract.Intent{}, false
 	}
 	in := contract.Intent{
 		Bot:        s.Bot, // never from the model; always from what we sent.
