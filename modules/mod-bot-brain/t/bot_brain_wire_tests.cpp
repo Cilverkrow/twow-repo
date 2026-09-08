@@ -61,7 +61,12 @@ namespace
 
 #define CHECK(cond) Check((cond), #cond, __LINE__)
 
-    bool Contains(std::string const& haystack, char const* needle)
+    // The needle is std::string const&, not char const*, so an assertion can be
+    // BUILT rather than spelled out. A helper that only accepts literals quietly
+    // pushes every assertion towards a hardcoded value -- which is how the
+    // contract_version check came to assert "1.0" long after the encoder had
+    // moved on. Literals still convert, so every existing call site is unchanged.
+    bool Contains(std::string const& haystack, std::string const& needle)
     {
         return haystack.find(needle) != std::string::npos;
     }
@@ -145,7 +150,16 @@ namespace
     {
         std::string const json = botbrain::EncodePlanRequest(SampleRequest());
 
-        CHECK(Contains(json, "\"contract_version\":\"1.0\""));
+        // Derived, not spelled out. This line read "1.0" for as long as the
+        // encoder did, so it confirmed the bug it was meant to catch: the wire
+        // said 1.0 while kContractMinor had moved on four times, and the service
+        // negotiated a client four minors stale without anything failing.
+        //
+        // Comparing against the constants means the assertion cannot drift from
+        // them again -- a hand-written version here is a second place to be
+        // wrong, which is exactly how it went wrong the first time.
+        CHECK(Contains(json, std::string("\"contract_version\":\"") +
+                             botbrain::kContractVersion + "\""));
         CHECK(Contains(json, "\"snapshots\":["));
 
         // The array is "pois". A "poi" key here would be silently ignored by
