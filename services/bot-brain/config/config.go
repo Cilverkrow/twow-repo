@@ -57,6 +57,21 @@ type Config struct {
 	LLM llm.Config
 	// LogLevel is "debug", "info" or "warn".
 	LogLevel string
+	// LLMAsync runs inference OFF the planning tick.
+	//
+	// The default is false because it changes when a model's answer arrives, not
+	// merely how fast: an intent planned now may be applied several ticks later,
+	// or expire unused. That is the right trade for a slow local endpoint and the
+	// wrong one for a fast hosted one, so it is a decision an operator makes
+	// rather than a mode the service picks.
+	//
+	// Turn it on when the endpoint cannot answer inside BOT_BRAIN_LLM_TIMEOUT.
+	// LLM-011 measured a local 7B on CPU at about eight seconds against a 1500ms
+	// default -- with it off, such a backend never wins a single batch.
+	LLMAsync bool
+	// LLMAsyncTimeout bounds one background inference call. It may be generous:
+	// it is not inside anyone's tick.
+	LLMAsyncTimeout time.Duration
 	// TraitDSN points at cv_brain, where traits that have CHANGED are stored.
 	//
 	// Empty means no store, and that is a supported mode rather than a broken
@@ -108,6 +123,8 @@ func Load(getenv func(string) string) (Config, error) {
 		ShutdownGrace:   e.dur("BOT_BRAIN_SHUTDOWN_GRACE", 10*time.Second),
 		LogLevel:        e.str("BOT_BRAIN_LOG_LEVEL", "info"),
 		TraitDSN:        e.str("BOT_BRAIN_TRAIT_DSN", ""),
+		LLMAsync:        e.boolean("BOT_BRAIN_LLM_ASYNC", false),
+		LLMAsyncTimeout: e.dur("BOT_BRAIN_LLM_ASYNC_TIMEOUT", 30*time.Second),
 		MaxBodyBytes:    int64(e.num("BOT_BRAIN_MAX_BODY_BYTES", contract.DefaultMaxBodyBytes)),
 		Rule: rule.Thresholds{
 			RestBelowHealthPct:           e.flt("BOT_BRAIN_RULE_REST_BELOW_HP_PCT", 45),

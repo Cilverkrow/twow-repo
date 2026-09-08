@@ -23,6 +23,7 @@ import (
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/httpapi"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/metrics"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/async"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/identity/mysqlstore"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/llm"
@@ -71,6 +72,9 @@ func run() error {
 	// Nil unless a store is configured; httpapi treats that as "do not keep
 	// observations", which is the mode the service runs in without a database.
 	var memoryRecorder memory.Recorder
+	// Non-nil only when inference runs off the tick; stopped on shutdown so a
+	// round in flight is not abandoned mid-call.
+	var asyncP *async.Planner
 	ruleP := rule.New(cfg.Rule)
 
 	// Per-bot identity. Without a DSN the resolver is nil, traits come from the
@@ -179,8 +183,23 @@ func run() error {
 		// says so loudly.
 		log.Error("llm planner misconfigured; planning with rules only", "err", llmErr)
 	default:
+		// The primary the fallback sees. With async on it is a lane that
+		// serves what the model decided on earlier ticks and never blocks;
+		// with it off the model races the tick, as before.
+		var primary planner.Planner = llmP
+		if cfg.LLMAsync {
+			asyncP = async.New(llmP, async.Options{
+				MaxBotsPerRound: cfg.LLM.MaxBotsPerCall,
+				Timeout:         cfg.LLMAsyncTimeout,
+				OnError: func(err error) {
+					log.Warn("background inference round failed", "err", err)
+				},
+			})
+			defer asyncP.Stop()
+			primary = asyncP
+		}
 		fb = &planner.Fallback{
-			Primary:   llmP,
+			Primary:   primary,
 			Secondary: ruleP,
 			Timeout:   cfg.LLM.Timeout,
 			OnFallback: func(count int, reason string) {
@@ -197,7 +216,11 @@ func run() error {
 			"model", cfg.LLM.Model,
 			"provider", cfg.LLM.Provider,
 			"timeout", cfg.LLM.Timeout,
-			"api_key_set", cfg.LLM.APIKey != "")
+			"api_key_set", cfg.LLM.APIKey != "",
+			// Named so the log answers "why is the model never used" and "why
+			// did that intent arrive three ticks late" without a reader having
+			// to know this flag exists.
+			"async", cfg.LLMAsync)
 	}
 
 	srv := httpapi.New(httpapi.Options{
