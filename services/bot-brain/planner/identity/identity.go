@@ -41,6 +41,15 @@ type Traits struct {
 	// propose, because that bound exists for a server-load reason that has
 	// nothing to do with personality.
 	Boldness float64
+
+	// Learned reports that this profile came from what happened to this bot,
+	// not from what it was born as. It is set when a stored trait row overlays
+	// the derived value.
+	//
+	// It exists so [ApplyKeys] can stand down: a personality key is a statement
+	// about a bot before it has been anywhere, and it must not keep nudging a
+	// value that observation has already corrected.
+	Learned bool
 }
 
 // Neutral is the profile of a bot with no minted identity.

@@ -140,7 +140,12 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 			return out, ctx.Err()
 		default:
 		}
-		in := p.planOne(&req.Snapshots[i], traits[req.Snapshots[i].Bot.UUID],
+		// Personality is folded in here rather than inside Resolve, because the
+		// keys travel on the snapshot: they are assigned by the worldserver from
+		// race, class and profession, and the resolver only ever sees UUIDs.
+		tr := identity.ApplyKeys(traits[req.Snapshots[i].Bot.UUID],
+			req.Snapshots[i].Char.TraitKeys)
+		in := p.planOne(&req.Snapshots[i], tr,
 			histories[req.Snapshots[i].Bot.UUID])
 		in.ExpiresAtMS = expiry
 		if err := in.Validate(); err != nil {
