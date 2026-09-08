@@ -55,6 +55,16 @@ const (
 	// IntentRest: eat, drink or sit until recovered. Cheap and always
 	// available; the fallback answer for a hurt bot with nowhere useful to go.
 	IntentRest IntentKind = "rest"
+
+	// IntentVisitTrainer: travel to a "trainer" POI and learn what that trainer
+	// will teach. The answer to a bot whose ranks have fallen behind its level.
+	//
+	// It buys spells; it does not buy professions. The server routes the arrival
+	// through the action that refuses tradeskill trainers, because twow-core#78
+	// made a profession a versioned, GUID-bound PLAN and that plan owns its own
+	// purchases. A trainer visit that could start a profession would be a second
+	// authority over the same decision, and the two would disagree.
+	IntentVisitTrainer IntentKind = "visit_trainer"
 )
 
 // KnownIntentKinds is every kind this build emits or understands. It is served
@@ -70,6 +80,7 @@ var KnownIntentKinds = []IntentKind{
 	IntentVendorSell,
 	IntentRepair,
 	IntentRest,
+	IntentVisitTrainer,
 }
 
 // IsKnown reports whether this build understands the kind. Callers use it to
@@ -85,7 +96,7 @@ func (k IntentKind) IsKnown() bool {
 
 // TravelParams carries the destination for the POI-directed kinds
 // ([IntentTravelTo], [IntentGrindArea], [IntentVendorSell], [IntentRepair],
-// [IntentPickQuest], [IntentTurnInQuest]).
+// [IntentPickQuest], [IntentTurnInQuest], [IntentVisitTrainer]).
 type TravelParams struct {
 	// POIID must be the [PointOfInterest.ID] of a POI that was in the same
 	// snapshot. Any other value is a stale or invented destination and the

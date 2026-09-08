@@ -41,7 +41,7 @@ namespace botbrain
     // services/bot-brain/contract/version.go (VersionMajor.VersionMinor).
     extern char const* const kContractVersion;
     int constexpr kContractMajor = 1;
-    int constexpr kContractMinor = 2;
+    int constexpr kContractMinor = 4;
 
     // Intent kinds this build understands. Anything else is dropped silently.
     extern char const* const kIntentIdle;
@@ -53,6 +53,7 @@ namespace botbrain
     extern char const* const kIntentPickQuest;
     extern char const* const kIntentTurnInQuest;
     extern char const* const kIntentAbandonQuest;
+    extern char const* const kIntentVisitTrainer;
 
     bool IsKnownIntentKind(std::string const& kind);
 
