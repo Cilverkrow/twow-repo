@@ -251,6 +251,89 @@ jobs:
   # A normal job's service containers start before its first step. Capacity
   # therefore has to be its own dependency if a full disk is to stop MariaDB,
   # BuildKit and the compiler before any of them allocate more space.
+  # Does this change need the C++ build at all?
+  #
+  # The answer is YES unless every changed path is on a short allowlist, and that
+  # polarity is the entire safety property. A denylist -- "skip when only these
+  # changed" -- fails OPEN: the first time someone adds a directory nobody
+  # thought to list, the build silently stops running for changes that needed it,
+  # and the symptom is a green tick on a broken commit.
+  #
+  # The allowlist holds paths that provably cannot reach the C++ build or the
+  # compose smoke stack:
+  #
+  #   services/bot-brain/**  the Go service. It is not compiled by build+test,
+  #                          and `compose up + smoke` runs docker-compose.yml
+  #                          only -- bot-brain.yml is not referenced anywhere in
+  #                          this workflow, so the service is not in that stack.
+  #                          Its own coverage is the `go` and `bot-brain live
+  #                          integration` jobs, neither of which is gated here.
+  #   docs/**, runbooks/**   prose.
+  #
+  # Deliberately NOT on it, with reasons, because each is a mistake someone will
+  # be tempted to make:
+  #
+  #   contracts/**   the golden fixtures are compiled into the C++ wire test via
+  #                  BB_GOLDEN_DIR. A fixture change that breaks the C++ decoder
+  #                  would sail through.
+  #   deploy/**      docker-compose.yml, the Dockerfiles and db-init.sh are what
+  #                  `smoke` actually exercises.
+  #   modules/**     C++, including mod-bot-brain, whose name makes it look like
+  #                  part of the Go service. It is not.
+  #   config/**, ops/**   the rendered-config provenance test reads these.
+  #   .github/**     a change to this workflow must re-run under itself.
+  #
+  # Pushes to main and scheduled runs always build. main is the branch every
+  # other run restores its compiler cache from, and a main commit that was never
+  # fully built is a cache poisoned for everyone.
+  scope:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    name: scope
+    timeout-minutes: 5
+    outputs:
+      cpp: ${{ steps.decide.outputs.cpp }}
+    steps:
+      - name: Decide whether the C++ build is needed
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "not a pull request (${{ github.event_name }}) -- building"
+            echo "cpp=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # --paginate: a large pull request is not a reason to guess.
+            files=$(gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename')
+
+          if [ -z "$files" ]; then
+            # No files is not "nothing to build", it is "the API told us
+            # nothing". Build.
+            echo "could not list changed files -- building"
+            echo "cpp=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          needed=false
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              services/bot-brain/*|docs/*|runbooks/*) ;;
+              *) echo "  needs the C++ build: $f"; needed=true ;;
+            esac
+          done <<< "$files"
+
+          if [ "$needed" = true ]; then
+            echo "cpp=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "every changed path is Go-only or prose -- skipping the C++ build"
+            echo "$files" | sed 's/^/  /'
+            echo "cpp=false" >> "$GITHUB_OUTPUT"
+          fi
+
   capacity:
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: capacity preflight
@@ -1442,7 +1525,21 @@ jobs:
   # Building the graph before CTest prevents a green subset caused by a missing
   # or forgotten hand-maintained test-target list.
   build-and-test:
-    needs: capacity
+    needs: [capacity, scope]
+    # Skipped only when `scope` SUCCEEDED and proved every changed path is
+    # Go-only or prose. `smoke` needs this job, so it skips with it -- correct,
+    # because the stack it brings up is built here.
+    #
+    # The `needs.scope.result != 'success'` half is the important one. A bare
+    # `needs.scope.outputs.cpp == 'true'` fails OPEN: if the scope job errors --
+    # a GitHub API hiccup, a token problem, a typo in its own script -- the
+    # output is empty, the condition is false, and the C++ build is silently
+    # skipped for a change that may well have needed it. An unavailable answer
+    # must mean "build", exactly as an unlistable file set does inside the job.
+    if: >-
+      ${{ !cancelled()
+          && needs.capacity.result == 'success'
+          && (needs.scope.result != 'success' || needs.scope.outputs.cpp == 'true') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: build + test
     permissions:
