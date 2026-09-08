@@ -54,6 +54,21 @@ type Options struct {
 	// decide what a thousand bots do next, and a slow database must cost a
 	// little history rather than a late tick.
 	Memory memory.Recorder
+	// Dialogue answers /v1/dialogue. Nil means the endpoint exists but every bot
+	// stays quiet with reason "dialogue_disabled" -- which is the state of a
+	// deployment with inference off, and is a supported mode rather than a
+	// degraded one. The route is registered either way so the C++ side gets the
+	// same answer shape whether or not this instance can talk, and does not have
+	// to treat a 404 as a third outcome.
+	Dialogue Speaker
+	// MaxDialogueBodyBytes caps a dialogue request body. Zero means
+	// [contract.DefaultMaxDialogueBodyBytes], which is three orders of magnitude
+	// below the plan cap on purpose: see the constant.
+	MaxDialogueBodyBytes int64
+	// MaxDialogueInFlight caps concurrent dialogue requests. Zero means
+	// [DefaultMaxDialogueInFlight]. Excess requests are shed immediately as
+	// "busy" rather than queued.
+	MaxDialogueInFlight int
 	// Now is injectable for tests. Nil means time.Now. It is used only for
 	// measuring the service's own latency, never for stamping intent expiry --
 	// that always comes from the server's clock in the request.
@@ -62,11 +77,16 @@ type Options struct {
 
 // Server serves the brain API.
 type Server struct {
-	opts  Options
-	mux   *http.ServeMux
-	log   *slog.Logger
-	now   func() time.Time
-	ready struct {
+	opts Options
+	mux  *http.ServeMux
+	log  *slog.Logger
+	now  func() time.Time
+	// dialogueSlots is the in-flight limiter, as a buffered channel used as a
+	// counting semaphore. A channel rather than a mutex and an int because the
+	// non-blocking acquire is a select default, which is the whole behaviour:
+	// over the limit, shed now, do not wait.
+	dialogueSlots chan struct{}
+	ready         struct {
 		mu    sync.RWMutex
 		value bool
 	}
@@ -101,14 +121,21 @@ func New(opts Options) *Server {
 	if opts.IntentTTL <= 0 {
 		opts.IntentTTL = 30 * time.Second
 	}
+	if opts.MaxDialogueBodyBytes <= 0 {
+		opts.MaxDialogueBodyBytes = contract.DefaultMaxDialogueBodyBytes
+	}
+	if opts.MaxDialogueInFlight <= 0 {
+		opts.MaxDialogueInFlight = DefaultMaxDialogueInFlight
+	}
 	if opts.Metrics == nil {
 		opts.Metrics = metrics.New()
 	}
 	s := &Server{
-		opts: opts,
-		mux:  http.NewServeMux(),
-		log:  opts.Logger,
-		now:  opts.Now,
+		opts:          opts,
+		mux:           http.NewServeMux(),
+		log:           opts.Logger,
+		now:           opts.Now,
+		dialogueSlots: make(chan struct{}, opts.MaxDialogueInFlight),
 	}
 	if s.log == nil {
 		s.log = slog.Default()
@@ -124,6 +151,7 @@ func New(opts Options) *Server {
 	s.mux.HandleFunc("GET /metrics", s.handleMetrics)
 	s.mux.HandleFunc("GET /v1/contract", s.handleContract)
 	s.mux.HandleFunc("POST /v1/plan", s.handlePlan)
+	s.mux.HandleFunc("POST /v1/dialogue", s.handleDialogue)
 	return s
 }
 
@@ -139,6 +167,11 @@ func (s *Server) describeMetrics() {
 	m.Describe(MetricPlanSeconds, "Wall time spent planning one batch, in seconds.")
 	m.Describe(MetricReady, "1 when the service is ready to serve plan requests.")
 	m.Describe(MetricDroppedIntents, "Intents discarded before being returned, by reason.")
+	m.Describe(MetricDialogueRequests, "Dialogue requests received, by outcome.")
+	m.Describe(MetricDialogueSilence, "Utterances a bot did not answer, by reason. 'nothing_to_say' is healthy and should dominate; 'budget_exhausted' and 'inference_unavailable' are not, and are otherwise indistinguishable from it in the game.")
+	m.Describe(MetricDialogueSeconds, "Wall time spent answering one utterance, in seconds.")
+	m.Describe(MetricDialogueInFlight, "Dialogue requests currently being answered.")
+	m.Describe(MetricDialogueTraits, "Trait keys the catalog recognised, summed over all requests. Persistently below what the caller sends means the worldserver and the personality catalog have drifted, and bots are talking without the personality they were given.")
 }
 
 // Handler exposes the mux.

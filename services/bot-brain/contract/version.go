@@ -69,9 +69,15 @@ import (
 //
 // The C++ side and this service are deployed separately and WILL skew. The
 // design assumption is that skew is normal, not exceptional.
+//
+// 1.3 added the dialogue endpoint: POST /v1/dialogue, [DialogueRequest] and
+// [DialogueResponse]. Additive, so a 1.2 worldserver keeps working untouched --
+// it simply never calls the new route. The minor is what lets a newer C++ side
+// discover, at startup from GET /v1/contract, whether this brain can talk at all
+// rather than finding out one 404 at a time.
 const (
 	VersionMajor = 1
-	VersionMinor = 2
+	VersionMinor = 3
 )
 
 // Version is the canonical "MAJOR.MINOR" string carried on every request and

@@ -40,9 +40,26 @@ namespace botbrain
 {
     // The contract version this build speaks. Must track
     // services/bot-brain/contract/version.go (VersionMajor.VersionMinor).
+    //
+    // The NUMBERS are the source of truth and the string is built from them, so
+    // the two cannot disagree. They did: kContractVersion was written out by
+    // hand as "1.0" and stayed there through 1.1, 1.2 and 1.3, so every request
+    // this module ever sent advertised a version the module did not implement.
+    //
+    // That was not cosmetic. Negotiate() in version.go checks the MAJOR against
+    // the supported set and then clamps the peer's MINOR -- so the service
+    // negotiated an effective 1.0 for this client and would have withheld
+    // anything gated on a later minor, silently and correctly, from a build that
+    // supported it.
+#define BOT_BRAIN_CONTRACT_MAJOR 1
+#define BOT_BRAIN_CONTRACT_MINOR 3
+#define BOT_BRAIN_STRINGIFY_(x) #x
+#define BOT_BRAIN_STRINGIFY(x) BOT_BRAIN_STRINGIFY_(x)
+#define BOT_BRAIN_CONTRACT_VERSION     BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MAJOR) "." BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MINOR)
+
     extern char const* const kContractVersion;
-    int constexpr kContractMajor = 1;
-    int constexpr kContractMinor = 2;
+    int constexpr kContractMajor = BOT_BRAIN_CONTRACT_MAJOR;
+    int constexpr kContractMinor = BOT_BRAIN_CONTRACT_MINOR;
 
     // Intent kinds this build understands. Anything else is dropped silently.
     extern char const* const kIntentIdle;
