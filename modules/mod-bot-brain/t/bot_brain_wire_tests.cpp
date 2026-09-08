@@ -361,14 +361,45 @@ namespace
         // What this build can actually carry out where the bot stands.
         CHECK(botbrain::IsAppliedKind("rest"));
 
+        // In the contract's vocabulary and NOT applicable here: the only stock
+        // action that drops a named quest requires a master, and these bots have
+        // none. Rejected as unsupported rather than approximated with the
+        // policy-driven cleaner, which would drop different quests than asked.
+        CHECK(!botbrain::IsAppliedKind("abandon_quest"));
+        CHECK(!botbrain::HasArrivalAction("abandon_quest"));
+
+        // Kinds that do something once the bot gets there. Every one of these
+        // is POI-directed, so the two sets are complementary rather than
+        // overlapping: arrival is when the travel applier hands over.
+        CHECK(botbrain::HasArrivalAction("vendor_sell"));
+        CHECK(botbrain::HasArrivalAction("repair"));
+        CHECK(botbrain::HasArrivalAction("pick_quest"));
+        CHECK(botbrain::HasArrivalAction("turn_in_quest"));
+
+        // Arriving IS the outcome for these two. Inventing a terminal action
+        // would turn a successful journey into a failure whenever the invented
+        // action declined.
+        CHECK(!botbrain::HasArrivalAction("travel_to"));
+        CHECK(!botbrain::HasArrivalAction("grind_area"));
+
+        // An arrival action only makes sense for a kind that travels, and a
+        // stand-still kind must never claim one -- otherwise a bot would be
+        // asked to do the same thing twice, once where it stood and once on
+        // arriving somewhere it was never sent.
+        for (char const* kind : everyKind)
+        {
+            if (botbrain::HasArrivalAction(kind))
+            {
+                CHECK(botbrain::IsPoiDirectedKind(kind));
+                CHECK(!botbrain::IsAppliedKind(kind));
+            }
+        }
+        CHECK(!botbrain::HasArrivalAction("delete_bot"));
+        CHECK(!botbrain::HasArrivalAction(""));
+
         // Doing nothing is what happens when no intent applies; it never needs an
         // applier of its own.
         CHECK(!botbrain::IsAppliedKind("idle"));
-
-        // Known to the contract, not yet implemented here. These must stay false
-        // until an applier exists, so they are rejected as unsupported rather
-        // than accepted and silently dropped.
-        CHECK(!botbrain::IsAppliedKind("abandon_quest"));
 
         CHECK(!botbrain::IsAppliedKind("delete_bot"));
         CHECK(!botbrain::IsAppliedKind(""));

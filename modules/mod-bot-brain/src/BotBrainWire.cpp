@@ -33,10 +33,31 @@ namespace botbrain
                kind == kIntentRepair || kind == kIntentPickQuest || kind == kIntentTurnInQuest;
     }
 
+    bool HasArrivalAction(std::string const& kind)
+    {
+        return kind == kIntentVendorSell || kind == kIntentRepair ||
+               kind == kIntentPickQuest || kind == kIntentTurnInQuest;
+    }
+
     bool IsAppliedKind(std::string const& kind)
     {
-        // One kind so far. The list is the honest statement of what this build
-        // can do, not of what the contract allows -- see the header.
+        // Applied where the bot stands, needing no destination at all. The list
+        // is the honest statement of what this build can do, not of what the
+        // contract allows -- see the header.
+        // abandon_quest is deliberately absent, and it is the clearest example
+        // of why this predicate is about capability rather than vocabulary.
+        //
+        // DropQuestAction -- the only stock action that drops a NAMED quest --
+        // opens with `if (!GetMaster()) return false;`, and the bots this module
+        // plans for have no master by construction; that is why they take the
+        // random-bot strategy branch at all. CleanQuestLogAction does run for
+        // them, but it drops by POLICY (failed, grey, no progress) and ignores
+        // which quest was asked for, so using it here would report success for
+        // abandoning quest X while having abandoned Y and Z.
+        //
+        // So the honest answer is that this build cannot carry the kind out, and
+        // the planner is told so with "unsupported_kind" rather than being lied
+        // to with a completion.
         return kind == kIntentRest;
     }
 
