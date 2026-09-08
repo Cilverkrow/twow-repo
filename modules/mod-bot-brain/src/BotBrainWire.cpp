@@ -8,7 +8,10 @@
 
 namespace botbrain
 {
-    char const* const kContractVersion = "1.0";
+    // Built from kContractMajor/kContractMinor rather than written out again.
+    // See the header: the hand-written copy said "1.0" while the numbers said
+    // 1.3, and nothing could notice because the two were never compared.
+    char const* const kContractVersion = BOT_BRAIN_CONTRACT_VERSION;
 
     char const* const kIntentIdle = "idle";
     char const* const kIntentTravelTo = "travel_to";

@@ -39,6 +39,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -77,6 +78,14 @@ const (
 	// manually assigned traits without letting a caller turn a trait list into a
 	// prompt-length attack.
 	MaxDialogueTraitKeys = 12
+
+	// MaxDialogueSpeakerNameRunes bounds SpeakerName.
+	//
+	// Twelve is the character-name limit this game enforces at creation, so a
+	// longer value did not come from a character and is refused rather than
+	// truncated. Runes, not bytes: a name in a non-ASCII locale is still twelve
+	// characters to the player who typed it.
+	MaxDialogueSpeakerNameRunes = 12
 
 	// MaxDialogueTraitKeyBytes bounds one key. The longest key in the 124-entry
 	// catalog is well under this; the cap is here so a key can never be a
@@ -121,14 +130,16 @@ func (c DialogueChannel) IsKnown() bool {
 	return false
 }
 
-// DialogueSpeaker is WHO spoke, at the only resolution the brain is willing to
-// know.
+// DialogueSpeaker is WHAT KIND of speaker spoke, not which one.
 //
-// Not a name, not a GUID, not an account. The egress filter in planner/llm
-// promises that no character name and no identity leaves this machine, and
-// dialogue does not get an exemption from it just because a name would read
-// more naturally in a reply. See the package comment in planner/llm/dialogue.go
-// for what that costs and what changing it would take.
+// The role and the name are separate fields on purpose. The role decides how a
+// bot answers -- a player and another bot get different registers, and section
+// 11.6 caps bot-to-bot exchanges -- and it is required. The name is optional and
+// only decorates the reply.
+//
+// Keeping them apart means a caller that has no name to give (guild_event) still
+// says who is speaking, and it means the closed enum stays closed: a name can
+// never arrive in this field and be waved through as an unknown role.
 type DialogueSpeaker string
 
 const (
@@ -190,9 +201,28 @@ type DialogueRequest struct {
 	// Channel is where. Required, and must be one of [KnownDialogueChannels].
 	Channel DialogueChannel `json:"channel"`
 
-	// Speaker is who spoke, as a role. Required. See [DialogueSpeaker] for why
-	// this is not a name.
+	// Speaker is who spoke, as a role. Required. A bot answers a player
+	// differently than it answers another bot, and section 11.6 caps bot-to-bot
+	// exchanges, so the role is needed independently of the name below.
 	Speaker DialogueSpeaker `json:"speaker"`
+
+	// SpeakerName is the speaker's character name. Optional.
+	//
+	// This one field is exempt from the no-identities rule, deliberately, and
+	// the exemption is narrow: a character name is a public handle that every
+	// player in the channel already sees on the message they are answering. A
+	// GUID, a realm id and an account are not, and none of them are here.
+	//
+	// It is bounded to [MaxDialogueSpeakerNameRunes] LETTERS -- see
+	// [validateSpeakerName]. That shape is what makes it safe to interpolate:
+	// the field cannot carry a newline, a quote, a brace or a sentence, so it
+	// cannot be an injection vector however hostile the sender. A name is the
+	// only identity that reaches the model, and it reaches it as a name-shaped
+	// token or not at all.
+	//
+	// Empty is normal and always has been: guild_event has no single speaker,
+	// and a caller that does not send one gets the previous behaviour.
+	SpeakerName string `json:"speaker_name,omitempty"`
 
 	// Message is what was said. Required, non-empty, at most
 	// [MaxDialogueMessageBytes].
@@ -314,6 +344,9 @@ func (r *DialogueRequest) Validate() error {
 	if !r.Speaker.IsKnown() {
 		return errMalformedf("dialogue: unknown speaker %q, known: %v", r.Speaker, KnownDialogueSpeakers)
 	}
+	if err := validateSpeakerName(r.SpeakerName); err != nil {
+		return err
+	}
 	if r.Language != "" && r.Language != DialogueLanguage {
 		return errMalformedf("dialogue: this build speaks %q, not %q", DialogueLanguage, r.Language)
 	}
@@ -387,6 +420,35 @@ func validateTraitKey(k string) error {
 	return nil
 }
 
+// validateSpeakerName accepts a character name and nothing that merely contains
+// one.
+//
+// Letters only, two to twelve of them. That is the game's own rule for a
+// character name at creation, and applying it here does double duty: it rejects
+// a value that cannot have come from a character, and it makes the field
+// unusable as a prompt-injection carrier. There is no quote to close, no brace,
+// no newline, no colon, no digit and no space -- so a hostile "name" cannot
+// forge a turn boundary or a JSON key in a prompt built from it.
+//
+// unicode.IsLetter rather than [a-zA-Z] because names on this server are not all
+// ASCII, and a German or French name is a character name, not an attack.
+func validateSpeakerName(name string) error {
+	if name == "" {
+		return nil // absent is normal -- guild_event has no single speaker
+	}
+	n := 0
+	for _, r := range name {
+		if !unicode.IsLetter(r) {
+			return errMalformedf("dialogue: speaker name %q contains %q, which is not a letter", name, r)
+		}
+		n++
+	}
+	if n < 2 || n > MaxDialogueSpeakerNameRunes {
+		return errMalformedf("dialogue: speaker name is %d characters, want 2..%d", n, MaxDialogueSpeakerNameRunes)
+	}
+	return nil
+}
+
 // Validate checks a reply before it is put on the wire. It is the last gate
 // before text this service did not write reaches a game channel.
 func (r *DialogueResponse) Validate() error {
@@ -411,6 +473,7 @@ var knownDialogueRequestFields = map[string]bool{
 	"bot":              true,
 	"channel":          true,
 	"speaker":          true,
+	"speaker_name":     true,
 	"message":          true,
 	"trait_keys":       true,
 	"language":         true,

@@ -504,3 +504,72 @@ func TestClipChatLine(t *testing.T) {
 		})
 	}
 }
+
+// The name exemption, and its exact width.
+//
+// A bot that cannot address anyone by name does not read as a person, so the
+// speaker's name is the one identity allowed out. This asserts BOTH halves of
+// that sentence in one request: the name reaches the model, and everything else
+// about that character still does not.
+//
+// The second half is the one worth having. A change that let the name through by
+// widening the filter -- rather than by adding one shaped field -- would pass a
+// test that only looked for the name, and would ship the GUID with it.
+func TestDialogueSendsTheSpeakerNameAndNothingElseAboutThem(t *testing.T) {
+	var seen string
+	req := dialogueFixture()
+	req.SpeakerName = "Thrainn"
+
+	d := dialogueWithServer(t, func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		seen = string(raw)
+		_, _ = w.Write([]byte(replyEnvelope(`{"reply":"Sei gegruesst, Thrainn."}`)))
+	})
+	resp, err := d.Speak(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Speak: %v", err)
+	}
+
+	if !strings.Contains(seen, "Thrainn") {
+		t.Error("the speaker's name did not reach the model; the bot cannot address anyone")
+	}
+	// Still forbidden, with a name present. These are not public handles: a GUID
+	// and a realm id identify an account, and the bot's UUID is internal state.
+	for _, forbidden := range []string{fixtureUUID, "987654321", "realm", "guid"} {
+		if strings.Contains(seen, forbidden) {
+			t.Errorf("the name exemption also leaked %q", forbidden)
+		}
+	}
+	// And the name may come back out again -- a reply that used it must not be
+	// filtered as though it had leaked something.
+	if !resp.Spoke || !strings.Contains(resp.Reply, "Thrainn") {
+		t.Errorf("a reply using the speaker's name was suppressed: spoke=%v reply=%q", resp.Spoke, resp.Reply)
+	}
+}
+
+// Absent is normal, and must stay absent rather than becoming an empty string.
+//
+// guild_event has no single speaker. A `"speaker_name":""` in the prompt invites
+// the model to fill the gap, and inventing a name is the confident fabrication
+// the system prompt spends a rule forbidding.
+func TestDialogueOmitsTheSpeakerNameWhenThereIsNone(t *testing.T) {
+	var seen string
+	d := dialogueWithServer(t, func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		seen = string(raw)
+		_, _ = w.Write([]byte(replyEnvelope(`{"reply":"Gut."}`)))
+	})
+	if _, err := d.Speak(context.Background(), dialogueFixture()); err != nil {
+		t.Fatalf("Speak: %v", err)
+	}
+	// The USER message only. The system prompt names the field in the rule that
+	// tells the model what to do with it, so scanning the whole body matches
+	// that instead -- which is what the first version of this test did.
+	var request chatRequest
+	if json.Unmarshal([]byte(seen), &request) != nil || len(request.Messages) != 2 {
+		t.Fatal("invalid prompt shape")
+	}
+	if strings.Contains(request.Messages[1].Content, "speaker_name") {
+		t.Errorf("speaker_name was sent for a request that has none: %s", request.Messages[1].Content)
+	}
+}

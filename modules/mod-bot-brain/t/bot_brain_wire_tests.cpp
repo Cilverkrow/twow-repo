@@ -137,7 +137,14 @@ namespace
     {
         std::string const json = botbrain::EncodePlanRequest(SampleRequest());
 
-        CHECK(Contains(json, "\"contract_version\":\"1.0\""));
+        // Against the CONSTANTS, not a literal. This assertion said "1.0" while
+        // kContractMinor said 3, and agreed with the encoder because the encoder
+        // had the same hand-written string -- so the test confirmed the bug.
+        // Nothing compared either to the golden request fixture, which has said
+        // 1.3 all along, because C++ only READS the response and info fixtures.
+        CHECK(Contains(json, std::string("\"contract_version\":\"") + botbrain::kContractVersion + "\""));
+        CHECK(std::string(botbrain::kContractVersion) ==
+              std::to_string(botbrain::kContractMajor) + "." + std::to_string(botbrain::kContractMinor));
         CHECK(Contains(json, "\"snapshots\":["));
 
         // The array is "pois". A "poi" key here would be silently ignored by

@@ -26,11 +26,24 @@
 // # Egress
 //
 // Everything this package sends leaves the machine when the endpoint is a cloud
-// provider. [redact] is the single place that decides what may go, and it sends
-// no GUIDs, no realm ids, no account data and no character names. Bots are
-// referred to by their index within the batch. This is deliberately stricter
-// than ARCH-003 requires, because loosening a filter is a reviewable change and
-// tightening one after a leak is not.
+// provider. Two paths send, and they have different rules.
+//
+// PLANNING goes through [redact], which sends no GUIDs, no realm ids, no account
+// data and no character names. Bots are referred to by their index within the
+// batch. Nothing here has loosened: choosing a destination has never needed to
+// know who anybody is, so there is nothing to gain by relaxing it and a leak to
+// lose. planner/llm/poc_test.go asserts this with a "PrivateCharacter" fixture.
+//
+// DIALOGUE additionally sends one identity: the speaker's character name, when
+// the caller supplies one. A bot that cannot address anyone by name does not
+// read as a person, which is what the feature is for. The exemption is one field
+// wide and shape-enforced -- two to twelve letters, refused otherwise -- so it
+// carries a name or nothing, and cannot carry a payload. See the Names section
+// of dialogue.go.
+//
+// Both are stricter than ARCH-003 requires. The rule that governed the first
+// version of this comment still holds for everything not named above: loosening
+// a filter is a reviewable change and tightening one after a leak is not.
 package llm
 
 import (
