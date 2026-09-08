@@ -129,7 +129,22 @@ func TestTokenBudgetProviderFailuresStayCharged(t *testing.T) {
 				defer close(release)
 				b := testBudget(t, TokenLimits{10000, 10, 10010, 10010}, nil)
 				cfg := budgetConfig(s.URL, b)
-				cfg.Timeout = 100 * time.Millisecond
+				// Per mode, and the distinction matters.
+				//
+				// Every mode except "timeout" answers immediately, so the client
+				// timeout is only there to stop a hung test -- it should be far
+				// out of reach of scheduling noise. At 100ms for everything, a
+				// busy machine could time out a response the server had already
+				// written, and the test then failed on accounting
+				// ("request uncharged or duplicate", "usage overage did not
+				// latch") that had nothing to do with what it was checking.
+				//
+				// "timeout" mode blocks until released, so the client timeout is
+				// the behaviour under test and stays short to keep the test fast.
+				cfg.Timeout = 5 * time.Second
+				if mode == "timeout" {
+					cfg.Timeout = 250 * time.Millisecond
+				}
 				call := budgetCaller(t, poc, cfg)
 				err := call(context.Background())
 				if (mode == "missing-usage" || mode == "low-usage") && err != nil {
@@ -138,8 +153,17 @@ func TestTokenBudgetProviderFailuresStayCharged(t *testing.T) {
 				if mode != "missing-usage" && mode != "low-usage" && err == nil {
 					t.Fatal("bad provider accepted")
 				}
-				if calls.Load() != 1 || b.usedHour <= 10 || b.usedDay != b.usedHour {
-					t.Fatal("request uncharged or duplicate")
+				// Split apart, because one message for three conditions made a
+				// scheduling problem look like an accounting bug for as long as
+				// it took someone to read the source.
+				if got := calls.Load(); got != 1 {
+					t.Fatalf("server saw %d calls, want exactly 1 (no retry, and the call was made)", got)
+				}
+				if b.usedHour <= 10 {
+					t.Fatalf("usedHour = %d; the request was not charged", b.usedHour)
+				}
+				if b.usedDay != b.usedHour {
+					t.Fatalf("usedDay = %d but usedHour = %d; the two ledgers disagree", b.usedDay, b.usedHour)
 				}
 				if strings.HasPrefix(mode, "bad-usage") && !b.stopped {
 					t.Fatal("usage overage did not latch")

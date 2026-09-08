@@ -257,8 +257,19 @@ func TestPoCDeadlineAndNoRetries(t *testing.T) {
 	var calls atomic.Int32
 	release := make(chan struct{})
 	defer close(release)
+	// Signals that the request actually reached the handler. Without it this
+	// test asserted calls==1 after a 20ms client timeout, which conflates two
+	// different facts: "no retry happened" and "the call happened at all". On a
+	// busy machine the timeout can fire before the request is even served, so
+	// the count is 0 and the failure reads "retry or absent call" -- pointing at
+	// a retry that never occurred.
+	entered := make(chan struct{}, 1)
 	p := pocWithServer(t, func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
+		select {
+		case entered <- struct{}{}:
+		default:
+		}
 		// The fake deliberately never replies. Release it independently of
 		// HTTP disconnect detection so test cleanup itself cannot hang.
 		select {
@@ -266,12 +277,21 @@ func TestPoCDeadlineAndNoRetries(t *testing.T) {
 		case <-release:
 		}
 	}, nil)
-	p.backend.cfg.Timeout = 20 * time.Millisecond
+	// Long enough that scheduling noise cannot reach it, short enough that the
+	// test stays quick. The handler never replies, so this bounds how long the
+	// client waits and nothing else -- the number is about the machine, not
+	// about the behaviour under test.
+	p.backend.cfg.Timeout = 250 * time.Millisecond
 	if _, err := p.PlanOne(context.Background(), pocFixture()); err == nil {
 		t.Fatal("accepted timeout")
 	}
-	if calls.Load() != 1 {
-		t.Fatal("retry or absent call")
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the request never reached the server")
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("server saw %d calls, want exactly 1 -- a timeout must not be retried", got)
 	}
 	// Even a reader returning valid data after cancellation cannot leak a call.
 	ctx, cancel := context.WithCancel(context.Background())
