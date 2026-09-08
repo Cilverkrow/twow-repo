@@ -39,3 +39,26 @@ set_target_properties(bot_brain_wire_tests PROPERTIES
 add_test(NAME bot_brain_wire
   COMMAND bot_brain_wire_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+# ---------------------------------------------------------------------------
+# Personality profile selection (personality-context-contract-v1, sections 4.1
+# and 9).
+#
+# Header-only, so there is no module source to compile and nothing to link:
+# PersonalityPolicy.h is a pure decision function over a generated catalog,
+# deliberately free of Player, PlayerbotAI and the database, in the same spirit
+# as the wire suite above. It does not need dep/include either -- no rapidjson,
+# no fixtures, no golden directory -- because everything it decides, it decides
+# from its arguments.
+add_executable(personality_policy_tests
+  "${BB_MODULE_DIR}/t/personality_policy_tests.cpp")
+
+target_include_directories(personality_policy_tests PRIVATE
+  "${BB_MODULE_DIR}/src")
+
+set_target_properties(personality_policy_tests PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+add_test(NAME personality_policy
+  COMMAND personality_policy_tests
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
