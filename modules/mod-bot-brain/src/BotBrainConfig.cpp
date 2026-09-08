@@ -45,6 +45,7 @@ namespace botbrain
         // feature than the switch above it.
         cfg.dialogueTimeoutMs = ReadUint("BotBrain.Dialogue.TimeoutMs", 8000, 1000, 60000);
         cfg.dialogueMaxInFlight = ReadUint("BotBrain.Dialogue.MaxInFlight", 8, 1, 64);
+        cfg.dialogueCommandsEnabled = sConfig.GetBoolDefault("BotBrain.Dialogue.Commands.Enable", false);
         cfg.logApplied = sConfig.GetBoolDefault("BotBrain.LogAppliedIntents", true);
 
         g_config = cfg;
@@ -57,8 +58,9 @@ namespace botbrain
         // "the bots are quiet" is otherwise indistinguishable from a broken
         // endpoint, and this is the one line that tells an operator which.
         if (g_config.enabled)
-            sLog.outString("mod-bot-brain: dialogue %s (BotBrain.Dialogue.Enable), timeout %ums, max in flight %u",
+            sLog.outString("mod-bot-brain: dialogue %s (BotBrain.Dialogue.Enable), timeout %ums, max in flight %u, commands %s",
                 g_config.dialogueEnabled ? "enabled" : "disabled",
-                g_config.dialogueTimeoutMs, g_config.dialogueMaxInFlight);
+                g_config.dialogueTimeoutMs, g_config.dialogueMaxInFlight,
+                g_config.dialogueCommandsEnabled ? "enabled" : "disabled");
     }
 }

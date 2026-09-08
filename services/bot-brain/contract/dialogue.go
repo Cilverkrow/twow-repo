@@ -14,16 +14,42 @@ package contract
 // token budget and the Retry-After handling that a second client would have to
 // re-solve.
 //
-// # What is deliberately NOT here
+// # The one thing a reply may ask for, and the rule that makes it safe
 //
-// A dialogue reply is TEXT. It is not an [Intent], it cannot become one, and
-// there is no field on [DialogueResponse] through which a model could ask for a
-// server action. Section 12 of the personality contract sketches an intent
-// vocabulary for conversation (invite_request, quest_proposal, craft_offer,
-// guild_event_proposal); none of it is implemented here, because an advisory
-// action channel needs its own validation story on the C++ side and shipping
-// half of one is how a chat message becomes a group invite nobody asked for.
-// Adding it later is additive: a new optional field and a MINOR bump.
+// A dialogue reply is TEXT plus, at most, one value from a closed enum:
+// [DialogueResponse.Command]. That enum is not an [Intent] and cannot become
+// one. Every value in it names a chat command that mod-playerbots ALREADY
+// accepts from a player who types it, and the worldserver executes it through
+// PlayerbotAI::HandleCommand with the SPEAKER as the commanding player.
+//
+// That is the whole safety property, and it is worth stating as a sentence a
+// reviewer can check:
+//
+//	The model may only cause what the speaker could already have caused by
+//	typing the command themselves.
+//
+// Nothing is bypassed to make this work. The same master/group/guild/stranger
+// checks that decide whether a typed "follow" is obeyed decide whether this one
+// is, because it is the same call. A prompt injection therefore buys an
+// attacker nothing they did not already have: the worst a compromised model can
+// do is make a bot obey a player who was already allowed to command it, using
+// words that player could already have typed.
+//
+// The vocabulary is not offered unless the caller asks for it
+// ([DialogueRequest.AllowCommands]), and a command in a response to a request
+// that did not ask is dropped. That mirrors section 12's `allowed_intents`: the
+// caller states what is on the table, per request.
+//
+// Section 12 of the personality contract sketches a DIFFERENT vocabulary --
+// invite_request, quest_proposal, craft_offer, guild_event_proposal -- and none
+// of it is implemented here. Those are things a bot PROPOSES on its own
+// initiative, with no typed equivalent, so each one needs its own validation
+// story on the C++ side; a group invite arriving because a model decided to
+// send one is exactly the failure this design refuses. A command is the
+// opposite direction: it is obedience to something a player just said, bounded
+// by what that player was already permitted to make the bot do. They are
+// separate fields for that reason, and [DialogueResponse.Intent] does not
+// exist.
 //
 // # Silence is a normal answer
 //
@@ -173,6 +199,81 @@ func (s DialogueSpeaker) IsKnown() bool {
 // producing that.
 const DialogueLanguage = "de"
 
+// DialogueCommand is a thing the speaker asked the bot to DO, chosen from a
+// closed set.
+//
+// # What each value is
+//
+// Every value names a chat command mod-playerbots already accepts from a player
+// who types it, and the worldserver runs it through PlayerbotAI::HandleCommand
+// with the speaker as the commanding player. The mapping from this enum to the
+// words typed lives on the C++ side (BotDialogueCommandText), in one switch,
+// as literals -- this service never sends a command string, only a value from
+// this list.
+//
+// # Why there is no target, no item and no free text
+//
+// A command here selects a fixed string and nothing else. That is what keeps
+// the field from being an argument channel: a model cannot name a victim, an
+// item, a destination or a player, because there is nowhere to put one.
+//
+// [CommandAttack] is the interesting case and it is in the set for one specific
+// reason: "attack" resolves its victim from the SPEAKER'S OWN client selection
+// (AttackMyTargetAction reads requester->GetSelectionGuid() and parses no
+// name). The player picks the target by clicking it; the model only observes
+// that they asked. A command that let the model choose a target would not be in
+// this list.
+//
+// # What is deliberately not here
+//
+// Nothing that has no typed equivalent, and nothing whose typed equivalent
+// carries an argument. So: no invite, no trade, no summon, no teleport, no
+// logout, no "grind" (its typed form takes a place), no "equip <item>" (its
+// typed form takes an item), no guild or group manipulation. Those are either
+// things the speaker could not have caused with one word, or things where the
+// word alone is not the whole command.
+type DialogueCommand string
+
+const (
+	// CommandNone is the absence of a command, and the default. Sent as the
+	// empty string on the wire, or simply omitted.
+	CommandNone DialogueCommand = ""
+	// CommandFollow -> "follow".
+	CommandFollow DialogueCommand = "follow"
+	// CommandStay -> "stay".
+	CommandStay DialogueCommand = "stay"
+	// CommandFlee -> "flee".
+	CommandFlee DialogueCommand = "flee"
+	// CommandAttack -> "attack", against the speaker's own current selection.
+	CommandAttack DialogueCommand = "attack"
+	// CommandEquipUpgrades -> "do equip upgrades". Note that the action itself
+	// still refuses to run for a player-owned bot unless the operator turned on
+	// AiPlayerbot.AutoEquipUpgradeLoot; nothing here changes that gate, so this
+	// command doing nothing is a normal outcome on some servers.
+	CommandEquipUpgrades DialogueCommand = "equip_upgrades"
+)
+
+// KnownDialogueCommands is the closed set, excluding [CommandNone].
+//
+// A value outside it is IGNORED, never guessed at and never passed through: the
+// C++ side has its own copy of this list and drops what it does not know, so a
+// service that learned a sixth command before the worldserver did causes a bot
+// to do nothing rather than something.
+var KnownDialogueCommands = []DialogueCommand{
+	CommandFollow, CommandStay, CommandFlee, CommandAttack, CommandEquipUpgrades,
+}
+
+// IsKnown reports whether c is a command this build serves. [CommandNone] is
+// not "known" -- it is the absence of one -- so callers test it separately.
+func (c DialogueCommand) IsKnown() bool {
+	for _, k := range KnownDialogueCommands {
+		if k == c {
+			return true
+		}
+	}
+	return false
+}
+
 // DialogueRequest is one bot being spoken to.
 //
 // Unbatched, unlike [PlanRequest], and that is deliberate rather than an
@@ -258,6 +359,20 @@ type DialogueRequest struct {
 	// which is the correct degradation: a reply to a line of chat from thirty
 	// seconds ago is worse than silence.
 	DeadlineMS int64 `json:"deadline_ms,omitempty"`
+
+	// AllowCommands says whether this utterance may produce a
+	// [DialogueResponse.Command]. Optional; false, the zero value, means text
+	// only.
+	//
+	// This is the caller stating what is on the table for THIS request, which
+	// is section 12's `allowed_intents` in one bit. It is not the security
+	// boundary -- that is PlayerbotAI::HandleCommand, one process away, and it
+	// does not trust this field or any other. What it buys is that a
+	// worldserver which has not enabled commands does not have the vocabulary
+	// put in front of the model at all: with it false the command rules are not
+	// in the system prompt, the response schema has no command field, and a
+	// command that arrives anyway is dropped rather than forwarded.
+	AllowCommands bool `json:"allow_commands,omitempty"`
 }
 
 // DialogueResponse is what the bot says, or does not say.
@@ -279,6 +394,21 @@ type DialogueResponse struct {
 	// Reason is one of the Silence* constants, and is present exactly when Spoke
 	// is false. Stable; switch on this.
 	Reason string `json:"reason,omitempty"`
+	// Command is what the speaker asked the bot to do, or [CommandNone].
+	//
+	// INDEPENDENT of Spoke, in both directions. A bot may answer "Bin schon
+	// unterwegs" and follow, follow without a word, or answer without moving.
+	// A silent response carrying a command is well formed and common: section
+	// 11.7 says not every line deserves a reply, and "come here" is exactly a
+	// line that deserves obedience more than it deserves a sentence.
+	//
+	// Advisory, like everything else that crosses this wire. The worldserver
+	// decides: it maps the value to the words a player types and hands them to
+	// PlayerbotAI::HandleCommand as the speaker, where the same permission
+	// checks that would have judged the typed command judge this one. A command
+	// the speaker was not entitled to give is refused there, and this service
+	// never learns the difference.
+	Command DialogueCommand `json:"command,omitempty"`
 	// Stats is advisory telemetry. Nothing in it is contractual.
 	Stats DialogueStats `json:"stats"`
 }
@@ -452,11 +582,20 @@ func validateSpeakerName(name string) error {
 // Validate checks a reply before it is put on the wire. It is the last gate
 // before text this service did not write reaches a game channel.
 func (r *DialogueResponse) Validate() error {
+	// The command is checked first and on every path, because it is the half
+	// that can DO something: a silent response carrying a command the C++ side
+	// has never heard of must fail here rather than be sent and ignored later.
+	if r.Command != CommandNone && !r.Command.IsKnown() {
+		return errMalformedf("dialogue: unknown command %q, known: %v", r.Command, KnownDialogueCommands)
+	}
 	if !r.Spoke {
 		if r.Reply != "" {
 			return errMalformedf("dialogue: silent response carries a reply")
 		}
 		if r.Reason == "" {
+			// A command with no reason would be the one silence an operator
+			// could not explain, so the rule holds even for a response whose
+			// whole point is the command.
 			return errMalformedf("dialogue: silent response carries no reason")
 		}
 		return nil
@@ -479,6 +618,7 @@ var knownDialogueRequestFields = map[string]bool{
 	"language":         true,
 	"sent_at_ms":       true,
 	"deadline_ms":      true,
+	"allow_commands":   true,
 }
 
 // DecodeDialogueRequest decodes and version-negotiates one utterance.

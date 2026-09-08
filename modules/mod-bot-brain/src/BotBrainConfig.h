@@ -101,6 +101,23 @@ namespace botbrain
         // load during exactly the incident where accumulating it is fatal.
         uint32_t dialogueMaxInFlight = 8;
 
+        // A THIRD switch, under both of the above, defaulting OFF: whether a
+        // reply may also carry a command the bot then obeys.
+        //
+        // Separate because it is a different kind of decision. The two switches
+        // above decide whether the realm pays for sentences; this one decides
+        // whether a sentence can move a character. It changes nothing about who
+        // may command a bot -- PlayerbotAI::HandleCommand still runs every
+        // PlayerbotSecurity check against the SPEAKER, so a command from
+        // someone who could not have typed one is refused exactly where it
+        // always was -- but an operator who does not want a model in that loop
+        // at all should not have to argue about permissions to stay out of it.
+        //
+        // Off also means cheaper and quieter: with it off the service is not
+        // asked for commands, the vocabulary never enters the prompt, and a
+        // command that arrives anyway is dropped by the decoder.
+        bool dialogueCommandsEnabled = false;
+
         // Log every applied intent at BASIC level. On by default because the
         // acceptance check for this module is "a bot's travel target is set
         // from an intent", and that is only checkable if it is logged.

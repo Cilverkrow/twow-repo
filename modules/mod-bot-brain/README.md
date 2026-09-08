@@ -140,10 +140,47 @@ planning workers, same reason.
 | the `ai chat` strategy, or `LLMEnabled = 3` | mod-playerbots | off |
 | `BotBrain.Enable` | this module | `0` |
 | `BotBrain.Dialogue.Enable` | this module | `0` |
+| `BotBrain.Dialogue.Commands.Enable` | this module | `0` |
 
 `BotBrain.Dialogue.Enable` is separate from `BotBrain.Enable` because planning is
 local and free while dialogue spends model tokens every time a player types.
 Turning the brain on is not agreeing to pay for conversation.
+
+### Commands: telling a bot to do something in chat
+
+With `BotBrain.Dialogue.Commands.Enable` on, a reply may also carry one value
+from a closed set — `follow`, `stay`, `flee`, `attack`, `equip_upgrades` — and
+the bot obeys it. The reply and the command are independent: a bot may speak
+without acting, act without speaking, or do neither.
+
+The rule this rests on, and the one worth checking rather than trusting:
+
+> The model may only cause what the speaker could already have caused by typing
+> the command themselves.
+
+Each value names a chat command mod-playerbots already accepts from a player who
+types it. This module maps the wire spelling onto core's `BotDialogueCommand`,
+and the **worldserver** runs it through `PlayerbotAI::HandleCommand` with the
+speaker as the commanding player, on the bot's own tick. Both `PlayerbotSecurity`
+gates apply unchanged, and the second needs `PLAYERBOT_SECURITY_ALLOW_ALL` —
+which only a GM, the account owning the bot, or someone sharing a group with it
+has. A stranger's "come here" is refused in exactly the place a stranger's typed
+`follow` is refused, by the same code. Prompt injection therefore buys an
+attacker nothing they did not already have.
+
+There is no target field, no item field and no free text: a command selects one
+fixed string on the C++ side and nothing else. `attack` is in the set because it
+resolves its victim from the **speaker's own client selection**, so the player
+picks the target by clicking it. `equip_upgrades` maps to `do equip upgrades`,
+and still does nothing for a player-owned bot unless
+`AiPlayerbot.AutoEquipUpgradeLoot` is on.
+
+Three things drop a command, all silently and none of them a reply failure:
+`allow_commands` was not sent (so the vocabulary was never in the model's
+prompt), the value is not in this build's closed set, or the chat path could not
+say who spoke. That last one covers a **bot** speaker: `speakerGuidLow` is left
+at zero for one, because a bot never typed anything and so has no typed command
+to inherit permission from.
 
 Channels are mapped conservatively: say and yell → `say`, party and raid →
 `party`, guild → `guild`, whisper → `whisper`. World, general, trade, LFG, the
@@ -151,9 +188,9 @@ defence channels, guild recruitment and both emote sources map to nothing and
 the bot stays quiet — the contract's style rules are written for conversations,
 and a bot writing German prose into trade chat is a feature nobody designed.
 
-Every failure is silence, and silence is a 200: dialogue off, no handshake, an
-unmapped channel, too many calls in flight, a dead socket, a non-200, an
-undecodable body, or a reply carrying a newline. `DecodeDialogueResponse` is the
+Every failure is silence and no command, and silence is a 200: dialogue off, no
+handshake, an unmapped channel, too many calls in flight, a dead socket, a
+non-200, an undecodable body, or a reply carrying a newline. `DecodeDialogueResponse` is the
 last gate before text this process did not write reaches a game channel, and it
 turns a reply it will not vouch for into `filtered` rather than into an error.
 

@@ -123,3 +123,37 @@ BotBrain.Dialogue.TimeoutMs = 8000
 # queue here would accumulate load during exactly the incident where
 # accumulating it is fatal.
 BotBrain.Dialogue.MaxInFlight = 8
+
+# Whether a reply may also carry a COMMAND the bot then obeys: one of follow,
+# stay, flee, attack, equip_upgrades. Off by default.
+#
+# A third switch, under BotBrain.Enable and BotBrain.Dialogue.Enable, because it
+# is a different kind of decision: those two decide whether the realm pays for
+# sentences, this one decides whether a sentence can move a character.
+#
+# The rule this is built on, and the one worth checking rather than trusting:
+#
+#     The model may only cause what the speaker could already have caused by
+#     typing the command themselves.
+#
+# Each value names a chat command mod-playerbots already accepts from a player
+# who types it, and the worldserver runs it through PlayerbotAI::HandleCommand
+# with the SPEAKER as the commanding player. Every PlayerbotSecurity check
+# applies unchanged: the second gate needs PLAYERBOT_SECURITY_ALLOW_ALL, which
+# only a GM, the account that owns the bot, or someone sharing a group with it
+# has. A stranger's "come here" is refused in exactly the place a stranger's
+# typed "follow" is refused.
+#
+# There is no target field and no free text -- a command selects one fixed
+# string and nothing else. "attack" is in the set because it resolves its victim
+# from the SPEAKER's own current selection, so the player picks the target by
+# clicking it.
+#
+# Note that "equip_upgrades" additionally does nothing for a player-owned bot
+# unless AiPlayerbot.AutoEquipUpgradeLoot is on; that gate belongs to
+# mod-playerbots and is untouched.
+#
+# With this off, the service is not asked for commands at all: the vocabulary
+# never enters the model's prompt, and a command that arrives anyway is dropped
+# by the wire decoder.
+BotBrain.Dialogue.Commands.Enable = 0

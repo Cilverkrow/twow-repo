@@ -52,7 +52,7 @@ namespace botbrain
     // anything gated on a later minor, silently and correctly, from a build that
     // supported it.
 #define BOT_BRAIN_CONTRACT_MAJOR 1
-#define BOT_BRAIN_CONTRACT_MINOR 3
+#define BOT_BRAIN_CONTRACT_MINOR 5
 #define BOT_BRAIN_STRINGIFY_(x) #x
 #define BOT_BRAIN_STRINGIFY(x) BOT_BRAIN_STRINGIFY_(x)
 #define BOT_BRAIN_CONTRACT_VERSION     BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MAJOR) "." BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MINOR)
@@ -333,6 +333,26 @@ namespace botbrain
     // instructions are German sentences.
     extern char const* const kDialogueLanguage;
 
+    // Commands a reply may ask for: the closed set from
+    // contract/dialogue.go's DialogueCommand.
+    //
+    // Each one is the name of a chat command mod-playerbots already accepts
+    // from a player who types it. Nothing here executes anything -- these are
+    // wire spellings, and the module maps them onto core's BotDialogueCommand,
+    // which is what the worldserver runs, as the speaker, through
+    // PlayerbotAI::HandleCommand.
+    //
+    // The set is closed on THIS side as well as the service's, and that
+    // duplication is the point: a service that learned a sixth command before
+    // this build did makes a bot do nothing rather than something.
+    extern char const* const kDialogueCommandFollow;
+    extern char const* const kDialogueCommandStay;
+    extern char const* const kDialogueCommandFlee;
+    extern char const* const kDialogueCommandAttack;
+    extern char const* const kDialogueCommandEquipUpgrades;
+
+    bool IsKnownDialogueCommand(std::string const& command);
+
     // Silence reasons. Stable strings, switchable, and the reason an operator
     // can tell "nothing to say" from "the model is unreachable" from "the token
     // budget latched" -- three states that look identical from the game.
@@ -380,6 +400,12 @@ namespace botbrain
         std::string language;       // empty or kDialogueLanguage
         int64_t sentAtMs = 0;
         int64_t deadlineMs = 0;
+
+        // Whether this utterance may come back with a command. False -- the
+        // default -- means text only: the service does not put the command
+        // vocabulary in front of the model at all, and a command that arrives
+        // anyway is dropped on both sides.
+        bool allowCommands = false;
     };
 
     struct DialogueResponse
@@ -390,6 +416,14 @@ namespace botbrain
         bool spoke = false;
         std::string reply;          // empty unless spoke
         std::string reason;         // one of the kSilence* above, unless spoke
+        // What the speaker asked the bot to do, or empty. One of the
+        // kDialogueCommand* above and nothing else: DecodeDialogueResponse
+        // drops a value it does not know rather than passing it on, so this
+        // field is either executable or empty.
+        //
+        // Independent of `spoke`. A bot may say something and act, act without
+        // saying anything, or neither.
+        std::string command;
         int64_t replyMs = 0;
         int32_t traitsApplied = 0;
         int32_t unknownFields = 0;
@@ -412,7 +446,13 @@ namespace botbrain
     // SILENCE with kSilenceFiltered rather than as a failure. The far side runs
     // the same check; this one is what makes a disagreement cost a quiet bot
     // instead of an unvetted line in a game channel.
-    bool DecodeDialogueResponse(std::string const& body, DialogueResponse& out, std::string& error);
+    //
+    // A command is treated the same way and independently: one this build does
+    // not know, or one on a response to a request that did not set
+    // allowCommands, is CLEARED. Never guessed at, never passed through, and
+    // never a reason to drop a reply that is otherwise fine. `allowCommands`
+    // must be the value that was sent on the request this body answers.
+    bool DecodeDialogueResponse(std::string const& body, bool allowCommands, DialogueResponse& out, std::string& error);
 }
 
 #endif

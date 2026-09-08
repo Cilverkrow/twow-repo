@@ -55,6 +55,12 @@ const (
 	MetricDialogueSeconds  = "botbrain_dialogue_duration_seconds"
 	MetricDialogueInFlight = "botbrain_dialogue_in_flight"
 	MetricDialogueTraits   = "botbrain_dialogue_traits_applied_total"
+	// MetricDialogueCommands counts commands returned, labelled by command.
+	//
+	// Worth alerting on a shape rather than a level: this feature is meant to
+	// be rare, so a rate that tracks the request rate means the model is
+	// obeying the message rather than reading it.
+	MetricDialogueCommands = "botbrain_dialogue_commands_total"
 )
 
 // DefaultMaxDialogueInFlight bounds concurrent dialogue requests.
@@ -134,12 +140,26 @@ func (s *Server) handleDialogue(w http.ResponseWriter, r *http.Request) {
 		resp.Bot = req.Bot // never let a backend re-address a reply.
 	}
 
+	// A command nobody asked for is dropped here, not sent. The backend already
+	// refuses to offer the vocabulary unless the request allowed it, so this
+	// firing means the model produced one anyway and something below let it
+	// through -- and the safe reading of that is the reply, without the
+	// command. The reply itself is untouched: a good sentence is not worse for
+	// having arrived next to a field we discarded.
+	if resp.Command != contract.CommandNone && !req.AllowCommands {
+		s.log.Error("dialogue produced a command for a request that did not allow one; dropping it",
+			"request_id", requestID, "bot", req.Bot.String(), "command", resp.Command)
+		resp.Command = contract.CommandNone
+	}
+
 	// Last gate. A response this side cannot vouch for becomes silence rather
 	// than being posted to a game channel, and it is loud in the log because it
 	// means two checks in this service disagree.
 	if err := resp.Validate(); err != nil {
 		s.log.Error("dialogue response failed its own validation; silencing",
 			"request_id", requestID, "bot", req.Bot.String(), "err", err)
+		// Rebuilt from nothing, command included: a response whose own
+		// validation failed is not one to take an action from.
 		resp = contract.DialogueResponse{Bot: req.Bot, Spoke: false, Reason: contract.SilenceFiltered}
 	}
 
@@ -155,6 +175,16 @@ func (s *Server) handleDialogue(w http.ResponseWriter, r *http.Request) {
 		s.opts.Metrics.Inc(MetricDialogueSilence, 1, "reason", nonEmpty(resp.Reason, "unknown"))
 	}
 	s.opts.Metrics.Inc(MetricDialogueRequests, 1, "outcome", outcome)
+	if resp.Command != contract.CommandNone {
+		s.opts.Metrics.Inc(MetricDialogueCommands, 1, "command", string(resp.Command))
+		// Logged as well as counted, because this is the one thing on this
+		// endpoint that makes something happen in the world, and an operator
+		// reading back after an incident needs to know which bot, which
+		// speaker's request, and when.
+		s.log.Info("dialogue returned a command",
+			"request_id", requestID, "bot", req.Bot.String(),
+			"channel", req.Channel, "command", resp.Command, "spoke", resp.Spoke)
+	}
 	s.opts.Metrics.Inc(MetricDialogueTraits, float64(resp.Stats.TraitsApplied))
 	s.opts.Metrics.Observe(MetricDialogueSeconds, elapsed.Seconds())
 

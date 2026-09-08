@@ -316,7 +316,7 @@ would have to re-solve.
 
 ```bash
 curl -s localhost:8085/v1/dialogue -H 'Content-Type: application/json' -d '{
-  "contract_version": "1.3",
+  "contract_version": "1.5",
   "request_id": "d-1",
   "bot": {"realm": 1, "guid": 42},
   "channel": "party",
@@ -330,7 +330,7 @@ curl -s localhost:8085/v1/dialogue -H 'Content-Type: application/json' -d '{
 
 ```json
 {
-  "contract_version": "1.3",
+  "contract_version": "1.5",
   "request_id": "d-1",
   "bot": {"realm": 1, "guid": 42},
   "spoke": true,
@@ -338,6 +338,43 @@ curl -s localhost:8085/v1/dialogue -H 'Content-Type: application/json' -d '{
   "stats": {"reply_ms": 640, "traits_applied": 2, "unknown_fields": 0}
 }
 ```
+
+**A reply may also carry one command, and only if the caller asked for it.** Set
+`"allow_commands": true` on the request and the response may carry
+`"command"`, one of a closed set: `follow`, `stay`, `flee`, `attack`,
+`equip_upgrades`. Anything else is dropped.
+
+```json
+{"spoke": true, "reply": "Ich komme.", "command": "follow"}
+{"spoke": false, "reason": "nothing_to_say", "command": "stay"}
+```
+
+The reply and the command are independent: a bot may speak without acting, act
+without speaking, or do neither.
+
+The rule that makes this survivable is one sentence, and it is worth checking
+rather than trusting:
+
+> The model may only cause what the speaker could already have caused by typing
+> the command themselves.
+
+Each value names a chat command mod-playerbots already accepts from a player who
+types it, and the worldserver runs it through `PlayerbotAI::HandleCommand` **with
+the speaker as the commanding player**. Both `PlayerbotSecurity` gates apply
+unchanged, and the second one needs `PLAYERBOT_SECURITY_ALLOW_ALL`, which only a
+GM, the account that owns the bot, or someone sharing a group with it has. A
+stranger's "come here" is refused in exactly the place a stranger's typed
+`follow` is refused, by exactly the same code — so prompt injection buys an
+attacker nothing they did not already have.
+
+There is no target field, no item field and no free text. A command selects one
+fixed string on the C++ side and nothing else. `attack` is in the set because it
+resolves its victim from the **speaker's own client selection**; the player picks
+the target by clicking it, and the model only observes that they asked.
+
+With `allow_commands` false — the default — the command vocabulary is not in the
+system prompt at all, the response schema has no `command` field, and a model
+that volunteers one is refused by the strict decoder.
 
 **Silence is a normal outcome, not an error.** A bot with nothing to say answers
 `{"spoke": false, "reason": "nothing_to_say"}` with status 200, and so does a bot

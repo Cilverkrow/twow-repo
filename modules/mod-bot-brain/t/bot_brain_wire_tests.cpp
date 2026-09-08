@@ -979,7 +979,7 @@ namespace
 
         botbrain::DialogueResponse out;
         std::string error;
-        CHECK(botbrain::DecodeDialogueResponse(body, out, error));
+        CHECK(botbrain::DecodeDialogueResponse(body, /*allowCommands=*/false, out, error));
         CHECK(out.spoke);
         CHECK(out.reply == "Der Schmied steht am Tor.");
         CHECK(out.reason.empty());
@@ -1005,7 +1005,7 @@ namespace
         {
             botbrain::DialogueResponse out;
             std::string error;
-            CHECK(botbrain::DecodeDialogueResponse(body, out, error));
+            CHECK(botbrain::DecodeDialogueResponse(body, /*allowCommands=*/false, out, error));
             CHECK(!out.spoke);
             CHECK(out.reply.empty());
             CHECK(!out.reason.empty());
@@ -1040,7 +1040,7 @@ namespace
         {
             botbrain::DialogueResponse out;
             std::string error;
-            CHECK(botbrain::DecodeDialogueResponse(body, out, error));
+            CHECK(botbrain::DecodeDialogueResponse(body, /*allowCommands=*/false, out, error));
             CHECK(!out.spoke);
             CHECK(out.reply.empty());
             CHECK(out.reason == botbrain::kSilenceFiltered);
@@ -1053,7 +1053,7 @@ namespace
         longBody += "\",\"stats\":{}}";
         botbrain::DialogueResponse out;
         std::string error;
-        CHECK(botbrain::DecodeDialogueResponse(longBody, out, error));
+        CHECK(botbrain::DecodeDialogueResponse(longBody, /*allowCommands=*/false, out, error));
         CHECK(!out.spoke);
         CHECK(out.reason == botbrain::kSilenceFiltered);
 
@@ -1062,7 +1062,7 @@ namespace
         std::string atLimit = "{\"spoke\":true,\"reply\":\"";
         atLimit += std::string(botbrain::kMaxDialogueReplyBytes, 'a');
         atLimit += "\",\"stats\":{}}";
-        CHECK(botbrain::DecodeDialogueResponse(atLimit, out, error));
+        CHECK(botbrain::DecodeDialogueResponse(atLimit, /*allowCommands=*/false, out, error));
         CHECK(out.spoke);
     }
 
@@ -1073,9 +1073,131 @@ namespace
         {
             botbrain::DialogueResponse out;
             std::string error;
-            CHECK(!botbrain::DecodeDialogueResponse(body, out, error));
+            CHECK(!botbrain::DecodeDialogueResponse(body, /*allowCommands=*/false, out, error));
             CHECK(!error.empty());
             CHECK(!out.spoke);
+        }
+    }
+
+    void TestDialogueCommandsAreOfferedOnlyWhenAsked()
+    {
+        // allow_commands is omitted when false. That is not a formatting
+        // preference: the Go side's omitempty means an absent field and a false
+        // one are the same request, and this module's default -- no commands --
+        // should look on the wire exactly like a worldserver that predates the
+        // feature.
+        botbrain::DialogueRequest req = SampleDialogue();
+        CHECK(!req.allowCommands);
+        CHECK(!Contains(botbrain::EncodeDialogueRequest(req), "allow_commands"));
+
+        req.allowCommands = true;
+        CHECK(Contains(botbrain::EncodeDialogueRequest(req), "\"allow_commands\":true"));
+
+        // And it changes nothing about whether the request is valid: this is a
+        // capability, not a required field.
+        std::string error;
+        CHECK(botbrain::ValidateDialogueRequest(req, error));
+    }
+
+    void TestDialogueCommandDecoding()
+    {
+        // The five spellings, written out rather than derived, because these
+        // are the strings the service emits and a rename on either side is a
+        // bot that silently never obeys.
+        struct Case { char const* wire; };
+        Case const known[] = {
+            { "follow" }, { "stay" }, { "flee" }, { "attack" }, { "equip_upgrades" }
+        };
+        for (Case const& c : known)
+        {
+            std::string body = "{\"spoke\":true,\"reply\":\"Ich komme.\",\"command\":\"";
+            body += c.wire;
+            body += "\",\"stats\":{}}";
+
+            botbrain::DialogueResponse out;
+            std::string error;
+            CHECK(botbrain::DecodeDialogueResponse(body, /*allowCommands=*/true, out, error));
+            CHECK(out.spoke);
+            CHECK(out.command == c.wire);
+            CHECK(botbrain::IsKnownDialogueCommand(out.command));
+        }
+
+        // A command this build does not know is DROPPED, never passed on -- and
+        // the reply is untouched, because a service that learned a sixth
+        // command should cost a bot one action, not one sentence.
+        {
+            botbrain::DialogueResponse out;
+            std::string error;
+            CHECK(botbrain::DecodeDialogueResponse(
+                "{\"spoke\":true,\"reply\":\"Ja.\",\"command\":\"summon\",\"stats\":{}}",
+                /*allowCommands=*/true, out, error));
+            CHECK(out.spoke);
+            CHECK(out.reply == "Ja.");
+            CHECK(out.command.empty());
+        }
+
+        // Near misses are not commands either. A case variant and a value with
+        // an argument glued on are the two shapes a model actually produces,
+        // and treating either as the command it resembles is how an enum
+        // becomes a parser.
+        char const* const notCommands[] = { "Follow", "follow ", "attack Thrainn", "" };
+        for (char const* value : notCommands)
+        {
+            std::string body = "{\"spoke\":true,\"reply\":\"Ja.\",\"command\":\"";
+            body += value;
+            body += "\",\"stats\":{}}";
+
+            botbrain::DialogueResponse out;
+            std::string error;
+            CHECK(botbrain::DecodeDialogueResponse(body, /*allowCommands=*/true, out, error));
+            CHECK(out.command.empty());
+        }
+
+        // A command on a response to a request that did not ask for one is
+        // dropped here rather than reasoned about upstream. Two layers refusing
+        // the same thing, deliberately: this is the one that cannot be talked
+        // out of it by anything the far side says.
+        {
+            botbrain::DialogueResponse out;
+            std::string error;
+            CHECK(botbrain::DecodeDialogueResponse(
+                "{\"spoke\":true,\"reply\":\"Ja.\",\"command\":\"follow\",\"stats\":{}}",
+                /*allowCommands=*/false, out, error));
+            CHECK(out.spoke);
+            CHECK(out.command.empty());
+        }
+    }
+
+    void TestACommandSurvivesSilenceAndAFilteredReply()
+    {
+        // Acting without speaking is a normal outcome. "Komm her" deserves
+        // obedience more than it deserves a sentence, and a decoder that
+        // dropped the command along with the empty reply would make the useful
+        // case the impossible one.
+        {
+            botbrain::DialogueResponse out;
+            std::string error;
+            CHECK(botbrain::DecodeDialogueResponse(
+                "{\"spoke\":false,\"reason\":\"nothing_to_say\",\"command\":\"follow\",\"stats\":{}}",
+                /*allowCommands=*/true, out, error));
+            CHECK(!out.spoke);
+            CHECK(out.reply.empty());
+            CHECK(out.command == botbrain::kDialogueCommandFollow);
+        }
+
+        // And a reply this side refuses does not cancel it either: a sentence
+        // with a newline in it says nothing about whether the player asked the
+        // bot to come.
+        {
+            botbrain::DialogueResponse out;
+            std::string error;
+            CHECK(botbrain::DecodeDialogueResponse(
+                "{\"spoke\":true,\"reply\":\"Hallo.\\nUnd noch was.\",\"command\":\"stay\",\"stats\":{}}",
+                /*allowCommands=*/true, out, error));
+            CHECK(!out.spoke);
+            CHECK(out.reply.empty());
+            CHECK(out.reason == botbrain::kSilenceFiltered);
+            CHECK(out.command == botbrain::kDialogueCommandStay);
         }
     }
 }
@@ -1120,6 +1242,11 @@ int main(int argc, char** argv)
     TestSilenceIsNotAFailure();
     TestAReplyThisSideWillNotVouchForBecomesSilence();
     TestMalformedDialogueBodiesFailCleanly();
+
+    // Commands: the one field on this endpoint that can make something happen.
+    TestDialogueCommandsAreOfferedOnlyWhenAsked();
+    TestDialogueCommandDecoding();
+    TestACommandSurvivesSilenceAndAFilteredReply();
 
     TestGoldenPlanResponse();
     TestGoldenContractInfo();

@@ -415,6 +415,14 @@ namespace botbrain
         out.contractVersion = GetString(doc, "contract_version");
         out.requestId = GetString(doc, "request_id");
 
+        // The command, gated twice: by what this request allowed, and by what
+        // this build knows how to execute. Both are dropped silently to
+        // nothing, because "a command I cannot run" and "a command nobody asked
+        // for" must never become "some other command".
+        out.command = GetString(doc, "command");
+        if (!allowCommands || !IsKnownDialogueCommand(out.command))
+            out.command.clear();
+
         rapidjson::Value::ConstMemberIterator stats = doc.FindMember("stats");
         if (stats != doc.MemberEnd() && stats->value.IsObject())
         {
@@ -564,6 +572,19 @@ namespace botbrain
     char const* const kDialogueSpeakerBot = "bot";
 
     char const* const kDialogueLanguage = "de";
+
+    char const* const kDialogueCommandFollow = "follow";
+    char const* const kDialogueCommandStay = "stay";
+    char const* const kDialogueCommandFlee = "flee";
+    char const* const kDialogueCommandAttack = "attack";
+    char const* const kDialogueCommandEquipUpgrades = "equip_upgrades";
+
+    bool IsKnownDialogueCommand(std::string const& command)
+    {
+        return command == kDialogueCommandFollow || command == kDialogueCommandStay ||
+               command == kDialogueCommandFlee || command == kDialogueCommandAttack ||
+               command == kDialogueCommandEquipUpgrades;
+    }
 
     char const* const kSilenceNothingToSay = "nothing_to_say";
     char const* const kSilenceDisabled = "dialogue_disabled";
@@ -749,12 +770,20 @@ namespace botbrain
         WriteStrIfSet(w, "language", req.language);
         WriteIntIfSet(w, "sent_at_ms", req.sentAtMs);
         WriteIntIfSet(w, "deadline_ms", req.deadlineMs);
+        // Omitted when false, which is what the Go side's omitempty expects and
+        // what makes "this worldserver does not do commands" the shape of a
+        // request rather than a flag in it.
+        if (req.allowCommands)
+        {
+            w.Key("allow_commands");
+            w.Bool(true);
+        }
         w.EndObject();
 
         return std::string(buffer.GetString(), buffer.GetSize());
     }
 
-    bool DecodeDialogueResponse(std::string const& body, DialogueResponse& out, std::string& error)
+    bool DecodeDialogueResponse(std::string const& body, bool allowCommands, DialogueResponse& out, std::string& error)
     {
         rapidjson::Document doc;
         if (!Parse(body, doc, error))
@@ -776,6 +805,14 @@ namespace botbrain
         out.reply = GetString(doc, "reply");
         out.reason = GetString(doc, "reason");
 
+        // The command, gated twice: by what this request allowed, and by what
+        // this build knows how to execute. Both are dropped silently to
+        // nothing, because "a command I cannot run" and "a command nobody asked
+        // for" must never become "some other command".
+        out.command = GetString(doc, "command");
+        if (!allowCommands || !IsKnownDialogueCommand(out.command))
+            out.command.clear();
+
         rapidjson::Value::ConstMemberIterator stats = doc.FindMember("stats");
         if (stats != doc.MemberEnd())
         {
@@ -793,6 +830,10 @@ namespace botbrain
             out.spoke = false;
             out.reply.clear();
             out.reason = kSilenceFiltered;
+            // out.command is deliberately NOT cleared here. A sentence this
+            // side will not vouch for says nothing about whether the player
+            // asked the bot to come, and the command has already passed its own
+            // two gates above.
             return true;
         }
         if (!out.spoke)

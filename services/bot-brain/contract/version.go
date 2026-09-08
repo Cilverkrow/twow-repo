@@ -75,9 +75,23 @@ import (
 // it simply never calls the new route. The minor is what lets a newer C++ side
 // discover, at startup from GET /v1/contract, whether this brain can talk at all
 // rather than finding out one 404 at a time.
+//
+// 1.4 is claimed by visit_trainer, the tenth [IntentKind], which is in flight on
+// its own branch. It is not in this build. The gap is deliberate and costs
+// nothing: [Negotiate] only ever compares minors for order, so a minor this
+// build skipped is indistinguishable from one it predates. Taking 1.5 here means
+// two branches cannot both ship "1.4" meaning different things, which is the
+// failure that is expensive -- a peer that agreed on a version number and
+// disagrees about what is in it.
+//
+// 1.5 added [DialogueRequest.AllowCommands] and [DialogueResponse.Command]: a
+// closed enum through which a reply may ask the worldserver to run one chat
+// command the speaker could have typed. Additive in both directions -- a 1.3
+// brain never sends one, and a worldserver that predates it ignores a field it
+// does not know.
 const (
 	VersionMajor = 1
-	VersionMinor = 3
+	VersionMinor = 5
 )
 
 // Version is the canonical "MAJOR.MINOR" string carried on every request and
