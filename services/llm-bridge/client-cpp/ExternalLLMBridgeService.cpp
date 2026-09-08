@@ -1532,6 +1532,18 @@ private:
                     ready = true;
                     m_state.store(State::Ready);
                     m_cv.notify_all();
+#ifndef SSC_EXTERNAL_LLM_BRIDGE_STANDALONE
+                    // The only line this service emits that is not a failure.
+                    //
+                    // Without it the two error lines are the ENTIRE observable
+                    // surface, and their absence is ambiguous in the worst
+                    // possible way: a bridge that latched shut and a bridge that
+                    // never started look exactly like a healthy one, because
+                    // non-LLM bot chat carries on either way. This makes "it came
+                    // up" a positive statement, so "no error since" means
+                    // something.
+                    sLog.outBasic("external_llm_bridge state=ready admission=open");
+#endif
                 }
                 else
                 {
