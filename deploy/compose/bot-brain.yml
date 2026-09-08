@@ -127,6 +127,26 @@ services:
       BOT_BRAIN_LLM_TEMPERATURE: ${BOT_BRAIN_LLM_TEMPERATURE:-0}
       BOT_BRAIN_LLM_MAX_BOTS_PER_CALL: ${BOT_BRAIN_LLM_MAX_BOTS_PER_CALL:-16}
 
+      # Run inference OFF the planning tick.
+      #
+      # Turn this on when the endpoint cannot answer inside BOT_BRAIN_LLM_TIMEOUT.
+      # A local 7B on CPU takes about 8 s (LLM-011) against a 1500 ms timeout, so
+      # with this off such a backend loses every single batch and contributes
+      # nothing at all -- correct, visible, and useless.
+      #
+      # With it on, the model answers between ticks and its intent is served on a
+      # later one. Staleness is unchanged: an intent still carries the expiry it
+      # was stamped with, so an answer that took too long is dropped rather than
+      # applied late, and the worldserver still refuses a POI whose table aged
+      # out. This buys latency tolerance, never permission to act on old data.
+      #
+      # Off by default because it changes WHEN an answer arrives, which is the
+      # right trade for a slow local endpoint and the wrong one for a fast hosted
+      # one. That is an operator's decision, not the service's.
+      BOT_BRAIN_LLM_ASYNC: ${BOT_BRAIN_LLM_ASYNC:-false}
+      # Bounds one background call. May be generous: it is not inside a tick.
+      BOT_BRAIN_LLM_ASYNC_TIMEOUT: ${BOT_BRAIN_LLM_ASYNC_TIMEOUT:-30s}
+
     ports:
       # Loopback by default. This endpoint takes unauthenticated POSTs that
       # drive bot behaviour; it belongs on a private network, not on a public
