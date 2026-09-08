@@ -415,14 +415,6 @@ namespace botbrain
         out.contractVersion = GetString(doc, "contract_version");
         out.requestId = GetString(doc, "request_id");
 
-        // The command, gated twice: by what this request allowed, and by what
-        // this build knows how to execute. Both are dropped silently to
-        // nothing, because "a command I cannot run" and "a command nobody asked
-        // for" must never become "some other command".
-        out.command = GetString(doc, "command");
-        if (!allowCommands || !IsKnownDialogueCommand(out.command))
-            out.command.clear();
-
         rapidjson::Value::ConstMemberIterator stats = doc.FindMember("stats");
         if (stats != doc.MemberEnd() && stats->value.IsObject())
         {

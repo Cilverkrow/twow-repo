@@ -61,6 +61,15 @@ namespace
 
 #define CHECK(cond) Check((cond), #cond, __LINE__)
 
+    // Two overloads rather than one taking std::string, because most call
+    // sites pass a literal and a std::string parameter would build a temporary
+    // for each of them. The string one exists for the version check, which
+    // concatenates.
+    bool Contains(std::string const& haystack, std::string const& needle)
+    {
+        return haystack.find(needle) != std::string::npos;
+    }
+
     bool Contains(std::string const& haystack, char const* needle)
     {
         return haystack.find(needle) != std::string::npos;
@@ -1016,7 +1025,7 @@ namespace
         // service indistinguishable from a healthy quiet one.
         botbrain::DialogueResponse out;
         std::string error;
-        CHECK(botbrain::DecodeDialogueResponse("{\"spoke\":false,\"stats\":{}}", out, error));
+        CHECK(botbrain::DecodeDialogueResponse("{\"spoke\":false,\"stats\":{}}", /*allowCommands=*/false, out, error));
         CHECK(!out.spoke);
         CHECK(out.reason == botbrain::kSilenceUnavailable);
     }
