@@ -3,6 +3,23 @@
 Detection and recovery for the two states in which `ExternalLLMBridgeService`
 closes admission permanently. Answers LLM-006 (issue #16).
 
+## Status: not yet deployed
+
+`services/llm-bridge/client-cpp/` is a **reference copy**. Nothing in this
+repository or in `core/` compiles it — the integration exists only in the
+upstream snapshot under `runbooks/ssc-llm-production-bridge-01-phase-b-r1-*`,
+where it sat in `src/modules/PlayerBots/playerbot/`.
+
+So the latch cannot occur today, and the check below will correctly report
+nothing forever. This is preparation, which is what #16 asked for ("do before any
+live use"): the point is that the monitoring exists *before* the first exhaustion
+rather than being written after one is noticed — and by then, per the retention
+trap below, the evidence would already be gone.
+
+When the service is integrated, verify the two error strings and the ready string
+still match what the check greps for. They are a log-format coupling, and nothing
+enforces it.
+
 ## What has happened
 
 The bridge closes admission for good in two ways, both deliberate (ADR-0013):
