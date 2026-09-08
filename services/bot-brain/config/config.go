@@ -72,6 +72,13 @@ type Config struct {
 	// LLMAsyncTimeout bounds one background inference call. It may be generous:
 	// it is not inside anyone's tick.
 	LLMAsyncTimeout time.Duration
+	// LLMMaxAttempts bounds tries per background round when the provider asks
+	// us to wait. Only the async lane retries: a call racing a tick must not,
+	// because the deterministic fallback needs the remaining budget.
+	LLMMaxAttempts int
+	// LLMMinInterval is the floor between background inference calls, a rate
+	// limit expressed as spacing. Zero means no floor.
+	LLMMinInterval time.Duration
 	// TraitDSN points at cv_brain, where traits that have CHANGED are stored.
 	//
 	// Empty means no store, and that is a supported mode rather than a broken
@@ -125,6 +132,8 @@ func Load(getenv func(string) string) (Config, error) {
 		TraitDSN:        e.str("BOT_BRAIN_TRAIT_DSN", ""),
 		LLMAsync:        e.boolean("BOT_BRAIN_LLM_ASYNC", false),
 		LLMAsyncTimeout: e.dur("BOT_BRAIN_LLM_ASYNC_TIMEOUT", 30*time.Second),
+		LLMMaxAttempts:  e.num("BOT_BRAIN_LLM_MAX_ATTEMPTS", 3),
+		LLMMinInterval:  e.dur("BOT_BRAIN_LLM_MIN_INTERVAL", 0),
 		MaxBodyBytes:    int64(e.num("BOT_BRAIN_MAX_BODY_BYTES", contract.DefaultMaxBodyBytes)),
 		Rule: rule.Thresholds{
 			RestBelowHealthPct:           e.flt("BOT_BRAIN_RULE_REST_BELOW_HP_PCT", 45),

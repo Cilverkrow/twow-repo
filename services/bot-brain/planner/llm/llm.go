@@ -324,11 +324,17 @@ func (p *Planner) Plan(ctx context.Context, req planner.Request) ([]contract.Int
 	}
 	if resp.StatusCode != http.StatusOK {
 		p.recordFailure()
-		// 429 and 5xx are the retryable cloud cases ARCH-003 flags. There is no
-		// retry here on purpose: a retry inside the planner would eat the
-		// fallback budget. Retry, if it is ever wanted, belongs above the
-		// timeout, not below it.
-		return nil, fmt.Errorf("llm: endpoint returned %d: %s", resp.StatusCode, truncate(string(raw), 200))
+		// Still no retry HERE, for the original reason: a retry inside the
+		// planner eats the fallback budget, and this call may be racing a tick.
+		// What changed is that the error now SAYS whether retrying would be
+		// reasonable, so a caller with time to spare -- the async lane, which
+		// runs between ticks and has no deadline to protect -- can decide for
+		// itself. That is what "retry belongs above the timeout" meant.
+		return nil, &StatusError{
+			Code:       resp.StatusCode,
+			RetryAfter: retryAfter(resp.Header.Get("Retry-After")),
+			Body:       truncate(string(raw), 200),
+		}
 	}
 
 	var cr chatResponse
