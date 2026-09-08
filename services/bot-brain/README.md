@@ -51,27 +51,35 @@ Verified by `go test ./...` and by running the binary:
   that would silently defeat the whole design (an LLM timeout with no budget
   left for the fallback).
 
-## What exists but has never run for real
+## What has run for real, and what has not
 
-- **The C++ integration** (`modules/mod-bot-brain`). The seam, the client, the
-  config flag and the wire codec all exist and are unit-tested; the module
-  attaches through `RegisterAiContextAugmenter` with zero delta to the bot tree.
-  What has never happened is a bot taking an intent from it (#155). Until that
-  does, treat this end as unproven rather than done.
+- **The C++ integration** (`modules/mod-bot-brain`) has driven bots on a live realm.
+  #155 captured both halves from a running world: intents becoming travel targets
+  (`BotBrainTravelAction.cpp:67`, several bots, kinds `travel_to` and
+  `turn_in_quest`), and the service being stopped mid-flight with bots carrying on
+  playing. This end is no longer unproven.
 
-  Three known gaps between the two sides, all verified in the tree:
+  The three gaps this section used to list have all closed, and are recorded here
+  because the list outlived them by long enough to be misleading:
 
-  - The client sends **one snapshot per request**, which is the thing this
-    package's own contract doc warns against; `MaxBatch = 2048` is decorative
-    until that changes.
-  - Only the **first** intent in a response is applied. Harmless today because
-    responses carry one, and a silent dropper of N-1 intents the moment
-    batching lands - so the two must change together.
-  - The handshake runs **once at startup and is never retried**, so a service
-    that restarts leaves the brain off for the worldserver's whole lifetime.
-- **Durable identity and memory.** ADR-0039 decides both - a stored v4 UUID and
-  a `cv_brain` schema - and the UUID now travels on the wire. The store itself
-  is created but nothing writes to it yet.
+  - Batching exists. `max_batch` is negotiated at handshake and snapshots
+    accumulate into a pending batch, rather than one snapshot per request.
+  - Every intent in a response is applied, not only the first.
+  - The handshake is retried, so a service that restarts no longer leaves the
+    brain off for the worldserver's whole lifetime -- #155's capture contains the
+    `contract handshake recovered` line proving it.
+
+- **Durable identity and memory** are written, not just designed. `cv_brain` holds
+  three tables and the service writes two of them: `bot_trait` (learned scalars,
+  upserted by the trait learner) and `bot_observation` (outcome history). The
+  worldserver mints `bot_identity`.
+
+- **What has NOT run for real is the personality layer.** `Character.TraitKeys` is
+  declared on both sides of the wire and forwarded to the model, and nothing in
+  the worldserver populates it -- `FillCharacter` never writes the field. Every
+  consumer of it, including the trait-key-to-boldness mapping in
+  `planner/identity/keys.go`, is fed only by tests. Contract sections 4, 5-7, 9
+  and 13 have no implementation at all.
 
 ## What is a skeleton
 
@@ -410,15 +418,24 @@ contained behind `metrics/`.
 
 ## Next, in the order that makes sense
 
-1. **The snapshot recorder.** ARCH-001 is explicit that fixtures should be
+1. **A world in CI.** No CI job anywhere boots a worldserver, so no CI job has
+   ever seen a bot. That is how a config flag left 5,021 of 5,039 bots at level 1
+   with no spells for the life of a realm, found only by querying the database by
+   hand. `compose up + smoke` is one bind mount from starting mangosd, and
+   `test/smoke/30-bot-persistence.sh` already contains the assertions, skipped.
+   Everything below is asserted rather than verified until this exists.
+2. **The snapshot recorder.** ARCH-001 is explicit that fixtures should be
    recorded from a live server rather than invented. Every test here uses
    invented snapshots, and that is this deliverable's weakest point.
-2. **The C++ seam** on one behaviour only — travel-target/quest selection —
-   with the brain path off by default.
 3. **The measurements** that ARCH-001's decision gate actually asks for: p99
    intent latency, messages/sec at 1000 bots, worldserver CPU delta. Publish
    them; pick the next behaviour family on evidence, not on enthusiasm.
-4. **Then** ARCH-003's cost controls, and only then point this at a metered API.
+4. **Populate the personality layer**, which is built end to end except for the
+   one step that produces its input.
+
+~~The C++ seam on one behaviour only~~ — done, and proven on a live realm (#155).
+~~ARCH-003's cost controls~~ — the token budget and rate-limit handling exist; a
+durable ledger stays deferred until there is a decision to spend money.
 
 ## References
 
