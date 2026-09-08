@@ -60,6 +60,14 @@ namespace botbrain
     // by the travel-target chooser: the bot walks there.
     bool IsPoiDirectedKind(std::string const& kind);
 
+    // A POI-directed kind that does something WHEN IT ARRIVES, rather than
+    // treating arrival as the whole point.
+    //
+    // travel_to and grind_area are deliberately absent: for those, being there
+    // IS the outcome, and inventing a terminal action for them would turn a
+    // successful journey into a failure whenever the invented action declined.
+    bool HasArrivalAction(std::string const& kind);
+
     // A kind applied by something other than the travel chooser -- an action the
     // bot performs where it stands, rather than a place to go.
     //

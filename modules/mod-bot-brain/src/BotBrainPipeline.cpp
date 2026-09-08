@@ -750,6 +750,54 @@ namespace botbrain
             state.outcomes.push_back(next);
         }
 
+        // Does the thing the intent asked for, now that the bot has arrived.
+        //
+        // Map thread, no lock held. It delegates to the stock actions rather than
+        // reimplementing any of them: PlayerbotAI::DoSpecificAction runs one by
+        // name, which is how the stock RPG layer composes itself.
+        //
+        // None of these needs the NPC's guid. SellAction and RepairAllAction walk
+        // AI_VALUE("nearest npcs") and call GetNPCIfCanInteractWith, which checks
+        // the npc flag, hostility and interaction distance for us; QuestAction
+        // prefers a guid from the event but falls back to the same scan. Being
+        // close enough is the whole precondition, and arriving is exactly that.
+        //
+        // Which is why the travel destination's lack of an ObjectGuid does not
+        // matter here: it carries an entry and a position, never a spawn, and
+        // the alternative -- steering the rpg engine through "rpg target" --
+        // would need a live guid anyway AND fight ChooseTravelTargetAction, which
+        // resets that value every time a travel target is chosen.
+        bool PerformArrivalAction(Player* bot, PlayerbotAI* botAI, std::string const& kind,
+            std::string& reason)
+        {
+            if (!bot || !botAI)
+            {
+                reason = "action_refused";
+                return false;
+            }
+
+            if (kind == kIntentVendorSell)
+            {
+                // The "vendor" qualifier is not decoration: SellAction reads it
+                // to sell cheapest-first and stop after a bounded number of
+                // items, which is the behaviour the stock rpg path gets.
+                return botAI->DoSpecificAction("sell", Event("rpg action", "vendor"), true);
+            }
+            if (kind == kIntentRepair)
+                return botAI->DoSpecificAction("repair", Event(), true);
+            if (kind == kIntentTurnInQuest)
+                return botAI->DoSpecificAction("talk to quest giver", Event(), true);
+            if (kind == kIntentPickQuest)
+                return botAI->DoSpecificAction("accept all quests", Event(), true);
+
+            // HasArrivalAction gates the call, so this is unreachable unless the
+            // two fall out of step. Report it rather than returning a bare false:
+            // a kind advertised as having an arrival action and then silently
+            // doing nothing is the failure this module exists to avoid.
+            reason = "unsupported_kind";
+            return false;
+        }
+
         // Watches the intent the bot is carrying out and reports how it ended.
         //
         // Map thread only: it reads the bot's travel target through the AI
@@ -774,11 +822,21 @@ namespace botbrain
             // the lock is dropped: the AI context read below is a map lookup
             // inside another subsystem, and holding a mutex shared by every map
             // thread across it would serialise them all on one bot's context.
+            std::string kind;
+            ai::TravelDestination* expected = nullptr;
+            uint32 startedAt = 0;
             {
                 std::lock_guard<std::mutex> lock(g_statesMutex);
                 BotPlanState const* state = Find(raw);
                 if (!state || !state->hasActiveTravel)
                     return;
+                // Copied, so the decision below -- and the action that may follow
+                // it -- happen with no mutex held. Running a stock AI action
+                // under a lock every map thread contends for would serialise the
+                // whole server on one bot's shopping trip.
+                kind = state->activeKind;
+                expected = state->activeDestination;
+                startedAt = state->activeTravelAtMs;
             }
 
             TravelTarget* target = nullptr;
@@ -786,15 +844,9 @@ namespace botbrain
                     botAI->GetAiObjectContext()->GetValue<TravelTarget*>("travel target"))
                 target = value->Get();
 
-            std::lock_guard<std::mutex> lock(g_statesMutex);
-            // Re-checked, not assumed: the state can have been resolved or the
-            // bot forgotten while the lock was down.
-            BotPlanState* state = Find(raw);
-            if (!state || !state->hasActiveTravel)
-                return;
-
             char const* result = nullptr;
             char const* reason = "";
+            bool arrived = false;
 
             if (!target)
             {
@@ -802,7 +854,7 @@ namespace botbrain
                 // not the thing that was asked for.
                 result = "superseded";
             }
-            else if (target->GetDestination() != state->activeDestination)
+            else if (target->GetDestination() != expected)
             {
                 // Something re-targeted this bot -- the stock chooser, a group
                 // leader, an admin command. Not a failure of the plan, and
@@ -816,10 +868,11 @@ namespace botbrain
                 {
                     case TravelStatus::TRAVEL_STATUS_WORK:
                     case TravelStatus::TRAVEL_STATUS_COOLDOWN:
-                        // Arrived and began doing whatever the destination is
-                        // for. This is the first outcome this module has ever
-                        // been able to report that means the bot GOT there.
+                        // Arrived. For travel_to and grind_area that is the whole
+                        // outcome; for the rest it is the moment the thing the
+                        // intent actually asked for becomes possible.
                         result = "completed";
+                        arrived = true;
                         break;
 
                     case TravelStatus::TRAVEL_STATUS_EXPIRED:
@@ -841,7 +894,7 @@ namespace botbrain
                 }
             }
 
-            if (!result && Elapsed(now, state->activeTravelAtMs + kActiveTravelTimeoutMs))
+            if (!result && Elapsed(now, startedAt + kActiveTravelTimeoutMs))
             {
                 // "superseded", not "failed/unreachable". A travel that never
                 // reached a terminal status is an ending nobody observed, and
@@ -854,6 +907,34 @@ namespace botbrain
             }
 
             if (!result)
+                return;
+
+            // The thing the intent was for, done where the bot now stands, with
+            // no lock held.
+            //
+            // "completed" has meant "the bot got there" since the arrival
+            // tracking landed. For these kinds arriving was never the request --
+            // a vendor_sell intent asks the bot to SELL -- so reporting success
+            // on arrival alone would be the same overclaim "accepted" used to
+            // make, one step further along.
+            // Declared out here on purpose: `reason` below borrows its c_str(),
+            // and a string scoped to the if-block would be destroyed before
+            // StoreOutcome reads it.
+            std::string actionReason;
+            if (arrived && HasArrivalAction(kind))
+            {
+                if (!PerformArrivalAction(bot, botAI, kind, actionReason))
+                {
+                    result = "failed";
+                    reason = actionReason.empty() ? "action_refused" : actionReason.c_str();
+                }
+            }
+
+            std::lock_guard<std::mutex> lock(g_statesMutex);
+            // Re-checked, not assumed: the state can have been resolved, or the
+            // bot forgotten, while the lock was down and the action ran.
+            BotPlanState* state = Find(raw);
+            if (!state || !state->hasActiveTravel)
                 return;
 
             StoreOutcome(*state, state->activeIntentId, state->activeKind, result, reason,
