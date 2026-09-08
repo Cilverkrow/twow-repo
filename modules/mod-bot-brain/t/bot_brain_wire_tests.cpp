@@ -53,7 +53,13 @@ namespace
 
 #define CHECK(cond) Check((cond), #cond, __LINE__)
 
-    bool Contains(std::string const& haystack, char const* needle)
+    // needle is std::string const&, not char const*, so a caller may pass either
+    // a literal or a built-up string. It took char const* and the contract-version
+    // assertion below -- which has to CONCATENATE the version onto its prefix
+    // rather than hardcoding it -- did not compile. A test helper that only
+    // accepts literals quietly pushes every assertion towards hardcoded values,
+    // which is the opposite of what this file is for.
+    bool Contains(std::string const& haystack, std::string const& needle)
     {
         return haystack.find(needle) != std::string::npos;
     }
