@@ -17,7 +17,8 @@
         "race": 1,
         "faction": "alliance",
         "money": 123456,
-        "free_bag_slots": 3
+        "free_bag_slots": 3,
+      "trait_keys": ["curious", "wary"]
       },
       "pos": {
         "map_id": 1,

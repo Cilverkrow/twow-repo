@@ -80,6 +80,20 @@ func TestGoldenPlanRequestDecodes(t *testing.T) {
 		t.Errorf("free_bag_slots = %d, want 3", s.Char.FreeBagSlots)
 	}
 
+	// trait_keys is the only part of the personality contract that crosses this
+	// wire, and it had no golden coverage on either side. The field is declared
+	// in both languages and serialised by the C++ encoder, so a rename would
+	// have left both suites green and every bot would have arrived with no
+	// personality -- indistinguishable from the state before personality
+	// shipped, which is exactly the failure that hides longest.
+	//
+	// Order is asserted, not just membership: the keys are a sequence on the
+	// wire, and a decoder that reordered them would still satisfy a set
+	// comparison while breaking any consumer that depends on the first key.
+	if got := s.Char.TraitKeys; len(got) != 2 || got[0] != "curious" || got[1] != "wary" {
+		t.Errorf("trait_keys = %v, want [curious wary]", got)
+	}
+
 	// Percentages are 0..100, never 0..1. Getting this wrong on one side turns
 	// a healthy bot into one that looks nearly dead, and every rung of the rule
 	// ladder reads it.

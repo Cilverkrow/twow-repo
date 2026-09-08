@@ -73,6 +73,11 @@ namespace
         s.chr.faction = "horde";
         s.chr.money = 13370;
         s.chr.freeBagSlots = 3;
+        // Personality. Two keys rather than one, because the bug this guards
+        // against is an ARRAY that encodes as a scalar or loses its ordering --
+        // a single element hides both.
+        s.chr.traitKeys.push_back("curious");
+        s.chr.traitKeys.push_back("wary");
 
         s.pos.mapId = 1;
         s.pos.x = -618.5;
@@ -151,6 +156,18 @@ namespace
 
         CHECK(Contains(json, "\"bot\":{\"realm\":1,\"guid\":4242}"));
         CHECK(Contains(json, "\"free_bag_slots\":3"));
+
+        // trait_keys is an ARRAY of strings under char, and it is the only part
+        // of the personality contract that crosses this wire. It had no coverage
+        // at all: the field is declared on both sides and serialised here, but
+        // nothing asserted the name, the nesting or the shape, so either side
+        // could have renamed it and both suites would still have passed.
+        CHECK(Contains(json, "\"trait_keys\":[\"curious\",\"wary\"]"));
+        std::string::size_type const chrStart = json.find("\"char\":{");
+        std::string::size_type const traits = json.find("\"trait_keys\"");
+        CHECK(chrStart != std::string::npos);
+        CHECK(traits != std::string::npos);
+        CHECK(traits > chrStart);
         CHECK(Contains(json, "\"observed_at_ms\":1756700000000"));
         CHECK(Contains(json, "\"map_id\":1"));
         CHECK(Contains(json, "\"orientation\":"));
