@@ -530,6 +530,24 @@ stage 45-playerbot-migrations stage_playerbot_migrations
 # so that skipping an unmounted brain writes no marker.
 if [ -d "$BRAIN_SQL_DIR/cv_brain" ]; then
     stage 46-bot-brain stage_bot_brain
+    # THE RULE, applied: 46-bot-brain's marker records that the stage NAME ran,
+    # not which files it applied. cv_brain/20260908120000_bot_personality_cv_brain.sql
+    # was added after that marker existed, so on every volume bootstrapped before
+    # today the stage above is skipped and the new table is never created. Nothing
+    # here fails; the worldserver just queries a table that is not there, backs
+    # off, and retries forever, and no bot ever gets a personality.
+    #
+    # A NEW STAGE NAME is the fix the rule prescribes, and re-applying the WHOLE
+    # directory is safe rather than merely convenient: every file in cv_brain/ is
+    # CREATE TABLE IF NOT EXISTS and nothing else, which is a constraint that
+    # directory documents and is checked by the fact that it is re-applied here.
+    #
+    # Not preflight(): preflight forbids a schema load by name, and applying a
+    # directory of migrations on every container start is exactly that. The cost
+    # of a stage instead is that the next table added to cv_brain needs the next
+    # number here. That is the intended cost -- it is one line, and it is the line
+    # that makes "which volumes have this table" answerable.
+    stage 47-bot-brain-personality stage_bot_brain
 else
     log "bot-brain sql: $BRAIN_SQL_DIR/cv_brain not mounted - skipping (no marker written)"
 fi

@@ -30,12 +30,20 @@
 
 #include "BotBrainWire.h"
 
+// Header-only, no game includes, no rapidjson: the same hermetic property that
+// lets the policy suite compile with nothing but -I src. See tests.cmake.
+#include "PersonalityCatalog.h"
+#include "PersonalityIdentity.h"
+
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -580,6 +588,139 @@ namespace
         }
         ++g_checks;
     }
+
+    // ----------------------------------------------------------------------
+    // The half of the personality feature that IS hermetic.
+    //
+    // char.trait_keys is now filled from a profile the worldserver generates
+    // and stores, and almost all of that needs a Player and a database. Two
+    // pieces do not, and they are exactly the two where a mistake is invisible
+    // at runtime and permanent once written: the translation from numeric race
+    // and class ids to catalog keys, and the comma-separated form the profile is
+    // stored in. A race key with a typo produces no race traits at all, silently
+    // and forever, for every character of that race -- there is no error, only a
+    // duller bot.
+    // ----------------------------------------------------------------------
+
+    bool CatalogHasRace(char const* key)
+    {
+        for (auto const& pool : ai::personality::catalog::kRaces)
+            if (std::strcmp(pool.key, key) == 0)
+                return true;
+        return false;
+    }
+
+    bool CatalogHasClass(char const* key)
+    {
+        for (auto const& pool : ai::personality::catalog::kClasses)
+            if (std::strcmp(pool.key, key) == 0)
+                return true;
+        return false;
+    }
+
+    void TestPersonalityIdentityMapping()
+    {
+        namespace pid = ai::personality::identity;
+        namespace cat = ai::personality::catalog;
+
+        // Every id the mapping claims to know must name a pool that exists...
+        std::uint8_t const races[] = {
+            pid::kRaceHuman, pid::kRaceOrc, pid::kRaceDwarf, pid::kRaceNightElf,
+            pid::kRaceUndead, pid::kRaceTauren, pid::kRaceGnome, pid::kRaceTroll,
+            pid::kRaceGoblin, pid::kRaceHighElf
+        };
+        for (std::uint8_t const race : races)
+        {
+            CHECK(pid::RaceKey(race)[0] != '\0');
+            CHECK(CatalogHasRace(pid::RaceKey(race)));
+        }
+
+        std::uint8_t const classes[] = {
+            pid::kClassWarrior, pid::kClassPaladin, pid::kClassHunter, pid::kClassRogue,
+            pid::kClassPriest, pid::kClassShaman, pid::kClassMage, pid::kClassWarlock,
+            pid::kClassDruid
+        };
+        for (std::uint8_t const cls : classes)
+        {
+            CHECK(pid::ClassKey(cls)[0] != '\0');
+            CHECK(CatalogHasClass(pid::ClassKey(cls)));
+        }
+
+        // ...and every pool must be reachable from some id. This is the
+        // direction that catches the real bug: a race the mapping simply forgot
+        // still passes the loop above, because the loop above only walks the ids
+        // the mapping already knows about.
+        CHECK(std::end(races) - std::begin(races) == std::end(cat::kRaces) - std::begin(cat::kRaces));
+        CHECK(std::end(classes) - std::begin(classes) == std::end(cat::kClasses) - std::begin(cat::kClasses));
+
+        // Unknown is "", never a neighbour's pool. 6 and 10 are the gaps in this
+        // core's class enum and 0 is the "no race" sentinel.
+        CHECK(pid::RaceKey(0)[0] == '\0');
+        CHECK(pid::RaceKey(11)[0] == '\0');
+        CHECK(pid::ClassKey(6)[0] == '\0');
+        CHECK(pid::ClassKey(10)[0] == '\0');
+
+        // The four variant keys RandomPlayerbotFactory::GetRaceVariant can
+        // return, copied from its kRaceVariantSkins table
+        // (core/modules/mod-playerbots/src/playerbot/RandomPlayerbotFactory.cpp).
+        // Duplicated on purpose: those strings cross a module boundary as bare
+        // char const*, so nothing but a check like this can notice one side
+        // renaming "night_elf" to "nightelf". A mismatch does not fail anywhere
+        // -- section 5.1 simply stops applying, permanently and quietly.
+        char const* const variants[] = { "wildhammer", "dark_iron", "forest", "blood_elf" };
+        for (char const* variant : variants)
+        {
+            bool found = false;
+            for (auto const& pool : cat::kRaceVariants)
+                if (std::strcmp(pool.key, variant) == 0)
+                {
+                    found = true;
+                    // The variant's base race must be a race this mapping can
+                    // actually produce, or the policy discards it as a mismatch.
+                    CHECK(CatalogHasRace(pool.baseRace));
+                }
+            CHECK(found);
+        }
+
+        // The separator is only safe because no key can contain it. Asserted
+        // rather than assumed, over every key in every pool.
+        for (auto const& key : cat::kTraitKeys)
+            CHECK(pid::IsPlausibleTraitKey(key));
+    }
+
+    void TestTraitKeyStorageRoundTrips()
+    {
+        namespace pid = ai::personality::identity;
+
+        std::vector<std::string> const keys = { "curious", "wary", "dry_humor" };
+        std::string const encoded = pid::EncodeTraitKeys(keys);
+        CHECK(encoded == "curious,wary,dry_humor");
+        CHECK(pid::DecodeTraitKeys(encoded) == keys);
+
+        // An empty profile is a legitimate outcome, and it must survive the
+        // round trip as an EMPTY LIST rather than as a list holding one empty
+        // string -- which would reach the wire as trait_keys:[""], a trait no
+        // prompt builder can resolve.
+        CHECK(pid::EncodeTraitKeys({}).empty());
+        CHECK(pid::DecodeTraitKeys("").empty());
+
+        // What a hand-edited column can look like. Everything this module writes
+        // is generated from compiled-in constants, so the only way these shapes
+        // appear is an operator with a mysql prompt -- and the answer to that is
+        // to drop the unusable entry, not to ship it.
+        std::vector<std::string> const salvaged = pid::DecodeTraitKeys(",curious,,BAD KEY,wary,");
+        CHECK(salvaged.size() == 2);
+        CHECK(salvaged.size() == 2 && salvaged[0] == "curious" && salvaged[1] == "wary");
+
+        // And the field is still omitted, not emitted empty, when the profile is
+        // empty -- the same absent-vs-zero rule the rest of this file enforces.
+        botbrain::Snapshot s = SampleSnapshot();
+        s.chr.traitKeys.clear();
+        botbrain::PlanRequest r = SampleRequest();
+        r.snapshots.clear();
+        r.snapshots.push_back(s);
+        CHECK(!Contains(botbrain::EncodePlanRequest(r), "trait_keys"));
+    }
 }
 
 namespace
@@ -660,6 +801,8 @@ int main(int argc, char** argv)
     TestMalformedBodiesFailCleanly();
     TestContractHandshake();
     TestIntentKindClassification();
+    TestPersonalityIdentityMapping();
+    TestTraitKeyStorageRoundTrips();
 
     // The cross-language checks. Everything above proves this file agrees
     // with itself; these three prove it agrees with what the Go service

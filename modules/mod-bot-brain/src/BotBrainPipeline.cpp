@@ -5,8 +5,16 @@
 
 #include "BotBrainClient.h"
 #include "BotBrainConfig.h"
+#include "PersonalityCatalog.h"
+#include "PersonalityIdentity.h"
+#include "PersonalityPolicy.h"
 
 #include "playerbot/PlayerbotAI.h"
+// Only for GetRaceVariant: section 5.1 says a variant may be applied only on a
+// confident local check, and this is where that check already lives -- a
+// skin/gender table cross-checked against CharSections.dbc. Re-deriving it here
+// would be a second opinion about the same appearance, and the two would drift.
+#include "playerbot/RandomPlayerbotFactory.h"
 #include "playerbot/TravelMgr.h"
 #include "playerbot/WorldPosition.h"
 #include "playerbot/strategy/actions/ChooseTravelTargetAction.h"
@@ -73,6 +81,49 @@ namespace botbrain
         {
             std::atomic<bool> done{false};
             std::string uuid;
+        };
+
+        // PersonalityIdentity.h mirrors the race and class ids rather than
+        // including SharedDefines.h, so that the mapping stays hermetically
+        // testable. This is the other half of that bargain: the mirrors are
+        // checked against the real enum wherever the game IS available, which is
+        // here. A core that renumbers a race then fails to compile instead of
+        // handing every dwarf a night elf's permanent personality.
+        namespace pid = ai::personality::identity;
+        static_assert(int(pid::kRaceHuman) == int(RACE_HUMAN),       "race id drift");
+        static_assert(int(pid::kRaceOrc) == int(RACE_ORC),           "race id drift");
+        static_assert(int(pid::kRaceDwarf) == int(RACE_DWARF),       "race id drift");
+        static_assert(int(pid::kRaceNightElf) == int(RACE_NIGHTELF), "race id drift");
+        static_assert(int(pid::kRaceUndead) == int(RACE_UNDEAD),     "race id drift");
+        static_assert(int(pid::kRaceTauren) == int(RACE_TAUREN),     "race id drift");
+        static_assert(int(pid::kRaceGnome) == int(RACE_GNOME),       "race id drift");
+        static_assert(int(pid::kRaceTroll) == int(RACE_TROLL),       "race id drift");
+        static_assert(int(pid::kRaceGoblin) == int(RACE_GOBLIN),     "race id drift");
+        static_assert(int(pid::kRaceHighElf) == int(RACE_HIGH_ELF),  "race id drift");
+        static_assert(int(pid::kClassWarrior) == int(CLASS_WARRIOR), "class id drift");
+        static_assert(int(pid::kClassPaladin) == int(CLASS_PALADIN), "class id drift");
+        static_assert(int(pid::kClassHunter) == int(CLASS_HUNTER),   "class id drift");
+        static_assert(int(pid::kClassRogue) == int(CLASS_ROGUE),     "class id drift");
+        static_assert(int(pid::kClassPriest) == int(CLASS_PRIEST),   "class id drift");
+        static_assert(int(pid::kClassShaman) == int(CLASS_SHAMAN),   "class id drift");
+        static_assert(int(pid::kClassMage) == int(CLASS_MAGE),       "class id drift");
+        static_assert(int(pid::kClassWarlock) == int(CLASS_WARLOCK), "class id drift");
+        static_assert(int(pid::kClassDruid) == int(CLASS_DRUID),     "class id drift");
+
+        // Same lock-free handoff again, for the personality profile
+        // (personality-context-contract-v1 section 4). `resolved` is separate
+        // from a non-empty `keys` on purpose: an empty profile is a legitimate
+        // answer -- a character whose race AND class are both outside the
+        // catalog picks nothing at all -- and treating "no keys" as "not
+        // answered yet" would put that bot in a retry loop against the database
+        // for the rest of its session. `resolved == false` means the attempt
+        // itself failed and is worth repeating; `resolved == true` with an empty
+        // list means the bot's personality is genuinely empty.
+        struct PersonalityExchange
+        {
+            std::atomic<bool> done{false};
+            bool resolved = false;
+            std::vector<std::string> keys;
         };
 
         // Batching is not an optimisation, it is the design
@@ -198,6 +249,23 @@ namespace botbrain
             std::string uuid;
             std::shared_ptr<IdentityExchange> identity;   // non-null while a mint/lookup is in flight
             uint32 nextIdentityAttemptMs = 0;             // backoff after a failed attempt
+
+            // The personality profile cache (personality-context-contract-v1),
+            // and the exact same deal as the identity above it: computed and
+            // stored off the world thread, read from here on every snapshot, and
+            // EMPTY IS VALID. A bot with no profile yet ships an empty
+            // char.trait_keys and is planned for normally -- the Go planner's
+            // identity/keys.go already treats an absent key as "this bot does
+            // not have that trait", so nothing downstream needs the profile to
+            // exist and nothing here may wait for it.
+            //
+            // Downstream of the uuid rather than parallel with it, because the
+            // uuid IS the profile seed (section 4.1): the first attempt can only
+            // start on the tick after a mint lands.
+            std::vector<std::string> traitKeys;
+            bool traitsResolved = false;                    // see PersonalityExchange::resolved
+            std::shared_ptr<PersonalityExchange> personality;   // non-null while a load/generate is in flight
+            uint32 nextPersonalityAttemptMs = 0;                // backoff after a failed attempt
         };
 
         // How many bots are carrying a brain intent right now.
@@ -286,7 +354,13 @@ namespace botbrain
         // the bot.
         // ------------------------------------------------------------------
 
-        void FillCharacter(Player* bot, Character& out)
+        // `traitKeys` arrives from the caller rather than being read off the bot,
+        // because it is not on the bot: it is the cached personality profile
+        // (section 4), resolved on a worker thread and handed in here already
+        // decided. Passing it in is what keeps this function map-thread-pure --
+        // every other line dereferences `bot` and nothing here touches a
+        // database.
+        void FillCharacter(Player* bot, Character& out, std::vector<std::string> const& traitKeys)
         {
             out.name = bot->GetName() ? bot->GetName() : "";
             out.level = uint8(bot->GetLevel());
@@ -311,6 +385,12 @@ namespace botbrain
                 free += bag->GetFreeSlots();
             }
             out.freeBagSlots = free;
+
+            // Empty stays empty on the wire: WriteStringArrayIfSet omits the
+            // field entirely rather than emitting [], which is the difference
+            // between "this bot has no personality yet" and "this bot has a
+            // personality and it is nothing".
+            out.traitKeys = traitKeys;
         }
 
         void FillVitals(Player* bot, Vitals& out)
@@ -634,6 +714,178 @@ namespace botbrain
                     // std::terminate for the whole worldserver. Swallow it;
                     // the bot simply keeps planning without memory this round
                     // -- ADR-0039 names that a supported state, not an error.
+                }
+                exchange->done.store(true, std::memory_order_release);
+                g_inFlight.fetch_sub(1);
+            }).detach();
+        }
+
+        // MAP THREAD ONLY -- reads the bot. Produces the pure, copyable input
+        // the policy needs, so that everything after this point is strings and
+        // integers and the worker below can never name a Player (ADR-0012).
+        ai::personality::Request BuildPersonalityRequest(Player* bot, std::string const& uuid)
+        {
+            using namespace ai::personality;
+
+            Request request;
+            request.profileVersion = kProfileVersion;
+            // Section 4.1's profile_seed. The UUID rather than the GUID, for the
+            // reason ADR-0039 exists: a realm merge shifts every GUID, and a
+            // seed that moves is a personality that changes.
+            request.profileSeed = uuid;
+            request.race = identity::RaceKey(uint8(bot->getRace()));
+            request.cls = identity::ClassKey(uint8(bot->getClass()));
+
+            // Section 5.1 permits a variant only on a confident local check, and
+            // refuses to guess one from anything else. GetRaceVariant is that
+            // check: it matches (race, gender, skin) against the four known
+            // variant appearances and then throws the answer away again if the
+            // skin turns out to be a standard one for that race. Skin is byte 0
+            // of PLAYER_BYTES (Player.cpp's own BuildEnumData reads it there).
+            // A null return means "ordinary appearance", which the policy then
+            // treats as no variant at all.
+            if (char const* variant = RandomPlayerbotFactory::GetRaceVariant(
+                    uint8(bot->getRace()), uint8(bot->getGender()), bot->GetByteValue(PLAYER_BYTES, 0)))
+                request.raceVariant = variant;
+
+            // Section 7: one trait per ACTUALLY LEARNED profession. Driven off
+            // the catalog rather than a second list of SKILL_* constants, so
+            // there is exactly one place that decides which professions exist.
+            //
+            // skillId 0 is skipped rather than resolved: the catalog marks those
+            // ids unverified (section 14) and "survival" is the live example --
+            // this core has both SKILL_SURVIVAL (51) and SKILL_SURVIVAL2 (142)
+            // and picking one of them here would be precisely the guess section
+            // 14 is deferring. A trait missing until someone checks is cheap; a
+            // permanent trait chosen from the wrong skill line is not.
+            for (catalog::ProfessionPool const& pool : catalog::kProfessions)
+            {
+                if (!pool.enabled || pool.skillId == 0)
+                    continue;
+                if (bot->HasSkill(uint16(pool.skillId)))
+                    request.professionSkillIds.push_back(pool.skillId);
+            }
+
+            return request;
+        }
+
+        // WORKER THREAD ONLY -- blocking round trips against cv_brain, same rule
+        // and same reasons as MintOrLookupBotUuid above. Never logs; a failure
+        // is reported by returning false and the bot simply carries no
+        // personality this round.
+        //
+        // Section 4.2 in three lines of policy:
+        //   - a stored row at or beyond the current profile_version IS the bot's
+        //     personality, and is returned untouched. This is what makes editing
+        //     a pool safe: existing bots keep what they were born with, and only
+        //     bots generated afterwards see the new pool.
+        //   - a stored row at an OLDER version is a deliberate re-roll
+        //     (kProfileVersion was bumped), so it is regenerated and replaced.
+        //   - no row at all means this bot has never been generated.
+        //
+        // What this does NOT yet implement, stated rather than hidden: section
+        // 4.2's fourth bullet, "bei Berufsaenderungen werden nur Traits mit
+        // Berufsherkunft neu berechnet". A profile here is generated once from
+        // the professions the bot had at that moment and is never revisited, so
+        // a profession learned later contributes nothing until the version is
+        // bumped. Doing it properly needs the stored origins the single-row
+        // schema deliberately does not keep, and a partial recompute is not the
+        // same function as a full one -- section 9.2's conflict resolution can
+        // let a profession trait displace a race trait -- so "recompute
+        // everything on any profession change" would silently break the bullet
+        // above it. That is a phase of its own, not a line here.
+        bool LoadOrGeneratePersonality(ai::personality::Request const& request, std::vector<std::string>& out)
+        {
+            using namespace ai::personality;
+
+            {
+                std::unique_ptr<QueryResult> stored(CharacterDatabase.PQuery(
+                    "SELECT `profile_version`, `trait_keys` FROM `cv_brain`.`bot_personality` "
+                    "WHERE `bot_uuid` = '%s'",
+                    request.profileSeed.c_str()));
+                if (stored)
+                {
+                    Field* fields = stored->Fetch();
+                    // >= rather than ==: a worldserver rolled back to an older
+                    // build must not quietly downgrade a population another
+                    // node already re-rolled. It reads what it finds.
+                    if (uint32(fields[0].GetUInt32()) >= request.profileVersion)
+                    {
+                        out = identity::DecodeTraitKeys(fields[1].GetCppString());
+                        return true;
+                    }
+                }
+            }
+
+            Profile const profile = BuildProfile(request);
+            std::vector<std::string> keys;
+            keys.reserve(profile.traits.size());
+            for (Trait const& trait : profile.traits)
+                keys.push_back(trait.key);
+
+            // Both values are safe to interpolate without escaping and neither
+            // is user input: the seed is a v4 UUID this module minted, and every
+            // trait key is a compiled-in constant from PersonalityCatalog.h.
+            std::string const encoded = identity::EncodeTraitKeys(keys);
+
+            // The same "race whoever else is doing this right now" shape as the
+            // identity mint, one step up in strength because this INSERT can
+            // legitimately meet an existing row (the version bump above). Two
+            // workers racing compute the identical profile -- the policy is a
+            // pure function of what is in this request -- so whichever lands
+            // second writes the same bytes.
+            //
+            // The IF()s are the downgrade guard: MySQL applies the assignments
+            // in the order written, so `profile_version` is updated LAST and the
+            // two before it still see the version already in the row. A node
+            // running an older kProfileVersion therefore leaves a newer row
+            // completely alone rather than winning by arriving late.
+            CharacterDatabase.DirectPExecute(
+                "INSERT INTO `cv_brain`.`bot_personality` "
+                "(`bot_uuid`,`profile_version`,`trait_keys`,`generated_at`) "
+                "VALUES ('%s', %u, '%s', " SI64FMTD ") "
+                "ON DUPLICATE KEY UPDATE "
+                "`trait_keys` = IF(VALUES(`profile_version`) >= `profile_version`, VALUES(`trait_keys`), `trait_keys`), "
+                "`generated_at` = IF(VALUES(`profile_version`) >= `profile_version`, VALUES(`generated_at`), `generated_at`), "
+                "`profile_version` = GREATEST(`profile_version`, VALUES(`profile_version`))",
+                request.profileSeed.c_str(), request.profileVersion, encoded.c_str(),
+                static_cast<int64_t>(NowUnixMs()));
+
+            // Re-read rather than trusting what was just computed, for the same
+            // reason the identity mint re-reads: the row that exists is the
+            // answer, whoever wrote it. This is also the only thing that
+            // notices the guard above declining the write.
+            std::unique_ptr<QueryResult> winner(CharacterDatabase.PQuery(
+                "SELECT `trait_keys` FROM `cv_brain`.`bot_personality` WHERE `bot_uuid` = '%s'",
+                request.profileSeed.c_str()));
+            if (!winner)
+                return false;   // DB hiccup on the re-read; retried on the next attempt
+
+            out = identity::DecodeTraitKeys(winner->Fetch()[0].GetCppString());
+            return true;
+        }
+
+        // Loads or generates a bot's personality entirely off the world thread.
+        // Captures a Request BY VALUE -- strings and integers, already read off
+        // the bot by BuildPersonalityRequest on the map thread. There is no way
+        // to name a Player, a session or a bot from in here (ADR-0012).
+        void SpawnPersonalityWorker(std::shared_ptr<PersonalityExchange> const& exchange,
+            ai::personality::Request const& request)
+        {
+            g_inFlight.fetch_add(1);
+            std::thread([exchange, request]()
+            {
+                try
+                {
+                    exchange->resolved = LoadOrGeneratePersonality(request, exchange->keys);
+                }
+                catch (...)
+                {
+                    // An escaping exception on a detached thread is
+                    // std::terminate for the whole worldserver. Swallow it; the
+                    // bot keeps planning without a personality this round, which
+                    // is a supported state and not an error.
+                    exchange->resolved = false;
                 }
                 exchange->done.store(true, std::memory_order_release);
                 g_inFlight.fetch_sub(1);
@@ -1444,6 +1696,14 @@ namespace botbrain
         IntentOutcome outcome;
         uint32_t droppedOutcomes = 0;
         std::string uuid;
+        std::vector<std::string> traitKeys;
+        // Set under the lock, acted on after it: reading the bot's race, class,
+        // appearance and skills is cheap but not free -- GetRaceVariant can walk
+        // the DBC section map -- and g_statesMutex is global. Every other
+        // expensive step in this function is deferred out of the critical
+        // section for the same reason, and a once-per-bot cost is still a cost
+        // every OTHER bot's Tick() would queue behind.
+        bool startPersonality = false;
 
         {
             std::lock_guard<std::mutex> lock(g_statesMutex);
@@ -1500,6 +1760,37 @@ namespace botbrain
                         state.nextIdentityAttemptMs = now + cfg.backoffMs;
                     }
                     uuid = state.uuid;
+
+                    // Section 4, and the same fire-and-forget shape one step
+                    // downstream: absorb a finished profile, then decide whether
+                    // to ask for one. THIS snapshot goes out with whatever is
+                    // cached right now -- for a freshly minted bot that is
+                    // nothing, and nothing is a valid answer.
+                    //
+                    // Gated on a non-empty uuid because the uuid IS the seed
+                    // (section 4.1). Generating from an empty seed would give
+                    // every unminted bot on the server the same personality and,
+                    // worse, store it.
+                    if (state.personality && state.personality->done.load(std::memory_order_acquire))
+                    {
+                        if (state.personality->resolved)
+                        {
+                            state.traitKeys = state.personality->keys;
+                            state.traitsResolved = true;
+                        }
+                        state.personality.reset();
+                    }
+                    if (!state.traitsResolved && !state.uuid.empty() && !state.personality
+                        && Elapsed(now, state.nextPersonalityAttemptMs))
+                    {
+                        startPersonality = true;
+                        // Same backoff knob as the identity attempt, for the
+                        // same reason: "the database is having trouble" must not
+                        // become "hammer it every tick", and this needs its own
+                        // config value no more than that one did.
+                        state.nextPersonalityAttemptMs = now + cfg.backoffMs;
+                    }
+                    traitKeys = state.traitKeys;
                     break;
 
                 case Phase::AwaitingPlan:
@@ -1534,6 +1825,22 @@ namespace botbrain
         // ---- Phase B: build the snapshot, on the map thread, bot alive. ----
         if (readyDestinations)
         {
+            // Ask for the personality first, outside the lock, in the same
+            // spawn-then-relock shape phase A uses: reading the bot is a map
+            // thread job, the database work that follows is emphatically not,
+            // and neither belongs inside g_statesMutex. The snapshot built
+            // immediately below does NOT wait for the answer -- it ships the
+            // cached keys, which on this first pass are still empty.
+            if (startPersonality)
+            {
+                ai::personality::Request const request = BuildPersonalityRequest(bot, uuid);
+                std::shared_ptr<PersonalityExchange> exchange = std::make_shared<PersonalityExchange>();
+                SpawnPersonalityWorker(exchange, request);
+
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                g_states[raw].personality = exchange;
+            }
+
             std::vector<PointOfInterest> pois;
             std::vector<ResolvedPoi> table;
             WorldPosition const center(bot);
@@ -1547,7 +1854,11 @@ namespace botbrain
             // Go side plans for this bot without memory rather than
             // rejecting the snapshot.
             snapshot.bot.uuid = uuid;
-            FillCharacter(bot, snapshot.chr);
+            // Cached the same way and for the same reason (section 4.2, and the
+            // no-blocking-DB-call-on-the-world-thread rule this whole design
+            // exists for). Empty means "not generated yet", which the planner
+            // reads as a bot with no traits rather than a bot to refuse.
+            FillCharacter(bot, snapshot.chr, traitKeys);
             FillPosition(bot, snapshot.pos);
             FillVitals(bot, snapshot.vitals);
             FillSurroundings(bot, botAI, snapshot.around);
