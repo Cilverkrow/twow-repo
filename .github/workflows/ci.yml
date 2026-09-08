@@ -2251,10 +2251,22 @@ jobs:
     # old 150-minute budget existed only to cover `up --build`.
     timeout-minutes: 45
 
+    # packages: read is for the private client-data image below. The workflow's
+    # default is contents: read only, and a job cannot inherit a permission the
+    # workflow never granted.
+    permissions:
+      contents: read
+      packages: read
+
     env:
       TWOW_COMPOSE_FILE: deploy/compose/docker-compose.yml
       TWOW_ENV_FILE: deploy/compose/.env
       TWOW_DB_PASSWORD: ci-root
+      # Where the client data lands, and what docker-compose.yml mounts at
+      # /opt/turtle/data. Job-level because each `run:` block is its own shell:
+      # exporting it inside one step would not reach compose in the next.
+      DATA_PATH: ${{ github.workspace }}/client-data
+      CLIENT_DATA_IMAGE: ghcr.io/cilverkrow/twow-client-data:1.18.1-full
 
     steps:
       # Resolves $SUDO and prints which runner claimed the job. See the long
@@ -2372,16 +2384,56 @@ jobs:
           bash deploy/compose/render-config.sh
           bash deploy/compose/verify-config.sh
 
-      # Only realmd. It pulls in db and db-init through depends_on (the latter
-      # with service_completed_successfully), and mangosd is deliberately left
-      # down: without client data it would sit in start_period for 900s and then
-      # fail, turning a known limitation into a timeout.
+      # The client data. dbc/maps/vmaps/mmaps are extracted from a retail client
+      # and are never in Git or in an image we publish publicly (ADR-0023), so
+      # they arrive as a PRIVATE package pulled with the job's own GITHUB_TOKEN.
+      #
+      # `docker create` + `docker cp` rather than a volume mount: the image is
+      # FROM scratch and is never run, it is only a transport. That also keeps the
+      # compose file unchanged -- it already mounts ${DATA_PATH} at
+      # /opt/turtle/data, which until now pointed at a directory that did not
+      # exist.
+      #
+      # vmaps and mmaps are included deliberately. The rendered mangosd.conf
+      # leaves vmap.enableLOS, vmap.enableHeight and mmap.enabled at the base
+      # template's 1, so the server starts expecting them; shipping without would
+      # mean a CI-only config divergence from production, and bots that cannot
+      # path -- which is the behaviour the bot brain exists to drive.
+      - name: Fetch client data
+        run: |
+          set -eu
+          echo "${{ secrets.GITHUB_TOKEN }}"             | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$CLIENT_DATA_IMAGE"
+          mkdir -p "$DATA_PATH"
+          cid=$(docker create "$CLIENT_DATA_IMAGE")
+          for d in dbc maps vmaps mmaps; do
+            docker cp "$cid:/$d" "$DATA_PATH/$d"
+          done
+          docker rm -f "$cid" >/dev/null
+
+          # A silent partial copy would send mangosd into its 900s start_period
+          # and fail there, which reads as "the server is broken" rather than
+          # "the data never arrived". Check here, where the message is true.
+          for d in dbc maps; do
+            [ -d "$DATA_PATH/$d" ] || { echo "::error::$d missing after copy"; exit 1; }
+            n=$(find "$DATA_PATH/$d" -type f | wc -l)
+            [ "$n" -gt 0 ] || { echo "::error::$d is empty"; exit 1; }
+            echo "$d: $n files"
+          done
+          du -sh "$DATA_PATH"
+
+      # realmd and mangosd. Both pull in db and db-init through depends_on (the
+      # latter with service_completed_successfully).
+      #
+      # mangosd used to be left down on purpose, because without client data it
+      # would sit in start_period for 900s and then fail. It now has that data,
+      # which is what lets the world-server smoke checks stop skipping.
       #
       # No --build: the image is already loaded and compose resolves the `image:`
       # key to it. --wait blocks on the health checks the compose file declares,
       # which is the only honest "it is up" signal; a fixed sleep would test the
       # sleep.
-      - name: Start db, db-init and realmd
+      - name: Start db, db-init, realmd and mangosd
         run: |
           set -eu
           C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
@@ -2397,7 +2449,7 @@ jobs:
           # Not a regression: the smoke job had been skipped in every previous
           # run because something upstream failed first, so its first real
           # execution was also its first failure.
-          $C up -d realmd
+          $C up -d realmd mangosd
 
           # db-init must have finished, and cleanly. Its exit code is the
           # bootstrap's verdict; read it rather than inferring from realmd.
@@ -2420,14 +2472,36 @@ jobs:
           done
           [ "$h" = "healthy" ] || { echo "::error::realmd did not become healthy within 600s"; exit 1; }
 
+          # mangosd gets its own, much longer budget. Loading the world takes
+          # minutes even on a warm machine, and docker-compose.yml declares a
+          # 900s start_period for exactly that reason -- so a health status of
+          # "starting" here is normal for a long time and must not be read as a
+          # failure.
+          h=starting
+          for _ in $(seq 1 600); do
+            h=$(docker inspect -f '{{.State.Health.Status}}' "$($C ps -aq mangosd)" 2>/dev/null || echo starting)
+            [ "$h" = "healthy" ] && break
+            # An exited container will never become healthy; stop waiting for it.
+            st=$(docker inspect -f '{{.State.Status}}' "$($C ps -aq mangosd)" 2>/dev/null || echo missing)
+            case "$st" in
+              exited|dead) echo "::error::mangosd $st before becoming healthy"; $C logs --tail 100 mangosd; exit 1 ;;
+            esac
+            sleep 2
+          done
+          [ "$h" = "healthy" ] || {
+            echo "::error::mangosd did not become healthy within 1200s"
+            $C logs --tail 200 mangosd
+            exit 1
+          }
+
           $C ps -a
 
       - name: Run the smoke suite
         env:
-          # Explicit rather than probed: mangosd is not running, and the suite
-          # must skip the world-server checks for a stated reason rather than
-          # because a probe happened to fail.
-          TWOW_CLIENT_DATA: '0'
+          # Explicit rather than probed, still -- but now the other way. The data
+          # is present and mangosd is up, so a world-server check that cannot run
+          # is a real failure and must not be allowed to quietly skip.
+          TWOW_CLIENT_DATA: '1'
         run: sh test/smoke/run-all.sh
 
       # Logs are the only way to diagnose a failed stack after the fact, so they
