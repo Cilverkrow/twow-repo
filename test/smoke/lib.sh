@@ -201,6 +201,26 @@ roster_enabled() {
     [ "${_v:-0}" = "1" ]
 }
 
+# The level a freshly created bot is given, from the rendered conf.
+#
+# AiPlayerbot.randombotStartingLevel decides whether "still level 1" is a defect
+# or the configuration working as designed. The shipped conf sets it to 1 and
+# says why directly above the key: "Bots all begin at randombotStartingLevel and
+# have to work their way up". A check that asserts bots are above level 1 on such
+# a realm is asserting against the deployment's own intent.
+#
+# Same host-side read as roster_enabled, and for the same reason: it is the file
+# the server loaded, and it can be read with the world down.
+bot_starting_level() {
+    _conf=${TWOW_AIPLAYERBOT_CONF:-deploy/compose/config/aiplayerbot.conf}
+    _lvl=""
+    if [ -r "$_conf" ]; then
+        _lvl=$(grep -iE '^[[:space:]]*AiPlayerbot\.randombotStartingLevel[[:space:]]*=' "$_conf"                | tail -n 1 | sed 's/.*=[[:space:]]*//' | tr -d '[:space:]')
+    fi
+    # The code default is 5 (PlayerbotAIConfig.cpp), so an absent key is not 1.
+    case "$_lvl" in ''|*[!0-9]*) echo 5 ;; *) echo "$_lvl" ;; esac
+}
+
 require_client_data() {
     if have_client_data; then
         # Data is present, so "the world server is down" is a real failure and

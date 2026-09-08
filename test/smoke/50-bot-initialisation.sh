@@ -99,12 +99,26 @@ professioned=$(dbq tw_char "
     GROUP BY c.guid
   ) t;" 2>/dev/null || echo 0)
 
+# Against the CONFIGURED starting level, not against 1.
+#
+# The shipped conf sets AiPlayerbot.randombotStartingLevel = 1 and explains
+# itself directly above the key: "Bots all begin at randombotStartingLevel and
+# have to work their way up." On such a realm a twelve-minute-old bot at level 1
+# is the configuration working, and asserting otherwise asserts against the
+# deployment's own intent -- which this check did, and reported 0 of 20 as a
+# failure for six runs.
+#
+# Comparing against the configured level instead keeps the assertion meaningful
+# where it means something: set randombotStartingLevel to 5 and a bot still at 1
+# has not been through Prepare(), which is a real defect and exactly the one that
+# left 5,021 of 5,039 bots unable to play.
+start_level=$(bot_starting_level)
 levelled=$(dbq tw_char "
   SELECT COUNT(*) FROM characters c
   JOIN cv_bots.ai_playerbot_random_bots r ON r.bot = c.guid AND r.event = 'add'
-  WHERE c.totaltime > 0 AND c.level > 1;" 2>/dev/null || echo 0)
+  WHERE c.totaltime > 0 AND c.level >= $start_level;" 2>/dev/null || echo 0)
 
-printf '  bots=%s spelled=%s professioned=%s above-level-1=%s\n' \
+printf '  bots=%s spelled=%s professioned=%s at-start-level=%s\n' \
     "$bots" "${spelled:-0}" "${professioned:-0}" "${levelled:-0}"
 
 pct() { [ "$2" -eq 0 ] && echo 0 || echo $(( $1 * 100 / $2 )); }
@@ -121,7 +135,7 @@ check() {
 
 check "${spelled:-0}"      50 "have any spell"
 check "${professioned:-0}" 50 "have a profession PLAN"
-check "${levelled:-0}"     25 "are above level 1"
+check "${levelled:-0}"     90 "reached the configured starting level"
 
 [ "$fails" -eq 0 ] || fail "$fails population check(s) failed; bots exist but cannot play"
 
