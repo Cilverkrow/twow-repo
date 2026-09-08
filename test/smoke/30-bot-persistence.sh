@@ -26,6 +26,23 @@ set -eu
 require_stack
 require_client_data
 
+# Skip -- do not fail -- when the roster feature itself is off.
+#
+# The header above says an empty roster must FAIL rather than skip, and that is
+# right when the feature is enabled: an enabled-but-empty roster means the cohort
+# went missing, which is precisely FG-044's shape. It is wrong when the feature
+# was never switched on, because then there is nothing to have lost.
+#
+# AiPlayerbot.PersistentActiveRoster.Enabled defaults to false and the deployed
+# overlay does not set it, so this is the state a fresh CI world is in. Reporting
+# that as "a bot was lost" is a false alarm, and a check that cries wolf is one
+# people stop reading -- which would cost us the only machine check of invariant
+# 1 that exists.
+#
+# The invariant is unproven either way in that configuration. The difference is
+# that this says so honestly instead of blaming the bots.
+roster_enabled || skip "AiPlayerbot.PersistentActiveRoster.Enabled is off, so there is no roster to keep across a restart; invariant 1 is unproven here rather than violated"
+
 work=$(mktemp -d)
 # shellcheck disable=SC2064  # expand $work now: it is gone by the time this runs
 trap "rm -rf '$work'" EXIT INT TERM

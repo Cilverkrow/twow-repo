@@ -175,6 +175,32 @@ have_client_data() {
         "[ -d '$TWOW_DATA_DIR/maps' ] && [ -d '$TWOW_DATA_DIR/dbc' ]" >/dev/null 2>&1
 }
 
+# Is the persistent active roster switched on?
+#
+# AiPlayerbot.PersistentActiveRoster.Enabled defaults to FALSE
+# (PlayerbotAIConfig.cpp), and the deployed overlay does not set it. Without it
+# there is no roster to keep across a restart -- the three ai_playerbot_roster_*
+# tables exist because the schema ships them, and stay empty because nothing
+# writes them.
+#
+# That distinction matters to 30-bot-persistence. "The roster is empty" reads as
+# a lost cohort when the feature is on, and means nothing at all when it is off.
+# Failing on the second case would train people to ignore the check that exists
+# to catch the first.
+#
+# Read from the rendered conf on the HOST rather than through the container: it
+# is the same file, bind-mounted read-only at /opt/turtle/etc/aiplayerbot.conf,
+# and reading it needs no running container -- so the answer is available even
+# when the world server is down, which is exactly when this is being asked.
+roster_enabled() {
+    _conf=${TWOW_AIPLAYERBOT_CONF:-deploy/compose/config/aiplayerbot.conf}
+    [ -r "$_conf" ] || return 1
+    # Last assignment wins, matching the config parser, and an absent key means
+    # the code default, which is off.
+    _v=$(grep -iE '^[[:space:]]*AiPlayerbot\.PersistentActiveRoster\.Enabled[[:space:]]*=' "$_conf"          | tail -n 1 | sed 's/.*=[[:space:]]*//' | tr -d '[:space:]')
+    [ "${_v:-0}" = "1" ]
+}
+
 require_client_data() {
     if have_client_data; then
         # Data is present, so "the world server is down" is a real failure and
