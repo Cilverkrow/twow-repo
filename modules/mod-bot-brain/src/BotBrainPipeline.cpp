@@ -1439,6 +1439,33 @@ namespace botbrain
         return out.ok;
     }
 
+    bool LookupBotIdentity(uint32 guidLow, BotId& bot, std::vector<std::string>& traitKeys)
+    {
+        bot = BotId();
+        traitKeys.clear();
+
+        if (!guidLow || !realmID)
+            return false;
+
+        bot.realm = realmID;
+        bot.guid = guidLow;
+
+        // Rebuilt rather than passed in, because the caller is on the far side
+        // of a seam that deliberately carries no ObjectGuid -- only the low
+        // guid, which is what ChatReplyDo itself resolves players from
+        // (SayAction.cpp: ObjectGuid(HIGHGUID_PLAYER, guid1)).
+        uint64 const raw = ObjectGuid(HIGHGUID_PLAYER, guidLow).GetRawValue();
+
+        std::lock_guard<std::mutex> lock(g_statesMutex);
+        BotPlanState const* state = Find(raw);
+        if (!state)
+            return true;   // never planned for; talks without a personality
+
+        bot.uuid = state->uuid;
+        traitKeys = state->traitKeys;
+        return true;
+    }
+
     void Forget(ObjectGuid guid)
     {
         std::lock_guard<std::mutex> lock(g_statesMutex);

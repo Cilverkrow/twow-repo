@@ -113,4 +113,9 @@ namespace botbrain
     {
         return Send(endpoint, "POST", "/v1/plan", body, timeoutMs);
     }
+
+    HttpResult PostDialogue(std::string const& endpoint, std::string const& body, uint32_t timeoutMs)
+    {
+        return Send(endpoint, "POST", "/v1/dialogue", body, timeoutMs);
+    }
 }

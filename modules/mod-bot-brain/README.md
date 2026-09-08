@@ -109,6 +109,54 @@ to the main log otherwise.
 mod-bot-brain: Grimblade (guid 4242) travel target set from intent i-... -> poi p3 (kind repair, source rule, confidence 0.90)
 ```
 
+## Dialogue: bots answering chat
+
+A second thing this module does, through a second endpoint and a second seam.
+
+`PlayerbotLLMInterface::Generate` in the core submodule returns `""`. Everything
+above it in `ChatReplyAction::ChatReplyDo` still runs — the gating, the channel
+mirroring, the `std::async` worker, the tick-polled delivery — and produces
+nothing. mod-playerbots declares a provider seam above that stub
+(`playerbot/BotDialogueProvider.h`); `BotBrainDialogue.cpp` registers into it and
+answers by calling `POST /v1/dialogue`.
+
+The seam is at the call site rather than inside `Generate` on purpose. `Generate`
+receives a rendered request body built from `AiPlayerbot.LLMApiJson` and shaped
+for one particular completion API; at the call site the facts are still facts —
+who said what, in which channel, to which bot, with which trait keys — and the
+service builds its own prompt from the catalog's German instruction sentences.
+
+What crosses the seam is scalars and strings. No `Player`, no `PlayerbotAI`, no
+session: the bot may have logged out by the time the worker runs, and the
+identity is looked up by low guid through `LookupBotIdentity`, which copies the
+cached uuid and trait keys under `g_statesMutex`. Same ADR-0012 rule as the
+planning workers, same reason.
+
+**Two sides have to be on**, and this module owns only one of them:
+
+| Switch | Owner | Default |
+| --- | --- | --- |
+| `AiPlayerbot.LLMEnabled` (non-zero) | mod-playerbots | `0` |
+| the `ai chat` strategy, or `LLMEnabled = 3` | mod-playerbots | off |
+| `BotBrain.Enable` | this module | `0` |
+| `BotBrain.Dialogue.Enable` | this module | `0` |
+
+`BotBrain.Dialogue.Enable` is separate from `BotBrain.Enable` because planning is
+local and free while dialogue spends model tokens every time a player types.
+Turning the brain on is not agreeing to pay for conversation.
+
+Channels are mapped conservatively: say and yell → `say`, party and raid →
+`party`, guild → `guild`, whisper → `whisper`. World, general, trade, LFG, the
+defence channels, guild recruitment and both emote sources map to nothing and
+the bot stays quiet — the contract's style rules are written for conversations,
+and a bot writing German prose into trade chat is a feature nobody designed.
+
+Every failure is silence, and silence is a 200: dialogue off, no handshake, an
+unmapped channel, too many calls in flight, a dead socket, a non-200, an
+undecodable body, or a reply carrying a newline. `DecodeDialogueResponse` is the
+last gate before text this process did not write reaches a game channel, and it
+turns a reply it will not vouch for into `filtered` rather than into an error.
+
 ## Contract details that have already caused bugs
 
 * the array is `pois`, not `poi`;

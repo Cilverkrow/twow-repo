@@ -31,6 +31,7 @@
 #ifndef MOD_BOT_BRAIN_WIRE_H
 #define MOD_BOT_BRAIN_WIRE_H
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -278,6 +279,123 @@ namespace botbrain
     // startup is the whole point of the /v1/contract handshake: skew is found
     // at boot, not one dropped intent at a time.
     bool ContractMajorSupported(ContractInfo const& info, int wantMajor);
+
+    // -----------------------------------------------------------------------
+    // Dialogue (POST /v1/dialogue) -- services/bot-brain/contract/dialogue.go
+    // -----------------------------------------------------------------------
+    //
+    // Unbatched, unlike the plan request above, and that is the contract's
+    // decision rather than an omission here: planning is a thousand bots on a
+    // tick and batching is the only way to afford it, while dialogue is an
+    // event -- one player says one thing and the reply is worth nothing if it
+    // arrives with the next tick's batch.
+    //
+    // SILENCE IS A 200. A bot with nothing to say, a dead model, an exhausted
+    // budget and a shed request all come back as spoke=false with a reason. The
+    // only non-200 is a request that did not decode, which is why the bounds
+    // below are mirrored here and checked BEFORE the request goes out: a 400 is
+    // this side's bug, and it should cost a log line that names the bot rather
+    // than a silent bot and a counter in another process.
+
+    // Channels the service serves. Anything else is refused rather than
+    // defaulted, because guessing "say" would apply the wrong length rule to
+    // the one place length matters.
+    extern char const* const kDialogueChannelSay;
+    extern char const* const kDialogueChannelParty;
+    extern char const* const kDialogueChannelGuild;
+    extern char const* const kDialogueChannelWhisper;
+    extern char const* const kDialogueChannelGuildEvent;
+
+    bool IsKnownDialogueChannel(std::string const& channel);
+
+    // What KIND of speaker spoke, not which one.
+    extern char const* const kDialogueSpeakerPlayer;
+    extern char const* const kDialogueSpeakerBot;
+
+    // The only language this build of the service produces: the catalog's 124
+    // instructions are German sentences.
+    extern char const* const kDialogueLanguage;
+
+    // Silence reasons. Stable strings, switchable, and the reason an operator
+    // can tell "nothing to say" from "the model is unreachable" from "the token
+    // budget latched" -- three states that look identical from the game.
+    extern char const* const kSilenceNothingToSay;
+    extern char const* const kSilenceDisabled;
+    extern char const* const kSilenceUnavailable;
+    extern char const* const kSilenceBudget;
+    extern char const* const kSilenceBusy;
+    extern char const* const kSilenceFiltered;
+    extern char const* const kSilenceDeadline;
+
+    // Bounds, mirroring contract/dialogue.go. Bytes except where noted.
+    std::size_t constexpr kMaxDialogueMessageBytes = 512;
+    std::size_t constexpr kMaxDialogueReplyBytes = 255;
+    std::size_t constexpr kMaxDialogueTraitKeys = 12;
+    std::size_t constexpr kMaxDialogueSpeakerNameRunes = 12;   // RUNES, not bytes
+    std::size_t constexpr kMaxDialogueTraitKeyBytes = 64;
+
+    struct DialogueRequest
+    {
+        std::string contractVersion;
+        std::string requestId;
+
+        // Echoed back on the response and never sent to the model: it is how
+        // the worldserver matches a reply to a character.
+        BotId bot;
+
+        std::string channel;        // one of the kDialogueChannel* above
+        std::string speaker;        // kDialogueSpeakerPlayer | kDialogueSpeakerBot
+
+        // The speaker's character name, and the ONLY identity that leaves this
+        // process. Optional; letters only, 2..kMaxDialogueSpeakerNameRunes of
+        // them. That shape is what makes it safe to interpolate into a prompt:
+        // no quote to close, no brace, no newline, no colon.
+        std::string speakerName;
+
+        // What was said. Player-typed, therefore hostile.
+        std::string message;
+
+        // The bot's personality, as keys from the 124-key catalog. Empty is
+        // normal and always has been -- a bot whose profile has not been
+        // generated yet still talks, just without a personality.
+        std::vector<std::string> traitKeys;
+
+        std::string language;       // empty or kDialogueLanguage
+        int64_t sentAtMs = 0;
+        int64_t deadlineMs = 0;
+    };
+
+    struct DialogueResponse
+    {
+        std::string contractVersion;
+        std::string requestId;
+        BotId bot;
+        bool spoke = false;
+        std::string reply;          // empty unless spoke
+        std::string reason;         // one of the kSilence* above, unless spoke
+        int64_t replyMs = 0;
+        int32_t traitsApplied = 0;
+        int32_t unknownFields = 0;
+    };
+
+    // Mirrors DialogueRequest.Validate() in the Go service, for the reason
+    // ValidateSnapshot exists: a request that would have been a 400 is refused
+    // one process earlier, where the log line can name the bot. Unlike a
+    // snapshot, this one is also the last chance to notice that the world
+    // handed us a name or a message that cannot have come from a character.
+    bool ValidateDialogueRequest(DialogueRequest const& req, std::string& error);
+
+    std::string EncodeDialogueRequest(DialogueRequest const& req);
+
+    // Parse. Returns false and sets `error` on malformed input; never throws.
+    //
+    // A response that decodes but claims to have spoken with a reply this side
+    // will not accept -- empty, over kMaxDialogueReplyBytes, or carrying a
+    // control character that would forge a second chat line -- is decoded as
+    // SILENCE with kSilenceFiltered rather than as a failure. The far side runs
+    // the same check; this one is what makes a disagreement cost a quiet bot
+    // instead of an unvetted line in a game channel.
+    bool DecodeDialogueResponse(std::string const& body, DialogueResponse& out, std::string& error);
 }
 
 #endif

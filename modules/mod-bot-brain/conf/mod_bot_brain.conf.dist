@@ -75,3 +75,51 @@ BotBrain.PoiTableTtlMs = 120000
 # default: "a bot's travel target was set from an intent" is only checkable if
 # it is written down.
 BotBrain.LogAppliedIntents = 1
+
+###############################################################################
+# Dialogue -- bots answering chat
+###############################################################################
+#
+# A bot with the "ai chat" strategy that is spoken to in say, yell, party,
+# raid, guild or a whisper asks the brain what to answer, and says it. The
+# reply is written from the bot's personality profile (its trait_keys resolve
+# to the catalog's instruction sentences), in German, and it is TEXT: a reply
+# cannot invite, trade, group or act.
+#
+# This needs the core-side gates too, and they are separate switches owned by
+# mod-playerbots, not by this module:
+#
+#   AiPlayerbot.LLMEnabled           must be non-zero (it defaults to 0)
+#   the bot needs the "ai chat" strategy, or LLMEnabled = 3
+#   AiPlayerbot.LLMBlockedReplyChannels still applies
+#
+# Nothing here overrides those. This decides where the sentence comes from,
+# not who is allowed to speak.
+
+# Off by default, separately from BotBrain.Enable, and deliberately so:
+# planning is local and free, while dialogue spends model tokens every time a
+# player types. Enabling the brain is not agreeing to pay for conversation.
+BotBrain.Dialogue.Enable = 0
+
+# How long one dialogue call may take, in milliseconds. Clamped to
+# 1000..60000.
+#
+# Much larger than BotBrain.TimeoutMs, because the thing on the far end is a
+# model rather than a planner: a self-hosted 7B on CPU measured around eight
+# seconds a call. That is affordable here and nowhere else in this module,
+# because the call is made from the chat path's own async worker -- the world
+# thread never waits for it, and the reply is posted on the bot's next tick
+# after it lands.
+#
+# Sent to the service as deadline_ms as well as used as the socket timeout, so
+# a brain under load answers with silence instead of being hung up on.
+BotBrain.Dialogue.TimeoutMs = 8000
+
+# Ceiling on concurrent dialogue calls across all bots. Clamped to 1..64.
+#
+# Each in-flight call holds a worldserver worker thread that the chat path
+# spawned for that message, so this bounds threads, not just politeness towards
+# the model. Over the limit a bot is silent immediately rather than queued: a
+# queue here would accumulate load during exactly the incident where
+# accumulating it is fatal.
+BotBrain.Dialogue.MaxInFlight = 8
