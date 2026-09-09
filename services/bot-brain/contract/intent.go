@@ -359,8 +359,14 @@ func (i *Intent) Validate() error {
 		return fmt.Errorf("%w: intent %q has confidence %v outside 0..1", ErrMalformed, i.IntentID, i.Confidence)
 	}
 	switch i.Kind {
+	// IntentVisitTrainer belongs here and was missed when the kind was added.
+	// Without it a visit_trainer intent carrying no travel block validated
+	// clean, and the C++ side would have set a travel target from a POI id that
+	// was never sent -- the one failure this function exists to make impossible.
+	// It is POI-directed for the same reason the others are: the brain names a
+	// destination the server resolved, never a position.
 	case IntentTravelTo, IntentGrindArea, IntentVendorSell, IntentRepair,
-		IntentPickQuest, IntentTurnInQuest:
+		IntentPickQuest, IntentTurnInQuest, IntentVisitTrainer:
 		if i.Travel == nil || i.Travel.POIID == "" {
 			return fmt.Errorf("%w: intent %q of kind %q needs travel.poi_id", ErrMalformed, i.IntentID, i.Kind)
 		}

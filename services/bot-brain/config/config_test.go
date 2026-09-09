@@ -332,3 +332,72 @@ func TestZeroMaxBodyBytesRejected(t *testing.T) {
 		t.Fatal("BOT_BRAIN_MAX_BODY_BYTES=0 was accepted; it would reject every request")
 	}
 }
+
+// Dialogue is off by default, and the configurations it refuses are the ones
+// whose only symptom would be quiet bots -- which is indistinguishable from the
+// feature working and nobody having spoken. Those belong at startup.
+func TestDialogueIsOffByDefault(t *testing.T) {
+	cfg, err := config.Load(env(nil))
+	if err != nil {
+		t.Fatalf("defaults did not load: %v", err)
+	}
+	if cfg.Dialogue.Enabled {
+		t.Error("dialogue is on by default; a fresh deployment must not hand every player a button that spends tokens")
+	}
+	if cfg.MaxDialogueBodyBytes != contract.DefaultMaxDialogueBodyBytes || cfg.MaxDialogueInFlight <= 0 {
+		t.Errorf("dialogue bounds are not usable by default: body=%d in_flight=%d",
+			cfg.MaxDialogueBodyBytes, cfg.MaxDialogueInFlight)
+	}
+}
+
+func TestDialogueConfiguration(t *testing.T) {
+	tests := []struct {
+		name string
+		// llm is whether the LLM defaults are applied on top of env.
+		llm      bool
+		env      map[string]string
+		wantErr  bool
+		prevents string
+	}{{
+		name:     "on, with inference on, is valid",
+		llm:      true,
+		env:      map[string]string{"BOT_BRAIN_DIALOGUE_ENABLED": "true"},
+		prevents: "the intended configuration being refused",
+	}, {
+		name:     "on without inference is refused at startup",
+		llm:      false,
+		env:      map[string]string{"BOT_BRAIN_DIALOGUE_ENABLED": "true"},
+		wantErr:  true,
+		prevents: "an operator whose config says dialogue is on watching every bot answer 'dialogue_disabled' with nothing in the log to explain it",
+	}, {
+		name:     "a completion ceiling above the output budget is refused",
+		llm:      true,
+		env:      map[string]string{"BOT_BRAIN_DIALOGUE_ENABLED": "true", "BOT_BRAIN_DIALOGUE_MAX_TOKENS": "999999"},
+		wantErr:  true,
+		prevents: "every utterance being denied admission at runtime, which looks exactly like bots with nothing to say",
+	}, {
+		name:     "zero in-flight is refused rather than read as 'never speak'",
+		llm:      true,
+		env:      map[string]string{"BOT_BRAIN_DIALOGUE_MAX_IN_FLIGHT": "0"},
+		wantErr:  true,
+		prevents: "a second, silent way to disable a feature that already has an explicit switch",
+	}, {
+		name:     "an unparseable timeout is a startup error, not a silent default",
+		llm:      true,
+		env:      map[string]string{"BOT_BRAIN_DIALOGUE_TIMEOUT": "soon"},
+		wantErr:  true,
+		prevents: "the failure this package exists to avoid: tuning a knob, seeing no change, and concluding the knob does not work",
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			get := env(tc.env)
+			if tc.llm {
+				get = llmOn(tc.env)
+			}
+			if _, err := config.Load(get); (err != nil) != tc.wantErr {
+				t.Fatalf("err = %v, wantErr = %v (%s)", err, tc.wantErr, tc.prevents)
+			}
+		})
+	}
+}

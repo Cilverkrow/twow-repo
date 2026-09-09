@@ -27,17 +27,22 @@ done
 go_major=$(grep -oE '^[[:space:]]*VersionMajor[[:space:]]*=[[:space:]]*[0-9]+' "$go_file" | grep -oE '[0-9]+$' || true)
 go_minor=$(grep -oE '^[[:space:]]*VersionMinor[[:space:]]*=[[:space:]]*[0-9]+' "$go_file" | grep -oE '[0-9]+$' || true)
 
-# `#define BOT_BRAIN_CONTRACT_MAJOR 1`, which is where the number now lives:
-# kContractMajor/kContractMinor are derived from it and kContractVersion is
-# built from it, so the macro is the only place a human edits.
+# `#define BOT_BRAIN_CONTRACT_MAJOR 1`
 #
-# The old `int constexpr kContractMajor = 1;` form is still accepted as a
-# fallback, so this keeps working against a branch that predates the macros
-# rather than failing with "the declaration was reworded".
-cpp_major=$(grep -oE '^[[:space:]]*#define[[:space:]]+BOT_BRAIN_CONTRACT_MAJOR[[:space:]]+[0-9]+' "$cpp_file" | grep -oE '[0-9]+$' || true)
-cpp_minor=$(grep -oE '^[[:space:]]*#define[[:space:]]+BOT_BRAIN_CONTRACT_MINOR[[:space:]]+[0-9]+' "$cpp_file" | grep -oE '[0-9]+$' || true)
-[ -n "$cpp_major" ] || cpp_major=$(grep -oE 'kContractMajor[[:space:]]*=[[:space:]]*[0-9]+' "$cpp_file" | grep -oE '[0-9]+$' || true)
-[ -n "$cpp_minor" ] || cpp_minor=$(grep -oE 'kContractMinor[[:space:]]*=[[:space:]]*[0-9]+' "$cpp_file" | grep -oE '[0-9]+$' || true)
+# The macros, not the kContractMajor/kContractMinor constants that used to carry
+# the literals. Those are now `= BOT_BRAIN_CONTRACT_MAJOR`, and the string
+# kContractVersion is stringified from the same macros, so the macros are the one
+# place a number is written on the C++ side.
+#
+# NO FALLBACK to the old `kContractMajor = <literal>` shape, deliberately.
+# Accepting both would mean this script has two places it might find a number,
+# and a header carrying both -- a macro and a hand-written constant that drifted
+# from it -- would be read as agreeing when it does not. That is the failure this
+# whole file exists to catch, so it must not be reintroduced by the check itself.
+# If the header is reworded again, this errors, someone reads it, and the new
+# shape becomes a deliberate one-line change here.
+cpp_major=$(grep -oE '^[[:space:]]*#[[:space:]]*define[[:space:]]+BOT_BRAIN_CONTRACT_MAJOR[[:space:]]+[0-9]+' "$cpp_file" | grep -oE '[0-9]+$' || true)
+cpp_minor=$(grep -oE '^[[:space:]]*#[[:space:]]*define[[:space:]]+BOT_BRAIN_CONTRACT_MINOR[[:space:]]+[0-9]+' "$cpp_file" | grep -oE '[0-9]+$' || true)
 
 for pair in "go_major:$go_major" "go_minor:$go_minor" "cpp_major:$cpp_major" "cpp_minor:$cpp_minor"; do
     name=${pair%%:*}; value=${pair#*:}

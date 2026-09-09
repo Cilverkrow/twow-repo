@@ -402,3 +402,29 @@ func TestInfoAdvertisesEverythingSkewDetectionNeeds(t *testing.T) {
 		t.Fatalf("max batch = %d, want 512", info.MaxBatch)
 	}
 }
+
+// visit_trainer was added to the vocabulary without being added to Validate's
+// travel case, so an intent of that kind carrying no travel block validated
+// clean. The C++ side would then have set a travel target from a POI id that was
+// never sent -- the exact shape this function exists to make impossible.
+//
+// Every POI-directed kind is checked, not just the one that was missed. The
+// defect was an omission from a list, and a test naming a single element does
+// not stop the next omission.
+func TestEveryPoiDirectedKindNeedsAPoi(t *testing.T) {
+	for _, kind := range []IntentKind{
+		IntentTravelTo, IntentGrindArea, IntentVendorSell, IntentRepair,
+		IntentPickQuest, IntentTurnInQuest, IntentVisitTrainer,
+	} {
+		in := Intent{
+			IntentID: "i-1",
+			Bot:      BotID{Realm: 1, GUID: 1},
+			Kind:     kind,
+			Source:   "rule",
+		}
+		if err := in.Validate(); err == nil {
+			t.Errorf("%s validated with no travel.poi_id; the worldserver would "+
+				"travel to an id that was never sent", kind)
+		}
+	}
+}

@@ -8,16 +8,12 @@
 
 namespace botbrain
 {
-    // Built from BOT_BRAIN_CONTRACT_MAJOR/MINOR in the header rather than
-    // written out a third time. See the comment there: this literal read "1.0"
-    // while the constants said 1.4, and nothing failed loudly enough for anyone
-    // to notice.
-#define BOT_BRAIN_STRINGIFY2(x) #x
-#define BOT_BRAIN_STRINGIFY(x) BOT_BRAIN_STRINGIFY2(x)
-    char const* const kContractVersion =
-        BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MAJOR) "." BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MINOR);
-#undef BOT_BRAIN_STRINGIFY
-#undef BOT_BRAIN_STRINGIFY2
+    // Built from BOT_BRAIN_CONTRACT_MAJOR/MINOR via BOT_BRAIN_CONTRACT_VERSION
+    // in the header, rather than written out a third time. See the comment
+    // there: the hand-written copy said "1.0" while the numbers had moved on
+    // through 1.1, 1.2, 1.3 and 1.4, and nothing could notice because the two
+    // were never compared.
+    char const* const kContractVersion = BOT_BRAIN_CONTRACT_VERSION;
 
     char const* const kIntentIdle = "idle";
     char const* const kIntentTravelTo = "travel_to";
@@ -655,5 +651,303 @@ namespace botbrain
             if (m == wantMajor)
                 return true;
         return false;
+    }
+
+    // -----------------------------------------------------------------------
+    // Dialogue
+    // -----------------------------------------------------------------------
+
+    char const* const kDialogueChannelSay = "say";
+    char const* const kDialogueChannelParty = "party";
+    char const* const kDialogueChannelGuild = "guild";
+    char const* const kDialogueChannelWhisper = "whisper";
+    char const* const kDialogueChannelGuildEvent = "guild_event";
+
+    bool IsKnownDialogueChannel(std::string const& channel)
+    {
+        return channel == kDialogueChannelSay || channel == kDialogueChannelParty ||
+               channel == kDialogueChannelGuild || channel == kDialogueChannelWhisper ||
+               channel == kDialogueChannelGuildEvent;
+    }
+
+    char const* const kDialogueSpeakerPlayer = "player";
+    char const* const kDialogueSpeakerBot = "bot";
+
+    char const* const kDialogueLanguage = "de";
+
+    char const* const kDialogueCommandFollow = "follow";
+    char const* const kDialogueCommandStay = "stay";
+    char const* const kDialogueCommandFlee = "flee";
+    char const* const kDialogueCommandAttack = "attack";
+    char const* const kDialogueCommandEquipUpgrades = "equip_upgrades";
+
+    bool IsKnownDialogueCommand(std::string const& command)
+    {
+        return command == kDialogueCommandFollow || command == kDialogueCommandStay ||
+               command == kDialogueCommandFlee || command == kDialogueCommandAttack ||
+               command == kDialogueCommandEquipUpgrades;
+    }
+
+    char const* const kSilenceNothingToSay = "nothing_to_say";
+    char const* const kSilenceDisabled = "dialogue_disabled";
+    char const* const kSilenceUnavailable = "inference_unavailable";
+    char const* const kSilenceBudget = "budget_exhausted";
+    char const* const kSilenceBusy = "busy";
+    char const* const kSilenceFiltered = "filtered";
+    char const* const kSilenceDeadline = "deadline_exceeded";
+
+    namespace
+    {
+        // The service's validateChatText, byte for byte in intent.
+        //
+        // The control-character rule is the one that is easy to leave out and
+        // the one that matters most: a message carrying a newline can forge a
+        // turn boundary in a chat-shaped prompt, and a REPLY carrying one
+        // becomes two chat lines in a channel that agreed to one.
+        bool ChatTextIsSane(std::string const& s, std::size_t max)
+        {
+            if (s.empty() || s.size() > max)
+                return false;
+
+            bool allSpace = true;
+            for (std::size_t i = 0; i < s.size(); ++i)
+            {
+                unsigned char const c = static_cast<unsigned char>(s[i]);
+                if (c < 0x20 || c == 0x7f)
+                    return false;
+                // The C1 range, as the service refuses it. In UTF-8 those code
+                // points are two bytes (0xc2 0x80..0x9f), never a bare byte, so
+                // this is checked on the decoded pair rather than on 0x80..0x9f
+                // -- which are ordinary continuation bytes, and refusing those
+                // would refuse every non-ASCII message on this realm.
+                if (c == 0xc2 && i + 1 < s.size())
+                {
+                    unsigned char const next = static_cast<unsigned char>(s[i + 1]);
+                    if (next >= 0x80 && next <= 0x9f)
+                        return false;
+                }
+                if (c != ' ' && c != 0x09)
+                    allSpace = false;
+            }
+            return !allSpace;
+        }
+
+        // Lowercase identifier, the shape a catalog key has. A "trait key" that
+        // is really a sentence is an attempt, not a typo: the catalog would drop
+        // it silently three layers in, and this refuses it at the door where it
+        // shows up in a log.
+        bool TraitKeyIsSane(std::string const& k)
+        {
+            if (k.empty() || k.size() > kMaxDialogueTraitKeyBytes)
+                return false;
+            for (std::size_t i = 0; i < k.size(); ++i)
+            {
+                char const c = k[i];
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')
+                    continue;
+                return false;
+            }
+            return true;
+        }
+
+        // The service's validateSpeakerName: letters only, 2..12 of them.
+        //
+        // Counted in RUNES, so a German or French name is twelve characters to
+        // the player who typed it and not eight. "Letter" is approximated as
+        // "an ASCII letter, or a well-formed multi-byte sequence that is not a
+        // C1 control" -- unicode.IsLetter has no equivalent here without
+        // dragging a table into a header that deliberately depends on nothing.
+        //
+        // The approximation errs on the permissive side for non-ASCII and on
+        // the strict side for ASCII, which is the right way round: the property
+        // this check exists for is that a name cannot close a quote, open a
+        // brace, start a new line or carry a digit or a space, and every one of
+        // those characters is ASCII. The service runs the real check and refuses
+        // a name this one waved through, which costs a 400 the log will name.
+        bool SpeakerNameIsSane(std::string const& name)
+        {
+            if (name.empty())
+                return true;   // absent is normal -- guild_event has no speaker
+
+            std::size_t runes = 0;
+            for (std::size_t i = 0; i < name.size(); ++i)
+            {
+                unsigned char const c = static_cast<unsigned char>(name[i]);
+                if (c < 0x80)
+                {
+                    if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')))
+                        return false;
+                    ++runes;
+                    continue;
+                }
+                // A multi-byte sequence. Length from the lead byte; the
+                // continuation bytes are skipped, and a malformed sequence is
+                // refused rather than guessed at.
+                std::size_t len = 0;
+                if ((c & 0xe0) == 0xc0) len = 2;
+                else if ((c & 0xf0) == 0xe0) len = 3;
+                else if ((c & 0xf8) == 0xf0) len = 4;
+                else return false;   // lone continuation byte, or a 5+ byte lead
+
+                if (i + len > name.size())
+                    return false;
+                for (std::size_t j = 1; j < len; ++j)
+                    if ((static_cast<unsigned char>(name[i + j]) & 0xc0) != 0x80)
+                        return false;
+                // C1 controls dressed as two-byte UTF-8.
+                if (len == 2 && c == 0xc2)
+                    return false;
+                i += len - 1;
+                ++runes;
+            }
+            return runes >= 2 && runes <= kMaxDialogueSpeakerNameRunes;
+        }
+    }
+
+    bool ValidateDialogueRequest(DialogueRequest const& req, std::string& error)
+    {
+        if (req.bot.IsZero())
+        {
+            error = "dialogue request has a zero realm or guid";
+            return false;
+        }
+        if (!IsKnownDialogueChannel(req.channel))
+        {
+            error = "dialogue request has unknown channel " + req.channel;
+            return false;
+        }
+        if (req.speaker != kDialogueSpeakerPlayer && req.speaker != kDialogueSpeakerBot)
+        {
+            error = "dialogue request has unknown speaker " + req.speaker;
+            return false;
+        }
+        if (!SpeakerNameIsSane(req.speakerName))
+        {
+            error = "dialogue request has a speaker name that cannot be a character name";
+            return false;
+        }
+        if (!req.language.empty() && req.language != kDialogueLanguage)
+        {
+            error = "dialogue request asks for language " + req.language;
+            return false;
+        }
+        if (!ChatTextIsSane(req.message, kMaxDialogueMessageBytes))
+        {
+            error = "dialogue request message is empty, oversized, or carries a control character";
+            return false;
+        }
+        if (req.traitKeys.size() > kMaxDialogueTraitKeys)
+        {
+            error = "dialogue request carries more than the permitted trait keys";
+            return false;
+        }
+        for (std::string const& k : req.traitKeys)
+        {
+            if (!TraitKeyIsSane(k))
+            {
+                error = "dialogue request carries a trait key that is not a lowercase identifier";
+                return false;
+            }
+        }
+        return true;
+    }
+
+    std::string EncodeDialogueRequest(DialogueRequest const& req)
+    {
+        rapidjson::StringBuffer buffer;
+        JsonWriter w(buffer);
+
+        w.StartObject();
+        WriteStr(w, "contract_version", req.contractVersion);
+        WriteStrIfSet(w, "request_id", req.requestId);
+        w.Key("bot");
+        WriteBotId(w, req.bot);
+        WriteStr(w, "channel", req.channel);
+        WriteStr(w, "speaker", req.speaker);
+        // Omitted rather than sent empty: absent is a legal state (guild_event
+        // has no single speaker) and the service treats the two alike.
+        WriteStrIfSet(w, "speaker_name", req.speakerName);
+        WriteStr(w, "message", req.message);
+        WriteStringArrayIfSet(w, "trait_keys", req.traitKeys);
+        WriteStrIfSet(w, "language", req.language);
+        WriteIntIfSet(w, "sent_at_ms", req.sentAtMs);
+        WriteIntIfSet(w, "deadline_ms", req.deadlineMs);
+        // Omitted when false, which is what the Go side's omitempty expects and
+        // what makes "this worldserver does not do commands" the shape of a
+        // request rather than a flag in it.
+        if (req.allowCommands)
+        {
+            w.Key("allow_commands");
+            w.Bool(true);
+        }
+        w.EndObject();
+
+        return std::string(buffer.GetString(), buffer.GetSize());
+    }
+
+    bool DecodeDialogueResponse(std::string const& body, bool allowCommands, DialogueResponse& out, std::string& error)
+    {
+        rapidjson::Document doc;
+        if (!Parse(body, doc, error))
+            return false;
+
+        out.contractVersion = GetString(doc, "contract_version");
+        out.requestId = GetString(doc, "request_id");
+
+        rapidjson::Value::ConstMemberIterator bot = doc.FindMember("bot");
+        if (bot != doc.MemberEnd())
+        {
+            out.bot.realm = static_cast<uint32_t>(GetUint64(bot->value, "realm", 0));
+            out.bot.guid = GetUint64(bot->value, "guid", 0);
+            out.bot.uuid = GetString(bot->value, "uuid");
+        }
+
+        rapidjson::Value::ConstMemberIterator spoke = doc.FindMember("spoke");
+        out.spoke = spoke != doc.MemberEnd() && spoke->value.IsBool() && spoke->value.GetBool();
+        out.reply = GetString(doc, "reply");
+        out.reason = GetString(doc, "reason");
+
+        // The command, gated twice: by what this request allowed, and by what
+        // this build knows how to execute. Both are dropped silently to
+        // nothing, because "a command I cannot run" and "a command nobody asked
+        // for" must never become "some other command".
+        out.command = GetString(doc, "command");
+        if (!allowCommands || !IsKnownDialogueCommand(out.command))
+            out.command.clear();
+
+        rapidjson::Value::ConstMemberIterator stats = doc.FindMember("stats");
+        if (stats != doc.MemberEnd())
+        {
+            out.replyMs = GetInt64(stats->value, "reply_ms", 0);
+            out.traitsApplied = static_cast<int32_t>(GetInt64(stats->value, "traits_applied", 0));
+            out.unknownFields = static_cast<int32_t>(GetInt64(stats->value, "unknown_fields", 0));
+        }
+
+        // The last gate before text this process did not write reaches a game
+        // channel. The service runs the same check; this one is what makes a
+        // disagreement between the two cost a quiet bot rather than an unvetted
+        // line, and it is why the caller never has to trust `spoke` alone.
+        if (out.spoke && !ChatTextIsSane(out.reply, kMaxDialogueReplyBytes))
+        {
+            out.spoke = false;
+            out.reply.clear();
+            out.reason = kSilenceFiltered;
+            // out.command is deliberately NOT cleared here. A sentence this
+            // side will not vouch for says nothing about whether the player
+            // asked the bot to come, and the command has already passed its own
+            // two gates above.
+            return true;
+        }
+        if (!out.spoke)
+        {
+            out.reply.clear();
+            if (out.reason.empty())
+                out.reason = kSilenceUnavailable;
+        }
+        else
+        {
+            out.reason.clear();
+        }
+        return true;
     }
 }
