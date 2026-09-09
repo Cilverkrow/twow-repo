@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/contract"
+	"github.com/Cilverkrow/twow-repo/services/bot-brain/httpapi"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/llm"
 	"github.com/Cilverkrow/twow-repo/services/bot-brain/planner/rule"
 )
@@ -97,6 +98,19 @@ type Config struct {
 	// of memory. This is the limit that actually applies, and it applies before
 	// the first byte is decoded.
 	MaxBodyBytes int64
+
+	// Dialogue is the bot-speech surface. It is gated separately from LLM.Enabled
+	// on purpose: planning with a model costs a call per tick for a thousand
+	// bots, while dialogue costs a call every time a player types, so an
+	// operator must be able to run one without the other. Both default off.
+	Dialogue llm.DialogueConfig
+	// MaxDialogueBodyBytes caps a dialogue request body. Separate from
+	// MaxBodyBytes because the two endpoints carry different things: a batch of
+	// 2048 snapshots against one line of chat.
+	MaxDialogueBodyBytes int64
+	// MaxDialogueInFlight caps concurrent dialogue requests. Requests beyond it
+	// are shed immediately as "busy" rather than queued.
+	MaxDialogueInFlight int
 }
 
 // Load reads configuration from the environment.
@@ -135,6 +149,17 @@ func Load(getenv func(string) string) (Config, error) {
 		LLMMaxAttempts:  e.num("BOT_BRAIN_LLM_MAX_ATTEMPTS", 3),
 		LLMMinInterval:  e.dur("BOT_BRAIN_LLM_MIN_INTERVAL", 0),
 		MaxBodyBytes:    int64(e.num("BOT_BRAIN_MAX_BODY_BYTES", contract.DefaultMaxBodyBytes)),
+		Dialogue: llm.DialogueConfig{
+			Enabled:   e.boolean("BOT_BRAIN_DIALOGUE_ENABLED", false),
+			MaxTokens: e.num("BOT_BRAIN_DIALOGUE_MAX_TOKENS", llm.DefaultDialogueMaxTokens),
+			// Generous next to BOT_BRAIN_LLM_TIMEOUT, and legitimately so:
+			// nothing in the world is waiting on a reply the way a planning tick
+			// waits on an intent. A player who gets an answer two seconds later
+			// has been answered; a bot that misses a tick has not been planned.
+			Timeout: e.dur("BOT_BRAIN_DIALOGUE_TIMEOUT", llm.DefaultDialogueTimeout),
+		},
+		MaxDialogueBodyBytes: int64(e.num("BOT_BRAIN_DIALOGUE_MAX_BODY_BYTES", contract.DefaultMaxDialogueBodyBytes)),
+		MaxDialogueInFlight:  e.num("BOT_BRAIN_DIALOGUE_MAX_IN_FLIGHT", httpapi.DefaultMaxDialogueInFlight),
 		Rule: rule.Thresholds{
 			RestBelowHealthPct:           e.flt("BOT_BRAIN_RULE_REST_BELOW_HP_PCT", 45),
 			RepairBelowDurabilityPct:     e.flt("BOT_BRAIN_RULE_REPAIR_BELOW_DUR_PCT", 25),
@@ -180,6 +205,15 @@ func Load(getenv func(string) string) (Config, error) {
 	if c.LLM.Enabled && (c.LLM.MaxTokens <= 0 || int64(c.LLM.MaxTokens) > limits.OutputPerRequest) {
 		return c, fmt.Errorf("BOT_BRAIN_LLM_MAX_TOKENS must be positive and within BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET")
 	}
+	// The same ceiling, checked again for dialogue, because dialogue's is
+	// configured separately and "the planner's fits" proves nothing about it.
+	// llm.NewDialogue refuses this too; catching it here means a typo is a
+	// startup failure rather than every utterance being denied admission at
+	// runtime, which from the game looks exactly like bots with nothing to say.
+	if c.Dialogue.Enabled && int64(c.Dialogue.MaxTokens) > limits.OutputPerRequest {
+		return c, fmt.Errorf("BOT_BRAIN_DIALOGUE_MAX_TOKENS (%d) must be within BOT_BRAIN_LLM_OUTPUT_TOKEN_BUDGET (%d)",
+			c.Dialogue.MaxTokens, limits.OutputPerRequest)
+	}
 	return c, c.validate()
 }
 
@@ -195,6 +229,27 @@ func (c Config) validate() error {
 	}
 	if c.MaxBodyBytes <= 0 {
 		return fmt.Errorf("BOT_BRAIN_MAX_BODY_BYTES must be positive, got %d", c.MaxBodyBytes)
+	}
+	if c.MaxDialogueBodyBytes <= 0 {
+		return fmt.Errorf("BOT_BRAIN_DIALOGUE_MAX_BODY_BYTES must be positive, got %d", c.MaxDialogueBodyBytes)
+	}
+	if c.MaxDialogueInFlight <= 0 {
+		// Zero would be a bot that never speaks, which is indistinguishable from
+		// the feature being off but reached by a different route and reported
+		// with a different reason. If dialogue is not wanted, turn it off.
+		return fmt.Errorf("BOT_BRAIN_DIALOGUE_MAX_IN_FLIGHT must be positive, got %d", c.MaxDialogueInFlight)
+	}
+	if c.Dialogue.Enabled && !c.LLM.Enabled {
+		// Dialogue borrows the planner's endpoint, auth, breaker and budget.
+		// Without BOT_BRAIN_LLM_ENABLED there is no endpoint to borrow, and the
+		// symptom would be every bot silent with "dialogue_disabled" while the
+		// operator's config says dialogue is on -- a contradiction better
+		// reported at startup than diagnosed from a metric.
+		return fmt.Errorf("BOT_BRAIN_DIALOGUE_ENABLED requires BOT_BRAIN_LLM_ENABLED: " +
+			"dialogue uses the same endpoint, credential, circuit breaker and token budget as the planner")
+	}
+	if c.Dialogue.Enabled && c.Dialogue.MaxTokens <= 0 {
+		return fmt.Errorf("BOT_BRAIN_DIALOGUE_MAX_TOKENS must be positive, got %d", c.Dialogue.MaxTokens)
 	}
 	if c.LLM.Enabled && c.LLM.Timeout >= c.DefaultDeadline {
 		// If the model may take as long as the whole batch budget, the fallback

@@ -11,6 +11,12 @@ derived and must never be hand-edited -- edit the markdown and re-run:
 Outputs:
   contracts/personality/v1/traits.json     -- key / German label / Ollama
                                               instruction / originating section
+  services/bot-brain/planner/llm/personality/traits.json
+                                           -- a byte copy of the above, embedded
+                                              into the Go service. go:embed
+                                              cannot reach outside the module,
+                                              and the bot-brain image is built
+                                              from services/bot-brain alone
   contracts/personality/v1/pools.json      -- race, variant, class and
                                               profession pools plus the numeric
                                               rules from section 4 and 9.2
@@ -52,6 +58,14 @@ CONTRACT = REPO_ROOT / "docs" / "contracts" / "personality-context-contract-v1.m
 TRAITS_JSON = REPO_ROOT / "contracts" / "personality" / "v1" / "traits.json"
 POOLS_JSON = REPO_ROOT / "contracts" / "personality" / "v1" / "pools.json"
 CATALOG_H = REPO_ROOT / "modules" / "mod-bot-brain" / "src" / "PersonalityCatalog.h"
+# A byte copy of TRAITS_JSON, inside the Go module. go:embed cannot reach outside
+# a package directory and the bot-brain Docker build context is
+# services/bot-brain alone, so the dialogue prompt builder cannot read the
+# contracts/ tree at build or run time. planner/llm/personality has a test
+# asserting the two files are identical, so a regeneration that forgot this one
+# fails CI rather than leaving bots talking from a stale catalog.
+TRAITS_JSON_GO = (REPO_ROOT / "services" / "bot-brain" / "planner" / "llm" /
+                  "personality" / "traits.json")
 
 SOURCE_REL = "docs/contracts/personality-context-contract-v1.md"
 
@@ -499,8 +513,9 @@ def main():
     validate(model)
 
     changed = []
-    write(TRAITS_JSON, json.dumps(build_traits_json(model), ensure_ascii=False, indent=2) + "\n",
-          args.check, changed)
+    traits_json = json.dumps(build_traits_json(model), ensure_ascii=False, indent=2) + "\n"
+    write(TRAITS_JSON, traits_json, args.check, changed)
+    write(TRAITS_JSON_GO, traits_json, args.check, changed)
     write(POOLS_JSON, json.dumps(build_pools_json(model), ensure_ascii=False, indent=2) + "\n",
           args.check, changed)
     write(CATALOG_H, build_catalog_header(model), args.check, changed)

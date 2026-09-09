@@ -20,6 +20,7 @@
 
 #include "BotBrainConfig.h"
 #include "BotBrainContextAccess.h"
+#include "BotBrainDialogue.h"
 #include "BotBrainPipeline.h"
 
 #include "ScriptObjects.h"
@@ -46,6 +47,10 @@ namespace
         void OnAfterConfigLoad(bool /*reload*/) override
         {
             botbrain::LoadConfig();
+            // Publishes the copy the dialogue worker reads. Must follow
+            // LoadConfig, and must happen on reload as well as at boot, or
+            // turning dialogue on would need a restart.
+            botbrain::RefreshDialogueSettings();
         }
 
         void OnStartup() override
@@ -56,6 +61,16 @@ namespace
             // conditionally would mean a config reload could not turn the
             // feature on without a restart.
             botbrain::RegisterBotBrainContexts();
+
+            // Registered unconditionally for the same reason as the augmenter
+            // above: the provider consults the live settings on every call, so
+            // a config reload can turn dialogue on without a restart. With the
+            // feature off it answers silence, which is what a bot does today.
+            //
+            // This is also the only line in this module that would fail to
+            // compile against a core submodule older than the seam
+            // (playerbot/BotDialogueProvider.h).
+            botbrain::RegisterDialogueProvider();
 
             if (!botbrain::GetSettings().enabled)
             {

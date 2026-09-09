@@ -64,6 +64,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 class Player;
 class PlayerbotAI;
@@ -142,6 +143,23 @@ namespace botbrain
     // holding any state: the server remembers, and the brain is told.
     void RecordOutcome(Player* bot, std::string const& intentId, std::string const& kind,
         std::string const& result, std::string const& reason, std::string const& poiId);
+
+    // Fills in who a bot is to the brain: the addressing pair (realm, guid),
+    // the uuid it is remembered by, and the trait keys its personality profile
+    // resolved to.
+    //
+    // THREAD-SAFE, and it has to be: the only caller is the dialogue provider,
+    // which runs on the chat path's async worker. It takes g_statesMutex and
+    // copies; it dereferences no Player and holds no pointer afterwards, so a
+    // bot that logged out mid-chat costs a stale answer, never a crash.
+    //
+    // Returns false only when the worldserver has no realm id, which is the one
+    // state that makes a bot unaddressable. A bot with NO cached state at all is
+    // a success with an empty uuid and no trait keys: that is a bot the planner
+    // has never seen -- it has no "bot brain" strategy, or it just logged in --
+    // and it should still be able to talk, just without a personality. Refusing
+    // here would silently make dialogue a privilege of planned-for bots.
+    bool LookupBotIdentity(uint32 guidLow, BotId& bot, std::vector<std::string>& traitKeys);
 
     // Drop everything remembered for a bot. Called on logout.
     void Forget(ObjectGuid guid);

@@ -100,7 +100,7 @@ func TestNegotiate(t *testing.T) {
 // rejecting it would turn every deploy into an outage.
 func TestDecodeToleratesUnknownFields(t *testing.T) {
 	body := `{
-	  "contract_version": "1.4",
+	  "contract_version": "1.99",
 	  "request_id": "r1",
 	  "sent_at_ms": 1700000000000,
 	  "deadline_ms": 500,
@@ -120,9 +120,9 @@ func TestDecodeToleratesUnknownFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decode failed on a newer peer's request: %v", err)
 	}
-	// The body declares 1.4, which is ahead of us, so the stamp is OUR version -
-	// asserted against the constant rather than a literal, because a minor bump
-	// is a legitimate change that should not break a test about unknown fields.
+	// The body declares 1.99, which is ahead of us (a minor nobody will ever, so the stamp is OUR version -
+	// reach by accident) - asserted against the constant rather than a literal,
+	// because a minor bump should not break a test about unknown fields.
 	if res.Effective.String() != Version {
 		t.Fatalf("effective version = %s, want %s", res.Effective, Version)
 	}

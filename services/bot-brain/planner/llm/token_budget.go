@@ -138,10 +138,24 @@ func (b *TokenBudget) reserve(ctx context.Context, input, output int64) (*tokenR
 }
 
 func (p *Planner) reserveTokens(ctx context.Context, body []byte) (*tokenReservation, error) {
+	return p.reserveTokensFor(ctx, body, p.cfg.MaxTokens)
+}
+
+// reserveTokensFor is reserveTokens with an explicit output ceiling.
+//
+// It exists because dialogue and planning have different completion sizes and
+// the SAME budget. Sharing the budget is the deliberate decision -- see the note
+// on [Config.TokenBudget] and the dialogue package comment -- and this is what
+// makes it possible to share the window without also sharing the per-call
+// ceiling: a reply reserves the ~192 tokens it can actually use rather than the
+// 1024 a batch of sixteen bots needs. Reserving the planner's figure for a
+// one-sentence answer would charge the shared hourly window five times what
+// dialogue costs, and the first thing to run out would be planning.
+func (p *Planner) reserveTokensFor(ctx context.Context, body []byte, output int) (*tokenReservation, error) {
 	if !utf8.Valid(body) {
 		return nil, ErrTokenBudget
 	}
-	return p.cfg.TokenBudget.reserve(ctx, int64(len(body)), int64(p.cfg.MaxTokens))
+	return p.cfg.TokenBudget.reserve(ctx, int64(len(body)), int64(output))
 }
 
 // usageObject decodes a provider's `usage` object: strict about the accounting
