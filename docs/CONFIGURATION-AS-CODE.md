@@ -86,7 +86,8 @@ The profile adds `taxi` to the existing registered-random-bot cheat set while
 preserving `repair,breath,item`. Its global `Rate.Talent = 2` is explicitly an
 experimental Player-and-bot Funserver setting; issue #226 remains the
 fine-tuning and validation tracker. It deliberately leaves `Rate.XP.Explore`
-at the canonical value.
+at the canonical value. `Rate.Drop.Money = 3` is a separately documented
+currency-rate test, not an item-quality or boss/rare loot behavior claim.
 
 ## Deployment evidence
 

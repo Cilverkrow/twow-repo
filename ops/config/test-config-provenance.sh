@@ -252,7 +252,7 @@ assert_funserver_test_profile() {
         NF != 5 || $3 != "INTENTIONAL_CHANGE" { exit 10 }
         seen[$1 SUBSEP $2]++ { exit 11 }
         count++
-        END { exit !(count == 4) }
+        END { exit !(count == 5) }
     ' "$profile_dir/semantic-profile.tsv" || {
         echo "ERROR: funserver test profile matrix is malformed" >&2
         exit 1
@@ -270,6 +270,7 @@ assert_funserver_test_profile() {
     [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.XP.Quest)" == 3 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.XP.Explore)" == 2 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.Talent)" == 2 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.Drop.Money)" == 3 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.RndBotCheats)" == repair,breath,item,taxi ]]
 
     mkdir -p "$TMP/profile-first"

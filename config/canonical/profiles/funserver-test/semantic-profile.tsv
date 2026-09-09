@@ -2,4 +2,5 @@ service	key	classification	canonical_source	evidence
 mangosd	Rate.XP.Kill	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-required-value
 mangosd	Rate.XP.Quest	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-required-value
 mangosd	Rate.Talent	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-experiment-issue-226
+mangosd	Rate.Drop.Money	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-money-rate
 aiplayerbot	AiPlayerbot.RndBotCheats	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	funserver-test-add-existing-taxi-cheat
