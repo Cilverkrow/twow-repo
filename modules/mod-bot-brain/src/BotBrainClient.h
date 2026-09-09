@@ -42,6 +42,18 @@ namespace botbrain
 
     // POST <endpoint>/v1/plan with `body` as application/json.
     HttpResult PostPlan(std::string const& endpoint, std::string const& body, uint32_t timeoutMs);
+
+    // POST <endpoint>/v1/dialogue with `body` as application/json.
+    //
+    // Same signature, same thread rule, same everything -- it exists as its own
+    // function rather than as a path parameter so that a caller cannot post a
+    // plan body to the dialogue endpoint by getting one string wrong.
+    //
+    // The timeout is the caller's, and for dialogue it is a much larger number
+    // than a plan's: a self-hosted model answers in seconds, not milliseconds.
+    // That is affordable HERE and nowhere else in this module, because this call
+    // is made from the chat path's own async worker.
+    HttpResult PostDialogue(std::string const& endpoint, std::string const& body, uint32_t timeoutMs);
 }
 
 #endif

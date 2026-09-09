@@ -1,5 +1,5 @@
 {
-  "version": "1.2",
+  "version": "1.6",
   "supported_majors": [1],
   "known_intent_kinds": [
     "idle",
@@ -10,7 +10,9 @@
     "grind_area",
     "vendor_sell",
     "repair",
-    "rest"
+    "rest",
+    "visit_trainer",
+    "set_strategies"
   ],
   "max_batch": 2048
 }

@@ -178,6 +178,54 @@ func TestRuleLadder(t *testing.T) {
 			wantPOI:  "q1",
 		},
 		{
+			name: "a trainer beats grinding",
+			mutate: func(s *contract.Snapshot) {
+				s.POIs = []contract.PointOfInterest{poi("g1", "grind_area", 5), poi("t1", "trainer", 400)}
+			},
+			wantKind: contract.IntentVisitTrainer,
+			wantPOI:  "t1",
+			why:      "a bot grinding several levels behind its spellbook grinds badly",
+		},
+		{
+			name: "a completed quest beats a trainer",
+			mutate: func(s *contract.Snapshot) {
+				s.Quests = []contract.QuestEntry{{QuestID: 77, Status: "complete"}}
+				s.POIs = []contract.PointOfInterest{
+					{ID: "t1", Kind: "quest_turnin", Pos: contract.Position{MapID: 0}, DistanceYards: f(400), RelatedQuestID: 77},
+					poi("tr1", "trainer", 5),
+				}
+			},
+			wantKind: contract.IntentTurnInQuest,
+			wantPOI:  "t1",
+			why:      "the snapshot cannot say training is due; it can say a quest is done",
+		},
+		{
+			name: "picking up new work beats a trainer",
+			mutate: func(s *contract.Snapshot) {
+				s.POIs = []contract.PointOfInterest{poi("q1", "quest_giver", 400), poi("tr1", "trainer", 5)}
+			},
+			wantKind: contract.IntentPickQuest,
+			wantPOI:  "q1",
+		},
+		{
+			name: "a broken bot repairs before it trains",
+			mutate: func(s *contract.Snapshot) {
+				s.Vit.DurabilityPct = f(5)
+				s.POIs = []contract.PointOfInterest{poi("r1", "repair", 400), poi("tr1", "trainer", 5)}
+			},
+			wantKind: contract.IntentRepair,
+			wantPOI:  "r1",
+		},
+		{
+			name: "no trainer offered means no trainer proposed",
+			mutate: func(s *contract.Snapshot) {
+				s.POIs = []contract.PointOfInterest{poi("g1", "grind_area", 40)}
+			},
+			wantKind: contract.IntentGrindArea,
+			wantPOI:  "g1",
+			why:      "the rung fires on an offered POI, never on a guess that one exists",
+		},
+		{
 			name: "nearest POI of a kind wins",
 			mutate: func(s *contract.Snapshot) {
 				s.POIs = []contract.PointOfInterest{poi("far", "grind_area", 900), poi("near", "grind_area", 40)}
@@ -238,10 +286,26 @@ func TestRuleLadder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Plan returned an error: %v", err)
 			}
-			if len(intents) != 1 {
-				t.Fatalf("got %d intents, want exactly 1 (the rule planner always answers)", len(intents))
+			// Exactly one ERRAND, plus at most one standing condition. The
+			// two are different things and they are allowed to travel
+			// together: set_strategies states what should be true of the bot
+			// until the brain says otherwise, and if it had to compete for the
+			// bot's one intent it would starve every rung of this ladder.
+			var errands, standing []contract.Intent
+			for _, in := range intents {
+				if in.Kind == contract.IntentSetStrategies {
+					standing = append(standing, in)
+					continue
+				}
+				errands = append(errands, in)
 			}
-			got := intents[0]
+			if len(errands) != 1 {
+				t.Fatalf("got %d errand intents, want exactly 1 (the rule planner always answers)", len(errands))
+			}
+			if len(standing) > 1 {
+				t.Fatalf("got %d set_strategies intents for one bot; a bot has one strategy set, not several", len(standing))
+			}
+			got := errands[0]
 			if got.Kind != tc.wantKind {
 				t.Fatalf("kind = %q, want %q (%s); rationale was %q", got.Kind, tc.wantKind, tc.why, got.Rationale)
 			}

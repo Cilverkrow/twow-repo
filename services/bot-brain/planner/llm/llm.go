@@ -26,11 +26,24 @@
 // # Egress
 //
 // Everything this package sends leaves the machine when the endpoint is a cloud
-// provider. [redact] is the single place that decides what may go, and it sends
-// no GUIDs, no realm ids, no account data and no character names. Bots are
-// referred to by their index within the batch. This is deliberately stricter
-// than ARCH-003 requires, because loosening a filter is a reviewable change and
-// tightening one after a leak is not.
+// provider. Two paths send, and they have different rules.
+//
+// PLANNING goes through [redact], which sends no GUIDs, no realm ids, no account
+// data and no character names. Bots are referred to by their index within the
+// batch. Nothing here has loosened: choosing a destination has never needed to
+// know who anybody is, so there is nothing to gain by relaxing it and a leak to
+// lose. planner/llm/poc_test.go asserts this with a "PrivateCharacter" fixture.
+//
+// DIALOGUE additionally sends one identity: the speaker's character name, when
+// the caller supplies one. A bot that cannot address anyone by name does not
+// read as a person, which is what the feature is for. The exemption is one field
+// wide and shape-enforced -- two to twelve letters, refused otherwise -- so it
+// carries a name or nothing, and cannot carry a payload. See the Names section
+// of dialogue.go.
+//
+// Both are stricter than ARCH-003 requires. The rule that governed the first
+// version of this comment still holds for everything not named above: loosening
+// a filter is a reviewable change and tightening one after a leak is not.
 package llm
 
 import (
@@ -117,6 +130,35 @@ type Config struct {
 	// TokenBudget is shared local admission state. Nil uses a finite process-
 	// shared default, never unlimited. Share the same pointer between custom
 	// planners and PoCs; constructing one per request defeats window limits.
+	//
+	// DIALOGUE SHARES THIS BUDGET, and that was a decision rather than an
+	// accident, so here is the reasoning in the place someone will look for it.
+	//
+	// The budget's purpose is a ceiling on what this process can spend at a
+	// metered endpoint. A ceiling that a second caller can add its own quota to
+	// is not a ceiling: two budgets of 262144 tokens an hour is a budget of
+	// 524288, and the number an operator configured would silently mean half of
+	// what it says. So the hourly and daily windows are one window.
+	//
+	// The cost of sharing is real and worth naming: dialogue is triggered by
+	// players, so it is the higher-volume and more attacker-reachable of the two
+	// paths, and a busy evening in guild chat can leave the LLM planner denied
+	// admission. Planning degrades to the rule planner when that happens, which
+	// is a designed outcome and not an outage; dialogue degrades to silence.
+	// Both are survivable, and the alternative -- a separate dialogue budget --
+	// buys planning that protection by removing the cost cap, which is the wrong
+	// trade for the failure that actually costs money.
+	//
+	// What is NOT shared is the per-call ceiling: dialogue reserves its own
+	// (much smaller) max_tokens, so it consumes the shared window in proportion
+	// to what it actually uses. See reserveTokensFor.
+	//
+	// The latch deserves a separate note, because "dialogue can latch the budget
+	// and kill planning" sounds worse than it is. Stop() fires on inconsistent
+	// provider token accounting, which is a property of the PROVIDER, not of the
+	// caller. A dialogue call that trips it would have been tripped by the next
+	// plan call just the same. It is not a cross-caller kill; it is one process
+	// noticing that the endpoint's numbers cannot be trusted.
 	TokenBudget *TokenBudget `json:"-"`
 }
 
@@ -397,7 +439,7 @@ const systemPrompt = `You plan slow, coarse goals for automated characters in a 
 You are given a numbered list of characters and, for each, a list of candidate destinations with ids.
 Reply with JSON only, no prose, in this exact shape:
 {"intents":[{"bot":0,"kind":"travel_to","poi_id":"p1","certainty":0.7,"why":"short reason"}]}
-Allowed kinds: idle, travel_to, pick_quest, turn_in_quest, abandon_quest, grind_area, vendor_sell, repair, rest.
+Allowed kinds: idle, travel_to, pick_quest, turn_in_quest, abandon_quest, grind_area, vendor_sell, repair, rest, visit_trainer.
 Rules you must not break:
 - poi_id must be one of the ids listed for that same character. Never invent an id.
 - "bot" must be an index from the list you were given.

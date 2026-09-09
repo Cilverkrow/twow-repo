@@ -5,8 +5,16 @@
 
 #include "BotBrainClient.h"
 #include "BotBrainConfig.h"
+#include "PersonalityCatalog.h"
+#include "PersonalityIdentity.h"
+#include "PersonalityPolicy.h"
 
 #include "playerbot/PlayerbotAI.h"
+// Only for GetRaceVariant: section 5.1 says a variant may be applied only on a
+// confident local check, and this is where that check already lives -- a
+// skin/gender table cross-checked against CharSections.dbc. Re-deriving it here
+// would be a second opinion about the same appearance, and the two would drift.
+#include "playerbot/RandomPlayerbotFactory.h"
 #include "playerbot/TravelMgr.h"
 #include "playerbot/WorldPosition.h"
 #include "playerbot/strategy/actions/ChooseTravelTargetAction.h"
@@ -75,6 +83,49 @@ namespace botbrain
             std::string uuid;
         };
 
+        // PersonalityIdentity.h mirrors the race and class ids rather than
+        // including SharedDefines.h, so that the mapping stays hermetically
+        // testable. This is the other half of that bargain: the mirrors are
+        // checked against the real enum wherever the game IS available, which is
+        // here. A core that renumbers a race then fails to compile instead of
+        // handing every dwarf a night elf's permanent personality.
+        namespace pid = ai::personality::identity;
+        static_assert(int(pid::kRaceHuman) == int(RACE_HUMAN),       "race id drift");
+        static_assert(int(pid::kRaceOrc) == int(RACE_ORC),           "race id drift");
+        static_assert(int(pid::kRaceDwarf) == int(RACE_DWARF),       "race id drift");
+        static_assert(int(pid::kRaceNightElf) == int(RACE_NIGHTELF), "race id drift");
+        static_assert(int(pid::kRaceUndead) == int(RACE_UNDEAD),     "race id drift");
+        static_assert(int(pid::kRaceTauren) == int(RACE_TAUREN),     "race id drift");
+        static_assert(int(pid::kRaceGnome) == int(RACE_GNOME),       "race id drift");
+        static_assert(int(pid::kRaceTroll) == int(RACE_TROLL),       "race id drift");
+        static_assert(int(pid::kRaceGoblin) == int(RACE_GOBLIN),     "race id drift");
+        static_assert(int(pid::kRaceHighElf) == int(RACE_HIGH_ELF),  "race id drift");
+        static_assert(int(pid::kClassWarrior) == int(CLASS_WARRIOR), "class id drift");
+        static_assert(int(pid::kClassPaladin) == int(CLASS_PALADIN), "class id drift");
+        static_assert(int(pid::kClassHunter) == int(CLASS_HUNTER),   "class id drift");
+        static_assert(int(pid::kClassRogue) == int(CLASS_ROGUE),     "class id drift");
+        static_assert(int(pid::kClassPriest) == int(CLASS_PRIEST),   "class id drift");
+        static_assert(int(pid::kClassShaman) == int(CLASS_SHAMAN),   "class id drift");
+        static_assert(int(pid::kClassMage) == int(CLASS_MAGE),       "class id drift");
+        static_assert(int(pid::kClassWarlock) == int(CLASS_WARLOCK), "class id drift");
+        static_assert(int(pid::kClassDruid) == int(CLASS_DRUID),     "class id drift");
+
+        // Same lock-free handoff again, for the personality profile
+        // (personality-context-contract-v1 section 4). `resolved` is separate
+        // from a non-empty `keys` on purpose: an empty profile is a legitimate
+        // answer -- a character whose race AND class are both outside the
+        // catalog picks nothing at all -- and treating "no keys" as "not
+        // answered yet" would put that bot in a retry loop against the database
+        // for the rest of its session. `resolved == false` means the attempt
+        // itself failed and is worth repeating; `resolved == true` with an empty
+        // list means the bot's personality is genuinely empty.
+        struct PersonalityExchange
+        {
+            std::atomic<bool> done{false};
+            bool resolved = false;
+            std::vector<std::string> keys;
+        };
+
         // Batching is not an optimisation, it is the design
         // (services/bot-brain/contract/wire.go:16-20): one HTTP round trip
         // must serve many bots, not one per bot per interval. This exchange
@@ -141,6 +192,15 @@ namespace botbrain
             AwaitingPlan
         };
 
+        // One strategy the brain has taken over on one bot, in one bot state.
+        struct OwnedStrategy
+        {
+            std::string name;
+            std::string state;      // the WIRE name, e.g. "non_combat"
+            bool desired = false;   // what the brain wants it to be
+            bool prior = false;     // what it was when the brain first took it
+        };
+
         struct BotPlanState
         {
             Phase phase = Phase::Idle;
@@ -160,6 +220,44 @@ namespace botbrain
 
             bool hasIntent = false;
             Intent intent;
+
+            // The standing intent (set_strategies) gets a slot of its OWN, and
+            // that is the load-bearing decision in this feature.
+            //
+            // A strategy set is not an errand: it is a condition the brain
+            // re-asserts every planning cycle, because ResetStrategies wipes
+            // the whole set from a dozen call sites and restores nothing for a
+            // free random bot. If it shared `intent` above, a bot whose brain
+            // re-asserts strategies would never have room for a travel_to
+            // again -- the strategy intent would evict the errand, every cycle,
+            // forever. Two slots, two appliers, no competition.
+            bool hasStandingIntent = false;
+            Intent standingIntent;
+
+            // Set whenever a plan response for this bot decodes, whether or not
+            // it carried a standing intent. That is what makes RELEASE exact
+            // rather than a timeout: the brain answering and naming no strategy
+            // is the brain giving back everything it held, and it is
+            // distinguishable from the brain not answering at all -- which must
+            // change nothing, because a dead brain is the case the whole module
+            // is built to degrade quietly through.
+            bool standingAnswered = false;
+
+            // What the brain currently OWNS on this bot, and what each of those
+            // strategies looked like before it took it over.
+            //
+            // Ownership is per (name, state) and nothing else: this module adds
+            // and removes NAMED strategies on top of whatever AiFactory built.
+            // It never calls removeAllStrategies and never claims the set as a
+            // whole, because a brain that blanked a bot's defaults and then
+            // went away would leave an inert bot with nothing to restore it.
+            //
+            // `prior` is what makes releasing possible. When a later cycle
+            // stops naming a strategy, the brain is giving it back, and giving
+            // it back means putting it where it was -- not guessing at the
+            // factory default, and not leaving a bot permanently missing a
+            // behaviour because the policy that suppressed it moved on.
+            std::vector<OwnedStrategy> ownedStrategies;
 
             // A QUEUE, not a slot. One intent now produces up to two outcomes --
             // "accepted" when the target is set and a terminal one when the bot
@@ -198,6 +296,23 @@ namespace botbrain
             std::string uuid;
             std::shared_ptr<IdentityExchange> identity;   // non-null while a mint/lookup is in flight
             uint32 nextIdentityAttemptMs = 0;             // backoff after a failed attempt
+
+            // The personality profile cache (personality-context-contract-v1),
+            // and the exact same deal as the identity above it: computed and
+            // stored off the world thread, read from here on every snapshot, and
+            // EMPTY IS VALID. A bot with no profile yet ships an empty
+            // char.trait_keys and is planned for normally -- the Go planner's
+            // identity/keys.go already treats an absent key as "this bot does
+            // not have that trait", so nothing downstream needs the profile to
+            // exist and nothing here may wait for it.
+            //
+            // Downstream of the uuid rather than parallel with it, because the
+            // uuid IS the profile seed (section 4.1): the first attempt can only
+            // start on the tick after a mint lands.
+            std::vector<std::string> traitKeys;
+            bool traitsResolved = false;                    // see PersonalityExchange::resolved
+            std::shared_ptr<PersonalityExchange> personality;   // non-null while a load/generate is in flight
+            uint32 nextPersonalityAttemptMs = 0;                // backoff after a failed attempt
         };
 
         // How many bots are carrying a brain intent right now.
@@ -208,6 +323,15 @@ namespace botbrain
         // -- and without this each of those would take the global mutex to be
         // told there is nothing to do.
         std::atomic<uint32_t> g_activeTravels{0};
+
+        // How many bots either have a standing intent waiting or hold strategies
+        // the brain has taken over.
+        //
+        // Same job as g_activeTravels above it, for the same reason: the
+        // reconciler runs ahead of the ShouldPlanFor gate on EVERY bot's tick,
+        // and without this each of the thousands with no brain state at all
+        // would take the global mutex to be told there is nothing to do.
+        std::atomic<uint32_t> g_standingBots{0};
 
         std::mutex g_statesMutex;
         std::unordered_map<uint64, BotPlanState> g_states;   // keyed by ObjectGuid raw value
@@ -286,7 +410,13 @@ namespace botbrain
         // the bot.
         // ------------------------------------------------------------------
 
-        void FillCharacter(Player* bot, Character& out)
+        // `traitKeys` arrives from the caller rather than being read off the bot,
+        // because it is not on the bot: it is the cached personality profile
+        // (section 4), resolved on a worker thread and handed in here already
+        // decided. Passing it in is what keeps this function map-thread-pure --
+        // every other line dereferences `bot` and nothing here touches a
+        // database.
+        void FillCharacter(Player* bot, Character& out, std::vector<std::string> const& traitKeys)
         {
             out.name = bot->GetName() ? bot->GetName() : "";
             out.level = uint8(bot->GetLevel());
@@ -311,6 +441,12 @@ namespace botbrain
                 free += bag->GetFreeSlots();
             }
             out.freeBagSlots = free;
+
+            // Empty stays empty on the wire: WriteStringArrayIfSet omits the
+            // field entirely rather than emitting [], which is the difference
+            // between "this bot has no personality yet" and "this bot has a
+            // personality and it is nothing".
+            out.traitKeys = traitKeys;
         }
 
         void FillVitals(Player* bot, Vitals& out)
@@ -640,6 +776,178 @@ namespace botbrain
             }).detach();
         }
 
+        // MAP THREAD ONLY -- reads the bot. Produces the pure, copyable input
+        // the policy needs, so that everything after this point is strings and
+        // integers and the worker below can never name a Player (ADR-0012).
+        ai::personality::Request BuildPersonalityRequest(Player* bot, std::string const& uuid)
+        {
+            using namespace ai::personality;
+
+            Request request;
+            request.profileVersion = kProfileVersion;
+            // Section 4.1's profile_seed. The UUID rather than the GUID, for the
+            // reason ADR-0039 exists: a realm merge shifts every GUID, and a
+            // seed that moves is a personality that changes.
+            request.profileSeed = uuid;
+            request.race = identity::RaceKey(uint8(bot->getRace()));
+            request.cls = identity::ClassKey(uint8(bot->getClass()));
+
+            // Section 5.1 permits a variant only on a confident local check, and
+            // refuses to guess one from anything else. GetRaceVariant is that
+            // check: it matches (race, gender, skin) against the four known
+            // variant appearances and then throws the answer away again if the
+            // skin turns out to be a standard one for that race. Skin is byte 0
+            // of PLAYER_BYTES (Player.cpp's own BuildEnumData reads it there).
+            // A null return means "ordinary appearance", which the policy then
+            // treats as no variant at all.
+            if (char const* variant = RandomPlayerbotFactory::GetRaceVariant(
+                    uint8(bot->getRace()), uint8(bot->getGender()), bot->GetByteValue(PLAYER_BYTES, 0)))
+                request.raceVariant = variant;
+
+            // Section 7: one trait per ACTUALLY LEARNED profession. Driven off
+            // the catalog rather than a second list of SKILL_* constants, so
+            // there is exactly one place that decides which professions exist.
+            //
+            // skillId 0 is skipped rather than resolved: the catalog marks those
+            // ids unverified (section 14) and "survival" is the live example --
+            // this core has both SKILL_SURVIVAL (51) and SKILL_SURVIVAL2 (142)
+            // and picking one of them here would be precisely the guess section
+            // 14 is deferring. A trait missing until someone checks is cheap; a
+            // permanent trait chosen from the wrong skill line is not.
+            for (catalog::ProfessionPool const& pool : catalog::kProfessions)
+            {
+                if (!pool.enabled || pool.skillId == 0)
+                    continue;
+                if (bot->HasSkill(uint16(pool.skillId)))
+                    request.professionSkillIds.push_back(pool.skillId);
+            }
+
+            return request;
+        }
+
+        // WORKER THREAD ONLY -- blocking round trips against cv_brain, same rule
+        // and same reasons as MintOrLookupBotUuid above. Never logs; a failure
+        // is reported by returning false and the bot simply carries no
+        // personality this round.
+        //
+        // Section 4.2 in three lines of policy:
+        //   - a stored row at or beyond the current profile_version IS the bot's
+        //     personality, and is returned untouched. This is what makes editing
+        //     a pool safe: existing bots keep what they were born with, and only
+        //     bots generated afterwards see the new pool.
+        //   - a stored row at an OLDER version is a deliberate re-roll
+        //     (kProfileVersion was bumped), so it is regenerated and replaced.
+        //   - no row at all means this bot has never been generated.
+        //
+        // What this does NOT yet implement, stated rather than hidden: section
+        // 4.2's fourth bullet, "bei Berufsaenderungen werden nur Traits mit
+        // Berufsherkunft neu berechnet". A profile here is generated once from
+        // the professions the bot had at that moment and is never revisited, so
+        // a profession learned later contributes nothing until the version is
+        // bumped. Doing it properly needs the stored origins the single-row
+        // schema deliberately does not keep, and a partial recompute is not the
+        // same function as a full one -- section 9.2's conflict resolution can
+        // let a profession trait displace a race trait -- so "recompute
+        // everything on any profession change" would silently break the bullet
+        // above it. That is a phase of its own, not a line here.
+        bool LoadOrGeneratePersonality(ai::personality::Request const& request, std::vector<std::string>& out)
+        {
+            using namespace ai::personality;
+
+            {
+                std::unique_ptr<QueryResult> stored(CharacterDatabase.PQuery(
+                    "SELECT `profile_version`, `trait_keys` FROM `cv_brain`.`bot_personality` "
+                    "WHERE `bot_uuid` = '%s'",
+                    request.profileSeed.c_str()));
+                if (stored)
+                {
+                    Field* fields = stored->Fetch();
+                    // >= rather than ==: a worldserver rolled back to an older
+                    // build must not quietly downgrade a population another
+                    // node already re-rolled. It reads what it finds.
+                    if (uint32(fields[0].GetUInt32()) >= request.profileVersion)
+                    {
+                        out = identity::DecodeTraitKeys(fields[1].GetCppString());
+                        return true;
+                    }
+                }
+            }
+
+            Profile const profile = BuildProfile(request);
+            std::vector<std::string> keys;
+            keys.reserve(profile.traits.size());
+            for (Trait const& trait : profile.traits)
+                keys.push_back(trait.key);
+
+            // Both values are safe to interpolate without escaping and neither
+            // is user input: the seed is a v4 UUID this module minted, and every
+            // trait key is a compiled-in constant from PersonalityCatalog.h.
+            std::string const encoded = identity::EncodeTraitKeys(keys);
+
+            // The same "race whoever else is doing this right now" shape as the
+            // identity mint, one step up in strength because this INSERT can
+            // legitimately meet an existing row (the version bump above). Two
+            // workers racing compute the identical profile -- the policy is a
+            // pure function of what is in this request -- so whichever lands
+            // second writes the same bytes.
+            //
+            // The IF()s are the downgrade guard: MySQL applies the assignments
+            // in the order written, so `profile_version` is updated LAST and the
+            // two before it still see the version already in the row. A node
+            // running an older kProfileVersion therefore leaves a newer row
+            // completely alone rather than winning by arriving late.
+            CharacterDatabase.DirectPExecute(
+                "INSERT INTO `cv_brain`.`bot_personality` "
+                "(`bot_uuid`,`profile_version`,`trait_keys`,`generated_at`) "
+                "VALUES ('%s', %u, '%s', " SI64FMTD ") "
+                "ON DUPLICATE KEY UPDATE "
+                "`trait_keys` = IF(VALUES(`profile_version`) >= `profile_version`, VALUES(`trait_keys`), `trait_keys`), "
+                "`generated_at` = IF(VALUES(`profile_version`) >= `profile_version`, VALUES(`generated_at`), `generated_at`), "
+                "`profile_version` = GREATEST(`profile_version`, VALUES(`profile_version`))",
+                request.profileSeed.c_str(), request.profileVersion, encoded.c_str(),
+                static_cast<int64_t>(NowUnixMs()));
+
+            // Re-read rather than trusting what was just computed, for the same
+            // reason the identity mint re-reads: the row that exists is the
+            // answer, whoever wrote it. This is also the only thing that
+            // notices the guard above declining the write.
+            std::unique_ptr<QueryResult> winner(CharacterDatabase.PQuery(
+                "SELECT `trait_keys` FROM `cv_brain`.`bot_personality` WHERE `bot_uuid` = '%s'",
+                request.profileSeed.c_str()));
+            if (!winner)
+                return false;   // DB hiccup on the re-read; retried on the next attempt
+
+            out = identity::DecodeTraitKeys(winner->Fetch()[0].GetCppString());
+            return true;
+        }
+
+        // Loads or generates a bot's personality entirely off the world thread.
+        // Captures a Request BY VALUE -- strings and integers, already read off
+        // the bot by BuildPersonalityRequest on the map thread. There is no way
+        // to name a Player, a session or a bot from in here (ADR-0012).
+        void SpawnPersonalityWorker(std::shared_ptr<PersonalityExchange> const& exchange,
+            ai::personality::Request const& request)
+        {
+            g_inFlight.fetch_add(1);
+            std::thread([exchange, request]()
+            {
+                try
+                {
+                    exchange->resolved = LoadOrGeneratePersonality(request, exchange->keys);
+                }
+                catch (...)
+                {
+                    // An escaping exception on a detached thread is
+                    // std::terminate for the whole worldserver. Swallow it; the
+                    // bot keeps planning without a personality this round, which
+                    // is a supported state and not an error.
+                    exchange->resolved = false;
+                }
+                exchange->done.store(true, std::memory_order_release);
+                g_inFlight.fetch_sub(1);
+            }).detach();
+        }
+
         // Posts one batch and decodes the reply, all before `done` is set.
         // Decoding here rather than back on a map thread is what lets many
         // bots' Tick() calls -- each on its own map thread -- read
@@ -789,6 +1097,42 @@ namespace botbrain
                 return botAI->DoSpecificAction("talk to quest giver", Event(), true);
             if (kind == kIntentPickQuest)
                 return botAI->DoSpecificAction("accept all quests", Event(), true);
+            if (kind == kIntentVisitTrainer)
+            {
+                // "trainer", not "auto learn spell", "rpg train" or
+                // "trainer learn". The four were weighed:
+                //
+                //   "auto learn spell" walks every creature template in the
+                //   world and teaches for free, wherever the bot happens to be.
+                //   It already runs on level-up. Using it here would make a
+                //   trainer visit a journey with no destination-shaped reason
+                //   to have been taken, and would charge nothing for it.
+                //
+                //   "rpg train" is a wrapper whose isPossible() demands an
+                //   "rpg target" GuidPosition. We have none -- a travel
+                //   destination carries an entry and a position, never a spawn
+                //   -- and setting one would fight ChooseTravelTargetAction,
+                //   which clears it every time a target is chosen. It would
+                //   also delegate straight to "trainer".
+                //
+                //   "trainer learn" is not an action name at all; it is the
+                //   chat command, which is "trainer" with the parameter "learn".
+                //
+                // So: "trainer", which is TrainerAction, which is the one action
+                // that refuses TRAINER_TYPE_TRADESKILLS outright. That refusal
+                // is the point. twow-core#78 made a profession a versioned,
+                // GUID-bound plan, and the plan owns its purchases; a trainer
+                // visit that could start a profession would be a second
+                // authority over the same decision.
+                //
+                // The source must be "rpg action": the other branch reads the
+                // requester's selection and returns false outright when there
+                // is no requester, which is every bot this module plans for.
+                // The parameter is "learn" -- the same text the chat command
+                // carries -- which selects the learning branch explicitly
+                // rather than relying on the bot being classified free.
+                return botAI->DoSpecificAction("trainer", Event("rpg action", "learn"), true);
+            }
 
             // HasArrivalAction gates the call, so this is unreachable unless the
             // two fall out of step. Report it rather than returning a bare false:
@@ -796,6 +1140,306 @@ namespace botbrain
             // doing nothing is the failure this module exists to avoid.
             reason = "unsupported_kind";
             return false;
+        }
+
+        // ------------------------------------------------------------------
+        // set_strategies: the standing-condition reconciler.
+        // ------------------------------------------------------------------
+        //
+        // Map thread only. It calls into PlayerbotAI, which owns the engines it
+        // edits, and it is invoked from Tick() -- PLAYERHOOK_ON_UPDATE, i.e. the
+        // map thread that owns this bot and the one its AI ticks on. Nothing
+        // here crosses a worker boundary and no Player* is captured anywhere.
+        //
+        // WHY IT IS CHEAP, which is the design and not an optimisation. This
+        // runs for potentially a thousand bots, every planning cycle, forever,
+        // and the overwhelmingly common case is "the brain asked for exactly
+        // what the bot already has". So the cost of THAT case is what matters,
+        // and it is paid down in four steps:
+        //
+        //   1. One relaxed atomic load rejects every bot that has no standing
+        //      intent and owns no strategies. That is nearly all of them, and it
+        //      does not touch g_statesMutex.
+        //   2. A bot with nothing NEW to assert returns before doing any engine
+        //      work at all. Re-assertion happens when a cycle delivers a set,
+        //      not on every tick in between.
+        //   3. The diff is HasStrategy(), which is one std::map::find per named
+        //      strategy -- at most kMaxStrategyChanges of them, in practice two
+        //      or three. ChangeStrategy() is never called for a strategy that is
+        //      already where it should be.
+        //
+        //      That ordering is what keeps the steady state free. ChangeStrategy
+        //      parses a comma-separated string, and every entry it accepts runs
+        //      addStrategy -> GetStrategy -> GetSiblingStrategy -> removeStrategy
+        //      per sibling, then Init() rebuilds the engine's trigger and
+        //      multiplier lists if the set token moved. Paying a string parse per
+        //      bot per cycle to discover that nothing changed is exactly the kind
+        //      of cost that turns a good idea into a stall.
+        //   4. When something HAS moved, the directives are batched into one
+        //      string per bot state, so at most four ChangeStrategy calls happen
+        //      and each engine rebuilds at most once.
+        //
+        // Validation sits downstream of the diff, and that falls out nicely:
+        // asking to DISABLE a strategy this build never registered is already a
+        // no-op by the diff (HasStrategy is false, desired is false), so it never
+        // reaches the existence check. Only an ENABLE of an unknown name pays for
+        // a lookup, and it is dropped and logged rather than passed through -- an
+        // unknown name reaching Engine::ChangeStrategy is silently ignored there
+        // (addStrategy's GetStrategy returns null and the function falls straight
+        // through), which would leave the brain believing a change landed when
+        // nothing happened at all.
+        BotState BotStateFromWireName(std::string const& name)
+        {
+            if (name == kBotStateCombat)
+                return BotState::BOT_STATE_COMBAT;
+            if (name == kBotStateNonCombat)
+                return BotState::BOT_STATE_NON_COMBAT;
+            if (name == kBotStateDead)
+                return BotState::BOT_STATE_DEAD;
+            return BotState::BOT_STATE_REACTION;
+        }
+
+        // One (name, state) the reconciler has decided to move, and where to.
+        struct StrategyTarget
+        {
+            std::string name;
+            std::string state;
+            bool want = false;
+        };
+
+        void ReconcileStrategies(Player* bot, PlayerbotAI* botAI)
+        {
+            if (!bot || !botAI || !bot->IsInWorld())
+                return;
+
+            // Step 1: the fast path out, for every bot the brain has never
+            // touched. No lock taken.
+            if (g_standingBots.load(std::memory_order_relaxed) == 0)
+                return;
+
+            // A disabled module or a failed handshake means the stock AI owns
+            // this bot completely -- including the strategies the brain had
+            // taken over, which must go BACK rather than latch. That is why the
+            // reconciler runs ahead of the ShouldPlanFor gate: the gate closing
+            // is exactly when the release has to happen.
+            bool release = !GetSettings().enabled || !IsAdmitted();
+
+            uint64 const raw = bot->GetObjectGuid().GetRawValue();
+
+            Intent pending;
+            bool havePending = false;
+            bool answered = false;
+            std::vector<OwnedStrategy> owned;
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                BotPlanState* state = Find(raw);
+                if (!state)
+                    return;
+                if (!state->hasStandingIntent && state->ownedStrategies.empty())
+                    return;
+
+                havePending = state->hasStandingIntent;
+                pending = state->standingIntent;
+                state->hasStandingIntent = false;
+                answered = state->standingAnswered;
+                state->standingAnswered = false;
+                owned = state->ownedStrategies;
+            }
+
+            // Step 2: nothing new to assert. Either the brain answered this
+            // cycle and named no strategies -- which is it handing back
+            // everything it held -- or no answer has arrived, in which case the
+            // set stands exactly as it is.
+            //
+            // That distinction is the whole reason `answered` exists. Lapsing
+            // on a timer instead would mean a brain that merely went slow
+            // reverted a bot it was still perfectly happy with, and a brain that
+            // died would be indistinguishable from one that changed its mind.
+            if (!havePending && !release)
+            {
+                if (!answered || owned.empty())
+                    return;
+                release = true;
+            }
+
+            if (havePending && pending.expiresAtMs && pending.expiresAtMs < NowUnixMs())
+            {
+                // Same reading as everywhere else: nothing was wrong with the
+                // plan, it arrived too late. Drop it and leave what the brain
+                // last successfully asserted standing -- reverting on a late
+                // intent would make a slow brain worse than an absent one.
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                if (BotPlanState* state = Find(raw))
+                    StoreOutcome(*state, pending.intentId, pending.kind, "expired", std::string(), std::string());
+                return;
+            }
+
+            // What the brain owns after this cycle. On release that is nothing,
+            // and every currently-owned strategy goes back.
+            std::vector<OwnedStrategy> next;
+            if (!release && havePending)
+            {
+                for (StrategyChange const& change : pending.strategies)
+                {
+                    OwnedStrategy entry;
+                    entry.name = change.name;
+                    entry.state = change.state;
+                    entry.desired = change.enable;
+
+                    // Carry `prior` forward from an existing ownership rather
+                    // than re-reading it. Re-reading would capture the value the
+                    // brain itself put there and make the eventual release a
+                    // no-op: the FIRST cycle's observation is the only honest
+                    // one, so it is the one that is kept.
+                    bool carried = false;
+                    for (OwnedStrategy const& previous : owned)
+                    {
+                        if (previous.name != entry.name || previous.state != entry.state)
+                            continue;
+                        entry.prior = previous.prior;
+                        carried = true;
+                        break;
+                    }
+                    if (!carried)
+                        entry.prior = botAI->HasStrategy(entry.name, BotStateFromWireName(entry.state));
+
+                    next.push_back(entry);
+                }
+            }
+
+            // Everything the brain owned and no longer names is handed back to
+            // the value it had before the brain touched it. This is the other
+            // half of "never removeAllStrategies": the module gives back exactly
+            // what it took, and nothing it did not take.
+            std::vector<StrategyTarget> targets;
+            for (OwnedStrategy const& previous : owned)
+            {
+                bool stillOwned = false;
+                for (OwnedStrategy const& entry : next)
+                {
+                    if (entry.name == previous.name && entry.state == previous.state)
+                    {
+                        stillOwned = true;
+                        break;
+                    }
+                }
+                if (stillOwned)
+                    continue;
+
+                StrategyTarget target;
+                target.name = previous.name;
+                target.state = previous.state;
+                target.want = previous.prior;
+                targets.push_back(target);
+            }
+            for (OwnedStrategy const& entry : next)
+            {
+                StrategyTarget target;
+                target.name = entry.name;
+                target.state = entry.state;
+                target.want = entry.desired;
+                targets.push_back(target);
+            }
+
+            // Step 3: diff first. One map lookup per named strategy; anything
+            // already where it belongs costs nothing more than that.
+            std::string directives[(uint8)BotState::BOT_STATE_ALL];
+            std::string applied;
+            uint32_t unknown = 0;
+            AiObjectContext* const context = botAI->GetAiObjectContext();
+
+            for (StrategyTarget const& target : targets)
+            {
+                BotState const state = BotStateFromWireName(target.state);
+                if (botAI->HasStrategy(target.name, state) == target.want)
+                    continue;
+
+                if (target.want && (!context || !context->GetStrategy(target.name)))
+                {
+                    ++unknown;
+                    sLog.outError("mod-bot-brain: %s (guid %u) was asked to enable strategy '%s' (%s), "
+                        "which this build does not register; dropped",
+                        bot->GetName(), bot->GetGUIDLow(), target.name.c_str(), target.state.c_str());
+                    continue;
+                }
+
+                std::string& directive = directives[(uint8)state];
+                if (!directive.empty())
+                    directive += ',';
+                directive += target.want ? '+' : '-';
+                directive += target.name;
+
+                if (!applied.empty())
+                    applied += ", ";
+                applied += target.want ? '+' : '-';
+                applied += target.name;
+                applied += " (";
+                applied += target.state;
+                applied += ')';
+            }
+
+            // Step 4: at most one ChangeStrategy per bot state, so each engine
+            // rebuilds at most once however many names moved inside it.
+            for (uint8 i = 0; i < (uint8)BotState::BOT_STATE_ALL; ++i)
+            {
+                if (directives[i].empty())
+                    continue;
+                botAI->ChangeStrategy(directives[i], BotState(i));
+            }
+
+            // A name that could not be enabled is not owned. Recording it would
+            // make the next cycle believe it had been handed a strategy it never
+            // got, and releasing it later would "restore" a value nobody set.
+            if (unknown)
+            {
+                std::vector<OwnedStrategy> kept;
+                kept.reserve(next.size());
+                for (OwnedStrategy const& entry : next)
+                {
+                    if (entry.desired && (!context || !context->GetStrategy(entry.name)))
+                        continue;
+                    kept.push_back(entry);
+                }
+                next.swap(kept);
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                BotPlanState* state = Find(raw);
+                if (!state)
+                    return;
+
+                bool const countedBefore = state->hasStandingIntent || !state->ownedStrategies.empty();
+                state->ownedStrategies = next;
+                bool const countedAfter = state->hasStandingIntent || !state->ownedStrategies.empty();
+                if (countedBefore && !countedAfter)
+                    g_standingBots.fetch_sub(1, std::memory_order_relaxed);
+                else if (!countedBefore && countedAfter)
+                    g_standingBots.fetch_add(1, std::memory_order_relaxed);
+
+                // Reported only when the applied set actually MOVED, or when
+                // something was refused. An unchanged re-assertion is the normal
+                // case for every bot on every cycle, and recording it would push
+                // a genuine outcome out of the bounded queue -- the channel would
+                // get quieter the busier it got.
+                if (havePending && (!applied.empty() || unknown))
+                {
+                    StoreOutcome(*state, pending.intentId, pending.kind,
+                        (unknown && applied.empty()) ? "rejected" : "completed",
+                        unknown ? std::string("unknown_strategy") : std::string(), std::string());
+                }
+            }
+
+            // Same rule for the log, and the same reason: a line per bot per
+            // cycle is a thousand lines a cycle and nobody reads any of them. A
+            // line when a bot's behaviour actually changed is what answers "why
+            // has this bot stopped fighting".
+            if (!applied.empty())
+            {
+                sLog.outBasic("mod-bot-brain: %s (guid %u) strategies %s [%s]",
+                    bot->GetName(), bot->GetGUIDLow(), applied.c_str(),
+                    release ? "released" : pending.source.c_str());
+            }
         }
 
         // Watches the intent the bot is carrying out and reports how it ended.
@@ -1187,6 +1831,33 @@ namespace botbrain
         return out.ok;
     }
 
+    bool LookupBotIdentity(uint32 guidLow, BotId& bot, std::vector<std::string>& traitKeys)
+    {
+        bot = BotId();
+        traitKeys.clear();
+
+        if (!guidLow || !realmID)
+            return false;
+
+        bot.realm = realmID;
+        bot.guid = guidLow;
+
+        // Rebuilt rather than passed in, because the caller is on the far side
+        // of a seam that deliberately carries no ObjectGuid -- only the low
+        // guid, which is what ChatReplyDo itself resolves players from
+        // (SayAction.cpp: ObjectGuid(HIGHGUID_PLAYER, guid1)).
+        uint64 const raw = ObjectGuid(HIGHGUID_PLAYER, guidLow).GetRawValue();
+
+        std::lock_guard<std::mutex> lock(g_statesMutex);
+        BotPlanState const* state = Find(raw);
+        if (!state)
+            return true;   // never planned for; talks without a personality
+
+        bot.uuid = state->uuid;
+        traitKeys = state->traitKeys;
+        return true;
+    }
+
     void Forget(ObjectGuid guid)
     {
         std::lock_guard<std::mutex> lock(g_statesMutex);
@@ -1199,6 +1870,17 @@ namespace botbrain
         auto const existing = g_states.find(raw);
         if (existing != g_states.end() && existing->second.hasActiveTravel)
             g_activeTravels.fetch_sub(1, std::memory_order_relaxed);
+
+        // And g_standingBots, for exactly the same reason: a leaked entry there
+        // costs every bot on the server the global mutex on every tick, forever.
+        //
+        // Nothing is restored on the way out. The strategies the brain owned die
+        // with the AI object, and the bot's next login runs ResetStrategies and
+        // rebuilds the factory set from scratch -- so "restoring" here would be
+        // writing to engines that are about to be thrown away.
+        if (existing != g_states.end() &&
+            (existing->second.hasStandingIntent || !existing->second.ownedStrategies.empty()))
+            g_standingBots.fetch_sub(1, std::memory_order_relaxed);
 
         g_states.erase(raw);
 
@@ -1340,7 +2022,12 @@ namespace botbrain
         // Peek only. See the header: the engine asks a trigger far more often
         // than it runs the action behind it, so consuming here would discard
         // intents on every tick a higher-relevance action happened to win.
-        return IsAppliedKind(state->intent.kind);
+        // Standing kinds are excluded although they are applied kinds: they
+        // never reach this slot (Phase D routes them elsewhere), and saying so
+        // here means a routing mistake shows up as a bot that does not act on a
+        // strategy set rather than as BotBrainApplyAction reporting
+        // "unsupported_kind" for work the reconciler already did.
+        return IsAppliedKind(state->intent.kind) && !IsStandingKind(state->intent.kind);
     }
 
     bool TakeAppliedIntent(Player* bot, Intent& intent)
@@ -1356,7 +2043,7 @@ namespace botbrain
         // Look before consuming. Unlike TakeTravelIntent, this applier is not the
         // only one: a travel intent belongs to the travel chooser, and eating it
         // here would leave that intent unapplied and unreported.
-        if (!IsAppliedKind(state->intent.kind))
+        if (!IsAppliedKind(state->intent.kind) || IsStandingKind(state->intent.kind))
             return false;
 
         Intent const candidate = state->intent;
@@ -1428,6 +2115,14 @@ namespace botbrain
         // evidence against POIs that were never the problem.
         ObserveActiveTravel(bot, botAI);
 
+        // Ahead of the gate too, and for a reason ObserveActiveTravel's comment
+        // half states already: this is the call that hands a bot's strategies
+        // BACK. If it sat below ShouldPlanFor, disabling the module or taking
+        // the "bot brain" strategy off a bot would strand every strategy the
+        // brain had suppressed on it, with nothing left running that could ever
+        // put them back.
+        ReconcileStrategies(bot, botAI);
+
         if (!ShouldPlanFor(bot, botAI))
             return;
 
@@ -1444,6 +2139,14 @@ namespace botbrain
         IntentOutcome outcome;
         uint32_t droppedOutcomes = 0;
         std::string uuid;
+        std::vector<std::string> traitKeys;
+        // Set under the lock, acted on after it: reading the bot's race, class,
+        // appearance and skills is cheap but not free -- GetRaceVariant can walk
+        // the DBC section map -- and g_statesMutex is global. Every other
+        // expensive step in this function is deferred out of the critical
+        // section for the same reason, and a once-per-bot cost is still a cost
+        // every OTHER bot's Tick() would queue behind.
+        bool startPersonality = false;
 
         {
             std::lock_guard<std::mutex> lock(g_statesMutex);
@@ -1500,6 +2203,37 @@ namespace botbrain
                         state.nextIdentityAttemptMs = now + cfg.backoffMs;
                     }
                     uuid = state.uuid;
+
+                    // Section 4, and the same fire-and-forget shape one step
+                    // downstream: absorb a finished profile, then decide whether
+                    // to ask for one. THIS snapshot goes out with whatever is
+                    // cached right now -- for a freshly minted bot that is
+                    // nothing, and nothing is a valid answer.
+                    //
+                    // Gated on a non-empty uuid because the uuid IS the seed
+                    // (section 4.1). Generating from an empty seed would give
+                    // every unminted bot on the server the same personality and,
+                    // worse, store it.
+                    if (state.personality && state.personality->done.load(std::memory_order_acquire))
+                    {
+                        if (state.personality->resolved)
+                        {
+                            state.traitKeys = state.personality->keys;
+                            state.traitsResolved = true;
+                        }
+                        state.personality.reset();
+                    }
+                    if (!state.traitsResolved && !state.uuid.empty() && !state.personality
+                        && Elapsed(now, state.nextPersonalityAttemptMs))
+                    {
+                        startPersonality = true;
+                        // Same backoff knob as the identity attempt, for the
+                        // same reason: "the database is having trouble" must not
+                        // become "hammer it every tick", and this needs its own
+                        // config value no more than that one did.
+                        state.nextPersonalityAttemptMs = now + cfg.backoffMs;
+                    }
+                    traitKeys = state.traitKeys;
                     break;
 
                 case Phase::AwaitingPlan:
@@ -1534,6 +2268,22 @@ namespace botbrain
         // ---- Phase B: build the snapshot, on the map thread, bot alive. ----
         if (readyDestinations)
         {
+            // Ask for the personality first, outside the lock, in the same
+            // spawn-then-relock shape phase A uses: reading the bot is a map
+            // thread job, the database work that follows is emphatically not,
+            // and neither belongs inside g_statesMutex. The snapshot built
+            // immediately below does NOT wait for the answer -- it ships the
+            // cached keys, which on this first pass are still empty.
+            if (startPersonality)
+            {
+                ai::personality::Request const request = BuildPersonalityRequest(bot, uuid);
+                std::shared_ptr<PersonalityExchange> exchange = std::make_shared<PersonalityExchange>();
+                SpawnPersonalityWorker(exchange, request);
+
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                g_states[raw].personality = exchange;
+            }
+
             std::vector<PointOfInterest> pois;
             std::vector<ResolvedPoi> table;
             WorldPosition const center(bot);
@@ -1547,7 +2297,11 @@ namespace botbrain
             // Go side plans for this bot without memory rather than
             // rejecting the snapshot.
             snapshot.bot.uuid = uuid;
-            FillCharacter(bot, snapshot.chr);
+            // Cached the same way and for the same reason (section 4.2, and the
+            // no-blocking-DB-call-on-the-world-thread rule this whole design
+            // exists for). Empty means "not generated yet", which the planner
+            // reads as a bot with no traits rather than a bot to refuse.
+            FillCharacter(bot, snapshot.chr, traitKeys);
             FillPosition(bot, snapshot.pos);
             FillVitals(bot, snapshot.vitals);
             FillSurroundings(bot, botAI, snapshot.around);
@@ -1654,21 +2408,53 @@ namespace botbrain
 
             state.nextRequestMs = now + cfg.intervalMs;
 
-            // At most one intent per snapshot (contract/wire.go:81), and the
-            // Go planner keys its results in a map[BotID]Intent -- so this
-            // `break` on first match is correct as-is, batched or not. It is
-            // NOT "only look at bot 0's intent": the filter above it discards
-            // every intent not addressed to guidLow/realmID first, so the
-            // first match found IS this bot's one intent, never another bot's.
+            // The filter discards every intent not addressed to
+            // guidLow/realmID first, so a match here IS this bot's, never
+            // another bot's.
+            //
+            // Two slots, so the loop no longer stops at the first match: a bot
+            // may be handed one ERRAND and one STANDING condition in the same
+            // response, and they do not compete. A set_strategies is re-sent
+            // every cycle by design, so sharing the errand slot with it would
+            // mean a bot whose brain manages its strategies could never be sent
+            // anywhere again. Within each slot the first match still wins,
+            // which keeps the old behaviour for every kind that had it.
             uint64 const guidLow = bot->GetGUIDLow();
+            bool const countedBefore = state.hasStandingIntent || !state.ownedStrategies.empty();
             for (Intent const& intent : readyPlan->response.intents)
             {
                 if (intent.bot.guid != guidLow || intent.bot.realm != realmID)
                     continue;   // never apply an intent addressed to another bot
-                state.hasIntent = true;
-                state.intent = intent;
-                break;
+
+                if (IsStandingKind(intent.kind))
+                {
+                    if (!state.hasStandingIntent)
+                    {
+                        state.hasStandingIntent = true;
+                        state.standingIntent = intent;
+                    }
+                    continue;
+                }
+
+                if (!state.hasIntent)
+                {
+                    state.hasIntent = true;
+                    state.intent = intent;
+                }
+
+                // Both slots filled: nothing later in the batch can change
+                // this bot's outcome, and a batch may carry 2048 intents that
+                // every bot's map thread would otherwise walk to the end.
+                if (state.hasIntent && state.hasStandingIntent)
+                    break;
             }
+
+            // The brain answered for this bot. Whether or not that answer named
+            // any strategies is what the reconciler reads to tell "keep holding
+            // what you hold" from "give it all back".
+            state.standingAnswered = true;
+            if (!countedBefore && (state.hasStandingIntent || !state.ownedStrategies.empty()))
+                g_standingBots.fetch_add(1, std::memory_order_relaxed);
         }
     }
 }

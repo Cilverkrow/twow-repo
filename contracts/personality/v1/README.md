@@ -18,8 +18,14 @@ The same parse also writes `modules/mod-bot-brain/src/PersonalityCatalog.h`, whi
 again as ASCII-only C++ tables. That duplication is deliberate and is why it is generated: the
 selection policy (`PersonalityPolicy.h`) is a pure decision function that has to be linkable into
 a unit test with no parser, no fixture path and no encoding flags, while the labels and
-instructions — the parts that are actually German — never reach it. One parse, three outputs,
-nothing hand-maintained.
+instructions — the parts that are actually German — never reach it.
+
+It also writes `services/bot-brain/planner/llm/personality/traits.json`, a byte copy of
+`traits.json` above. The Go service embeds it with `go:embed`, which cannot reach outside a
+package directory, and its Docker build context is `services/bot-brain` alone — so the dialogue
+prompt builder can reach neither this tree nor a runtime path. A test in that package fails if the
+copy drifts, so a forgotten regeneration is a red CI run rather than bots talking from a stale
+catalog. One parse, four outputs, nothing hand-maintained.
 
 ## What the markdown does not contain
 

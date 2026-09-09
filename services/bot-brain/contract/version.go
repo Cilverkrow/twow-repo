@@ -69,9 +69,34 @@ import (
 //
 // The C++ side and this service are deployed separately and WILL skew. The
 // design assumption is that skew is normal, not exceptional.
+//
+// 1.3 added the dialogue endpoint: POST /v1/dialogue, [DialogueRequest] and
+// [DialogueResponse]. Additive, so a 1.2 worldserver keeps working untouched --
+// it simply never calls the new route. The minor is what lets a newer C++ side
+// discover, at startup from GET /v1/contract, whether this brain can talk at all
+// rather than finding out one 404 at a time.
+//
+// 1.4 added visit_trainer, the tenth [IntentKind]. It was numbered 4 rather than
+// 3 because 1.3 was claimed by the dialogue endpoint while both were in flight:
+// the number is what a peer negotiates on, so a collision would have one build
+// stamping a version whose vocabulary it does not have. Both have since merged,
+// so the numbering held.
+//
+// 1.5 added [DialogueRequest.AllowCommands] and [DialogueResponse.Command]: a
+// closed enum through which a reply may ask the worldserver to run one chat
+// command the speaker could have typed. Additive in both directions -- a 1.3
+// brain never sends one, and a worldserver that predates it ignores a field it
+// does not know.
+//
+// 1.6 adds [IntentSetStrategies], the brain's first reach inside the tick. It
+// was written against 1.4 and reserved 1.6 while 1.5 was still open, on the
+// same reasoning as above: skipping a number is free because [Negotiate]
+// compares minors and never enumerates them, while reusing one is not
+// recoverable once either shape has shipped. 1.5 merged, so the reservation
+// was correct and nothing renumbers.
 const (
 	VersionMajor = 1
-	VersionMinor = 2
+	VersionMinor = 6
 )
 
 // Version is the canonical "MAJOR.MINOR" string carried on every request and

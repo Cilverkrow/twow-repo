@@ -31,6 +31,7 @@
 #ifndef MOD_BOT_BRAIN_WIRE_H
 #define MOD_BOT_BRAIN_WIRE_H
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -39,9 +40,26 @@ namespace botbrain
 {
     // The contract version this build speaks. Must track
     // services/bot-brain/contract/version.go (VersionMajor.VersionMinor).
+    //
+    // The NUMBERS are the source of truth and the string is built from them, so
+    // the two cannot disagree. They did: kContractVersion was written out by
+    // hand as "1.0" and stayed there through 1.1, 1.2 and 1.3, so every request
+    // this module ever sent advertised a version the module did not implement.
+    //
+    // That was not cosmetic. Negotiate() in version.go checks the MAJOR against
+    // the supported set and then clamps the peer's MINOR -- so the service
+    // negotiated an effective 1.0 for this client and would have withheld
+    // anything gated on a later minor, silently and correctly, from a build that
+    // supported it.
+#define BOT_BRAIN_CONTRACT_MAJOR 1
+#define BOT_BRAIN_CONTRACT_MINOR 6
+#define BOT_BRAIN_STRINGIFY_(x) #x
+#define BOT_BRAIN_STRINGIFY(x) BOT_BRAIN_STRINGIFY_(x)
+#define BOT_BRAIN_CONTRACT_VERSION     BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MAJOR) "." BOT_BRAIN_STRINGIFY(BOT_BRAIN_CONTRACT_MINOR)
+
     extern char const* const kContractVersion;
-    int constexpr kContractMajor = 1;
-    int constexpr kContractMinor = 2;
+    int constexpr kContractMajor = BOT_BRAIN_CONTRACT_MAJOR;
+    int constexpr kContractMinor = BOT_BRAIN_CONTRACT_MINOR;
 
     // Intent kinds this build understands. Anything else is dropped silently.
     extern char const* const kIntentIdle;
@@ -53,6 +71,8 @@ namespace botbrain
     extern char const* const kIntentPickQuest;
     extern char const* const kIntentTurnInQuest;
     extern char const* const kIntentAbandonQuest;
+    extern char const* const kIntentVisitTrainer;
+    extern char const* const kIntentSetStrategies;
 
     bool IsKnownIntentKind(std::string const& kind);
 
@@ -78,6 +98,64 @@ namespace botbrain
     // written; `idle` will never join it, because doing nothing is what the bot
     // does when no intent applies at all.
     bool IsAppliedKind(std::string const& kind);
+
+    // A STANDING kind: applied where the bot stands, like the other applied
+    // kinds, but by the reconciler in BotBrainPipeline rather than by
+    // BotBrainApplyAction -- and it is a SUBSET of IsAppliedKind, never a
+    // fourth disjoint class.
+    //
+    // The distinction is not bookkeeping. Every other kind is an errand: it is
+    // offered once, carried out or refused once, and reported once. A strategy
+    // set is a CONDITION -- it states what should be true of the bot until the
+    // brain says otherwise -- and the brain re-sends it every planning cycle
+    // because PlayerbotAI::ResetStrategies wipes the whole set from a dozen
+    // call sites and restores nothing for a free random bot
+    // (its restore is gated on HasPlayerRelation(), which is false for the
+    // entire population this module plans for).
+    //
+    // That is why it cannot share the single pending-intent slot with the
+    // errands. A bot whose brain re-asserts strategies every cycle would
+    // otherwise never have room for a travel_to again: the strategy intent
+    // would evict it, every time, forever. So the pipeline keeps a second slot
+    // for standing kinds and BotBrainApplyAction never sees them.
+    bool IsStandingKind(std::string const& kind);
+
+    // ---------------------------------------------------------------------
+    // set_strategies
+    // ---------------------------------------------------------------------
+    //
+    // Bot states, by NAME. The enum next door is BotState in
+    // core/modules/mod-playerbots/src/playerbot/BotState.h and its ordinals are
+    // deliberately not what travels: upstream inserting a value would silently
+    // repoint every change at a different engine.
+    extern char const* const kBotStateCombat;
+    extern char const* const kBotStateNonCombat;
+    extern char const* const kBotStateDead;
+    extern char const* const kBotStateReaction;
+
+    bool IsKnownBotState(std::string const& state);
+
+    // Mirrors contract.MaxStrategyChanges / MaxStrategyNameBytes.
+    std::size_t constexpr kMaxStrategyChanges = 16;
+    std::size_t constexpr kMaxStrategyNameBytes = 64;
+
+    // Mirrors contract.ValidStrategyName, and it is a SAFETY check before it is
+    // a tidiness one. PlayerbotAI::ChangeStrategy takes one string, splits it
+    // on ',' and reads the first byte of each part as the operator ('+', '-',
+    // '~'). A name carrying a comma would smuggle in a second directive nobody
+    // reviewed; one starting with an operator would invert the entry. Neither
+    // gets past here, and neither reaches ChangeStrategy.
+    //
+    // It does NOT check that the strategy exists -- only the live
+    // AiObjectContext knows that, and the applier asks it.
+    bool IsPossibleStrategyName(std::string const& name);
+
+    struct StrategyChange
+    {
+        std::string name;    // in-core strategy name, e.g. "grind"
+        std::string state;   // one of the kBotState* above
+        bool enable = false;
+    };
 
     struct BotId
     {
@@ -180,7 +258,11 @@ namespace botbrain
         std::string kind;
         std::string result;              // "accepted" | "completed" | "rejected" | "failed" | "expired"
         // "unreachable" | "stale_poi" | "unknown_poi" | "unsupported_kind" |
-        // "action_refused". The last means the intent was attempted where the bot
+        // "action_refused" | "unknown_strategy". The last is set_strategies'
+        // own: a name this build does not register, dropped rather than passed
+        // through to an engine that would ignore it silently.
+        //
+        // "action_refused" means the intent was attempted where the bot
         // stood and the in-core action declined -- "not now", as against
         // "unsupported_kind" which means nothing tried at all and never will.
         std::string reason;
@@ -227,6 +309,12 @@ namespace botbrain
         double stopWithinYards = 0.0;
         bool hasQuest = false;
         uint32_t questId = 0;
+
+        // Set only for kIntentSetStrategies; empty for every other kind. An
+        // empty set on a set_strategies is REFUSED rather than read as "clear
+        // everything": this module never takes ownership of a bot's whole
+        // strategy set, only of the names it is asked about.
+        std::vector<StrategyChange> strategies;
         int32_t priority = 0;
         double confidence = 0.0;         // 0..1, unlike the percentages
         int64_t expiresAtMs = 0;
@@ -278,6 +366,163 @@ namespace botbrain
     // startup is the whole point of the /v1/contract handshake: skew is found
     // at boot, not one dropped intent at a time.
     bool ContractMajorSupported(ContractInfo const& info, int wantMajor);
+
+    // -----------------------------------------------------------------------
+    // Dialogue (POST /v1/dialogue) -- services/bot-brain/contract/dialogue.go
+    // -----------------------------------------------------------------------
+    //
+    // Unbatched, unlike the plan request above, and that is the contract's
+    // decision rather than an omission here: planning is a thousand bots on a
+    // tick and batching is the only way to afford it, while dialogue is an
+    // event -- one player says one thing and the reply is worth nothing if it
+    // arrives with the next tick's batch.
+    //
+    // SILENCE IS A 200. A bot with nothing to say, a dead model, an exhausted
+    // budget and a shed request all come back as spoke=false with a reason. The
+    // only non-200 is a request that did not decode, which is why the bounds
+    // below are mirrored here and checked BEFORE the request goes out: a 400 is
+    // this side's bug, and it should cost a log line that names the bot rather
+    // than a silent bot and a counter in another process.
+
+    // Channels the service serves. Anything else is refused rather than
+    // defaulted, because guessing "say" would apply the wrong length rule to
+    // the one place length matters.
+    extern char const* const kDialogueChannelSay;
+    extern char const* const kDialogueChannelParty;
+    extern char const* const kDialogueChannelGuild;
+    extern char const* const kDialogueChannelWhisper;
+    extern char const* const kDialogueChannelGuildEvent;
+
+    bool IsKnownDialogueChannel(std::string const& channel);
+
+    // What KIND of speaker spoke, not which one.
+    extern char const* const kDialogueSpeakerPlayer;
+    extern char const* const kDialogueSpeakerBot;
+
+    // The only language this build of the service produces: the catalog's 124
+    // instructions are German sentences.
+    extern char const* const kDialogueLanguage;
+
+    // Commands a reply may ask for: the closed set from
+    // contract/dialogue.go's DialogueCommand.
+    //
+    // Each one is the name of a chat command mod-playerbots already accepts
+    // from a player who types it. Nothing here executes anything -- these are
+    // wire spellings, and the module maps them onto core's BotDialogueCommand,
+    // which is what the worldserver runs, as the speaker, through
+    // PlayerbotAI::HandleCommand.
+    //
+    // The set is closed on THIS side as well as the service's, and that
+    // duplication is the point: a service that learned a sixth command before
+    // this build did makes a bot do nothing rather than something.
+    extern char const* const kDialogueCommandFollow;
+    extern char const* const kDialogueCommandStay;
+    extern char const* const kDialogueCommandFlee;
+    extern char const* const kDialogueCommandAttack;
+    extern char const* const kDialogueCommandEquipUpgrades;
+
+    bool IsKnownDialogueCommand(std::string const& command);
+
+    // Silence reasons. Stable strings, switchable, and the reason an operator
+    // can tell "nothing to say" from "the model is unreachable" from "the token
+    // budget latched" -- three states that look identical from the game.
+    extern char const* const kSilenceNothingToSay;
+    extern char const* const kSilenceDisabled;
+    extern char const* const kSilenceUnavailable;
+    extern char const* const kSilenceBudget;
+    extern char const* const kSilenceBusy;
+    extern char const* const kSilenceFiltered;
+    extern char const* const kSilenceDeadline;
+
+    // Bounds, mirroring contract/dialogue.go. Bytes except where noted.
+    std::size_t constexpr kMaxDialogueMessageBytes = 512;
+    std::size_t constexpr kMaxDialogueReplyBytes = 255;
+    std::size_t constexpr kMaxDialogueTraitKeys = 12;
+    std::size_t constexpr kMaxDialogueSpeakerNameRunes = 12;   // RUNES, not bytes
+    std::size_t constexpr kMaxDialogueTraitKeyBytes = 64;
+
+    struct DialogueRequest
+    {
+        std::string contractVersion;
+        std::string requestId;
+
+        // Echoed back on the response and never sent to the model: it is how
+        // the worldserver matches a reply to a character.
+        BotId bot;
+
+        std::string channel;        // one of the kDialogueChannel* above
+        std::string speaker;        // kDialogueSpeakerPlayer | kDialogueSpeakerBot
+
+        // The speaker's character name, and the ONLY identity that leaves this
+        // process. Optional; letters only, 2..kMaxDialogueSpeakerNameRunes of
+        // them. That shape is what makes it safe to interpolate into a prompt:
+        // no quote to close, no brace, no newline, no colon.
+        std::string speakerName;
+
+        // What was said. Player-typed, therefore hostile.
+        std::string message;
+
+        // The bot's personality, as keys from the 124-key catalog. Empty is
+        // normal and always has been -- a bot whose profile has not been
+        // generated yet still talks, just without a personality.
+        std::vector<std::string> traitKeys;
+
+        std::string language;       // empty or kDialogueLanguage
+        int64_t sentAtMs = 0;
+        int64_t deadlineMs = 0;
+
+        // Whether this utterance may come back with a command. False -- the
+        // default -- means text only: the service does not put the command
+        // vocabulary in front of the model at all, and a command that arrives
+        // anyway is dropped on both sides.
+        bool allowCommands = false;
+    };
+
+    struct DialogueResponse
+    {
+        std::string contractVersion;
+        std::string requestId;
+        BotId bot;
+        bool spoke = false;
+        std::string reply;          // empty unless spoke
+        std::string reason;         // one of the kSilence* above, unless spoke
+        // What the speaker asked the bot to do, or empty. One of the
+        // kDialogueCommand* above and nothing else: DecodeDialogueResponse
+        // drops a value it does not know rather than passing it on, so this
+        // field is either executable or empty.
+        //
+        // Independent of `spoke`. A bot may say something and act, act without
+        // saying anything, or neither.
+        std::string command;
+        int64_t replyMs = 0;
+        int32_t traitsApplied = 0;
+        int32_t unknownFields = 0;
+    };
+
+    // Mirrors DialogueRequest.Validate() in the Go service, for the reason
+    // ValidateSnapshot exists: a request that would have been a 400 is refused
+    // one process earlier, where the log line can name the bot. Unlike a
+    // snapshot, this one is also the last chance to notice that the world
+    // handed us a name or a message that cannot have come from a character.
+    bool ValidateDialogueRequest(DialogueRequest const& req, std::string& error);
+
+    std::string EncodeDialogueRequest(DialogueRequest const& req);
+
+    // Parse. Returns false and sets `error` on malformed input; never throws.
+    //
+    // A response that decodes but claims to have spoken with a reply this side
+    // will not accept -- empty, over kMaxDialogueReplyBytes, or carrying a
+    // control character that would forge a second chat line -- is decoded as
+    // SILENCE with kSilenceFiltered rather than as a failure. The far side runs
+    // the same check; this one is what makes a disagreement cost a quiet bot
+    // instead of an unvetted line in a game channel.
+    //
+    // A command is treated the same way and independently: one this build does
+    // not know, or one on a response to a request that did not set
+    // allowCommands, is CLEARED. Never guessed at, never passed through, and
+    // never a reason to drop a reply that is otherwise fine. `allowCommands`
+    // must be the value that was sent on the request this body answers.
+    bool DecodeDialogueResponse(std::string const& body, bool allowCommands, DialogueResponse& out, std::string& error);
 }
 
 #endif

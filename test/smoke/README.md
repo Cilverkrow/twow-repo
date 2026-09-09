@@ -71,6 +71,7 @@ Only `10-migrations.sh`, `15-schema-effects.sh` and the realmd half of
 | `20-console.sh` | the console FIFO exists **and is being read** - `server info` goes in, the answer appears in the log. This is the container failure the entrypoint exists to prevent (ADR-0023 blocker 3) | yes |
 | `30-bot-persistence.sh` | **ADR-0024 invariant 1.** Records the roster, restarts the world server, requires identical GUIDs, names, levels, xp, money, inventory counts and the same roster version | yes |
 | `40-shutdown.sh` | `docker stop` is a graceful in-game shutdown: exit code 0, the entrypoint's clean-shutdown line in the log, no character left flagged online, no rows lost | yes |
+| `60-bot-dialogue.sh` | a message addressed to a bot comes back as that bot's reply, carried by the live `bot-brain` service over real HTTP to a stub model, and a **dead model is silence rather than an outage**. Needs `bot-brain.yml` and `llm-stub.yml` composed in; skips with a stated reason otherwise. **It does not prove a player conversation** - see below | no (one optional assertion uses the world container if it is up) |
 
 ### On the `manual` migration hash
 
@@ -98,3 +99,54 @@ FG-044 stayed hidden. It compares member-by-member, not by count.
 
 It restarts the world service and puts it back. So does `40-shutdown.sh`. Both
 are safe to re-run, and neither touches the database except to read.
+
+### On `60-bot-dialogue.sh`, and what "bots can talk" does not yet mean
+
+This is the closest thing to a conversation test that exists, and the distance
+between it and a real one is worth stating plainly, because a green tick here is
+easy to over-read.
+
+**What it proves.** `bot-brain` is running in the stack. A structured utterance
+addressed to a bot - speaker, channel, message, traits - returns `spoke: true`
+with a reply whose bytes are exactly the sentence the stub model server is
+holding, and the stub's own call counter advanced, so the reply demonstrably
+crossed the wire rather than being canned. With the stub stopped, the same call
+still answers HTTP 200 with `spoke: false` and a named reason: the thing that
+makes bots talk can never make the game fail.
+
+**What it does not prove.** Nobody typed anything, and the worldserver was not
+in the loop.
+
+* There is no game client in CI and there will not be one (ARCH-005: a headless
+  protocol client is a separate product, not a refactor), so no player can log
+  in and whisper a bot.
+* The C++ half that calls this endpoint from the in-world chat path is still in
+  flight. Everything from "a bot heard something" to "call the endpoint", and
+  from "a reply arrived" to "a bot says it", is untested.
+* The worldserver's *own* LLM chat path is dead code in the pinned core:
+  `PlayerbotLLMInterface::Generate` has had its network client removed and
+  returns an empty string unconditionally, and it is the single function every
+  in-world bot-speech route funnels through. So `AiPlayerbot.LLMEnabled` is
+  deliberately left at `0` and nothing points the server at the stub - doing so
+  would look like a test and prove nothing.
+* The one live LLM HTTP surface left in the server, `.rndbot debug <bot> llm`,
+  requires the requester's session to be `SEC_MODERATOR`. From the console the
+  requester is the bot itself, and every bot session is constructed with a
+  hardcoded `SEC_PLAYER`, so no account change reaches it. A console-driven test
+  of a bot speaking a generated line is not available.
+* Nothing a bot says is written to any database table, so there is no
+  persistent artefact to assert on: `World::LogChat` runs only from
+  `WorldSession::HandleMessagechatOpcode`, which direct `Player::Say` calls
+  bypass.
+
+### Running the dialogue check locally
+
+```sh
+docker compose -f deploy/compose/docker-compose.yml                -f deploy/compose/bot-brain.yml                -f deploy/compose/llm-stub.yml up -d --build bot-brain llm-stub
+sh test/smoke/60-bot-dialogue.sh
+```
+
+`test/stub/llm-stub.py` is the stub model: one stdlib file, one sentence,
+forever. Read its header before trusting a result that involves it - it explains
+exactly which byte of the path is substituted and why the substitution does not
+weaken the check.

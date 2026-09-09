@@ -234,7 +234,8 @@ type IntentOutcome struct {
 	Result string `json:"result"`
 	// Reason is a short stable machine code when Result is "rejected" or
 	// "failed": "unreachable", "in_combat", "not_group_leader", "stale_poi",
-	// "unknown_poi", "unsupported_kind", "action_refused", "identity_protected".
+	// "unknown_poi", "unsupported_kind", "action_refused", "identity_protected",
+	// "unknown_strategy".
 	// Empty otherwise.
 	//
 	// "action_refused" means the server tried to carry the intent out where the

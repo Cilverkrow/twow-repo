@@ -3,6 +3,7 @@ package contract
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -99,8 +100,13 @@ func TestNegotiate(t *testing.T) {
 // served. This is the direction of skew that a rolling deployment produces, and
 // rejecting it would turn every deploy into an outage.
 func TestDecodeToleratesUnknownFields(t *testing.T) {
-	body := `{
-	  "contract_version": "1.4",
+	// One minor AHEAD of this build, computed rather than written out: the
+	// premise of this test is that the peer is newer than us, and a literal
+	// stops being newer the moment the contract catches up with it. It did
+	// exactly that once already, when 1.4 was hardcoded here and the contract
+	// went to 1.6.
+	body := fmt.Sprintf(`{
+	  "contract_version": "%d.%d",
 	  "request_id": "r1",
 	  "sent_at_ms": 1700000000000,
 	  "deadline_ms": 500,
@@ -115,12 +121,12 @@ func TestDecodeToleratesUnknownFields(t *testing.T) {
 	    "mood": "curious",
 	    "aura_ids": [1,2,3]
 	  }]
-	}`
+	}`, VersionMajor, VersionMinor+1)
 	req, res, err := DecodePlanRequest(strings.NewReader(body), 0)
 	if err != nil {
 		t.Fatalf("decode failed on a newer peer's request: %v", err)
 	}
-	// The body declares 1.4, which is ahead of us, so the stamp is OUR version -
+	// The body declares one minor ahead of us, so the stamp is OUR version -
 	// asserted against the constant rather than a literal, because a minor bump
 	// is a legitimate change that should not break a test about unknown fields.
 	if res.Effective.String() != Version {
@@ -394,5 +400,31 @@ func TestInfoAdvertisesEverythingSkewDetectionNeeds(t *testing.T) {
 	}
 	if info.MaxBatch != 512 {
 		t.Fatalf("max batch = %d, want 512", info.MaxBatch)
+	}
+}
+
+// visit_trainer was added to the vocabulary without being added to Validate's
+// travel case, so an intent of that kind carrying no travel block validated
+// clean. The C++ side would then have set a travel target from a POI id that was
+// never sent -- the exact shape this function exists to make impossible.
+//
+// Every POI-directed kind is checked, not just the one that was missed. The
+// defect was an omission from a list, and a test naming a single element does
+// not stop the next omission.
+func TestEveryPoiDirectedKindNeedsAPoi(t *testing.T) {
+	for _, kind := range []IntentKind{
+		IntentTravelTo, IntentGrindArea, IntentVendorSell, IntentRepair,
+		IntentPickQuest, IntentTurnInQuest, IntentVisitTrainer,
+	} {
+		in := Intent{
+			IntentID: "i-1",
+			Bot:      BotID{Realm: 1, GUID: 1},
+			Kind:     kind,
+			Source:   "rule",
+		}
+		if err := in.Validate(); err == nil {
+			t.Errorf("%s validated with no travel.poi_id; the worldserver would "+
+				"travel to an id that was never sent", kind)
+		}
 	}
 }

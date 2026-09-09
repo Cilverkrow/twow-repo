@@ -85,9 +85,39 @@ type Recorder interface {
 	Record(ctx context.Context, uuid string, o Observation) error
 }
 
-// History is one bot's recent past, indexed for the question the planner asks.
+// RefusedTheKind reports whether this observation is evidence against its
+// KIND -- the mirror of [Observation.Discouraging], which is about the place.
+//
+// The two are deliberately separate and deliberately not the same set.
+// "failed"/"action_refused" means the bot got there and the server tried: the
+// destination was fine and the thing asked for was not available. Counting it
+// against the POI would teach a bot to avoid a trainer because the trainer had
+// nothing left to teach it, which is nonsense -- the trainer is exactly where
+// it always was.
+//
+// But it is still evidence, and throwing it away has a cost of its own: a rung
+// whose only precondition is "a POI of this kind is nearby" proposes the same
+// errand every tick for as long as that POI is nearby, and a refusal that is
+// remembered nowhere cannot stop it. That loop is what this exists to bound.
+//
+// "rejected"/"unsupported_kind" joins it because it is the strongest possible
+// form of the same statement: this worldserver build cannot carry the kind out
+// at all, so nothing about a different destination will help.
+func (o Observation) RefusedTheKind() bool {
+	switch o.Result {
+	case "failed":
+		return o.Reason == "action_refused"
+	case "rejected":
+		return o.Reason == "unsupported_kind" || o.Reason == "action_refused"
+	default:
+		return false
+	}
+}
+
+// History is one bot's recent past, indexed for the questions the planner asks.
 type History struct {
 	discouragedPOI map[string]int
+	refusedKind    map[string]int
 }
 
 // Build indexes observations for lookup. A nil or empty slice yields a usable
@@ -95,6 +125,12 @@ type History struct {
 func Build(observations []Observation) History {
 	h := History{}
 	for _, o := range observations {
+		if o.Kind != "" && o.RefusedTheKind() {
+			if h.refusedKind == nil {
+				h.refusedKind = make(map[string]int, 2)
+			}
+			h.refusedKind[o.Kind]++
+		}
 		if o.POIID == "" || !o.Discouraging() {
 			continue
 		}
@@ -129,6 +165,31 @@ const DefaultRetention = 64
 // Smaller than retention on purpose: the planner only needs enough to see a
 // pattern, and the query is inside a planning deadline.
 const DefaultRecentLimit = 16
+
+// KindRefusedCount is how many times this bot was recently refused an intent of
+// this kind for a reason that was about the kind rather than the destination.
+//
+// Note that it does NOT decay to zero on a success, and that is on purpose: the
+// planner only ever reads it against a threshold, and what bounds it is the
+// window. Recent() reads the last [DefaultRecentLimit] observations, so a
+// refusal ages out of the answer after that many plans no matter what happened
+// in between -- which turns "stop asking" into "ask again in a while" without
+// anything having to decide when the while is over.
+func (h History) KindRefusedCount(kind string) int {
+	if h.refusedKind == nil {
+		return 0
+	}
+	return h.refusedKind[kind]
+}
+
+// KindRefusedThreshold is how many refusals of a KIND it takes before the
+// planner stops proposing it for a while.
+//
+// Two, for the same reason [DiscouragedThreshold] is two: one refusal is
+// normal. A trainer with nothing to teach today has something to teach after
+// the next level, and a bot that stopped asking on the first no would train
+// once and never again.
+const KindRefusedThreshold = 2
 
 // DiscouragedThreshold is how many discouraging observations it takes before the
 // planner stops offering a POI to a bot.

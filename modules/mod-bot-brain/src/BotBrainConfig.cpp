@@ -39,6 +39,13 @@ namespace botbrain
         cfg.batchFlushMs = ReadUint("BotBrain.BatchFlushMs", 200, 10, 10000);
         cfg.maxPois = ReadUint("BotBrain.MaxPois", 24, 1, 512);
         cfg.poiTableTtlMs = ReadUint("BotBrain.PoiTableTtlMs", 120000, 1000, 3600000);
+        cfg.dialogueEnabled = sConfig.GetBoolDefault("BotBrain.Dialogue.Enable", false);
+        // Floor of one second: anything shorter cannot reach a model, and a
+        // deadline that always expires is a quieter way of disabling the
+        // feature than the switch above it.
+        cfg.dialogueTimeoutMs = ReadUint("BotBrain.Dialogue.TimeoutMs", 8000, 1000, 60000);
+        cfg.dialogueMaxInFlight = ReadUint("BotBrain.Dialogue.MaxInFlight", 8, 1, 64);
+        cfg.dialogueCommandsEnabled = sConfig.GetBoolDefault("BotBrain.Dialogue.Commands.Enable", false);
         cfg.logApplied = sConfig.GetBoolDefault("BotBrain.LogAppliedIntents", true);
 
         g_config = cfg;
@@ -46,5 +53,14 @@ namespace botbrain
         if (g_config.enabled)
             sLog.outString("mod-bot-brain: enabled, endpoint %s, interval %ums, timeout %ums",
                 g_config.endpoint.c_str(), g_config.intervalMs, g_config.timeoutMs);
+
+        // Said separately and unconditionally under an enabled brain, because
+        // "the bots are quiet" is otherwise indistinguishable from a broken
+        // endpoint, and this is the one line that tells an operator which.
+        if (g_config.enabled)
+            sLog.outString("mod-bot-brain: dialogue %s (BotBrain.Dialogue.Enable), timeout %ums, max in flight %u, commands %s",
+                g_config.dialogueEnabled ? "enabled" : "disabled",
+                g_config.dialogueTimeoutMs, g_config.dialogueMaxInFlight,
+                g_config.dialogueCommandsEnabled ? "enabled" : "disabled");
     }
 }

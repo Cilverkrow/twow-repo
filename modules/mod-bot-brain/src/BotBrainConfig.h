@@ -68,6 +68,56 @@ namespace botbrain
         // that rule exists to prevent.
         uint32_t poiTableTtlMs = 120000;
 
+        // ------------------------------------------------------------------
+        // Dialogue (POST /v1/dialogue)
+        // ------------------------------------------------------------------
+        //
+        // A SECOND switch under BotBrain.Enable, defaulting OFF, and that is
+        // not belt-and-braces: planning is free and local, while dialogue
+        // spends model tokens every time a player types. A realm that wants
+        // bots to travel intelligently has not thereby agreed to pay for them
+        // to talk, so turning the brain on must not start a meter.
+        bool dialogueEnabled = false;
+
+        // How long a dialogue round trip may take. SECONDS, not the plan
+        // path's milliseconds-under-a-second, because the thing on the far end
+        // is a model: a self-hosted 7B on CPU measured about eight seconds a
+        // call (LLM-011). Affordable only because this call is made from the
+        // chat path's own async worker -- see BotBrainDialogue.h.
+        //
+        // Sent as deadline_ms as well as used as the socket timeout, so the
+        // service can answer with silence instead of being hung up on.
+        uint32_t dialogueTimeoutMs = 8000;
+
+        // Ceiling on concurrent dialogue calls across all bots.
+        //
+        // Eight, matching DefaultMaxDialogueInFlight on the service side, and
+        // the number is bounded by the same thing on both: a model serves a
+        // handful of concurrent calls before each gets slower rather than more
+        // getting served. The cost this bounds HERE is different and worse
+        // though -- each in-flight call is holding a worldserver worker thread
+        // that the chat path spawned per message. Over the limit a bot is
+        // silent immediately rather than queued: a queue here would accumulate
+        // load during exactly the incident where accumulating it is fatal.
+        uint32_t dialogueMaxInFlight = 8;
+
+        // A THIRD switch, under both of the above, defaulting OFF: whether a
+        // reply may also carry a command the bot then obeys.
+        //
+        // Separate because it is a different kind of decision. The two switches
+        // above decide whether the realm pays for sentences; this one decides
+        // whether a sentence can move a character. It changes nothing about who
+        // may command a bot -- PlayerbotAI::HandleCommand still runs every
+        // PlayerbotSecurity check against the SPEAKER, so a command from
+        // someone who could not have typed one is refused exactly where it
+        // always was -- but an operator who does not want a model in that loop
+        // at all should not have to argue about permissions to stay out of it.
+        //
+        // Off also means cheaper and quieter: with it off the service is not
+        // asked for commands, the vocabulary never enters the prompt, and a
+        // command that arrives anyway is dropped by the decoder.
+        bool dialogueCommandsEnabled = false;
+
         // Log every applied intent at BASIC level. On by default because the
         // acceptance check for this module is "a bot's travel target is set
         // from an intent", and that is only checkable if it is logged.
