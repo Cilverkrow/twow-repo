@@ -1,0 +1,63 @@
+# llm-stub: a deterministic stand-in for a language model, for CI and dev.
+#
+# DELIBERATELY A SEPARATE FILE, for the same reason bot-brain.yml is one: the
+# server stack must keep starting and playing with this absent (ADR-0024
+# invariant 4), and the cleanest guarantee of that is that docker-compose.yml
+# does not mention it at all. Nothing here depends on anything there.
+#
+# It exists because CI has no model. `test/stub/llm-stub.py` explains at length
+# what it substitutes and why that substitution does not weaken a test; read
+# that file before trusting any result that involves this service.
+#
+# Bring it up alongside the stack:
+#
+#   docker compose -f deploy/compose/docker-compose.yml \
+#                  -f deploy/compose/bot-brain.yml \
+#                  -f deploy/compose/llm-stub.yml up -d
+#
+# `name: twow` matches the other two files, so all three land in one project and
+# the services reach each other by name on its default network.
+#
+# NEVER RUN THIS IN PRODUCTION. It answers every prompt with the same sentence.
+# The sentence says so, which is the point: a stub reply that reached a live
+# realm would be unmistakable in the log rather than passing for a bot.
+
+name: twow
+
+services:
+  llm-stub:
+    # The stock Python image, and no build step. A Dockerfile here would be a
+    # thing to keep current for a file that must stay obviously disposable, and
+    # the script uses nothing outside the standard library precisely so that
+    # there is nothing to install.
+    image: python:3.12-alpine
+    restart: unless-stopped
+    command: ["python3", "-u", "/srv/llm-stub.py"]
+    environment:
+      LLM_STUB_LISTEN: "0.0.0.0:8099"
+      # Overridable so a test can prove the reply travelled rather than proving
+      # that two copies of the same hardcoded default agree.
+      LLM_STUB_REPLY: ${LLM_STUB_REPLY:-Stub model speaking; always this exact line.}
+    volumes:
+      - ../../test/stub/llm-stub.py:/srv/llm-stub.py:ro
+    ports:
+      # Loopback only. It is unauthenticated and it is not a model; it has no
+      # business on any other interface.
+      - "${LLM_STUB_BIND_ADDR:-127.0.0.1}:${LLM_STUB_PORT:-8099}:8099"
+    healthcheck:
+      # The image has no curl. Python is the whole point of the image.
+      test: ["CMD", "python3", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8099/healthz', timeout=3).status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"

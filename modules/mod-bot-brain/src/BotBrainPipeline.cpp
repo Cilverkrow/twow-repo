@@ -1041,6 +1041,42 @@ namespace botbrain
                 return botAI->DoSpecificAction("talk to quest giver", Event(), true);
             if (kind == kIntentPickQuest)
                 return botAI->DoSpecificAction("accept all quests", Event(), true);
+            if (kind == kIntentVisitTrainer)
+            {
+                // "trainer", not "auto learn spell", "rpg train" or
+                // "trainer learn". The four were weighed:
+                //
+                //   "auto learn spell" walks every creature template in the
+                //   world and teaches for free, wherever the bot happens to be.
+                //   It already runs on level-up. Using it here would make a
+                //   trainer visit a journey with no destination-shaped reason
+                //   to have been taken, and would charge nothing for it.
+                //
+                //   "rpg train" is a wrapper whose isPossible() demands an
+                //   "rpg target" GuidPosition. We have none -- a travel
+                //   destination carries an entry and a position, never a spawn
+                //   -- and setting one would fight ChooseTravelTargetAction,
+                //   which clears it every time a target is chosen. It would
+                //   also delegate straight to "trainer".
+                //
+                //   "trainer learn" is not an action name at all; it is the
+                //   chat command, which is "trainer" with the parameter "learn".
+                //
+                // So: "trainer", which is TrainerAction, which is the one action
+                // that refuses TRAINER_TYPE_TRADESKILLS outright. That refusal
+                // is the point. twow-core#78 made a profession a versioned,
+                // GUID-bound plan, and the plan owns its purchases; a trainer
+                // visit that could start a profession would be a second
+                // authority over the same decision.
+                //
+                // The source must be "rpg action": the other branch reads the
+                // requester's selection and returns false outright when there
+                // is no requester, which is every bot this module plans for.
+                // The parameter is "learn" -- the same text the chat command
+                // carries -- which selects the learning branch explicitly
+                // rather than relying on the bot being classified free.
+                return botAI->DoSpecificAction("trainer", Event("rpg action", "learn"), true);
+            }
 
             // HasArrivalAction gates the call, so this is unreachable unless the
             // two fall out of step. Report it rather than returning a bare false:

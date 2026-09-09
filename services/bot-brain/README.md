@@ -140,7 +140,8 @@ brain that can walk bots into geometry.
 ### Intent: what the brain tells the server
 
 An intent names a goal for one bot: `idle`, `travel_to`, `pick_quest`,
-`turn_in_quest`, `abandon_quest`, `grind_area`, `vendor_sell`, `repair`, `rest`.
+`turn_in_quest`, `abandon_quest`, `grind_area`, `vendor_sell`, `repair`, `rest`,
+`visit_trainer`.
 It carries a POI id (never coordinates), a confidence, an expiry in the
 server's clock, and a debug rationale.
 

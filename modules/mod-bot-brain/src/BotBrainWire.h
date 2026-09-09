@@ -71,6 +71,7 @@ namespace botbrain
     extern char const* const kIntentPickQuest;
     extern char const* const kIntentTurnInQuest;
     extern char const* const kIntentAbandonQuest;
+    extern char const* const kIntentVisitTrainer;
 
     bool IsKnownIntentKind(std::string const& kind);
 

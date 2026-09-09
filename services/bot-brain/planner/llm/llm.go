@@ -439,7 +439,7 @@ const systemPrompt = `You plan slow, coarse goals for automated characters in a 
 You are given a numbered list of characters and, for each, a list of candidate destinations with ids.
 Reply with JSON only, no prose, in this exact shape:
 {"intents":[{"bot":0,"kind":"travel_to","poi_id":"p1","certainty":0.7,"why":"short reason"}]}
-Allowed kinds: idle, travel_to, pick_quest, turn_in_quest, abandon_quest, grind_area, vendor_sell, repair, rest.
+Allowed kinds: idle, travel_to, pick_quest, turn_in_quest, abandon_quest, grind_area, vendor_sell, repair, rest, visit_trainer.
 Rules you must not break:
 - poi_id must be one of the ids listed for that same character. Never invent an id.
 - "bot" must be an index from the list you were given.

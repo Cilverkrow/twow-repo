@@ -376,6 +376,7 @@ namespace
         CHECK(botbrain::IsKnownIntentKind("idle"));
         CHECK(botbrain::IsKnownIntentKind("travel_to"));
         CHECK(botbrain::IsKnownIntentKind("abandon_quest"));
+        CHECK(botbrain::IsKnownIntentKind("visit_trainer"));
         CHECK(!botbrain::IsKnownIntentKind("delete_bot"));
         CHECK(!botbrain::IsKnownIntentKind(""));
 
@@ -383,6 +384,7 @@ namespace
         CHECK(botbrain::IsPoiDirectedKind("travel_to"));
         CHECK(botbrain::IsPoiDirectedKind("vendor_sell"));
         CHECK(botbrain::IsPoiDirectedKind("repair"));
+        CHECK(botbrain::IsPoiDirectedKind("visit_trainer"));
         CHECK(!botbrain::IsPoiDirectedKind("idle"));
         CHECK(!botbrain::IsPoiDirectedKind("rest"));
         CHECK(!botbrain::IsPoiDirectedKind("abandon_quest"));
@@ -394,7 +396,7 @@ namespace
         // today.
         char const* const everyKind[] = {
             "idle", "travel_to", "pick_quest", "turn_in_quest", "abandon_quest",
-            "grind_area", "vendor_sell", "repair", "rest"
+            "grind_area", "vendor_sell", "repair", "rest", "visit_trainer"
         };
         for (char const* kind : everyKind)
             CHECK(!(botbrain::IsPoiDirectedKind(kind) && botbrain::IsAppliedKind(kind)));
@@ -416,6 +418,11 @@ namespace
         CHECK(botbrain::HasArrivalAction("repair"));
         CHECK(botbrain::HasArrivalAction("pick_quest"));
         CHECK(botbrain::HasArrivalAction("turn_in_quest"));
+
+        // Arriving at a trainer is not the request; being taught is. Reporting
+        // "completed" for the walk alone would be the same overclaim the other
+        // arrival kinds were added to stop making.
+        CHECK(botbrain::HasArrivalAction("visit_trainer"));
 
         // Arriving IS the outcome for these two. Inventing a terminal action
         // would turn a successful journey into a failure whenever the invented
@@ -565,10 +572,22 @@ namespace
         // The vocabulary the service says it understands must contain the one
         // kind this module can actually apply.
         bool hasTravel = false;
+        bool hasVisitTrainer = false;
         for (std::size_t i = 0; i < info.knownIntentKinds.size(); ++i)
+        {
             if (info.knownIntentKinds[i] == "travel_to")
                 hasTravel = true;
+            if (info.knownIntentKinds[i] == "visit_trainer")
+                hasVisitTrainer = true;
+        }
         CHECK(hasTravel);
+
+        // The kind and the vocabulary that advertises it must move together.
+        // A build that applies visit_trainer while the service still says it
+        // has never heard of it is skew that fails silently: the planner simply
+        // never sends one, and nobody can tell that from "no trainer nearby".
+        CHECK(hasVisitTrainer);
+        CHECK(botbrain::IsKnownIntentKind("visit_trainer"));
     }
 
     // The version the fixtures declare must be the version this build speaks.

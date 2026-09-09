@@ -76,13 +76,11 @@ import (
 // discover, at startup from GET /v1/contract, whether this brain can talk at all
 // rather than finding out one 404 at a time.
 //
-// 1.4 is claimed by visit_trainer, the tenth [IntentKind], which is in flight on
-// its own branch. It is not in this build. The gap is deliberate and costs
-// nothing: [Negotiate] only ever compares minors for order, so a minor this
-// build skipped is indistinguishable from one it predates. Taking 1.5 here means
-// two branches cannot both ship "1.4" meaning different things, which is the
-// failure that is expensive -- a peer that agreed on a version number and
-// disagrees about what is in it.
+// 1.4 added visit_trainer, the tenth [IntentKind]. It was numbered 4 rather than
+// 3 because 1.3 was claimed by the dialogue endpoint while both were in flight:
+// the number is what a peer negotiates on, so a collision would have one build
+// stamping a version whose vocabulary it does not have. Both have since merged,
+// so the numbering held.
 //
 // 1.5 added [DialogueRequest.AllowCommands] and [DialogueResponse.Command]: a
 // closed enum through which a reply may ask the worldserver to run one chat

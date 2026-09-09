@@ -10,7 +10,8 @@
     "grind_area",
     "vendor_sell",
     "repair",
-    "rest"
+    "rest",
+    "visit_trainer"
   ],
   "max_batch": 2048
 }

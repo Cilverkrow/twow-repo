@@ -22,24 +22,28 @@ namespace botbrain
     char const* const kIntentPickQuest = "pick_quest";
     char const* const kIntentTurnInQuest = "turn_in_quest";
     char const* const kIntentAbandonQuest = "abandon_quest";
+    char const* const kIntentVisitTrainer = "visit_trainer";
 
     bool IsKnownIntentKind(std::string const& kind)
     {
         return kind == kIntentIdle || kind == kIntentTravelTo || kind == kIntentGrindArea ||
                kind == kIntentVendorSell || kind == kIntentRepair || kind == kIntentRest ||
-               kind == kIntentPickQuest || kind == kIntentTurnInQuest || kind == kIntentAbandonQuest;
+               kind == kIntentPickQuest || kind == kIntentTurnInQuest || kind == kIntentAbandonQuest ||
+               kind == kIntentVisitTrainer;
     }
 
     bool IsPoiDirectedKind(std::string const& kind)
     {
         return kind == kIntentTravelTo || kind == kIntentGrindArea || kind == kIntentVendorSell ||
-               kind == kIntentRepair || kind == kIntentPickQuest || kind == kIntentTurnInQuest;
+               kind == kIntentRepair || kind == kIntentPickQuest || kind == kIntentTurnInQuest ||
+               kind == kIntentVisitTrainer;
     }
 
     bool HasArrivalAction(std::string const& kind)
     {
         return kind == kIntentVendorSell || kind == kIntentRepair ||
-               kind == kIntentPickQuest || kind == kIntentTurnInQuest;
+               kind == kIntentPickQuest || kind == kIntentTurnInQuest ||
+               kind == kIntentVisitTrainer;
     }
 
     bool IsAppliedKind(std::string const& kind)
