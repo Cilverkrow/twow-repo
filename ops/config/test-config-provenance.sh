@@ -244,6 +244,58 @@ assert_rendered_contract() {
     assert_semantics
 }
 
+assert_funserver_test_profile() {
+    local profile_dir="$ROOT/config/canonical/profiles/funserver-test"
+
+    awk -F '\t' '
+        /^#/ || $1 == "service" || $1 == "" { next }
+        NF != 5 || $3 != "INTENTIONAL_CHANGE" { exit 10 }
+        seen[$1 SUBSEP $2]++ { exit 11 }
+        count++
+        END { exit !(count == 4) }
+    ' "$profile_dir/semantic-profile.tsv" || {
+        echo "ERROR: funserver test profile matrix is malformed" >&2
+        exit 1
+    }
+
+    export CONFIG_PROFILE=funserver-test
+    bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
+    bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
+    assert_no_duplicate_keys "$CONFIG_OUT_DIR/mangosd.conf"
+    assert_no_duplicate_keys "$CONFIG_OUT_DIR/aiplayerbot.conf"
+    assert_overlay_keys_once "$profile_dir/mangosd.overlay.conf" "$CONFIG_OUT_DIR/mangosd.conf"
+    assert_overlay_keys_once "$profile_dir/aiplayerbot.overlay.conf" "$CONFIG_OUT_DIR/aiplayerbot.conf"
+
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.XP.Kill)" == 3 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.XP.Quest)" == 3 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.XP.Explore)" == 2 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.Talent)" == 2 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.RndBotCheats)" == repair,breath,item,taxi ]]
+
+    mkdir -p "$TMP/profile-first"
+    cp -- "$CONFIG_OUT_DIR"/*.conf "$TMP/profile-first/"
+    grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > "$TMP/profile-first/provenance.normalized"
+    bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
+    bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
+    for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf; do
+        cmp -s "$TMP/profile-first/$name" "$CONFIG_OUT_DIR/$name" || {
+            echo "ERROR: repeated funserver profile render changed output" >&2
+            exit 1
+        }
+    done
+    grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > "$TMP/profile.provenance.normalized"
+    cmp -s "$TMP/profile-first/provenance.normalized" "$TMP/profile.provenance.normalized" || {
+        echo "ERROR: repeated funserver profile render changed provenance" >&2
+        exit 1
+    }
+
+    unset CONFIG_PROFILE
+    bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
+    bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.XP.Kill)" == 2 ]]
+    [[ "$(key_count "$CONFIG_OUT_DIR/mangosd.conf" Rate.Talent)" == 1 ]]
+}
+
 bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
 bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
 assert_rendered_contract
@@ -314,4 +366,5 @@ export AIPLAYERBOT_MAX_BOTS=7
 bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
 bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
 assert_rendered_contract
+assert_funserver_test_profile
 echo "config semantic provenance test passed"

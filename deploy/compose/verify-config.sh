@@ -86,6 +86,22 @@ done
 [[ "$(manifest_value TASK_ID)" == OPS-009-R1-SEMANTIC-BASELINE-RECONCILIATION-01 ]] || { echo "ERROR: provenance task mismatch" >&2; exit 1; }
 [[ "$(manifest_value DECISION)" == ADR-0038 ]] || { echo "ERROR: provenance decision mismatch" >&2; exit 1; }
 
+profile=$(manifest_value CONFIG_PROFILE)
+case "$profile" in
+    none) ;;
+    funserver-test)
+        profile_dir="$ROOT/config/canonical/profiles/$profile"
+        [[ -d "$profile_dir" && ! -L "$profile_dir" ]] || { echo "ERROR: configured profile directory is missing or unsafe" >&2; exit 1; }
+        require_bytes PROFILE_MANGOSD_OVERLAY_BYTES "$profile_dir/mangosd.overlay.conf"
+        require_hash PROFILE_MANGOSD_OVERLAY_SHA256 "$profile_dir/mangosd.overlay.conf"
+        require_bytes PROFILE_AIPLAYERBOT_OVERLAY_BYTES "$profile_dir/aiplayerbot.overlay.conf"
+        require_hash PROFILE_AIPLAYERBOT_OVERLAY_SHA256 "$profile_dir/aiplayerbot.overlay.conf"
+        require_bytes PROFILE_SEMANTIC_MATRIX_BYTES "$profile_dir/semantic-profile.tsv"
+        require_hash PROFILE_SEMANTIC_MATRIX_SHA256 "$profile_dir/semantic-profile.tsv"
+        ;;
+    *) echo "ERROR: unsupported provenance configuration profile" >&2; exit 1 ;;
+esac
+
 current_commit=$(git -C "$ROOT" rev-parse --verify HEAD)
 current_tree=$(git -C "$ROOT" rev-parse --verify 'HEAD^{tree}')
 [[ "$current_commit" == "$(manifest_value SOURCE_COMMIT)" ]] || { echo "ERROR: source commit changed after rendering" >&2; exit 1; }

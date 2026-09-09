@@ -73,6 +73,21 @@ token resolution, and credential exclusion; rejects drift, incomplete sets, and
 mixed generations; and proves repeatability apart from `RENDERED_UTC`. It then
 removes the temporary files without contacting a server or database.
 
+## Funserver test profile
+
+For the next separately authorized Docker image/runtime test only, render the
+clearly named optional profile with `CONFIG_PROFILE=funserver-test make config`.
+It adds the reviewed values in `config/canonical/profiles/funserver-test/` and
+records their hashes and profile name in provenance. Omitting the variable
+returns to the ordinary canonical Compose profile; no runtime file is changed
+by selecting or testing it here.
+
+The profile adds `taxi` to the existing registered-random-bot cheat set while
+preserving `repair,breath,item`. Its global `Rate.Talent = 2` is explicitly an
+experimental Player-and-bot Funserver setting; issue #226 remains the
+fine-tuning and validation tracker. It deliberately leaves `Rate.XP.Explore`
+at the canonical value.
+
 ## Deployment evidence
 
 A separately authorized deployment or config verification package must record:

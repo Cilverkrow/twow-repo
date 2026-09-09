@@ -59,3 +59,16 @@ archive-before-write evidence described by ADR-0038 and must be reconciled to Gi
 The Helm chart follows the same base-template-plus-overlay model in
 `deploy/helm/twow/templates/configmap.yaml`; credentials come only from an
 existing Kubernetes Secret.
+
+## Optional test profile
+
+`CONFIG_PROFILE=funserver-test` adds the tracked, reversible Funserver test
+profile from `profiles/funserver-test/` at render time. It is not active by
+default and does not alter a running server. Its own semantic matrix classifies
+only its four intentional deviations, including the registered-random-bot taxi
+cheat extension `repair,breath,item,taxi`.
+
+`Rate.Talent = 2` is deliberately an experimental global Player value in this
+profile (players and bots). Fine tuning and runtime validation remain tracked
+by issue #226. `Rate.XP.Explore` is intentionally not present in the profile,
+so the canonical value remains unchanged.
