@@ -141,9 +141,18 @@ brain that can walk bots into geometry.
 
 An intent names a goal for one bot: `idle`, `travel_to`, `pick_quest`,
 `turn_in_quest`, `abandon_quest`, `grind_area`, `vendor_sell`, `repair`, `rest`,
-`visit_trainer`.
+`visit_trainer`, `set_strategies`.
 It carries a POI id (never coordinates), a confidence, an expiry in the
 server's clock, and a debug rationale.
+
+`set_strategies` is the odd one and is worth reading about before using: it is a
+standing condition rather than an errand. It names in-core strategies to enable
+or disable per bot state, the brain re-sends it every planning cycle because
+`PlayerbotAI::ResetStrategies` wipes the set back to the factory defaults from a
+dozen call sites, and the server diffs it against what the bot already has so an
+unchanged re-assertion costs a handful of map lookups. It rides alongside the
+bot's errand rather than replacing it, it never clears a bot's strategy set, and
+an answer that names no strategies is how the brain gives back what it held.
 
 **Intents are advisory.** The worldserver revalidates every one against live
 state and may reject it; rejection comes back on the next snapshot's

@@ -3,6 +3,7 @@ package contract
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -99,8 +100,13 @@ func TestNegotiate(t *testing.T) {
 // served. This is the direction of skew that a rolling deployment produces, and
 // rejecting it would turn every deploy into an outage.
 func TestDecodeToleratesUnknownFields(t *testing.T) {
-	body := `{
-	  "contract_version": "1.99",
+	// One minor AHEAD of this build, computed rather than written out: the
+	// premise of this test is that the peer is newer than us, and a literal
+	// stops being newer the moment the contract catches up with it. It did
+	// exactly that once already, when 1.4 was hardcoded here and the contract
+	// went to 1.6.
+	body := fmt.Sprintf(`{
+	  "contract_version": "%d.%d",
 	  "request_id": "r1",
 	  "sent_at_ms": 1700000000000,
 	  "deadline_ms": 500,
@@ -115,14 +121,14 @@ func TestDecodeToleratesUnknownFields(t *testing.T) {
 	    "mood": "curious",
 	    "aura_ids": [1,2,3]
 	  }]
-	}`
+	}`, VersionMajor, VersionMinor+1)
 	req, res, err := DecodePlanRequest(strings.NewReader(body), 0)
 	if err != nil {
 		t.Fatalf("decode failed on a newer peer's request: %v", err)
 	}
-	// The body declares 1.99, which is ahead of us (a minor nobody will ever, so the stamp is OUR version -
-	// reach by accident) - asserted against the constant rather than a literal,
-	// because a minor bump should not break a test about unknown fields.
+	// The body declares one minor ahead of us, so the stamp is OUR version -
+	// asserted against the constant rather than a literal, because a minor bump
+	// is a legitimate change that should not break a test about unknown fields.
 	if res.Effective.String() != Version {
 		t.Fatalf("effective version = %s, want %s", res.Effective, Version)
 	}

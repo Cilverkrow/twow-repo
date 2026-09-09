@@ -178,8 +178,8 @@ func TestGoldenResponseAndContractInfoMatchGoTypes(t *testing.T) {
 		if resp.ContractVersion != Version {
 			t.Errorf("contract_version = %q, want %q", resp.ContractVersion, Version)
 		}
-		if len(resp.Intents) != 2 {
-			t.Fatalf("intents = %d, want 2", len(resp.Intents))
+		if len(resp.Intents) != 3 {
+			t.Fatalf("intents = %d, want 3", len(resp.Intents))
 		}
 		first := resp.Intents[0]
 		if first.Kind != IntentTravelTo {
@@ -191,13 +191,43 @@ func TestGoldenResponseAndContractInfoMatchGoTypes(t *testing.T) {
 		if err := first.Validate(); err != nil {
 			t.Errorf("intents[0] must pass Validate(), got: %v", err)
 		}
+		// The third intent is a set_strategies for the SAME bot as the first,
+		// and that pairing is the fixture's real subject. A strategy set is a
+		// standing condition rather than an errand, so it has to be able to
+		// ride alongside the bot's action intent; if it had to compete for the
+		// one intent per bot, a brain that re-asserts strategies every cycle
+		// would never be able to send that bot anywhere again.
+		strat := resp.Intents[2]
+		if strat.Kind != IntentSetStrategies {
+			t.Errorf("intents[2].kind = %q, want %q", strat.Kind, IntentSetStrategies)
+		}
+		if strat.Bot != first.Bot {
+			t.Errorf("intents[2].bot = %v, want the same bot as intents[0] (%v)", strat.Bot, first.Bot)
+		}
+		if strat.Strategies == nil || len(strat.Strategies.Changes) != 2 {
+			t.Fatalf("intents[2].strategies = %+v, want 2 changes", strat.Strategies)
+		}
+		// Both halves of the payload matter and both have a wrong-by-default
+		// failure: a name that decodes empty is dropped by the server with a
+		// log line nobody reads, and a state that decodes as the zero value is
+		// not a state at all, so Validate rejects the whole intent.
+		if c := strat.Strategies.Changes[0]; c.Name != "grind" || c.State != BotStateNonCombat || c.Enable {
+			t.Errorf("changes[0] = %+v, want grind/non_combat/disable", c)
+		}
+		if c := strat.Strategies.Changes[1]; c.Name != "conserve mana" || c.State != BotStateCombat || !c.Enable {
+			t.Errorf("changes[1] = %+v, want \"conserve mana\"/combat/enable", c)
+		}
+		if err := strat.Validate(); err != nil {
+			t.Errorf("intents[2] must pass Validate(), got: %v", err)
+		}
+
 		// An error entry alongside intents is normal: a per-bot failure never
 		// fails the batch.
 		if len(resp.Errors) != 1 || resp.Errors[0].Code != CodeBotUnplannable {
 			t.Errorf("errors = %+v, want one %s", resp.Errors, CodeBotUnplannable)
 		}
-		if resp.Stats.SnapshotsIn != 3 || resp.Stats.IntentsOut != 2 {
-			t.Errorf("stats = %+v, want snapshots_in 3 intents_out 2", resp.Stats)
+		if resp.Stats.SnapshotsIn != 3 || resp.Stats.IntentsOut != 3 {
+			t.Errorf("stats = %+v, want snapshots_in 3 intents_out 3", resp.Stats)
 		}
 	})
 

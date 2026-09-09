@@ -65,7 +65,67 @@ const (
 	// purchases. A trainer visit that could start a profession would be a second
 	// authority over the same decision, and the two would disagree.
 	IntentVisitTrainer IntentKind = "visit_trainer"
+
+	// IntentSetStrategies: enable or disable NAMED in-core strategies on this
+	// bot. It is the brain's only way to reach inside the tick, and it is
+	// deliberately the coarsest one that is still useful.
+	//
+	// It is a STANDING CONDITION, not an action. Nothing happens "at" a
+	// set_strategies the way something happens at a vendor: the intent states
+	// what the bot's strategy set should look like, and the server keeps it
+	// looking like that. The brain therefore re-sends it every planning cycle
+	// rather than once, because PlayerbotAI::ResetStrategies wipes the whole set
+	// back to the factory defaults from a dozen call sites (Refresh among them)
+	// and restores nothing for a free random bot -- HasPlayerRelation() is false
+	// for the entire population this service plans for. Re-assertion means a wipe
+	// costs one stale cycle instead of a silent permanent revert.
+	//
+	// Scope, stated so nobody widens it by accident:
+	//
+	//   - It names strategies. It does NOT choose actions, targets or spells.
+	//     Per-tick arbitration stays in tier 0 (ARCH-001); which strategies are
+	//     ACTIVE is a slow decision and already a per-bot C++ API
+	//     (PlayerbotAI::ChangeStrategy).
+	//   - It is additive over the factory set. The server never clears a bot's
+	//     strategies; it adds and removes the ones named here. A brain that
+	//     blanked the defaults and then went away would leave an inert bot.
+	//   - An unknown strategy name is dropped and logged by the server, not
+	//     passed through. Intents are advisory; the worldserver decides.
+	IntentSetStrategies IntentKind = "set_strategies"
 )
+
+// BotStateName is which of the four in-core engines a strategy change applies
+// to. The names mirror PlayerbotAI's BotState enum
+// (core/modules/mod-playerbots/src/playerbot/BotState.h) without borrowing its
+// numbering: an ordinal on the wire would silently repoint at another engine
+// the day upstream inserts a value, and a bot would have its combat strategies
+// rewritten because someone added a state.
+//
+// There is deliberately no "all". BOT_STATE_ALL exists in the C++ enum and
+// fans a change out to every engine, which is exactly the blunt instrument this
+// kind should not offer: "disable rpg everywhere" reads as convenience and
+// lands as four separate edits the planner never reasoned about.
+type BotStateName string
+
+const (
+	BotStateCombat    BotStateName = "combat"
+	BotStateNonCombat BotStateName = "non_combat"
+	BotStateDead      BotStateName = "dead"
+	BotStateReaction  BotStateName = "reaction"
+)
+
+// KnownBotStates is every state a [StrategyChange] may name.
+var KnownBotStates = []BotStateName{BotStateCombat, BotStateNonCombat, BotStateDead, BotStateReaction}
+
+// IsKnown reports whether this build understands the state.
+func (b BotStateName) IsKnown() bool {
+	for _, known := range KnownBotStates {
+		if b == known {
+			return true
+		}
+	}
+	return false
+}
 
 // KnownIntentKinds is every kind this build emits or understands. It is served
 // from the /v1/contract endpoint so the C++ side can detect skew at startup
@@ -81,6 +141,7 @@ var KnownIntentKinds = []IntentKind{
 	IntentRepair,
 	IntentRest,
 	IntentVisitTrainer,
+	IntentSetStrategies,
 }
 
 // IsKnown reports whether this build understands the kind. Callers use it to
@@ -118,6 +179,91 @@ type QuestParams struct {
 	QuestID uint32 `json:"quest_id"`
 }
 
+// StrategyChange is one named strategy, in one bot state, that the brain wants
+// on or off.
+//
+// One entry per (name, state) pair rather than two lists of names, because the
+// state is not a property of the whole intent: "stop grinding while out of
+// combat" and "conserve mana in combat" are one coherent decision the planner
+// makes at once, and splitting them across intents would let the server apply
+// half of it.
+type StrategyChange struct {
+	// Name is the in-core strategy name, exactly as the C++ StrategyContext
+	// registers it -- "grind", "conserve mana", "rpg vendor". It is NOT a
+	// display name and it is not translated.
+	//
+	// The server looks it up and DROPS an entry it does not recognise, with a
+	// log line. That is the only sane reading of "advisory": the brain has no
+	// list of what a given worldserver build registers, upstream adds and
+	// renames strategies, and a typo must cost one dropped change rather than a
+	// bot in an undefined state.
+	Name string `json:"name"`
+
+	// State is which engine to change. Required: there is no default, because
+	// every plausible default is wrong for some strategy. "rpg" only exists
+	// non-combat; "conserve mana" only means anything in combat.
+	State BotStateName `json:"state"`
+
+	// Enable is true to add the strategy, false to remove it.
+	Enable bool `json:"enable"`
+}
+
+// StrategyParams carries the whole set for one [IntentSetStrategies].
+//
+// It is the complete list of what the brain wants asserted right now, not a
+// delta against the previous cycle. The server compares it against what the bot
+// actually has and touches only the differences, so re-sending an unchanged set
+// -- which is the normal case, every cycle, for every bot -- costs a handful of
+// map lookups and no engine work at all.
+type StrategyParams struct {
+	Changes []StrategyChange `json:"changes"`
+}
+
+// Bounds on a strategy set. Both exist so a buggy or hostile planner cannot
+// turn one bot's intent into unbounded work on a map thread.
+const (
+	// MaxStrategyChanges caps one intent. Sixteen is far more than any
+	// defensible policy needs and still cheap to diff every cycle.
+	MaxStrategyChanges = 16
+	// MaxStrategyNameBytes caps one name. The longest name the C++ side
+	// registers today is well under this.
+	MaxStrategyNameBytes = 64
+)
+
+// ValidStrategyName reports whether s could be an in-core strategy name.
+//
+// This is a SHAPE check, not an existence check -- only the worldserver knows
+// which strategies its build registers. What it rules out is the shape that
+// would be dangerous rather than merely wrong: PlayerbotAI::ChangeStrategy
+// takes a single string, splits it on ',' and reads the first byte of each part
+// as the operator ('+', '-', '~'). A name carrying a comma would therefore
+// smuggle in a second, unreviewed directive, and one starting with an operator
+// would flip the sense of the entry. Both are refused here, and again on the
+// server.
+func ValidStrategyName(s string) bool {
+	if s == "" || len(s) > MaxStrategyNameBytes {
+		return false
+	}
+	if s[0] == ' ' || s[len(s)-1] == ' ' {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+		case c >= 'A' && c <= 'Z':
+		case c >= '0' && c <= '9':
+		case c == ' ':
+			if i > 0 && s[i-1] == ' ' {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 // Intent is one suggestion for one bot.
 //
 // It is advisory. The worldserver revalidates it against live state and may
@@ -146,6 +292,9 @@ type Intent struct {
 	// Quest is set for [IntentAbandonQuest], and may be set on a pick-up or
 	// turn-in to disambiguate. Nil otherwise.
 	Quest *QuestParams `json:"quest,omitempty"`
+
+	// Strategies is set for [IntentSetStrategies] and nil otherwise.
+	Strategies *StrategyParams `json:"strategies,omitempty"`
 
 	// Priority orders competing intents for the same bot within one response,
 	// higher first. In practice the brain emits one intent per bot per batch,
@@ -224,6 +373,34 @@ func (i *Intent) Validate() error {
 	case IntentAbandonQuest:
 		if i.Quest == nil || i.Quest.QuestID == 0 {
 			return fmt.Errorf("%w: intent %q of kind %q needs quest.quest_id", ErrMalformed, i.IntentID, i.Kind)
+		}
+	case IntentSetStrategies:
+		if i.Strategies == nil || len(i.Strategies.Changes) == 0 {
+			return fmt.Errorf("%w: intent %q of kind %q needs strategies.changes", ErrMalformed, i.IntentID, i.Kind)
+		}
+		if len(i.Strategies.Changes) > MaxStrategyChanges {
+			return fmt.Errorf("%w: intent %q names %d strategies, cap is %d",
+				ErrMalformed, i.IntentID, len(i.Strategies.Changes), MaxStrategyChanges)
+		}
+		seen := make(map[string]bool, len(i.Strategies.Changes))
+		for _, c := range i.Strategies.Changes {
+			if !ValidStrategyName(c.Name) {
+				return fmt.Errorf("%w: intent %q names strategy %q, which is not a possible strategy name",
+					ErrMalformed, i.IntentID, c.Name)
+			}
+			if !c.State.IsKnown() {
+				return fmt.Errorf("%w: intent %q names bot state %q for strategy %q",
+					ErrMalformed, i.IntentID, c.State, c.Name)
+			}
+			// A set that names the same (strategy, state) twice has no single
+			// meaning, and the two orders give opposite results. Refuse it here
+			// rather than letting whichever the server applies last win.
+			key := string(c.State) + "/" + c.Name
+			if seen[key] {
+				return fmt.Errorf("%w: intent %q names %q in state %q twice",
+					ErrMalformed, i.IntentID, c.Name, c.State)
+			}
+			seen[key] = true
 		}
 	case IntentIdle, IntentRest:
 		// No params. Always valid, which is what makes them safe fallbacks.

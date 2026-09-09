@@ -154,14 +154,16 @@ namespace
     {
         std::string const json = botbrain::EncodePlanRequest(SampleRequest());
 
-        // Against the CONSTANTS, not a literal. This assertion said "1.0" while
-        // kContractMinor said 3, and agreed with the encoder because the encoder
-        // had the same hand-written string -- so the test confirmed the bug.
-        // Nothing compared either to the golden request fixture, which has said
-        // 1.3 all along, because C++ only READS the response and info fixtures.
-        CHECK(Contains(json, std::string("\"contract_version\":\"") + botbrain::kContractVersion + "\""));
-        CHECK(std::string(botbrain::kContractVersion) ==
-              std::to_string(botbrain::kContractMajor) + "." + std::to_string(botbrain::kContractMinor));
+        // Derived, not spelled out. This line read "1.0" for as long as the
+        // encoder did, so it confirmed the bug it was meant to catch: the wire
+        // said 1.0 while kContractMinor had moved on four times, and the service
+        // negotiated a client four minors stale without anything failing.
+        //
+        // Comparing against the constants means the assertion cannot drift from
+        // them again -- a hand-written version here is a second place to be
+        // wrong, which is exactly how it went wrong the first time.
+        CHECK(Contains(json, std::string("\"contract_version\":\"") +
+                             botbrain::kContractVersion + "\""));
         CHECK(Contains(json, "\"snapshots\":["));
 
         // The array is "pois". A "poi" key here would be silently ignored by
@@ -396,7 +398,8 @@ namespace
         // today.
         char const* const everyKind[] = {
             "idle", "travel_to", "pick_quest", "turn_in_quest", "abandon_quest",
-            "grind_area", "vendor_sell", "repair", "rest", "visit_trainer"
+            "grind_area", "vendor_sell", "repair", "rest", "visit_trainer",
+            "set_strategies"
         };
         for (char const* kind : everyKind)
             CHECK(!(botbrain::IsPoiDirectedKind(kind) && botbrain::IsAppliedKind(kind)));
@@ -451,6 +454,143 @@ namespace
 
         CHECK(!botbrain::IsAppliedKind("delete_bot"));
         CHECK(!botbrain::IsAppliedKind(""));
+
+        // set_strategies is applied where the bot stands, so it must never be
+        // POI-directed and must never claim an arrival action -- both already
+        // covered by the loops above, over the whole vocabulary.
+        CHECK(botbrain::IsAppliedKind("set_strategies"));
+        CHECK(botbrain::IsStandingKind("set_strategies"));
+        CHECK(!botbrain::IsPoiDirectedKind("set_strategies"));
+        CHECK(!botbrain::HasArrivalAction("set_strategies"));
+
+        // Standing is a SUBSET of applied, never a rival class. If the two ever
+        // came apart, a standing kind would fall through TakeTravelIntent's
+        // "leave it for the other applier" guard and be eaten there -- rejected
+        // as unsupported_kind by the one applier that was never going to run it.
+        for (char const* kind : everyKind)
+            if (botbrain::IsStandingKind(kind))
+                CHECK(botbrain::IsAppliedKind(kind));
+
+        // The errand kinds must stay OUT of the standing class: they are offered
+        // once and consumed, and treating one as a standing condition would
+        // re-apply it on every cycle.
+        CHECK(!botbrain::IsStandingKind("rest"));
+        CHECK(!botbrain::IsStandingKind("travel_to"));
+        CHECK(!botbrain::IsStandingKind("idle"));
+        CHECK(!botbrain::IsStandingKind(""));
+    }
+
+    // The two shape checks that stand between a planner and
+    // PlayerbotAI::ChangeStrategy, which takes ONE string, splits it on ',' and
+    // reads the first byte of each part as the operator.
+    void TestStrategyNamesAndStates()
+    {
+        // The names this build's StrategyContext actually registers look like
+        // these: lowercase words, single spaces, nothing else.
+        CHECK(botbrain::IsPossibleStrategyName("grind"));
+        CHECK(botbrain::IsPossibleStrategyName("conserve mana"));
+        CHECK(botbrain::IsPossibleStrategyName("rpg vendor"));
+        CHECK(botbrain::IsPossibleStrategyName("debug travel"));
+
+        // A comma would smuggle a second directive nobody reviewed into the
+        // same ChangeStrategy call: "grind,-flee" asks for one thing and does
+        // two. This is the check that makes the whole kind safe to expose.
+        CHECK(!botbrain::IsPossibleStrategyName("grind,-flee"));
+
+        // A leading operator inverts the entry the applier thought it was
+        // writing: the applier prepends '+' or '-' itself, so "+grind" would
+        // arrive at the engine as "++grind" or "-+grind".
+        CHECK(!botbrain::IsPossibleStrategyName("+grind"));
+        CHECK(!botbrain::IsPossibleStrategyName("-grind"));
+        CHECK(!botbrain::IsPossibleStrategyName("~grind"));
+
+        // A newline in a strategy name reaches the log, not the engine -- but a
+        // forged second log line is still a forged second log line.
+        CHECK(!botbrain::IsPossibleStrategyName("grind\nflee"));
+
+        CHECK(!botbrain::IsPossibleStrategyName(""));
+        CHECK(!botbrain::IsPossibleStrategyName(" grind"));
+        CHECK(!botbrain::IsPossibleStrategyName("grind "));
+        CHECK(!botbrain::IsPossibleStrategyName("conserve  mana"));
+        CHECK(!botbrain::IsPossibleStrategyName(std::string(botbrain::kMaxStrategyNameBytes + 1, 'a')));
+
+        // Four states, by name. The ordinals of the BotState enum next door are
+        // deliberately not what travels -- an inserted enumerator would
+        // otherwise repoint every stored change at a different engine.
+        CHECK(botbrain::IsKnownBotState("combat"));
+        CHECK(botbrain::IsKnownBotState("non_combat"));
+        CHECK(botbrain::IsKnownBotState("dead"));
+        CHECK(botbrain::IsKnownBotState("reaction"));
+
+        // No "all". BOT_STATE_ALL exists in the enum and fans a change out to
+        // every engine, which is exactly the blunt instrument this kind must
+        // not offer over the wire.
+        CHECK(!botbrain::IsKnownBotState("all"));
+        CHECK(!botbrain::IsKnownBotState("noncombat"));
+        CHECK(!botbrain::IsKnownBotState(""));
+    }
+
+    // Decoding the payload, including the parts that must be DROPPED rather
+    // than allowed to fail the intent.
+    void TestDecodeSetStrategies()
+    {
+        char const* const body =
+            "{\"contract_version\":\"1.6\",\"request_id\":\"r\",\"intents\":[{"
+            "\"bot\":{\"realm\":1,\"guid\":7},\"intent_id\":\"i1\",\"kind\":\"set_strategies\","
+            "\"strategies\":{\"changes\":["
+            "{\"name\":\"grind\",\"state\":\"non_combat\",\"enable\":false},"
+            "{\"name\":\"bad,name\",\"state\":\"combat\",\"enable\":true},"
+            "{\"name\":\"flee\",\"state\":\"nowhere\",\"enable\":true},"
+            "{\"name\":\"grind\",\"state\":\"non_combat\",\"enable\":true},"
+            "{\"name\":\"conserve mana\",\"state\":\"combat\",\"enable\":true}"
+            "]}}]}";
+
+        botbrain::PlanResponse response;
+        std::string error;
+        CHECK(botbrain::DecodePlanResponse(body, response, error));
+        CHECK(response.intents.size() == 1);
+        if (response.intents.size() != 1)
+            return;
+
+        botbrain::Intent const& intent = response.intents[0];
+        CHECK(intent.kind == "set_strategies");
+
+        // Five entries in, three out: the comma-carrying name and the unknown
+        // state are dropped one at a time, and the duplicate (grind/non_combat)
+        // keeps the FIRST rather than letting array order decide which of two
+        // opposite instructions wins.
+        CHECK(intent.strategies.size() == 2);
+        if (intent.strategies.size() != 2)
+            return;
+        CHECK(intent.strategies[0].name == "grind");
+        CHECK(intent.strategies[0].state == "non_combat");
+        CHECK(!intent.strategies[0].enable);
+        CHECK(intent.strategies[1].name == "conserve mana");
+        CHECK(intent.strategies[1].state == "combat");
+        CHECK(intent.strategies[1].enable);
+
+        // A set_strategies whose every entry was dropped names no work at all.
+        // It is dropped whole rather than handed to the applier as an empty
+        // set, which the applier would have to read as either "do nothing" or
+        // "release everything" -- and those are very different.
+        char const* const emptied =
+            "{\"contract_version\":\"1.6\",\"request_id\":\"r\",\"intents\":[{"
+            "\"bot\":{\"realm\":1,\"guid\":7},\"intent_id\":\"i2\",\"kind\":\"set_strategies\","
+            "\"strategies\":{\"changes\":[{\"name\":\"x,y\",\"state\":\"combat\",\"enable\":true}]}}]}";
+        botbrain::PlanResponse none;
+        CHECK(botbrain::DecodePlanResponse(emptied, none, error));
+        CHECK(none.intents.empty());
+
+        // Every other kind leaves the vector empty -- absent must not decode as
+        // "an empty set was requested".
+        char const* const other =
+            "{\"contract_version\":\"1.6\",\"request_id\":\"r\",\"intents\":[{"
+            "\"bot\":{\"realm\":1,\"guid\":7},\"intent_id\":\"i3\",\"kind\":\"rest\"}]}";
+        botbrain::PlanResponse rest;
+        CHECK(botbrain::DecodePlanResponse(other, rest, error));
+        CHECK(rest.intents.size() == 1);
+        if (rest.intents.size() == 1)
+            CHECK(rest.intents[0].strategies.empty());
     }
 
     // ---------------------------------------------------------------- goldens
@@ -511,10 +651,10 @@ namespace
             std::printf("  decode error: %s\n", error.c_str());
 
         CHECK(response.requestId == "req-golden-0001");
-        CHECK(response.intents.size() == 2);
+        CHECK(response.intents.size() == 3);
         CHECK(response.errors.size() == 1);
 
-        if (response.intents.size() == 2)
+        if (response.intents.size() == 3)
         {
             botbrain::Intent const& first = response.intents[0];
             CHECK(first.bot.realm == 1);
@@ -536,6 +676,27 @@ namespace
             CHECK(second.bot.guid == 4243);
             CHECK(second.kind == "idle");
             CHECK(!second.hasTravel);
+
+            // The third is a set_strategies for the SAME bot as the first, and
+            // that pairing is the point of the fixture rather than a detail of
+            // it: a standing condition has to be able to ride alongside a bot's
+            // errand, because the brain re-sends it every cycle and a bot that
+            // had to choose would never be sent anywhere again.
+            botbrain::Intent const& third = response.intents[2];
+            CHECK(third.bot.guid == first.bot.guid);
+            CHECK(third.bot.realm == first.bot.realm);
+            CHECK(third.kind == "set_strategies");
+            CHECK(!third.hasTravel);
+            CHECK(third.strategies.size() == 2);
+            if (third.strategies.size() == 2)
+            {
+                CHECK(third.strategies[0].name == "grind");
+                CHECK(third.strategies[0].state == "non_combat");
+                CHECK(!third.strategies[0].enable);
+                CHECK(third.strategies[1].name == "conserve mana");
+                CHECK(third.strategies[1].state == "combat");
+                CHECK(third.strategies[1].enable);
+            }
         }
 
         if (response.errors.size() == 1)
@@ -588,6 +749,13 @@ namespace
         // never sends one, and nobody can tell that from "no trainer nearby".
         CHECK(hasVisitTrainer);
         CHECK(botbrain::IsKnownIntentKind("visit_trainer"));
+
+        bool hasSetStrategies = false;
+        for (std::string const& kind : info.knownIntentKinds)
+            if (kind == "set_strategies")
+                hasSetStrategies = true;
+        CHECK(hasSetStrategies);
+        CHECK(botbrain::IsKnownIntentKind("set_strategies"));
     }
 
     // The version the fixtures declare must be the version this build speaks.
@@ -622,6 +790,14 @@ namespace
             ++g_failures;
         }
         ++g_checks;
+
+        // And the string this module actually STAMPS on every plan request. It
+        // is a third declaration of the same number and it had already drifted:
+        // it read "1.0" while kContractMinor was 4, so every request went out
+        // claiming a vocabulary four minors behind the one this build speaks.
+        // Nothing failed -- Negotiate serves an older peer happily -- which is
+        // exactly why nobody noticed.
+        CHECK(std::string(botbrain::kContractVersion) == expected);
     }
 
     // ----------------------------------------------------------------------
@@ -1252,6 +1428,8 @@ int main(int argc, char** argv)
     TestMalformedBodiesFailCleanly();
     TestContractHandshake();
     TestIntentKindClassification();
+    TestStrategyNamesAndStates();
+    TestDecodeSetStrategies();
     TestPersonalityIdentityMapping();
     TestTraitKeyStorageRoundTrips();
 
