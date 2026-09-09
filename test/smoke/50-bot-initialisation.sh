@@ -23,9 +23,15 @@
 # walked, not whether initialisation assigned them anything.
 #
 # Thresholds are proportions rather than absolutes because the cohort size is a
-# deployment choice. They are set where a healthy realm passes comfortably and
-# the measured broken realm fails on every one of them -- 0.4% spelled, 0.3%
-# moneyed, 0.04% professioned against floors of 50/25/10 percent.
+# deployment choice. Two remain -- the profession plan and the configured
+# starting level -- and both are things initialisation writes to the database
+# directly, so a young world can answer them honestly. On the broken realm both
+# were near zero (0.04% professioned, 0.4% above level 1); here both read 100%.
+#
+# The spell count is printed but no longer asserted. See the long note at the
+# query for why character_spell cannot answer this question at level 1 on this
+# core; it is a progression signal wearing an initialisation label, and it
+# failed a healthy world six runs running.
 #
 # It fails rather than skips when there are no bots. "No bots" means the question
 # went unanswered, and reporting that as a pass is the failure this file exists
@@ -74,10 +80,35 @@ if [ "$bots" -lt 3 ]; then
     fail "only $bots bot(s) have ever been in world; too few to measure initialisation"
 fi
 
-# Spells: the one that matters most. A bot with no class spells cannot kill
-# anything, which is what turned a level cap setting into a permanently level-1
-# population. Counted per character rather than in total, so one bot with a
-# thousand spells cannot mask a thousand bots with none.
+# Spells: REPORTED, NOT ASSERTED, and the reason is a property of the core.
+#
+# character_spell does not hold a character's class spells. Player::AddSpell
+# takes (spell_id, active, learning, dependent, disabled) and
+# Player::LearnDefaultSpells calls it as AddSpell(spell, true, true, true,
+# false) -- dependent = true -- for every row of playercreateinfo_spell.
+# Player::_SaveSpells then writes only `!itr->second.dependent` spells. So the
+# race/class starters are DELIBERATELY never persisted; they are re-derived
+# from playercreateinfo_spell on every load.
+#
+# A perfectly healthy level-1 bot therefore has ZERO rows here. What this
+# column actually counts is bots that learned something BEYOND creation --
+# trainer, quest reward, talent -- which is progression, not initialisation.
+# In a twelve-minute CI world at the configured starting level, a small
+# minority is the expected reading, and asserting a 50% floor on it failed the
+# suite for a healthy world. That is the same error twice in this file: the
+# profession check asserted a skill that had become a plan, and this asserted
+# progression that had never been initialisation.
+#
+# It is still worth printing. On the realm where the original defect was found
+# the number was 8 of 5,039, and over a long-running realm a floor here is a
+# real signal -- bots that never learn anything are bots that never reach a
+# trainer. That check belongs to a realm-health job with a horizon measured in
+# days, not to a CI world that has been up for twelve minutes.
+#
+# Nothing else initialisation produces is observable here either, at this
+# level: PlayerbotFactory::InitEquipment returns early below level 5
+# (PlayerbotFactory.cpp:3021), so a level-1 bot has no equipment by design.
+# The profession plan and the level are what remain, and both are asserted.
 spelled=$(dbq tw_char "
   SELECT COUNT(*) FROM (
     SELECT c.guid FROM characters c
@@ -133,7 +164,6 @@ check() {
     fi
 }
 
-check "${spelled:-0}"      50 "have any spell"
 check "${professioned:-0}" 50 "have a profession PLAN"
 check "${levelled:-0}"     90 "reached the configured starting level"
 
