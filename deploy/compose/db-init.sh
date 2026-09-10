@@ -124,6 +124,21 @@ reconcile_stream() {
     done | LC_ALL=C sort | cut -f2- > "$output"
 }
 
+# Core #97 removed its only logon migration with the duplicate donation timer.
+# An absent logon/ directory on *both* inputs is therefore the documented empty
+# stream, not a missing migration source. All nonempty streams still use
+# reconcile_stream and fail closed for every missing directory. If either
+# logon/ directory is present, it is reconciled normally and the counterpart is
+# required as well; do not silently accept a partially mounted declared stream.
+reconcile_empty_logon_stream() {
+    local output=$1 platform_logon=$2 core_logon=$3
+    if [ ! -e "$platform_logon" ] && [ ! -e "$core_logon" ]; then
+        : > "$output"
+        return 0
+    fi
+    reconcile_stream "$output" "$platform_logon" "$core_logon"
+}
+
 [ -f "$CORE_SQL_DIR/create_databases.sql" ] || {
     log "missing pinned core schema: $CORE_SQL_DIR/create_databases.sql"
     exit 1
@@ -134,7 +149,7 @@ reconcile_stream "$STATE/world-inputs" \
 reconcile_stream "$STATE/character-inputs" \
     "$SQL_DIR/database_updates/character" \
     "$CORE_SQL_DIR/database_updates/character"
-reconcile_stream "$STATE/logon-inputs" "$SQL_DIR/logon" "$CORE_SQL_DIR/logon"
+reconcile_empty_logon_stream "$STATE/logon-inputs" "$SQL_DIR/logon" "$CORE_SQL_DIR/logon"
 
 # The healthcheck says the server is up; this says it will actually talk to us.
 for _ in $(seq 1 60); do

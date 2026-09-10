@@ -270,6 +270,9 @@ jobs:
           # published one should carry it, or a compose deployment gets a brain with
           # no schema and the first mint fails at runtime instead of at bootstrap.
           COPY modules/mod-bot-brain/sql /sql-bot-brain
+          # Core #97 removed its duplicate of this login schema; the module is
+          # now the only source db-init may apply.
+          COPY modules/mod-donation/data/sql /sql-donation
           # One tree, three names. db-init.sh reads the platform migration
           # stream, the pinned core's stream and the world base from three
           # separate variables; in this image all three are core/sql. It
