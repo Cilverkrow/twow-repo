@@ -65,12 +65,14 @@ worth offering as pull requests.
 
 ### Server features
 
-All off by default, all in `mangosd.conf`:
+All off by default. Core features are in `mangosd.conf`; module features are in
+their respective module documents:
 
 | Feature | Config keys | Also required |
 |---|---|---|
 | Zone-restricted world buffs on a timer | `AutoWorldBuff.*` | – |
-| Hourly donation points | `AutoDonationPoints.*` | `core/sql/logon/donation_point_progress.sql` on the **login** database |
+| Hourly donation points | `AutoDonationPoints.*` in `modules/mod-donation/conf/mod_donation.conf.dist` | module-owned login schema: `modules/mod-donation/data/sql/auth/donation_point_progress.sql` |
+| Leech | `Leech.*` in `modules/mod-leech/conf/mod_leech.conf.dist` | – |
 | Beginners guild for new characters | `BeginnersGuilds`, `BeginnersGuildHorde/Alliance` | the guilds must exist; the shipped ids are placeholders |
 | Guild bank in every capital | `GuildBank.NpcEntriesAlliance/Horde` | nothing — the gossip trigger ships as a migration |
 | Dungeon finder fills with bots | `LFT.BotFill.Enable`, `.DelaySeconds`, `.LevelRangeBelow/Above`, `.SeedRuns`, `.SeedDungeons`, `.SeedTeleport` | – |

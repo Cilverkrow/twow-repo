@@ -12,13 +12,17 @@ OUT="${CONFIG_OUT_DIR:-$HERE/config}"
 MANGOSD_TEMPLATE="$ROOT/core/src/mangosd/mangosd.conf.dist.in"
 REALMD_TEMPLATE="$ROOT/core/src/realmd/realmd.conf.dist.in"
 AIPLAYERBOT_TEMPLATE="$ROOT/core/modules/mod-playerbots/src/playerbot/aiplayerbot.conf.dist.in"
-# The only complete base template that is NOT in the core submodule:
-# mod-bot-brain is this repository's own module, so its .dist ships here.
+# These complete module templates are project-owned rather than Core-owned.
+# They ship from their respective modules and render to separate module files.
 BOT_BRAIN_TEMPLATE="$ROOT/modules/mod-bot-brain/conf/mod_bot_brain.conf.dist"
+DONATION_TEMPLATE="$ROOT/modules/mod-donation/conf/mod_donation.conf.dist"
+LEECH_TEMPLATE="$ROOT/modules/mod-leech/conf/mod_leech.conf.dist"
 MANGOSD_OVERLAY="$CANONICAL/mangosd.overlay.conf"
 REALMD_OVERLAY="$CANONICAL/realmd.overlay.conf"
 AIPLAYERBOT_OVERLAY="$CANONICAL/aiplayerbot.overlay.conf"
 BOT_BRAIN_OVERLAY="$CANONICAL/bot-brain.overlay.conf"
+DONATION_OVERLAY="$CANONICAL/mod-donation.overlay.conf"
+LEECH_OVERLAY="$CANONICAL/mod-leech.overlay.conf"
 SEMANTIC_MATRIX="$CANONICAL/semantic-baseline.tsv"
 VERIFIER="$HERE/verify-config.sh"
 
@@ -75,7 +79,9 @@ esac
 
 for file in \
     "$MANGOSD_TEMPLATE" "$REALMD_TEMPLATE" "$AIPLAYERBOT_TEMPLATE" "$BOT_BRAIN_TEMPLATE" \
+    "$DONATION_TEMPLATE" "$LEECH_TEMPLATE" \
     "$MANGOSD_OVERLAY" "$REALMD_OVERLAY" "$AIPLAYERBOT_OVERLAY" "$BOT_BRAIN_OVERLAY" \
+    "$DONATION_OVERLAY" "$LEECH_OVERLAY" \
     "$SEMANTIC_MATRIX" "$VERIFIER"; do
     [[ -f "$file" && ! -L "$file" ]] || { echo "ERROR: required tracked configuration input is missing or unsafe: $file" >&2; exit 1; }
 done
@@ -158,6 +164,8 @@ validate_overlay_keys "$MANGOSD_OVERLAY"
 validate_overlay_keys "$REALMD_OVERLAY"
 validate_overlay_keys "$AIPLAYERBOT_OVERLAY"
 validate_overlay_keys "$BOT_BRAIN_OVERLAY"
+validate_overlay_keys "$DONATION_OVERLAY"
+validate_overlay_keys "$LEECH_OVERLAY"
 require_template_key "$MANGOSD_TEMPLATE" LoginDatabase.Info
 require_template_key "$MANGOSD_TEMPLATE" WorldDatabase.Info
 require_template_key "$MANGOSD_TEMPLATE" CharacterDatabase.Info
@@ -230,6 +238,8 @@ apply_overlay "$AIPLAYERBOT_TEMPLATE" "$STAGE/aiplayerbot.overlay.conf" "$STAGE/
 # No machine pass: nothing in the module config is a credential, so the
 # non-secret document IS the rendered file.
 apply_overlay "$BOT_BRAIN_TEMPLATE" "$STAGE/bot-brain.overlay.conf" "$STAGE/mod_bot_brain.conf"
+apply_overlay "$DONATION_TEMPLATE" "$DONATION_OVERLAY" "$STAGE/mod_donation.conf"
+apply_overlay "$LEECH_TEMPLATE" "$LEECH_OVERLAY" "$STAGE/mod_leech.conf"
 
 # The service parser has no external secret provider. These are the only secret
 # machine-overlay values and are intentionally absent from provenance output.
@@ -286,8 +296,10 @@ assert_keys_once "$STAGE/realmd.conf" "$STAGE/realmd.machine.conf"
 assert_keys_once "$STAGE/aiplayerbot.conf" "$STAGE/aiplayerbot.overlay.conf"
 assert_keys_once "$STAGE/aiplayerbot.conf" "$STAGE/aiplayerbot.machine.conf"
 assert_keys_once "$STAGE/mod_bot_brain.conf" "$STAGE/bot-brain.overlay.conf"
+assert_keys_once "$STAGE/mod_donation.conf" "$DONATION_OVERLAY"
+assert_keys_once "$STAGE/mod_leech.conf" "$LEECH_OVERLAY"
 for config in "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.conf" \
-    "$STAGE/mod_bot_brain.conf"; do
+    "$STAGE/mod_bot_brain.conf" "$STAGE/mod_donation.conf" "$STAGE/mod_leech.conf"; do
     assert_no_duplicate_keys "$config"
     if grep -Eq '@[A-Z0-9_]+@' "$config"; then
         echo "ERROR: unresolved canonical configuration token" >&2
@@ -296,7 +308,7 @@ for config in "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.con
 done
 
 chmod 600 "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.conf" \
-    "$STAGE/mod_bot_brain.conf"
+    "$STAGE/mod_bot_brain.conf" "$STAGE/mod_donation.conf" "$STAGE/mod_leech.conf"
 hash_file() { sha256sum "$1" | awk '{print $1}'; }
 file_bytes() { stat -c '%s' "$1"; }
 
@@ -336,17 +348,29 @@ BOT_BRAIN_OVERLAY_BYTES=$(file_bytes "$BOT_BRAIN_OVERLAY")
 BOT_BRAIN_OVERLAY_SHA256=$(hash_file "$BOT_BRAIN_OVERLAY")
 BOT_BRAIN_RENDERED_BYTES=$(file_bytes "$STAGE/mod_bot_brain.conf")
 BOT_BRAIN_RENDERED_SHA256=$(hash_file "$STAGE/mod_bot_brain.conf")
+DONATION_TEMPLATE_BYTES=$(file_bytes "$DONATION_TEMPLATE")
+DONATION_TEMPLATE_SHA256=$(hash_file "$DONATION_TEMPLATE")
+DONATION_OVERLAY_BYTES=$(file_bytes "$DONATION_OVERLAY")
+DONATION_OVERLAY_SHA256=$(hash_file "$DONATION_OVERLAY")
+DONATION_RENDERED_BYTES=$(file_bytes "$STAGE/mod_donation.conf")
+DONATION_RENDERED_SHA256=$(hash_file "$STAGE/mod_donation.conf")
+LEECH_TEMPLATE_BYTES=$(file_bytes "$LEECH_TEMPLATE")
+LEECH_TEMPLATE_SHA256=$(hash_file "$LEECH_TEMPLATE")
+LEECH_OVERLAY_BYTES=$(file_bytes "$LEECH_OVERLAY")
+LEECH_OVERLAY_SHA256=$(hash_file "$LEECH_OVERLAY")
+LEECH_RENDERED_BYTES=$(file_bytes "$STAGE/mod_leech.conf")
+LEECH_RENDERED_SHA256=$(hash_file "$STAGE/mod_leech.conf")
 EOF
 chmod 600 "$STAGE/config-provenance.txt"
 
 # Files publish one by one; provenance publishes last. Any interrupted or mixed
 # set therefore fails verification before `make up` can consume it.
-# mod_bot_brain.conf publishes into $OUT beside the others rather than into a
-# modules/ subdirectory. The mount TARGET is what has to live under
+# Module documents publish into $OUT beside the others rather than into a
+# modules/ subdirectory. Their mount TARGETS are what have to live under
 # /opt/turtle/etc/modules/; keeping the host file flat is what keeps the 0700
 # directory guarantee, the *.conf permission fix-ups below, `make clean` and
 # the verifier file list working on it unchanged.
-for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf config-provenance.txt; do
+for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf mod_donation.conf mod_leech.conf config-provenance.txt; do
     mv -f -- "$STAGE/$name" "$OUT/$name"
 done
 

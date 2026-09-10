@@ -110,6 +110,7 @@ services:
       - ${PLAYERBOTS_SQL_PATH:-../../core/modules/mod-playerbots/sql}:/sql-playerbots:ro
       - ${PLAYERBOTS_OVERLAY_SQL_PATH:-../../deploy/sql/playerbots}:/sql-playerbots-overlay:ro
       - ${BOT_BRAIN_SQL_PATH:-../../modules/mod-bot-brain/sql}:/sql-bot-brain:ro
+      - ${DONATION_SQL_PATH:-../../modules/mod-donation/data/sql}:/sql-donation:ro
     entrypoint: ["/bin/bash", "/db-init.sh"]
     healthcheck:
       # A one-shot job is gated by service_completed_successfully, not by health.
@@ -178,6 +179,8 @@ services:
       # place, so the entrypoint still seeds the modules that supply nothing --
       # and its "copy, never overwrite" rule leaves this one alone.
       - ./config/mod_bot_brain.conf:/opt/turtle/etc/modules/mod_bot_brain.conf:ro
+      - ./config/mod_donation.conf:/opt/turtle/etc/modules/mod_donation.conf:ro
+      - ./config/mod_leech.conf:/opt/turtle/etc/modules/mod_leech.conf:ro
       # Client data: extracted from a game client, read-only, never in an image.
       # `make extract` (tools profile) produces it.
       - ${DATA_PATH:-./data}:/opt/turtle/data:ro

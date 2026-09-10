@@ -74,7 +74,7 @@ if [[ "$POSIX_MODE_ENFORCEMENT" == YES ]]; then
     (( 8#$dir_mode == 8#700 )) || { echo "ERROR: generated configuration directory is not 0700" >&2; exit 1; }
 fi
 for file in "$PROVENANCE" "$OUT/mangosd.conf" "$OUT/realmd.conf" "$OUT/aiplayerbot.conf" \
-    "$OUT/mod_bot_brain.conf"; do
+    "$OUT/mod_bot_brain.conf" "$OUT/mod_donation.conf" "$OUT/mod_leech.conf"; do
     [[ -f "$file" && ! -L "$file" ]] || { echo "ERROR: generated configuration set is missing or unsafe" >&2; exit 1; }
     if [[ "$POSIX_MODE_ENFORCEMENT" == YES ]]; then
         mode=$(stat -c '%a' "$file")
@@ -128,5 +128,17 @@ require_bytes BOT_BRAIN_OVERLAY_BYTES "$CANONICAL/bot-brain.overlay.conf"
 require_hash BOT_BRAIN_OVERLAY_SHA256 "$CANONICAL/bot-brain.overlay.conf"
 require_bytes BOT_BRAIN_RENDERED_BYTES "$OUT/mod_bot_brain.conf"
 require_hash BOT_BRAIN_RENDERED_SHA256 "$OUT/mod_bot_brain.conf"
+require_bytes DONATION_TEMPLATE_BYTES "$ROOT/modules/mod-donation/conf/mod_donation.conf.dist"
+require_hash DONATION_TEMPLATE_SHA256 "$ROOT/modules/mod-donation/conf/mod_donation.conf.dist"
+require_bytes DONATION_OVERLAY_BYTES "$CANONICAL/mod-donation.overlay.conf"
+require_hash DONATION_OVERLAY_SHA256 "$CANONICAL/mod-donation.overlay.conf"
+require_bytes DONATION_RENDERED_BYTES "$OUT/mod_donation.conf"
+require_hash DONATION_RENDERED_SHA256 "$OUT/mod_donation.conf"
+require_bytes LEECH_TEMPLATE_BYTES "$ROOT/modules/mod-leech/conf/mod_leech.conf.dist"
+require_hash LEECH_TEMPLATE_SHA256 "$ROOT/modules/mod-leech/conf/mod_leech.conf.dist"
+require_bytes LEECH_OVERLAY_BYTES "$CANONICAL/mod-leech.overlay.conf"
+require_hash LEECH_OVERLAY_SHA256 "$CANONICAL/mod-leech.overlay.conf"
+require_bytes LEECH_RENDERED_BYTES "$OUT/mod_leech.conf"
+require_hash LEECH_RENDERED_SHA256 "$OUT/mod_leech.conf"
 
 echo "configuration provenance verified"

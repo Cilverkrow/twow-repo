@@ -49,6 +49,9 @@ PB_OVERLAY_SQL_DIR=${PB_OVERLAY_SQL_DIR:-/sql-playerbots-overlay}
 # mod-bot-brain's own schema (ADR-0039). Optional: the directory is only mounted
 # where the brain is deployed, and its absence must not fail a bootstrap.
 BRAIN_SQL_DIR=${BRAIN_SQL_DIR:-/sql-bot-brain}
+# mod-donation owns its durable login-database progress table. Core #97 removed
+# its byte-identical copy, so Compose must mount the module source explicitly.
+DONATION_SQL_DIR=${DONATION_SQL_DIR:-/sql-donation}
 
 DB_HOST=${DB_HOST:-db}
 DB_PORT=${DB_PORT:-3306}
@@ -478,6 +481,13 @@ stage_bot_brain() {
     apply_module_sql "$BRAIN_DB" "$BRAIN_SQL_DIR/cv_brain"
 }
 
+# ------------------------------------------------------------ 48 donation
+# The module SQL is CREATE TABLE IF NOT EXISTS, so this new stage is safe on
+# both a fresh volume and one already carrying the former Core-owned table.
+stage_donation() {
+    apply_module_sql tw_logon "$DONATION_SQL_DIR/auth"
+}
+
 # ----------------------------------------------------------------- preflight
 # Runs EVERY time, before any stage, and is deliberately the one thing in this
 # file with no marker.
@@ -551,6 +561,7 @@ if [ -d "$BRAIN_SQL_DIR/cv_brain" ]; then
 else
     log "bot-brain sql: $BRAIN_SQL_DIR/cv_brain not mounted - skipping (no marker written)"
 fi
+stage 48-donation stage_donation
 stage 60-realmlist  stage_realmlist
 
 # Verification. Every stage above now fails loudly, so this is no longer the only
