@@ -927,6 +927,7 @@ jobs:
       SQL_BASE_DIR: core/sql/base
       PB_SQL_DIR: core/modules/mod-playerbots/sql
       PB_OVERLAY_SQL_DIR: deploy/sql/playerbots
+      DONATION_SQL_DIR: modules/mod-donation/data/sql
       MYSQL_PWD: ci-root
 
     steps:
@@ -1020,6 +1021,20 @@ jobs:
         run: |
           bash test/smoke/bootstrap-stream-contract.sh
           bash test/smoke/verify-bootstrap-coverage.sh
+
+      - name: Verify the module-owned donation login schema
+        run: |
+          set -eu
+          # Core #97 removed the sole duplicate Core file. The authoritative
+          # module SQL is applied once by stage 48, and the next bootstrap sees
+          # its marker rather than applying a second source.
+          test ! -e core/sql/logon/donation_point_progress.sql
+          test -f modules/mod-donation/data/sql/auth/donation_point_progress.sql
+          table=$(mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -N -B -e \
+            "SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA='tw_logon' AND TABLE_NAME='donation_point_progress';")
+          [ "$table" = "1" ] || { echo "::error::module donation schema is missing"; exit 1; }
+          test -s /state/48-donation
 
       # Invariant 3 from the operator's side: running the bootstrap twice must
       # be a no-op. db-init.sh guarantees that with stage markers, and
