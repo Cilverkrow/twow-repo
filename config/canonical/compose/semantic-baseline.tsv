@@ -1,5 +1,5 @@
 # OPS-009-R1 sanitized semantic matrix; no configuration values or secrets.
-# Counts: KEEP=96 INTENTIONAL_CHANGE=18 DEPRECATED_OR_REMOVED=0 MACHINE_SECRET=6 TOTAL=120
+# Counts: KEEP=89 INTENTIONAL_CHANGE=25 DEPRECATED_OR_REMOVED=10 MACHINE_SECRET=6 TOTAL=130
 # This line is prose: nothing parses it, and it had already drifted from the
 # rows below once. The counts that are enforced are the literals in
 # ops/config/test-config-provenance.sh's assert_matrix; keep the two in step.
@@ -45,12 +45,22 @@ aiplayerbot	AiPlayerbot.UsePotionChance	KEEP	aiplayerbot.overlay.conf	verified-s
 aiplayerbot	AiPlayerbot.XPRate	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 bot-brain	BotBrain.Enable	INTENTIONAL_CHANGE	bot-brain.overlay.conf	reviewed-machine-parameter
 bot-brain	BotBrain.Endpoint	INTENTIONAL_CHANGE	bot-brain.overlay.conf	reviewed-compose-path
+mod-donation	AutoDonationPoints.Amount	INTENTIONAL_CHANGE	mod-donation.overlay.conf	issue-278-authoritative-module-profile
+mod-donation	AutoDonationPoints.Enable	INTENTIONAL_CHANGE	mod-donation.overlay.conf	issue-278-authoritative-module-profile
+mod-donation	AutoDonationPoints.FlushIntervalMs	KEEP	mod-donation.overlay.conf	verified-module-default
+mod-donation	AutoDonationPoints.IntervalMs	KEEP	mod-donation.overlay.conf	verified-module-default
+mod-leech	Leech.Amount	INTENTIONAL_CHANGE	mod-leech.overlay.conf	issue-279-authoritative-module-profile
+mod-leech	Leech.DungeonOnly	INTENTIONAL_CHANGE	mod-leech.overlay.conf	issue-279-authoritative-module-profile
+mod-leech	Leech.Enable	INTENTIONAL_CHANGE	mod-leech.overlay.conf	issue-279-authoritative-module-profile
+mod-leech	Leech.PvEOnly	KEEP	mod-leech.overlay.conf	verified-module-default
+mod-leech	Leech.RealPlayersOnly	INTENTIONAL_CHANGE	mod-leech.overlay.conf	issue-279-authoritative-module-profile
+mod-leech	Leech.SoloOnly	INTENTIONAL_CHANGE	mod-leech.overlay.conf	issue-279-authoritative-module-profile
 mangosd	AiPlayerbot.ConfigFile	INTENTIONAL_CHANGE	mangosd.overlay.conf	reviewed-compose-path
 mangosd	AllFlightPaths	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	AutoDonationPoints.Amount	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	AutoDonationPoints.Enable	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	AutoDonationPoints.FlushIntervalMs	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	AutoDonationPoints.IntervalMs	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
+mangosd	AutoDonationPoints.Amount	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-97-module-owner
+mangosd	AutoDonationPoints.Enable	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-97-module-owner
+mangosd	AutoDonationPoints.FlushIntervalMs	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-97-module-owner
+mangosd	AutoDonationPoints.IntervalMs	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-97-module-owner
 mangosd	AutoWorldBuff.Enable	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	AutoWorldBuff.FirstMaxInterval	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	AutoWorldBuff.FirstMinInterval	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
@@ -75,12 +85,12 @@ mangosd	GM.LoginState	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	GM.StartLevel	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	GM.StartOnGMIsland	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	HonorDir	INTENTIONAL_CHANGE	mangosd.overlay.conf	reviewed-compose-path
-mangosd	Leech.Amount	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Leech.DungeonOnly	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Leech.Enable	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Leech.PvEOnly	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Leech.RealPlayersOnly	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Leech.SoloOnly	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
+mangosd	Leech.Amount	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-98-module-owner
+mangosd	Leech.DungeonOnly	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-98-module-owner
+mangosd	Leech.Enable	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-98-module-owner
+mangosd	Leech.PvEOnly	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-98-module-owner
+mangosd	Leech.RealPlayersOnly	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-98-module-owner
+mangosd	Leech.SoloOnly	DEPRECATED_OR_REMOVED	mangosd.overlay.conf	core-98-module-owner
 mangosd	LoginDatabase.Info	MACHINE_SECRET	protected-machine-overlay	secret-not-versioned
 mangosd	LogsDatabase.Info	MACHINE_SECRET	protected-machine-overlay	secret-not-versioned
 mangosd	LogsDir	INTENTIONAL_CHANGE	mangosd.overlay.conf	reviewed-compose-path

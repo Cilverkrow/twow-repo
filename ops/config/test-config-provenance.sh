@@ -118,9 +118,9 @@ assert_matrix() {
             total++
         }
         END {
-            if (total != 120 || count["KEEP"] != 96 ||
-                count["INTENTIONAL_CHANGE"] != 18 ||
-                count["DEPRECATED_OR_REMOVED"] != 0 ||
+            if (total != 130 || count["KEEP"] != 89 ||
+                count["INTENTIONAL_CHANGE"] != 25 ||
+                count["DEPRECATED_OR_REMOVED"] != 10 ||
                 count["MACHINE_SECRET"] != 6) exit 13
         }
     ' "$MATRIX" || { echo "ERROR: semantic matrix is incomplete or malformed" >&2; exit 1; }
@@ -158,6 +158,18 @@ assert_semantics() {
                 baseline=""
                 template="$ROOT/modules/mod-bot-brain/conf/mod_bot_brain.conf.dist"
                 overlay="$CANONICAL/bot-brain.overlay.conf"
+                ;;
+            mod-donation)
+                rendered="$CONFIG_OUT_DIR/mod_donation.conf"
+                baseline="$ROOT/modules/mod-donation/conf/mod_donation.conf.dist"
+                template="$ROOT/modules/mod-donation/conf/mod_donation.conf.dist"
+                overlay="$CANONICAL/mod-donation.overlay.conf"
+                ;;
+            mod-leech)
+                rendered="$CONFIG_OUT_DIR/mod_leech.conf"
+                baseline="$ROOT/modules/mod-leech/conf/mod_leech.conf.dist"
+                template="$ROOT/modules/mod-leech/conf/mod_leech.conf.dist"
+                overlay="$CANONICAL/mod-leech.overlay.conf"
                 ;;
             *) echo "ERROR: unknown semantic-matrix service" >&2; exit 1 ;;
         esac
@@ -208,10 +220,16 @@ assert_rendered_contract() {
     assert_no_duplicate_keys "$CONFIG_OUT_DIR/realmd.conf"
     assert_no_duplicate_keys "$CONFIG_OUT_DIR/aiplayerbot.conf"
     assert_no_duplicate_keys "$CONFIG_OUT_DIR/mod_bot_brain.conf"
+    assert_no_duplicate_keys "$CONFIG_OUT_DIR/mod_donation.conf"
+    assert_no_duplicate_keys "$CONFIG_OUT_DIR/mod_leech.conf"
+    [[ "$(head -n 1 "$CONFIG_OUT_DIR/mod_donation.conf")" == '[worldserver]' ]]
+    [[ "$(head -n 1 "$CONFIG_OUT_DIR/mod_leech.conf")" == '[worldserver]' ]]
     assert_overlay_keys_once "$CANONICAL/mangosd.overlay.conf" "$CONFIG_OUT_DIR/mangosd.conf"
     assert_overlay_keys_once "$CANONICAL/realmd.overlay.conf" "$CONFIG_OUT_DIR/realmd.conf"
     assert_overlay_keys_once "$CANONICAL/aiplayerbot.overlay.conf" "$CONFIG_OUT_DIR/aiplayerbot.conf"
     assert_overlay_keys_once "$CANONICAL/bot-brain.overlay.conf" "$CONFIG_OUT_DIR/mod_bot_brain.conf"
+    assert_overlay_keys_once "$CANONICAL/mod-donation.overlay.conf" "$CONFIG_OUT_DIR/mod_donation.conf"
+    assert_overlay_keys_once "$CANONICAL/mod-leech.overlay.conf" "$CONFIG_OUT_DIR/mod_leech.conf"
     for key in LoginDatabase.Info WorldDatabase.Info CharacterDatabase.Info LogsDatabase.Info; do
         assert_key_once "$CONFIG_OUT_DIR/mangosd.conf" "$key"
     done
@@ -231,11 +249,44 @@ assert_rendered_contract() {
 
     [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.MinRandomBots)" == 3 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.MaxRandomBots)" == 7 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_donation.conf" AutoDonationPoints.Enable)" == 1 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_donation.conf" AutoDonationPoints.IntervalMs)" == 3600000 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_donation.conf" AutoDonationPoints.Amount)" == 100 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_donation.conf" AutoDonationPoints.FlushIntervalMs)" == 300000 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_leech.conf" Leech.Enable)" == 1 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_leech.conf" Leech.Amount)" == 0.5 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_leech.conf" Leech.PvEOnly)" == 1 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_leech.conf" Leech.RealPlayersOnly)" == 0 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_leech.conf" Leech.SoloOnly)" == 0 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mod_leech.conf" Leech.DungeonOnly)" == 0 ]]
+    for key in AutoDonationPoints.Enable AutoDonationPoints.IntervalMs \
+               AutoDonationPoints.Amount AutoDonationPoints.FlushIntervalMs \
+               Leech.Enable Leech.Amount Leech.PvEOnly Leech.RealPlayersOnly \
+               Leech.SoloOnly Leech.DungeonOnly; do
+        [[ "$(key_count "$CONFIG_OUT_DIR/mangosd.conf" "$key")" == 0 ]] || {
+            echo "ERROR: module-owned key remained in mangosd.conf: $key" >&2
+            exit 1
+        }
+        total=$(($(key_count "$CONFIG_OUT_DIR/mod_donation.conf" "$key") + \
+                 $(key_count "$CONFIG_OUT_DIR/mod_leech.conf" "$key")))
+        [[ "$total" == 1 ]] || {
+            echo "ERROR: module-owned key is not globally unique: $key" >&2
+            exit 1
+        }
+    done
     for key in LFT.BotFill.Enable LFT.BotFill.DelaySeconds LFT.BotFill.LevelRangeBelow \
                LFT.BotFill.LevelRangeBelowHealer LFT.BotFill.LevelRangeAbove; do
         assert_key_once "$CONFIG_OUT_DIR/mangosd.conf" "$key"
     done
     grep -Fq 'LFT/LFTBotFill.cpp' "$ROOT/core/src/game/CMakeLists.txt"
+    grep -Fqx '      - ./config/mod_donation.conf:/opt/turtle/etc/modules/mod_donation.conf:ro' \
+        "$ROOT/deploy/compose/docker-compose.yml"
+    grep -Fqx '      - ./config/mod_leech.conf:/opt/turtle/etc/modules/mod_leech.conf:ro' \
+        "$ROOT/deploy/compose/docker-compose.yml"
+    grep -Fqx 'DONATION_SQL_DIR=${DONATION_SQL_DIR:-/sql-donation}' \
+        "$ROOT/deploy/compose/db-init.sh"
+    grep -Fqx '    apply_module_sql tw_logon "$DONATION_SQL_DIR/auth"' \
+        "$ROOT/deploy/compose/db-init.sh"
 
     if grep -Eq '@[A-Z0-9_]+@' "$CONFIG_OUT_DIR"/*.conf; then
         echo "ERROR: unresolved configuration token" >&2
@@ -269,7 +320,7 @@ cp -- "$CONFIG_OUT_DIR"/*.conf "$TMP/first/"
 grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > "$TMP/first/provenance.normalized"
 bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
 bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
-for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf; do
+for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf mod_donation.conf mod_leech.conf; do
     cmp -s "$TMP/first/$name" "$CONFIG_OUT_DIR/$name" || {
         echo "ERROR: repeated render changed canonical output" >&2
         exit 1
@@ -282,7 +333,7 @@ cmp -s "$TMP/first/provenance.normalized" "$TMP/provenance.normalized" || {
 }
 
 # Deliberate content drift is rejected.
-printf '\n# deliberate test drift\n' >> "$CONFIG_OUT_DIR/mangosd.conf"
+printf '\n# deliberate test drift\n' >> "$CONFIG_OUT_DIR/mod_donation.conf"
 if bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null 2>&1; then
     echo "ERROR: verifier accepted a changed rendered file" >&2
     exit 1
@@ -290,7 +341,7 @@ fi
 bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
 
 # An incomplete set is rejected.
-mv -- "$CONFIG_OUT_DIR/realmd.conf" "$TMP/realmd.missing"
+mv -- "$CONFIG_OUT_DIR/mod_leech.conf" "$TMP/mod_leech.missing"
 if bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null 2>&1; then
     echo "ERROR: verifier accepted an incomplete generation" >&2
     exit 1
