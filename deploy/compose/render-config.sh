@@ -25,6 +25,24 @@ DONATION_OVERLAY="$CANONICAL/mod-donation.overlay.conf"
 LEECH_OVERLAY="$CANONICAL/mod-leech.overlay.conf"
 SEMANTIC_MATRIX="$CANONICAL/semantic-baseline.tsv"
 VERIFIER="$HERE/verify-config.sh"
+CONFIG_PROFILE=${CONFIG_PROFILE:-none}
+PROFILE_DIR=""
+PROFILE_MANGOSD_OVERLAY=""
+PROFILE_AIPLAYERBOT_OVERLAY=""
+PROFILE_SEMANTIC_MATRIX=""
+
+# Profiles are opt-in, tracked test contracts. A closed set prevents a local
+# runtime path from becoming a second configuration source of truth.
+case "$CONFIG_PROFILE" in
+    none) ;;
+    funserver-test)
+        PROFILE_DIR="$ROOT/config/canonical/profiles/$CONFIG_PROFILE"
+        PROFILE_MANGOSD_OVERLAY="$PROFILE_DIR/mangosd.overlay.conf"
+        PROFILE_AIPLAYERBOT_OVERLAY="$PROFILE_DIR/aiplayerbot.overlay.conf"
+        PROFILE_SEMANTIC_MATRIX="$PROFILE_DIR/semantic-profile.tsv"
+        ;;
+    *) echo "ERROR: unsupported CONFIG_PROFILE: $CONFIG_PROFILE" >&2; exit 1 ;;
+esac
 
 : "${DB_USER:?DB_USER not set -- source deploy/compose/.env first}"
 : "${DB_PASSWORD:?DB_PASSWORD not set -- source deploy/compose/.env first}"
@@ -85,6 +103,12 @@ for file in \
     "$SEMANTIC_MATRIX" "$VERIFIER"; do
     [[ -f "$file" && ! -L "$file" ]] || { echo "ERROR: required tracked configuration input is missing or unsafe: $file" >&2; exit 1; }
 done
+if [[ "$CONFIG_PROFILE" != none ]]; then
+    [[ -d "$PROFILE_DIR" && ! -L "$PROFILE_DIR" ]] || { echo "ERROR: profile directory is missing or unsafe" >&2; exit 1; }
+    for file in "$PROFILE_MANGOSD_OVERLAY" "$PROFILE_AIPLAYERBOT_OVERLAY" "$PROFILE_SEMANTIC_MATRIX"; do
+        [[ -f "$file" && ! -L "$file" ]] || { echo "ERROR: required profile input is missing or unsafe: $file" >&2; exit 1; }
+    done
+fi
 
 SOURCE_COMMIT=$(git -C "$ROOT" rev-parse --verify HEAD)
 SOURCE_TREE=$(git -C "$ROOT" rev-parse --verify 'HEAD^{tree}')
@@ -145,6 +169,58 @@ list_config_keys() {
     ' "$1"
 }
 
+profile_matrix_key_count() {
+    local service=$1 key=$2
+    awk -F '\t' -v wanted_service="$service" -v wanted_key="$key" '
+        /^#/ || $1 == "service" || $1 == "" { next }
+        $1 == wanted_service && $2 == wanted_key { found++ }
+        END { print found + 0 }
+    ' "$PROFILE_SEMANTIC_MATRIX"
+}
+
+validate_profile_matrix() {
+    awk -F '\t' '
+        /^#/ || $1 == "service" || $1 == "" { next }
+        NF != 5 { exit 10 }
+        $1 != "mangosd" && $1 != "aiplayerbot" { exit 11 }
+        $3 != "INTENTIONAL_CHANGE" { exit 12 }
+        !$2 || !$4 || !$5 { exit 13 }
+        seen[$1 SUBSEP $2]++ { exit 14 }
+        { count++ }
+        END { if (count == 0) exit 15 }
+    ' "$PROFILE_SEMANTIC_MATRIX" || {
+        echo "ERROR: profile semantic matrix is malformed" >&2
+        exit 1
+    }
+
+    local service overlay expected_source matrix_service key classification source evidence
+    for service in mangosd aiplayerbot; do
+        case "$service" in
+            mangosd) overlay="$PROFILE_MANGOSD_OVERLAY" ;;
+            aiplayerbot) overlay="$PROFILE_AIPLAYERBOT_OVERLAY" ;;
+        esac
+        expected_source=$(basename "$overlay")
+        while IFS=$'\t' read -r matrix_service key classification source evidence; do
+            [[ "$matrix_service" == service || "$matrix_service" == \#* || -z "$matrix_service" ]] && continue
+            [[ "$matrix_service" == "$service" ]] || continue
+            [[ "$source" == "$expected_source" ]] || {
+                echo "ERROR: profile semantic source mismatch: $key" >&2
+                exit 1
+            }
+            [[ "$(list_keys "$overlay" | grep -Fxc "$key")" == 1 ]] || {
+                echo "ERROR: profile semantic key is missing or duplicated: $key" >&2
+                exit 1
+            }
+        done < "$PROFILE_SEMANTIC_MATRIX"
+        while IFS= read -r key; do
+            [[ "$(profile_matrix_key_count "$service" "$key")" == 1 ]] || {
+                echo "ERROR: profile overlay key is unclassified or duplicated: $key" >&2
+                exit 1
+            }
+        done < <(list_keys "$overlay")
+    done
+}
+
 require_template_key() {
     local template=$1 key=$2 count
     count=$(awk -F= -v wanted="$key" '
@@ -166,6 +242,11 @@ validate_overlay_keys "$AIPLAYERBOT_OVERLAY"
 validate_overlay_keys "$BOT_BRAIN_OVERLAY"
 validate_overlay_keys "$DONATION_OVERLAY"
 validate_overlay_keys "$LEECH_OVERLAY"
+if [[ "$CONFIG_PROFILE" != none ]]; then
+    validate_overlay_keys "$PROFILE_MANGOSD_OVERLAY"
+    validate_overlay_keys "$PROFILE_AIPLAYERBOT_OVERLAY"
+    validate_profile_matrix
+fi
 require_template_key "$MANGOSD_TEMPLATE" LoginDatabase.Info
 require_template_key "$MANGOSD_TEMPLATE" WorldDatabase.Info
 require_template_key "$MANGOSD_TEMPLATE" CharacterDatabase.Info
@@ -232,9 +313,16 @@ sed \
 sed -e "s|@BOT_BRAIN_ENABLE@|$BOT_BRAIN_ENABLE|g" \
     "$BOT_BRAIN_OVERLAY" > "$STAGE/bot-brain.overlay.conf"
 
-apply_overlay "$MANGOSD_TEMPLATE" "$MANGOSD_OVERLAY" "$STAGE/mangosd.nonsecret.conf"
+apply_overlay "$MANGOSD_TEMPLATE" "$MANGOSD_OVERLAY" "$STAGE/mangosd.base.conf"
 apply_overlay "$REALMD_TEMPLATE" "$REALMD_OVERLAY" "$STAGE/realmd.nonsecret.conf"
-apply_overlay "$AIPLAYERBOT_TEMPLATE" "$STAGE/aiplayerbot.overlay.conf" "$STAGE/aiplayerbot.nonsecret.conf"
+apply_overlay "$AIPLAYERBOT_TEMPLATE" "$STAGE/aiplayerbot.overlay.conf" "$STAGE/aiplayerbot.base.conf"
+if [[ "$CONFIG_PROFILE" == funserver-test ]]; then
+    apply_overlay "$STAGE/mangosd.base.conf" "$PROFILE_MANGOSD_OVERLAY" "$STAGE/mangosd.nonsecret.conf"
+    apply_overlay "$STAGE/aiplayerbot.base.conf" "$PROFILE_AIPLAYERBOT_OVERLAY" "$STAGE/aiplayerbot.nonsecret.conf"
+else
+    mv -- "$STAGE/mangosd.base.conf" "$STAGE/mangosd.nonsecret.conf"
+    mv -- "$STAGE/aiplayerbot.base.conf" "$STAGE/aiplayerbot.nonsecret.conf"
+fi
 # No machine pass: nothing in the module config is a credential, so the
 # non-secret document IS the rendered file.
 apply_overlay "$BOT_BRAIN_TEMPLATE" "$STAGE/bot-brain.overlay.conf" "$STAGE/mod_bot_brain.conf"
@@ -298,6 +386,10 @@ assert_keys_once "$STAGE/aiplayerbot.conf" "$STAGE/aiplayerbot.machine.conf"
 assert_keys_once "$STAGE/mod_bot_brain.conf" "$STAGE/bot-brain.overlay.conf"
 assert_keys_once "$STAGE/mod_donation.conf" "$DONATION_OVERLAY"
 assert_keys_once "$STAGE/mod_leech.conf" "$LEECH_OVERLAY"
+if [[ "$CONFIG_PROFILE" != none ]]; then
+    assert_keys_once "$STAGE/mangosd.conf" "$PROFILE_MANGOSD_OVERLAY"
+    assert_keys_once "$STAGE/aiplayerbot.conf" "$PROFILE_AIPLAYERBOT_OVERLAY"
+fi
 for config in "$STAGE/mangosd.conf" "$STAGE/realmd.conf" "$STAGE/aiplayerbot.conf" \
     "$STAGE/mod_bot_brain.conf" "$STAGE/mod_donation.conf" "$STAGE/mod_leech.conf"; do
     assert_no_duplicate_keys "$config"
@@ -316,6 +408,7 @@ cat > "$STAGE/config-provenance.txt" <<EOF
 FORMAT_VERSION=2
 TASK_ID=OPS-009-R1-SEMANTIC-BASELINE-RECONCILIATION-01
 DECISION=ADR-0038
+CONFIG_PROFILE=$CONFIG_PROFILE
 SOURCE_COMMIT=$SOURCE_COMMIT
 SOURCE_TREE=$SOURCE_TREE
 SOURCE_DIRTY=$SOURCE_DIRTY
@@ -361,6 +454,16 @@ LEECH_OVERLAY_SHA256=$(hash_file "$LEECH_OVERLAY")
 LEECH_RENDERED_BYTES=$(file_bytes "$STAGE/mod_leech.conf")
 LEECH_RENDERED_SHA256=$(hash_file "$STAGE/mod_leech.conf")
 EOF
+if [[ "$CONFIG_PROFILE" != none ]]; then
+cat >> "$STAGE/config-provenance.txt" <<EOF
+PROFILE_MANGOSD_OVERLAY_BYTES=$(file_bytes "$PROFILE_MANGOSD_OVERLAY")
+PROFILE_MANGOSD_OVERLAY_SHA256=$(hash_file "$PROFILE_MANGOSD_OVERLAY")
+PROFILE_AIPLAYERBOT_OVERLAY_BYTES=$(file_bytes "$PROFILE_AIPLAYERBOT_OVERLAY")
+PROFILE_AIPLAYERBOT_OVERLAY_SHA256=$(hash_file "$PROFILE_AIPLAYERBOT_OVERLAY")
+PROFILE_SEMANTIC_MATRIX_BYTES=$(file_bytes "$PROFILE_SEMANTIC_MATRIX")
+PROFILE_SEMANTIC_MATRIX_SHA256=$(hash_file "$PROFILE_SEMANTIC_MATRIX")
+EOF
+fi
 chmod 600 "$STAGE/config-provenance.txt"
 
 # Files publish one by one; provenance publishes last. Any interrupted or mixed
