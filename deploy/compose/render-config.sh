@@ -193,7 +193,7 @@ validate_profile_matrix() {
         exit 1
     }
 
-    local service overlay expected_source matrix_service key classification source evidence
+    local service overlay expected_source matrix_service key source
     for service in mangosd aiplayerbot; do
         case "$service" in
             mangosd) overlay="$PROFILE_MANGOSD_OVERLAY" ;;
