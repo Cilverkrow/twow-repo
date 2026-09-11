@@ -200,7 +200,7 @@ validate_profile_matrix() {
             aiplayerbot) overlay="$PROFILE_AIPLAYERBOT_OVERLAY" ;;
         esac
         expected_source=$(basename "$overlay")
-        while IFS=$'\t' read -r matrix_service key classification source evidence; do
+        while IFS=$'\t' read -r matrix_service key _ source _; do
             [[ "$matrix_service" == service || "$matrix_service" == \#* || -z "$matrix_service" ]] && continue
             [[ "$matrix_service" == "$service" ]] || continue
             [[ "$source" == "$expected_source" ]] || {
