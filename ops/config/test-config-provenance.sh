@@ -295,6 +295,81 @@ assert_rendered_contract() {
     assert_semantics
 }
 
+assert_funserver_test_profile() {
+    local profile_dir="$ROOT/config/canonical/profiles/funserver-test"
+
+    awk -F '\t' '
+        /^#/ || $1 == "service" || $1 == "" { next }
+        NF != 5 || $3 != "INTENTIONAL_CHANGE" { exit 10 }
+        seen[$1 SUBSEP $2]++ { exit 11 }
+        count++
+        END { exit !(count == 13) }
+    ' "$profile_dir/semantic-profile.tsv" || {
+        echo "ERROR: funserver test profile matrix is malformed" >&2
+        exit 1
+    }
+
+    mkdir -p "$TMP/default-profile-invariance"
+    cp -- "$CONFIG_OUT_DIR"/*.conf "$TMP/default-profile-invariance/"
+    grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > \
+        "$TMP/default-profile-invariance/provenance.normalized"
+
+    export CONFIG_PROFILE=funserver-test
+    bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
+    bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
+    assert_no_duplicate_keys "$CONFIG_OUT_DIR/mangosd.conf"
+    assert_no_duplicate_keys "$CONFIG_OUT_DIR/aiplayerbot.conf"
+    assert_overlay_keys_once "$profile_dir/mangosd.overlay.conf" "$CONFIG_OUT_DIR/mangosd.conf"
+    assert_overlay_keys_once "$profile_dir/aiplayerbot.overlay.conf" "$CONFIG_OUT_DIR/aiplayerbot.conf"
+
+    for expected in \
+        'Rate.XP.Kill=2' 'Rate.XP.Quest=4' 'Rate.Talent=2' \
+        'Rate.Drop.Item.Poor=2' 'Rate.Drop.Item.Normal=3' \
+        'Rate.Drop.Item.Uncommon=4' 'Rate.Drop.Item.Rare=4' \
+        'Rate.Drop.Item.Epic=4' 'Rate.Drop.Item.Legendary=2' \
+        'Rate.Drop.Item.Artifact=1' 'Rate.Drop.Item.Referenced=1' \
+        'Rate.Drop.Money=3'; do
+        key=${expected%%=*}
+        value=${expected#*=}
+        [[ "$(key_count "$CONFIG_OUT_DIR/mangosd.conf" "$key")" == 1 ]]
+        [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" "$key")" == "$value" ]]
+    done
+    [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.RndBotCheats)" == repair,breath,item,taxi ]]
+
+    mkdir -p "$TMP/profile-first"
+    cp -- "$CONFIG_OUT_DIR"/*.conf "$TMP/profile-first/"
+    grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > \
+        "$TMP/profile-first/provenance.normalized"
+    bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
+    bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
+    for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf mod_donation.conf mod_leech.conf; do
+        cmp -s "$TMP/profile-first/$name" "$CONFIG_OUT_DIR/$name" || {
+            echo "ERROR: repeated funserver profile render changed output" >&2
+            exit 1
+        }
+    done
+    grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > "$TMP/profile.provenance.normalized"
+    cmp -s "$TMP/profile-first/provenance.normalized" "$TMP/profile.provenance.normalized" || {
+        echo "ERROR: repeated funserver profile render changed provenance" >&2
+        exit 1
+    }
+
+    unset CONFIG_PROFILE
+    bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
+    bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
+    for name in mangosd.conf realmd.conf aiplayerbot.conf mod_bot_brain.conf mod_donation.conf mod_leech.conf; do
+        cmp -s "$TMP/default-profile-invariance/$name" "$CONFIG_OUT_DIR/$name" || {
+            echo "ERROR: opt-in profile changed default output" >&2
+            exit 1
+        }
+    done
+    grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > "$TMP/default.provenance.normalized"
+    cmp -s "$TMP/default-profile-invariance/provenance.normalized" "$TMP/default.provenance.normalized" || {
+        echo "ERROR: opt-in profile changed default provenance" >&2
+        exit 1
+    }
+}
+
 bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
 bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
 assert_rendered_contract
@@ -365,4 +440,5 @@ export AIPLAYERBOT_MAX_BOTS=7
 bash "$ROOT/deploy/compose/render-config.sh" >/dev/null
 bash "$ROOT/deploy/compose/verify-config.sh" >/dev/null
 assert_rendered_contract
+assert_funserver_test_profile
 echo "config semantic provenance test passed"

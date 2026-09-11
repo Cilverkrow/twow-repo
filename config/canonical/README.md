@@ -54,6 +54,25 @@ their single reviewed overlay value. LFT and LFT Bot Fill stay in the
 mangosd/Core template and executable; this contract creates no separate service
 or container for them.
 
+## Optional Funserver test profile
+
+`CONFIG_PROFILE=funserver-test` applies the tracked, reversible test overlay
+from `profiles/funserver-test/` at render time. Omitting the variable leaves
+the canonical Compose output byte-identical apart from the documented render
+timestamp. The profile retains `Rate.XP.Kill = 2`, `Rate.XP.Quest = 4`,
+`Rate.Talent = 2`, and the registered-random-bot cheat extension
+`repair,breath,item,taxi`. It deliberately does not set `Rate.XP.Explore`.
+
+Its reviewed item and money multipliers are profile-only. In particular,
+`Rate.Drop.Item.Referenced = 1` scales referenced loot tables; it is not a
+quest-item switch. They do not create extra independent boss/rare selections,
+guarantee a quality distribution, or change duplicate suppression. Those Core
+loot semantics remain with issue #288.
+
+There is no recipe-drop key in the profile. The recipe-rate input is
+`BLOCKED_BY_CORE_CONTRACT` until WS-10 merges and documents the exact Core
+contract; only then may the opt-in profile set that key to `0.65`.
+
 To roll back, check out the approved earlier commit, render again with the same
 protected machine inputs, verify the provenance record, and deploy through a
 separately authorized operation. Exceptional direct runtime writes require the

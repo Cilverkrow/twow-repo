@@ -76,6 +76,24 @@ token resolution, and credential exclusion; rejects drift, incomplete sets, and
 mixed generations; and proves repeatability apart from `RENDERED_UTC`. It then
 removes the temporary files without contacting a server or database.
 
+## Optional Funserver test profile
+
+Use `CONFIG_PROFILE=funserver-test make config` only to render the explicit
+test profile. With `CONFIG_PROFILE` absent, the ordinary canonical profile is
+unchanged. The profile's own semantic matrix records its XP, talent, nine
+item/money values, and the `taxi` extension to the existing PlayerBot random
+bot cheats; provenance binds those three profile inputs when selected.
+
+The loot multipliers scale existing eligible chance rolls only. They do not
+promise a four-item boss or rare result, an epic-to-blue ratio, additional
+independent selections, or duplicate suppression. `Rate.Drop.Item.Referenced`
+remains `1` because it scales referenced loot tables, not quest items. Core
+loot semantics remain separately tracked by issue #288.
+
+No recipe-drop key is guessed or rendered. The requested optional recipe rate
+is `BLOCKED_BY_CORE_CONTRACT` pending the documented WS-10/Core contract; after
+that contract merges, the profile may set its exact key to `0.65`.
+
 ## Deployment evidence
 
 A separately authorized deployment or config verification package must record:
