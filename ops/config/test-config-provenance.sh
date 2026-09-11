@@ -118,8 +118,8 @@ assert_matrix() {
             total++
         }
         END {
-            if (total != 130 || count["KEEP"] != 89 ||
-                count["INTENTIONAL_CHANGE"] != 25 ||
+            if (total != 131 || count["KEEP"] != 88 ||
+                count["INTENTIONAL_CHANGE"] != 27 ||
                 count["DEPRECATED_OR_REMOVED"] != 10 ||
                 count["MACHINE_SECRET"] != 6) exit 13
         }
@@ -249,6 +249,9 @@ assert_rendered_contract() {
 
     [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.MinRandomBots)" == 3 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.MaxRandomBots)" == 7 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.XP.Kill)" == 2 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.XP.Quest)" == 4 ]]
+    [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" Rate.Talent)" == 2 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/mod_donation.conf" AutoDonationPoints.Enable)" == 1 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/mod_donation.conf" AutoDonationPoints.IntervalMs)" == 3600000 ]]
     [[ "$(key_value "$CONFIG_OUT_DIR/mod_donation.conf" AutoDonationPoints.Amount)" == 100 ]]

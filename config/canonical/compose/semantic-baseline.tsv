@@ -118,7 +118,8 @@ mangosd	Rate.Rest.Offline.InWilderness	KEEP	mangosd.overlay.conf	verified-saniti
 mangosd	Rate.Skill.Discovery	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	Rate.XP.Explore	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	Rate.XP.Kill	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Rate.XP.Quest	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
+mangosd	Rate.XP.Quest	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-quest-progression-x4
+mangosd	Rate.Talent	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-player-and-bot-talents-x2
 mangosd	SkillChance.Green	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	SkillChance.Grey	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	SkillChance.Yellow	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
