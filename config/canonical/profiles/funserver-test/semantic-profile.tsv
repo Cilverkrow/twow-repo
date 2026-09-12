@@ -11,4 +11,12 @@ mangosd	Rate.Drop.Item.Legendary	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserv
 mangosd	Rate.Drop.Item.Artifact	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-loot-rate
 mangosd	Rate.Drop.Item.Referenced	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-referenced-tables-only
 mangosd	Rate.Drop.Money	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-money-rate
+mangosd	Funserver.Loot.Bonus.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-bonus-loot-enabled
+mangosd	Funserver.Loot.Bonus.Rare	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-rare-bonus-loot
+mangosd	Funserver.Loot.Bonus.RareElite	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-rare-elite-bonus-loot
+mangosd	Funserver.Loot.Bonus.WorldBoss	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-world-boss-bonus-loot
+mangosd	Funserver.Loot.Bonus.DungeonBoss	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-dungeon-boss-bonus-loot
+mangosd	Funserver.Loot.Bonus.RaidBoss	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-raid-boss-bonus-loot
+mangosd	Funserver.Loot.Bonus.SelectionMultiplier	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-four-total-safe-selections
+mangosd	Funserver.Loot.Bonus.DuplicateDecay	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-duplicate-weight-quarter
 aiplayerbot	AiPlayerbot.RndBotCheats	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	funserver-test-add-existing-taxi-cheat

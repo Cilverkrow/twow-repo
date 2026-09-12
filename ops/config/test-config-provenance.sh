@@ -303,7 +303,7 @@ assert_funserver_test_profile() {
         NF != 5 || $3 != "INTENTIONAL_CHANGE" { exit 10 }
         seen[$1 SUBSEP $2]++ { exit 11 }
         count++
-        END { exit !(count == 13) }
+        END { exit !(count == 21) }
     ' "$profile_dir/semantic-profile.tsv" || {
         echo "ERROR: funserver test profile matrix is malformed" >&2
         exit 1
@@ -328,7 +328,15 @@ assert_funserver_test_profile() {
         'Rate.Drop.Item.Uncommon=4' 'Rate.Drop.Item.Rare=4' \
         'Rate.Drop.Item.Epic=4' 'Rate.Drop.Item.Legendary=2' \
         'Rate.Drop.Item.Artifact=1' 'Rate.Drop.Item.Referenced=1' \
-        'Rate.Drop.Money=3'; do
+        'Rate.Drop.Money=3' \
+        'Funserver.Loot.Bonus.Enabled=1' \
+        'Funserver.Loot.Bonus.Rare=1' \
+        'Funserver.Loot.Bonus.RareElite=1' \
+        'Funserver.Loot.Bonus.WorldBoss=1' \
+        'Funserver.Loot.Bonus.DungeonBoss=1' \
+        'Funserver.Loot.Bonus.RaidBoss=1' \
+        'Funserver.Loot.Bonus.SelectionMultiplier=4' \
+        'Funserver.Loot.Bonus.DuplicateDecay=0.25'; do
         key=${expected%%=*}
         value=${expected#*=}
         [[ "$(key_count "$CONFIG_OUT_DIR/mangosd.conf" "$key")" == 1 ]]
