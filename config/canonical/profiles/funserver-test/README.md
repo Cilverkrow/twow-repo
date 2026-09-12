@@ -22,4 +22,9 @@ No recipe-drop key is rendered. The optional recipe-rate contract is
 `BLOCKED_BY_CORE_CONTRACT` until WS-10 lands and documents its exact Core key;
 only then may this profile set that key to `0.65`.
 
-All thirteen deviations are classified in `semantic-profile.tsv`.
+Boss and rare bonus loot is enabled only in this profile. Eligible rares and
+registered dungeon, raid, and world bosses receive four total safe selection
+rounds with a 0.25 duplicate-weight decay. Protected quest, key, reference,
+recipe, condition, uniqueness, and ownership semantics remain in the Core.
+
+All twenty-one deviations are classified in `semantic-profile.tsv`.
