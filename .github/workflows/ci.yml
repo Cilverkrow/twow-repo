@@ -1578,6 +1578,10 @@ jobs:
       # is what removes it, the script is what mounts it, and a disagreement
       # would leave a multi-gigabyte volume behind on a shared daemon every run.
       BUILD_VOLUME: twow-build
+      # Keep main and pull-request objects in one compatible ccache population.
+      # This is CI-only debug information; production images are built elsewhere.
+      CI_CACHE_DEBUG_SYMBOLS: 'OFF'
+      CI_CACHE_ARCH: x86-64-v2
       # This is a throwaway credential for the per-run container below. It is
       # passed by environment name and is never echoed or uploaded.
       MARIADB_ROOT_PASSWORD: ci-root
@@ -1686,46 +1690,81 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      # THE cache. This is the one that matters now: it covers the whole tree,
-      # not the handful of test translation units the old ci-linux-gcc key
-      # covered. A fresh entry per run plus a prefix restore-key is the standard
-      # rolling-cache shape - every run starts from the newest previous one and
-      # leaves its own behind.
+      - name: Validate compiler cache key contract
+        run: bash ops/ci/test-compiler-cache-key.sh
+
+      # Just the apt layer of Dockerfile.core's builder: no source is copied
+      # into this stage, so it is one `apt-get install` and about a minute.
       #
-      # A whole-tree cache with debug symbols is large; ccache is told to
-      # compress and to stay under 4G by ops/ci/in-builder.sh. The Actions cache
-      # is a 10 GB LRU for the entire repository, so this will evict other
-      # scopes, and that is the intended trade - nothing else in this repository
-      # is worth 71 minutes.
-      # RESTORE ONLY. The save is a separate step at the end of this job and it
-      # runs only on the default branch. That asymmetry is the whole fix, and it
-      # is worth explaining because the symptom pointed somewhere else entirely.
+      # Deliberately NOT cached in the Actions cache. The whole repository gets
+      # 10 GB of it and the ccache above is the only thing in this job worth
+      # spending it on; exporting a gigabyte of Debian packages to buy back
+      # sixty seconds would evict the cache that buys back an hour.
+      - name: Build the toolchain image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.core
+          target: builder-base
+          push: false
+          load: true
+          tags: ${{ env.BUILDER_IMAGE }}
+
+      # THE cache. This covers the whole tree, not just a handful of test
+      # translation units. The namespace is the loaded toolchain's package pin,
+      # compiler version, architecture, and ABI-relevant CMake contract -- not
+      # a PR, commit, or Core gitlink. ccache validates those source inputs per
+      # translation unit, so a Core change misses only affected objects.
       #
-      # GitHub scopes every cache to the ref that wrote it. A cache written on
-      # refs/pull/183/merge cannot be read from refs/pull/184/merge - PR caches
-      # are private to their PR. The ONE exception is the default branch: a
-      # cache saved on main is readable by every branch and every PR.
-      #
-      # With actions/cache (restore+save) on every run, each PR wrote its own
-      # 2 GB ccache that no other branch could ever read, and read nothing on
-      # its first run. Measured: `Cache not found for input keys:
-      # ci-trixie-gcc-33980977774, ci-trixie-gcc-` followed by
-      # `Hits: 0 / 1517 (0.00%)` and a 67-minute build - while four 2 GB caches
-      # sat in the repository, every one of them scoped to a pull request.
-      #
-      # Worse than useless: those private caches crowd the repository's shared
-      # 10 GB LRU budget, evicting the only cache that could have helped anyone.
-      # Three runs of one PR were enough to spend 6 GB of it.
-      #
-      # So: every run restores from main's cache, and only main writes one.
+      # The run id is a snapshot suffix because Actions cache entries are
+      # immutable. Restore matches only the compatible contract prefix; only a
+      # successful main run saves, and the final prune retains one snapshot.
+      - name: Derive compiler cache contract
+        id: compiler-cache-contract
+        run: |
+          set -euo pipefail
+          compiler_version=$(docker run --rm "$BUILDER_IMAGE" \
+            g++ -dumpfullversion -dumpversion | tr -d '\r\n')
+          toolchain_pin=$(docker run --rm "$BUILDER_IMAGE" sh -c \
+            'cat /etc/os-release; dpkg-query -W -f="${binary:Package}=${Version}\n" | LC_ALL=C sort' \
+            | sha256sum | awk '{print $1}')
+          cache_cmake_flags=$(printf '%s' \
+            'CMAKE_BUILD_TYPE=Release;' \
+            'DEBUG_SYMBOLS=OFF;' \
+            'CMAKE_INSTALL_PREFIX=/opt/turtle;' \
+            'TW_ARCH=x86-64-v2;' \
+            'MODULES=static;' \
+            'BUILD_TESTING=ON;' \
+            'BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON')
+          contract=$(CACHE_KEY_SCHEMA=2 \
+            CACHE_OS="$RUNNER_OS" \
+            CACHE_ARCH="$CI_CACHE_ARCH" \
+            CACHE_COMPILER=g++ \
+            CACHE_COMPILER_VERSION="$compiler_version" \
+            CACHE_TOOLCHAIN_PIN="$toolchain_pin" \
+            CACHE_CMAKE_FLAGS="$cache_cmake_flags" \
+            bash ops/ci/compiler-cache-key.sh)
+          fingerprint=$(printf '%s\n' "$contract" | sed -n 's/^fingerprint=//p')
+          test -n "$fingerprint"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+          {
+            echo '## Compiler cache contract'
+            echo
+            printf '%s\n' "$contract" | sed '/^fingerprint=/d' | sed 's/^/- /'
+            echo "- fingerprint: \`$fingerprint\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # RESTORE ONLY. A cache written on main is readable by every branch and
+      # PR; a PR-scoped cache cannot help any other PR. The separate save below
+      # intentionally keeps PRs from consuming the shared 10 GB cache budget.
       - name: Restore the compiler cache
         id: compiler-cache
         uses: actions/cache/restore@v4
         with:
           path: .ccache
-          key: ci-trixie-gcc-${{ github.run_id }}
+          key: ci-gcc-v2-${{ steps.compiler-cache-contract.outputs.fingerprint }}-${{ github.run_id }}
           restore-keys: |
-            ci-trixie-gcc-
+            ci-gcc-v2-${{ steps.compiler-cache-contract.outputs.fingerprint }}-
 
       - name: Report restored compiler cache
         env:
@@ -1745,28 +1784,11 @@ jobs:
             echo "- Restored directory size: ${bytes} bytes"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Just the apt layer of Dockerfile.core's builder: no source is copied
-      # into this stage, so it is one `apt-get install` and about a minute.
-      #
-      # Deliberately NOT cached in the Actions cache. The whole repository gets
-      # 10 GB of it and the ccache above is the only thing in this job worth
-      # spending it on; exporting a gigabyte of Debian packages to buy back
-      # sixty seconds would evict the cache that buys back an hour.
-      - name: Build the toolchain image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: deploy/docker/Dockerfile.core
-          target: builder-base
-          push: false
-          load: true
-          tags: ${{ env.BUILDER_IMAGE }}
-
       # THE BUDGET THAT ACTUALLY CONSTRAINS THE BUILD, and it is not the one
       # `df -h .` prints anywhere else in this job. That is the runner pod's
       # filesystem. The build tree lives on a named volume on the DOCKER
       # DAEMON's data root - a different disk, with a different amount of room -
-      # and a 1,533-target build with debug symbols has to fit in it. Printed
+      # and a 1,533-target build has to fit in it. Printed
       # rather than assumed, and placed here because it is the first step at
       # which BUILDER_IMAGE exists to run it with.
       - name: How much room the build tree actually has
@@ -1817,7 +1839,7 @@ jobs:
           started=$(date +%s)
           bash ops/ci/in-builder.sh 'cmake -S /src -B /build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DDEBUG_SYMBOLS=${{ github.event_name == 'pull_request' && 'OFF' || 'ON' }} \
+            -DDEBUG_SYMBOLS=${{ env.CI_CACHE_DEBUG_SYMBOLS }} \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
             -DTW_ARCH=x86-64-v2 \
             -DMODULES=static \
@@ -2152,13 +2174,14 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .ccache
-          key: ci-trixie-gcc-${{ github.run_id }}
+          key: ci-gcc-v2-${{ steps.compiler-cache-contract.outputs.fingerprint }}-${{ github.run_id }}
 
       # Delete every OLDER compiler cache, keeping only the one just saved.
       #
       # Without this the cache is written but never reclaimed. The key carries
-      # the run id so each push writes a NEW entry and the previous one is left
-      # behind; at ~2 GB apiece against a repository-wide 10 GB budget, five
+      # a compatible contract plus the run id, so each successful main push
+      # writes a NEW snapshot and the previous one is left behind; at ~2 GB
+      # apiece against a repository-wide 10 GB budget, five
       # pushes are enough for the compiler caches alone to fill it. Measured
       # before this step existed: three ccache entries holding 6.08 GB of a
       # 7.31 GB total, with 28 buildkit blobs making up the rest.
@@ -2183,13 +2206,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          keep="ci-trixie-gcc-${{ github.run_id }}"
+          keep="ci-gcc-v2-${{ steps.compiler-cache-contract.outputs.fingerprint }}-${{ github.run_id }}"
           echo "keeping $keep"
 
           # --paginate: the repository has dozens of small buildkit blobs and
           # the compiler caches are not guaranteed to be on the first page.
           stale=$(gh api --paginate "repos/${{ github.repository }}/actions/caches" \
-                    --jq ".actions_caches[] | select(.key | startswith(\"ci-trixie-gcc-\")) | .key" \
+                    --jq ".actions_caches[] | select(.key | startswith(\"ci-gcc-v2-\")) | .key" \
                   | grep -vx "$keep" || true)
 
           if [ -z "$stale" ]; then
