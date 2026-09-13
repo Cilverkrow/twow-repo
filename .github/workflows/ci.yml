@@ -728,9 +728,8 @@ jobs:
   # published. Those tests were decoration - a regression in the planner, the
   # wire contract or version negotiation landed green.
   #
-  # No submodules and no database: this module is stdlib-only by policy (go.mod
-  # has zero requires) and nothing here reads core/ or talks to MariaDB. That is
-  # what makes the job cost about a minute.
+  # No submodules or live database: the service's dependencies are pinned by
+  # services/bot-brain/go.sum and unit tests do not talk to MariaDB.
   go:
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     name: go (bot-brain)
@@ -746,12 +745,13 @@ jobs:
           fetch-depth: 1
 
       # go-version-file rather than a pinned string, so the toolchain follows
-      # go.mod and cannot silently drift from what developers build with. No
-      # cache-dependency-path: there is no go.sum, because there are no
-      # dependencies, and naming a file that does not exist fails the action.
+      # go.mod and cannot silently drift from what developers build with. The
+      # dependency path is explicit because setup-go otherwise searches for a
+      # go.sum at the repository root instead of in this nested module.
       - uses: actions/setup-go@v5
         with:
           go-version-file: services/bot-brain/go.mod
+          cache-dependency-path: services/bot-brain/go.sum
 
       # Formatting is a diff, not an opinion: gofmt -l prints the files it would
       # change and says nothing when it would change none.
@@ -851,6 +851,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: services/bot-brain/go.mod
+          cache-dependency-path: services/bot-brain/go.sum
 
       # bot_brain_wire_tests compiled exactly as tests.cmake compiles it: the
       # same two files, the same one include directory, the same golden-dir
@@ -1626,8 +1627,8 @@ jobs:
 
       # Moved ahead of the build rather than sitting just before the image step,
       # because the build tree is now on the runner's disk instead of inside
-      # BuildKit and it is the biggest thing here: DEBUG_SYMBOLS defaults to ON,
-      # which is a 2.0 GB mangosd before the five static module targets. The
+      # BuildKit and it is the biggest thing here. Pull-request builds explicitly
+      # disable DEBUG_SYMBOLS below; main keeps them for diagnostic parity. The
       # runner ships with ~25 GB of toolchains this build never touches.
       # Without the room the run dies deep in the compile with "{standard
       # input}: Fatal error: <object>: No such file or directory", which is the
@@ -1718,12 +1719,31 @@ jobs:
       #
       # So: every run restores from main's cache, and only main writes one.
       - name: Restore the compiler cache
+        id: compiler-cache
         uses: actions/cache/restore@v4
         with:
           path: .ccache
           key: ci-trixie-gcc-${{ github.run_id }}
           restore-keys: |
             ci-trixie-gcc-
+
+      - name: Report restored compiler cache
+        env:
+          CACHE_HIT: ${{ steps.compiler-cache.outputs.cache-hit }}
+          CACHE_PRIMARY_KEY: ${{ steps.compiler-cache.outputs.cache-primary-key }}
+          CACHE_MATCHED_KEY: ${{ steps.compiler-cache.outputs.cache-matched-key }}
+        run: |
+          set -eu
+          bytes=$(du -sb .ccache 2>/dev/null | awk '{print $1}')
+          bytes=${bytes:-0}
+          {
+            echo '## Compiler cache restore'
+            echo
+            echo "- Primary key: \`${CACHE_PRIMARY_KEY:-<none>}\`"
+            echo "- Matched key: \`${CACHE_MATCHED_KEY:-<none>}\`"
+            echo "- Exact key hit: \`${CACHE_HIT:-false}\`"
+            echo "- Restored directory size: ${bytes} bytes"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # Just the apt layer of Dockerfile.core's builder: no source is copied
       # into this stage, so it is one `apt-get install` and about a minute.
@@ -1794,8 +1814,10 @@ jobs:
 
       - name: Configure
         run: |
+          started=$(date +%s)
           bash ops/ci/in-builder.sh 'cmake -S /src -B /build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DDEBUG_SYMBOLS=${{ github.event_name == 'pull_request' && 'OFF' || 'ON' }} \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
             -DTW_ARCH=x86-64-v2 \
             -DMODULES=static \
@@ -1804,6 +1826,9 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **Configure:** %dm %02ds\n' "$((elapsed / 60))" "$((elapsed % 60))" \
+            >> "$GITHUB_STEP_SUMMARY"
 
       # Headers that use a type without declaring it compile fine until a
       # translation unit reaches them before the declaration -- and then the
@@ -1828,7 +1853,12 @@ jobs:
       # game headers: the same memory budget the full build has, spent on a
       # check that should take a minute.
       - name: Core headers are self-contained
-        run: bash ops/ci/in-builder.sh 'bash ops/audit/header-self-containment.sh /build'
+        run: |
+          started=$(date +%s)
+          bash ops/ci/in-builder.sh 'bash ops/audit/header-self-containment.sh /build'
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **Header probes:** %dm %02ds\n' "$((elapsed / 60))" "$((elapsed % 60))" \
+            >> "$GITHUB_STEP_SUMMARY"
 
       # Build CMake's complete default target once. Every normal executable
       # registered with add_test() belongs to that graph, so this replaces the
@@ -1836,8 +1866,51 @@ jobs:
       # CTest's generated JSON and fails if any registered executable is absent.
       - name: Build the server and all registered test executables
         run: |
+          started=$(date +%s)
           bash ops/ci/in-builder.sh \
             "cmake --build /build --parallel $CI_BUILD_JOBS"
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **Compile and link:** %dm %02ds\n' "$((elapsed / 60))" "$((elapsed % 60))" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report compiler cache statistics
+        if: always()
+        env:
+          CACHE_MATCHED_KEY: ${{ steps.compiler-cache.outputs.cache-matched-key }}
+        run: |
+          set -eu
+          stats=$(bash ops/ci/in-builder.sh 'ccache --print-stats')
+          value() {
+            printf '%s\n' "$stats" | awk -v key="$1" '$1 == key { print $2; exit }'
+          }
+          direct=$(value direct_cache_hit)
+          preprocessed=$(value preprocessed_cache_hit)
+          misses=$(value cache_miss)
+          current_kib=$(value cache_size_kibibyte)
+          max_kib=$(value max_cache_size_kibibyte)
+          cleanups=$(value cleanups_performed)
+          direct=${direct:-0}
+          preprocessed=${preprocessed:-0}
+          misses=${misses:-0}
+          current_kib=${current_kib:-0}
+          max_kib=${max_kib:-0}
+          cleanups=${cleanups:-0}
+          hits=$((direct + preprocessed))
+          total=$((hits + misses))
+          rate=$(awk -v h="$hits" -v t="$total" \
+            'BEGIN { if (t == 0) print "0.00"; else printf "%.2f", h * 100 / t }')
+          {
+            echo
+            echo '## Compiler cache result'
+            echo
+            echo '| Hits | Misses | Hit rate | Current size | Maximum size | Cleanups |'
+            echo '| ---: | ---: | ---: | ---: | ---: | ---: |'
+            echo "| $hits | $misses | ${rate}% | ${current_kib} KiB | ${max_kib} KiB | $cleanups |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${CACHE_MATCHED_KEY:-}" ] && [ "$total" -gt 0 ] \
+             && awk -v r="$rate" 'BEGIN { exit !(r < 50) }'; then
+            echo "::warning::compiler cache restored from ${CACHE_MATCHED_KEY}, but hit rate was ${rate}%"
+          fi
 
       - name: Inventory registered tests and built executables
         id: testbuild
@@ -1925,6 +1998,7 @@ jobs:
         id: adapter
         shell: bash
         run: |
+          started=$(date +%s)
           bin=/build/adapter-bin/persistent_active_roster_database_tests
           if ! bash ops/ci/in-builder.sh "test -x $bin"; then
             echo "::notice::$bin was not built - the adapter suite is not in this configuration"
@@ -1953,6 +2027,9 @@ jobs:
           else
             echo "ran=0" >> "$GITHUB_OUTPUT"
           fi
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **Adapter tests:** %dm %02ds\n' "$((elapsed / 60))" "$((elapsed % 60))" \
+            >> "$GITHUB_STEP_SUMMARY"
           exit "$rc"
 
       # Runs whether or not the adapter suite passed, so the discovery count is
@@ -1961,6 +2038,7 @@ jobs:
         if: always()
         id: ctest
         run: |
+          started=$(date +%s)
           set -u
           mkdir -p test-results
           set +e
@@ -1976,6 +2054,9 @@ jobs:
             value=$(printf '%s\n' "$summary" | sed -n "s/^${key}=//p")
             echo "$key=${value:-0}" >> "$GITHUB_OUTPUT"
           done
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **CTest:** %dm %02ds\n' "$((elapsed / 60))" "$((elapsed % 60))" \
+            >> "$GITHUB_STEP_SUMMARY"
           [ "$ctest_rc" -eq 0 ] && [ "$summary_rc" -eq 0 ]
 
       - name: Upload test results
@@ -2048,6 +2129,7 @@ jobs:
       # object file, which reads exactly like running out of disk.
       - name: Stage the verified install
         run: |
+          date +%s > "$RUNNER_TEMP/twow-image-assembly.started"
           bash ops/ci/in-builder.sh "cmake --install /build \
             && ccache --show-stats"
           du -sh stage
@@ -2179,6 +2261,13 @@ jobs:
           # definition. Exporting that to the Actions cache would push a fresh
           # multi-gigabyte entry per push and evict everything else in the
           # repository to cache something that can never be hit.
+
+      - name: Report runtime image assembly duration
+        run: |
+          started=$(cat "$RUNNER_TEMP/twow-image-assembly.started")
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **Runtime image assembly:** %dm %02ds\n' \
+            "$((elapsed / 60))" "$((elapsed % 60))" >> "$GITHUB_STEP_SUMMARY"
 
       # What build-linux.yml's `test -x` used to assert, asserted against the
       # image that would be shipped - and then one step further.
@@ -2498,10 +2587,11 @@ jobs:
       # key to it. --wait blocks on the health checks the compose file declares,
       # which is the only honest "it is up" signal; a fixed sleep would test the
       # sleep.
-      - name: Start db, db-init, realmd and mangosd
+      - name: Start database and apply migrations
         run: |
           set -eu
           C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
+          started=$(date +%s)
 
           # Deliberately NOT `up --wait`. That flag waits for every container in
           # the dependency graph to be running or healthy, and db-init is a
@@ -2514,7 +2604,7 @@ jobs:
           # Not a regression: the smoke job had been skipped in every previous
           # run because something upstream failed first, so its first real
           # execution was also its first failure.
-          $C up -d realmd mangosd
+          $C up -d db-init
 
           # db-init must have finished, and cleanly. Its exit code is the
           # bootstrap's verdict; read it rather than inferring from realmd.
@@ -2525,9 +2615,16 @@ jobs:
           done
           rc=$(docker inspect -f '{{.State.ExitCode}}' "$($C ps -aq db-init)")
           [ "$rc" = "0" ] || { echo "::error::db-init exited $rc - the bootstrap failed"; exit 1; }
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **DB init and migrations:** %dm %02ds\n' \
+            "$((elapsed / 60))" "$((elapsed % 60))" >> "$GITHUB_STEP_SUMMARY"
 
-          # Then poll realmd's own health check, the only honest "it is up"
-          # signal. A fixed sleep would test the sleep.
+      - name: Start and await realmd
+        run: |
+          set -eu
+          C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
+          started=$(date +%s)
+          $C up -d realmd
           h=starting
           for _ in $(seq 1 300); do
             h=$(docker inspect -f '{{.State.Health.Status}}' "$($C ps -aq realmd)" 2>/dev/null || echo starting)
@@ -2536,12 +2633,16 @@ jobs:
             sleep 2
           done
           [ "$h" = "healthy" ] || { echo "::error::realmd did not become healthy within 600s"; exit 1; }
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **realmd ready:** %dm %02ds\n' "$((elapsed / 60))" "$((elapsed % 60))" \
+            >> "$GITHUB_STEP_SUMMARY"
 
-          # mangosd gets its own, much longer budget. Loading the world takes
-          # minutes even on a warm machine, and docker-compose.yml declares a
-          # 900s start_period for exactly that reason -- so a health status of
-          # "starting" here is normal for a long time and must not be read as a
-          # failure.
+      - name: Start mangosd and await world-ready
+        run: |
+          set -eu
+          C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
+          started=$(date +%s)
+          $C up -d mangosd
           h=starting
           for _ in $(seq 1 600); do
             h=$(docker inspect -f '{{.State.Health.Status}}' "$($C ps -aq mangosd)" 2>/dev/null || echo starting)
@@ -2558,7 +2659,9 @@ jobs:
             $C logs --tail 200 mangosd
             exit 1
           }
-
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **mangosd / world-ready:** %dm %02ds\n' \
+            "$((elapsed / 60))" "$((elapsed % 60))" >> "$GITHUB_STEP_SUMMARY"
           $C ps -a
 
       # bot-brain and the stub model, for test/smoke/60-bot-dialogue.sh.
@@ -2605,7 +2708,12 @@ jobs:
           # is present and mangosd is up, so a world-server check that cannot run
           # is a real failure and must not be allowed to quietly skip.
           TWOW_CLIENT_DATA: '1'
-        run: sh test/smoke/run-all.sh
+        run: |
+          started=$(date +%s)
+          sh test/smoke/run-all.sh
+          elapsed=$(( $(date +%s) - started ))
+          printf -- '- **Smoke suite:** %dm %02ds\n' "$((elapsed / 60))" "$((elapsed % 60))" \
+            >> "$GITHUB_STEP_SUMMARY"
 
       # Logs are the only way to diagnose a failed stack after the fact, so they
       # are collected whatever happened. db-init's log in particular is where a
