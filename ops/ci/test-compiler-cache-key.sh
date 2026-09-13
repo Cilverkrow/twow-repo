@@ -15,7 +15,7 @@ key() {
     CACHE_COMPILER_VERSION="$1" \
     CACHE_TOOLCHAIN_PIN='sha256:toolchain-a' \
     CACHE_CMAKE_FLAGS="$2" \
-    "$KEY_SCRIPT" | sed -n 's/^fingerprint=//p'
+    bash "$KEY_SCRIPT" | sed -n 's/^fingerprint=//p'
 }
 
 flags='CMAKE_BUILD_TYPE=Release;DEBUG_SYMBOLS=OFF;CMAKE_INSTALL_PREFIX=/opt/turtle;TW_ARCH=x86-64-v2;MODULES=static;BUILD_TESTING=ON;BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON'
