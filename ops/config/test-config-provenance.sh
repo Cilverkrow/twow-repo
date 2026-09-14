@@ -335,7 +335,7 @@ assert_funserver_test_profile() {
         'Funserver.Loot.Bonus.WorldBoss=1' \
         'Funserver.Loot.Bonus.DungeonBoss=1' \
         'Funserver.Loot.Bonus.RaidBoss=1' \
-        'Funserver.Loot.Bonus.SelectionMultiplier=4' \
+        'Funserver.Loot.Bonus.SelectionMultiplier=5' \
         'Funserver.Loot.Bonus.DuplicateDecay=0.25'; do
         key=${expected%%=*}
         value=${expected#*=}
