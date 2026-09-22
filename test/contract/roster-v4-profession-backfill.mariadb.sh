@@ -34,7 +34,7 @@ done
 docker cp "$repo/deploy/compose/roster-v4-profession-backfill.sh" "$container:$gate"
 docker cp "$source_csv" "$container:/v4-136-profession-prefix.csv"
 
-sql() { docker exec -e "MYSQL_PWD=$db_auth" "$container" mariadb -u root -N -B "$@"; }
+sql() { docker exec -e "MYSQL_PWD=$db_auth" "$container" mariadb -u root -N -B -e "$1"; }
 sql_stdin() { docker exec -e "MYSQL_PWD=$db_auth" -i "$container" mariadb -u root; }
 gate_run() {
   local roster_version="${1:?roster version is required}"
