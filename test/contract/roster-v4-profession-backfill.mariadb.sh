@@ -16,7 +16,10 @@ command -v docker >/dev/null 2>&1 || fail 'docker is required'
 test -r "$source_csv" || fail 'canonical source is missing'
 
 docker run -d --rm --name "$container" --label twow.contract=roster-v4 \
-  -e "MARIADB_ROOT_PASSWORD=$db_auth" mariadb:11.8 >/dev/null
+  -e "MARIADB_ROOT_PASSWORD=$db_auth" \
+  --health-cmd='healthcheck.sh --connect --innodb_initialized' \
+  --health-interval=1s --health-timeout=5s --health-retries=30 \
+  mariadb:11.8 >/dev/null
 for _ in $(seq 1 60); do
   health=$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null || true)
   [ "$health" = healthy ] && break
