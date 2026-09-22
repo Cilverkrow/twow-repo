@@ -62,3 +62,11 @@ set_target_properties(personality_policy_tests PROPERTIES
 add_test(NAME personality_policy
   COMMAND personality_policy_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+# The core performs its first config load before module WorldScripts are
+# registered. Guard the boot-time ordering that keeps BotBrain.Enable from
+# remaining at its compiled default until a later manual reload.
+add_test(NAME bot_brain_startup_config_contract
+  COMMAND "${CMAKE_COMMAND}"
+    -DBB_LOADER=${BB_MODULE_DIR}/src/mod_bot_brain_loader.cpp
+    -P ${BB_MODULE_DIR}/t/bot_brain_startup_config_contract.cmake)

@@ -55,6 +55,14 @@ namespace
 
         void OnStartup() override
         {
+            // World scripts are registered after the core's initial
+            // LoadConfigSettings() pass, so OnAfterConfigLoad() cannot seed
+            // this module's settings on first boot. Load them explicitly
+            // before consulting BotBrain.Enable. The config hook below remains
+            // the authoritative path for later reloads.
+            botbrain::LoadConfig();
+            botbrain::RefreshDialogueSettings();
+
             // Register unconditionally: the augmenter is what puts the travel
             // override in front of the stock one, and the override falls
             // through to stock behaviour whenever the feature is off. Doing it
