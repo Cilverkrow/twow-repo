@@ -90,8 +90,9 @@ INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM (SELECT index_name 
 -- The snapshot pointer and its complete, ordered prefix must match the operator-supplied version.
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM ai_playerbot_roster_current WHERE singleton_id=1 AND version_id=${ROSTER_V4_EXPECTED_ROSTER_VERSION}) = 1, 1, 0);
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM ai_playerbot_roster_member m JOIN ai_playerbot_roster_current c ON c.version_id=m.version_id JOIN roster_v4_target t ON t.ordinal=m.ordinal AND t.guid=m.character_guid WHERE c.singleton_id=1) = $EXPECTED_COUNT, 1, 0);
--- Every target must be a system random bot; a player or an arbitrary foreign GUID is rejected.
-INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM roster_v4_target t JOIN cv_bots.ai_playerbot_random_bots a ON a.owner=0 AND a.bot=t.guid AND a.event='add') = $EXPECTED_COUNT, 1, 0);
+-- The add event is transient: active random bots need not retain it. Prove
+-- system ownership from the persisted character account instead.
+INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM roster_v4_target t JOIN characters c ON c.guid=t.guid JOIN tw_logon.account a ON a.id=c.account AND a.username REGEXP '^RNDBOT[0-9]+$') = $EXPECTED_COUNT, 1, 0);
 -- Existing target events must already be structurally valid.  Do not repair ambiguous rows.
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM cv_bots.ai_playerbot_random_bots p JOIN roster_v4_target t ON t.guid=p.bot WHERE p.event='$EVENT_NAME' AND (p.owner<>0 OR p.validIn IS NULL OR p.validIn<>$EVENT_VALID_IN OR p.data IS NULL OR p.data<>'$EVENT_DATA' OR p.value IS NULL OR p.value NOT BETWEEN 1 AND 6)) = 0, 1, 0);
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM cv_bots.ai_playerbot_random_bots p JOIN roster_v4_target t ON t.guid=p.bot WHERE p.event='$EVENT_NAME') <= $EXPECTED_COUNT, 1, 0);

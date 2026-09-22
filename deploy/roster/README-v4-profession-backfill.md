@@ -23,7 +23,8 @@ make roster-v4-apply ROSTER_V4_MAINTENANCE=YES ROSTER_V4_EXPECTED_ROSTER_VERSION
 ```
 
 The transaction refuses a nonmatching current-roster pointer or prefix, a
-non-randombot/player target, invalid existing target events, duplicate/foreign
+non-randombot/player target (proved by the persisted character account name,
+not the transient `add` event), invalid existing target events, duplicate/foreign
 input GUIDs, invalid values, or a schema-contract mismatch.  It can only insert
 or update the `owner=0, event=profession_pair` row keyed to a verified target.
 All other event types and GUIDs are outside its SQL write path.  A zero-row
