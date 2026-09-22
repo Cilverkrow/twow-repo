@@ -6,7 +6,10 @@ repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 readonly source_csv="$repo/deploy/roster/v4-136-profession-prefix.csv"
 readonly gate='/roster-v4-profession-backfill.sh'
 readonly container="twow-roster-v4-contract-${GITHUB_RUN_ID:-local}-$$"
-readonly db_auth="contract-${container##*-}"
+readonly root_auth="contract-${container##*-}"
+readonly contract_user="roster_contract_${container##*-}"
+contract_auth=$(od -An -N 24 -tx1 /dev/urandom | tr -d ' \n')
+readonly contract_auth
 tmp=$(mktemp -d)
 trap 'docker rm -f "$container" >/dev/null 2>&1 || true; rm -rf "$tmp"' EXIT INT TERM
 
@@ -16,10 +19,13 @@ command -v docker >/dev/null 2>&1 || fail 'docker is required'
 test -r "$source_csv" || fail 'canonical source is missing'
 
 docker run -d --rm --name "$container" --label twow.contract=roster-v4 \
-  -e "MARIADB_ROOT_PASSWORD=$db_auth" mariadb:11.8 >/dev/null
+  -e "MARIADB_ROOT_PASSWORD=$root_auth" mariadb:11.8 >/dev/null
+root_sql() { docker exec -e "MYSQL_PWD=$root_auth" "$container" mariadb -u root -N -B -e "$1"; }
+root_sql_stdin() { docker exec -e "MYSQL_PWD=$root_auth" -i "$container" mariadb -u root; }
+contract_sql() { docker exec -e "MYSQL_PWD=$contract_auth" "$container" mariadb --protocol=tcp --host=127.0.0.1 --port=3306 --user="$contract_user" -N -B -e "$1"; }
 ready=0
 for _ in $(seq 1 60); do
-  if docker exec -e "MYSQL_PWD=$db_auth" "$container" mariadb -u root -N -B -e 'SELECT 1' >/dev/null 2>&1; then
+  if docker exec -e "MYSQL_PWD=$root_auth" "$container" mariadb -u root -N -B -e 'SELECT 1' >/dev/null 2>&1; then
     ready=1
     break
   fi
@@ -33,12 +39,12 @@ done
 [ "$ready" = 1 ] || { docker logs --tail 80 "$container" >&2 || true; fail 'disposable MariaDB did not accept connections before timeout'; }
 docker cp "$repo/deploy/compose/roster-v4-profession-backfill.sh" "$container:$gate"
 docker cp "$source_csv" "$container:/v4-136-profession-prefix.csv"
+root_sql "CREATE USER '$contract_user'@'%' IDENTIFIED BY '$contract_auth'; GRANT SELECT, INSERT, UPDATE, CREATE TEMPORARY TABLES ON tw_char.* TO '$contract_user'@'%'; GRANT SELECT, INSERT, UPDATE ON cv_bots.* TO '$contract_user'@'%'; FLUSH PRIVILEGES;"
+contract_sql 'SELECT 1' >/dev/null || fail 'TCP contract user did not authenticate after creation'
 
-sql() { docker exec -e "MYSQL_PWD=$db_auth" "$container" mariadb -u root -N -B -e "$1"; }
-sql_stdin() { docker exec -e "MYSQL_PWD=$db_auth" -i "$container" mariadb -u root; }
 gate_run() {
   local roster_version="${1:?roster version is required}"
-  docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e "DB_ROOT_PASSWORD=$db_auth" \
+  docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e "DB_USER=$contract_user" -e "DB_ROOT_PASSWORD=$contract_auth" \
     -e ROSTER_V4_MAINTENANCE=YES -e "ROSTER_V4_EXPECTED_ROSTER_VERSION=$roster_version" \
     -e ROSTER_V4_SOURCE=/v4-136-profession-prefix.csv \
     "$container" bash "$gate"
@@ -77,7 +83,7 @@ SQL
       printf "INSERT INTO tw_char.ai_playerbot_roster_member VALUES (42,%s,%s);\n", $1, $2;
       printf "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,%s,1,4294967295,\047add\047,NULL,NULL);\n", $2;
     }' "$source_csv"
-  } | sql_stdin
+  } | root_sql_stdin
 }
 
 expected_target() {
@@ -91,10 +97,10 @@ expected_target() {
   ' "$source_csv" | sort -t'|' -k2,2n
 }
 actual_target() {
-  sql "SELECT CONCAT(owner,'|',bot,'|',validIn,'|',event,'|',value,'|',data) FROM cv_bots.ai_playerbot_random_bots WHERE owner=0 AND event='profession_pair' AND bot<>999 ORDER BY bot;" | sort -t'|' -k2,2n
+  contract_sql "SELECT CONCAT(owner,'|',bot,'|',validIn,'|',event,'|',value,'|',data) FROM cv_bots.ai_playerbot_random_bots WHERE owner=0 AND event='profession_pair' AND bot<>999 ORDER BY bot;" | sort -t'|' -k2,2n
 }
 snapshot() {
-  sql "SELECT CONCAT('E|',owner,'|',bot,'|',time,'|',COALESCE(validIn,'NULL'),'|',event,'|',COALESCE(value,'NULL'),'|',COALESCE(data,'NULL')) FROM cv_bots.ai_playerbot_random_bots WHERE bot=999 OR event<>'profession_pair' ORDER BY id; SELECT CONCAT('T|',guid,'|',spell) FROM tw_char.character_talent; SELECT CONCAT('Q|',guid,'|',quest) FROM tw_char.character_queststatus; SELECT CONCAT('I|',guid,'|',item) FROM tw_char.character_inventory; SELECT CONCAT('S|',guid,'|',skill) FROM tw_char.character_skills;"
+  contract_sql "SELECT CONCAT('E|',owner,'|',bot,'|',time,'|',COALESCE(validIn,'NULL'),'|',event,'|',COALESCE(value,'NULL'),'|',COALESCE(data,'NULL')) FROM cv_bots.ai_playerbot_random_bots WHERE bot=999 OR event<>'profession_pair' ORDER BY id; SELECT CONCAT('T|',guid,'|',spell) FROM tw_char.character_talent; SELECT CONCAT('Q|',guid,'|',quest) FROM tw_char.character_queststatus; SELECT CONCAT('I|',guid,'|',item) FROM tw_char.character_inventory; SELECT CONCAT('S|',guid,'|',skill) FROM tw_char.character_skills;"
 }
 expect_fail_atomic() {
   local label="$1"; shift
@@ -115,15 +121,15 @@ gate_run 42 | grep -q 'ROSTER_V4_GATE=NOOP' || fail 'second canonical apply did 
 pass 'canonical APPLY and repeat NOOP preserve state'
 
 fixture; expect_fail_atomic wrong-roster-version gate_run 43
-fixture; sql "UPDATE tw_char.ai_playerbot_roster_member SET character_guid=100001 WHERE version_id=42 AND ordinal=1;"
+fixture; root_sql "UPDATE tw_char.ai_playerbot_roster_member SET character_guid=100001 WHERE version_id=42 AND ordinal=1;"
 expect_fail_atomic roster-order-guid-deviation gate_run 42
-fixture; sql "DELETE FROM cv_bots.ai_playerbot_random_bots WHERE owner=0 AND bot=50 AND event='add';"
+fixture; root_sql "DELETE FROM cv_bots.ai_playerbot_random_bots WHERE owner=0 AND bot=50 AND event='add';"
 expect_fail_atomic missing-add-event gate_run 42
-fixture; sql "UPDATE cv_bots.ai_playerbot_random_bots SET owner=77 WHERE owner=0 AND bot=50 AND event='add';"
+fixture; root_sql "UPDATE cv_bots.ai_playerbot_random_bots SET owner=77 WHERE owner=0 AND bot=50 AND event='add';"
 expect_fail_atomic foreign-bot-or-player gate_run 42
-fixture; sql "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,50,1,4294967295,'profession_pair',99,'v1');"
+fixture; root_sql "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,50,1,4294967295,'profession_pair',99,'v1');"
 expect_fail_atomic invalid-existing-profession-pair gate_run 42
-fixture; sql "ALTER TABLE cv_bots.ai_playerbot_random_bots DROP INDEX uq_owner_bot_event;"
+fixture; root_sql "ALTER TABLE cv_bots.ai_playerbot_random_bots DROP INDEX uq_owner_bot_event;"
 expect_fail_atomic missing-owner-bot-event-unique-key gate_run 42
 
 fixture
@@ -134,7 +140,7 @@ awk -F, '
     if (p=="Mining/Jewelcrafting") return 5; if (p=="Tailoring/Enchanting") return 6; exit 1
   }
   NR > 1 && NR <= 31 { printf "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,%s,1,4294967295,\047profession_pair\047,%s,\047v1\047);\n", $2, value($10) }
-' "$source_csv" | sql_stdin
+' "$source_csv" | root_sql_stdin
 gate_run 42 | grep -q 'ROSTER_V4_GATE=APPLIED' || fail 'partial target completion did not apply'
 diff -u <(expected_target) <(actual_target) || fail 'partial target was not completed exactly'
 pass 'partial target is completed exactly'

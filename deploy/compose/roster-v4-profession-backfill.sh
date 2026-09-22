@@ -40,6 +40,7 @@ validate_source() {
 main() {
     local source="${ROSTER_V4_SOURCE:-/roster/v4-136-profession-prefix.csv}"
     local schema="${TWOW_CHAR_SCHEMA:-tw_char}"
+    local db_user="${DB_USER:-root}"
     local work target sql tuples changes
     work=$(mktemp -d)
     trap 'rm -rf "${work:-}"' EXIT INT TERM
@@ -107,7 +108,7 @@ INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM roster_v4_target t 
 COMMIT;
 SELECT @roster_v4_changes;
 SQL
-    changes=$(mariadb --protocol=tcp --host="$DB_HOST" --port="${DB_PORT:-3306}" --user=root "--password=$DB_ROOT_PASSWORD" --batch --skip-column-names "$schema" < "$sql" | tail -n 1) || die 'preflight or atomic profession_pair application failed; transaction was not committed'
+    changes=$(mariadb --protocol=tcp --host="$DB_HOST" --port="${DB_PORT:-3306}" --user="$db_user" "--password=$DB_ROOT_PASSWORD" --batch --skip-column-names "$schema" < "$sql" | tail -n 1) || die 'preflight or atomic profession_pair application failed; transaction was not committed'
     [[ "$changes" =~ ^[0-9]+$ ]] || die 'database did not return a change count'
     if [ "$changes" = 0 ]; then
         printf 'ROSTER_V4_GATE=NOOP count=%s roster_version=%s\n' "$EXPECTED_COUNT" "$ROSTER_V4_EXPECTED_ROSTER_VERSION"
