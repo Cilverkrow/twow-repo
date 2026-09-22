@@ -28,11 +28,13 @@ done
 sql() { docker exec -e "MYSQL_PWD=$db_auth" "$container" mariadb -u root -N -B "$@"; }
 sql_stdin() { docker exec -e "MYSQL_PWD=$db_auth" -i "$container" mariadb -u root; }
 gate_run() {
+  local roster_version="${ROSTER_V4_TEST_VERSION:-42}"
   docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e "DB_ROOT_PASSWORD=$db_auth" \
-    -e ROSTER_V4_MAINTENANCE=YES -e "ROSTER_V4_EXPECTED_ROSTER_VERSION=${1:-42}" \
+    -e ROSTER_V4_MAINTENANCE=YES -e "ROSTER_V4_EXPECTED_ROSTER_VERSION=$roster_version" \
     -e ROSTER_V4_SOURCE=/repo/deploy/roster/v4-136-profession-prefix.csv \
     "$container" bash "$gate"
 }
+wrong_roster_version() { ROSTER_V4_TEST_VERSION=43 gate_run; }
 
 fixture() {
   {
@@ -104,7 +106,7 @@ gate_run | grep -q 'ROSTER_V4_GATE=NOOP' || fail 'second canonical apply did not
 [ "$after_apply" = "$(snapshot; actual_target)" ] || fail 'second run changed target or sentinels'
 pass 'canonical APPLY and repeat NOOP preserve state'
 
-fixture; expect_fail_atomic wrong-roster-version gate_run 43
+fixture; expect_fail_atomic wrong-roster-version wrong_roster_version
 fixture; sql "UPDATE tw_char.ai_playerbot_roster_member SET character_guid=100001 WHERE version_id=42 AND ordinal=1;"
 expect_fail_atomic roster-order-guid-deviation gate_run
 fixture; sql "DELETE FROM cv_bots.ai_playerbot_random_bots WHERE owner=0 AND bot=50 AND event='add';"
