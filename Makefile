@@ -18,7 +18,7 @@ HELM_CHART   := deploy/helm/twow
 # resolves it; the guard below resolves it the same way rather than guessing.
 DATA_PATH ?= ./data
 
-.PHONY: help up down restart logs ps console smoke test build extract clean config config-verify check-env check-core check-data helm-lint
+.PHONY: help up down restart logs ps console smoke test build extract clean config config-verify check-env check-core check-data helm-lint roster-v4-apply roster-v4-contract-test
 
 help: ## Show this help
 	@echo "Tortoise-WoW -- make targets"
@@ -118,6 +118,20 @@ extract: check-env ## Extract client data (tools profile; mmaps take hours)
 		echo "  Set CLIENT_PATH in $(ENV_FILE) to a Turtle WoW 1.18.1 build 7272 client."; \
 		exit 1; }
 	@$(COMPOSE) --profile tools run --rm extractor
+
+# ---------------------------------------------------------------- maintenance
+
+roster-v4-contract-test: ## Run the hermetic V4 profession-backfill contract checks
+	@bash test/contract/roster-v4-profession-backfill.contract.sh
+
+roster-v4-apply: check-env ## Explicitly apply the verified V4 profession plan before world startup
+	@[ "$(ROSTER_V4_MAINTENANCE)" = "YES" ] || { echo "ERROR: use ROSTER_V4_MAINTENANCE=YES"; exit 1; }
+	@[ -n "$(ROSTER_V4_EXPECTED_ROSTER_VERSION)" ] || { echo "ERROR: set the verified ROSTER_V4_EXPECTED_ROSTER_VERSION"; exit 1; }
+	@for s in realmd mangosd; do \
+		[ -z "$$($(COMPOSE) ps -q $$s)" ] || { echo "ERROR: $$s is running; stop the stack before this maintenance gate"; exit 1; }; \
+	done
+	@$(COMPOSE) up -d db
+	@$(COMPOSE) --profile maintenance run --rm --no-deps roster-v4-maintenance
 
 # ---------------------------------------------------------------- validation
 

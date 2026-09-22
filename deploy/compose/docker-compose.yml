@@ -205,6 +205,30 @@ services:
     stop_grace_period: 180s
     logging: *default-logging
 
+  roster-v4-maintenance:
+    # Deliberately opt-in.  This is not a bootstrap migration and `make up`
+    # never enables the maintenance profile.  The Make target also refuses to
+    # run it while either server service exists, so the core cannot learn a
+    # partially changed plan.
+    profiles: ["maintenance"]
+    image: mariadb:11.8
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?}
+      TWOW_CHAR_SCHEMA: ${TWOW_CHAR_SCHEMA:-tw_char}
+      ROSTER_V4_MAINTENANCE: ${ROSTER_V4_MAINTENANCE:-}
+      ROSTER_V4_EXPECTED_ROSTER_VERSION: ${ROSTER_V4_EXPECTED_ROSTER_VERSION:-}
+    volumes:
+      - ./roster-v4-profession-backfill.sh:/usr/local/bin/roster-v4-profession-backfill.sh:ro
+      - ../roster/v4-136-profession-prefix.csv:/roster/v4-136-profession-prefix.csv:ro
+    entrypoint: ["/bin/bash", "/usr/local/bin/roster-v4-profession-backfill.sh"]
+    restart: "no"
+    logging: *default-logging
+
   # ------------------------------------------------------------------ profiles
 
   extractor:
