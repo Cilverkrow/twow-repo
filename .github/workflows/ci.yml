@@ -531,6 +531,12 @@ jobs:
           find ops deploy sql -name '*.sh' -print0 2>/dev/null \
             | xargs -0 -r shellcheck --severity=warning
 
+      - name: V4 profession backfill MariaDB contract matrix
+        if: always()
+        run: |
+          shellcheck --severity=warning test/contract/roster-v4-profession-backfill.mariadb.sh
+          bash test/contract/roster-v4-profession-backfill.mariadb.sh
+
       # The issue importer has created duplicates or silently no-opped four
       # times: title matching (27 duplicates), `--state open` in the existence
       # check (REF-001/REF-002 refiled as #85/#86 after #79/#80 were closed),
