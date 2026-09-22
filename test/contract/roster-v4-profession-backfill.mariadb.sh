@@ -4,7 +4,7 @@ set -euo pipefail
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 readonly source_csv="$repo/deploy/roster/v4-136-profession-prefix.csv"
-readonly gate='/repo/deploy/compose/roster-v4-profession-backfill.sh'
+readonly gate='/roster-v4-profession-backfill.sh'
 readonly container="twow-roster-v4-contract-${GITHUB_RUN_ID:-local}-$$"
 readonly db_auth="contract-${container##*-}"
 tmp=$(mktemp -d)
@@ -16,7 +16,7 @@ command -v docker >/dev/null 2>&1 || fail 'docker is required'
 test -r "$source_csv" || fail 'canonical source is missing'
 
 docker run -d --rm --name "$container" --label twow.contract=roster-v4 \
-  -e "MARIADB_ROOT_PASSWORD=$db_auth" -v "$repo:/repo:ro" mariadb:11.8 >/dev/null
+  -e "MARIADB_ROOT_PASSWORD=$db_auth" mariadb:11.8 >/dev/null
 for _ in $(seq 1 60); do
   health=$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null || true)
   [ "$health" = healthy ] && break
@@ -24,17 +24,18 @@ for _ in $(seq 1 60); do
   sleep 1
 done
 [ "${health:-}" = healthy ] || fail 'disposable MariaDB did not become healthy'
+docker cp "$repo/deploy/compose/roster-v4-profession-backfill.sh" "$container:$gate"
+docker cp "$source_csv" "$container:/v4-136-profession-prefix.csv"
 
 sql() { docker exec -e "MYSQL_PWD=$db_auth" "$container" mariadb -u root -N -B "$@"; }
 sql_stdin() { docker exec -e "MYSQL_PWD=$db_auth" -i "$container" mariadb -u root; }
 gate_run() {
-  local roster_version="${ROSTER_V4_TEST_VERSION:-42}"
+  local roster_version="${1:?roster version is required}"
   docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e "DB_ROOT_PASSWORD=$db_auth" \
     -e ROSTER_V4_MAINTENANCE=YES -e "ROSTER_V4_EXPECTED_ROSTER_VERSION=$roster_version" \
-    -e ROSTER_V4_SOURCE=/repo/deploy/roster/v4-136-profession-prefix.csv \
+    -e ROSTER_V4_SOURCE=/v4-136-profession-prefix.csv \
     "$container" bash "$gate"
 }
-wrong_roster_version() { ROSTER_V4_TEST_VERSION=43 gate_run; }
 
 fixture() {
   {
@@ -99,24 +100,24 @@ expect_fail_atomic() {
 }
 
 fixture
-gate_run | grep -q 'ROSTER_V4_GATE=APPLIED' || fail 'canonical apply did not report APPLIED'
+gate_run 42 | grep -q 'ROSTER_V4_GATE=APPLIED' || fail 'canonical apply did not report APPLIED'
 diff -u <(expected_target) <(actual_target) || fail 'canonical apply target values differ'
 after_apply=$(snapshot; actual_target)
-gate_run | grep -q 'ROSTER_V4_GATE=NOOP' || fail 'second canonical apply did not report NOOP'
+gate_run 42 | grep -q 'ROSTER_V4_GATE=NOOP' || fail 'second canonical apply did not report NOOP'
 [ "$after_apply" = "$(snapshot; actual_target)" ] || fail 'second run changed target or sentinels'
 pass 'canonical APPLY and repeat NOOP preserve state'
 
-fixture; expect_fail_atomic wrong-roster-version wrong_roster_version
+fixture; expect_fail_atomic wrong-roster-version gate_run 43
 fixture; sql "UPDATE tw_char.ai_playerbot_roster_member SET character_guid=100001 WHERE version_id=42 AND ordinal=1;"
-expect_fail_atomic roster-order-guid-deviation gate_run
+expect_fail_atomic roster-order-guid-deviation gate_run 42
 fixture; sql "DELETE FROM cv_bots.ai_playerbot_random_bots WHERE owner=0 AND bot=50 AND event='add';"
-expect_fail_atomic missing-add-event gate_run
+expect_fail_atomic missing-add-event gate_run 42
 fixture; sql "UPDATE cv_bots.ai_playerbot_random_bots SET owner=77 WHERE owner=0 AND bot=50 AND event='add';"
-expect_fail_atomic foreign-bot-or-player gate_run
+expect_fail_atomic foreign-bot-or-player gate_run 42
 fixture; sql "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,50,1,4294967295,'profession_pair',99,'v1');"
-expect_fail_atomic invalid-existing-profession-pair gate_run
+expect_fail_atomic invalid-existing-profession-pair gate_run 42
 fixture; sql "ALTER TABLE cv_bots.ai_playerbot_random_bots DROP INDEX uq_owner_bot_event;"
-expect_fail_atomic missing-owner-bot-event-unique-key gate_run
+expect_fail_atomic missing-owner-bot-event-unique-key gate_run 42
 
 fixture
 awk -F, '
@@ -127,13 +128,13 @@ awk -F, '
   }
   NR > 1 && NR <= 31 { printf "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,%s,1,4294967295,\047profession_pair\047,%s,\047v1\047);\n", $2, value($10) }
 ' "$source_csv" | sql_stdin
-gate_run | grep -q 'ROSTER_V4_GATE=APPLIED' || fail 'partial target completion did not apply'
+gate_run 42 | grep -q 'ROSTER_V4_GATE=APPLIED' || fail 'partial target completion did not apply'
 diff -u <(expected_target) <(actual_target) || fail 'partial target was not completed exactly'
 pass 'partial target is completed exactly'
 
 fixture
 before=$(snapshot)
-gate_run | grep -q 'ROSTER_V4_GATE=APPLIED' || fail 'non-target protection apply failed'
+gate_run 42 | grep -q 'ROSTER_V4_GATE=APPLIED' || fail 'non-target protection apply failed'
 [ "$before" = "$(snapshot)" ] || fail 'non-target events or character state changed'
 pass 'non-target GUIDs, other events, talents, quests, inventory and skills are unchanged'
 printf 'ROSTER_V4_MARIADB_CONTRACT_MATRIX=PASS\n'
