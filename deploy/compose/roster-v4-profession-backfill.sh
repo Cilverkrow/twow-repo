@@ -18,20 +18,8 @@ sha256() {
     else shasum -a 256 "$1" | awk '{print toupper($1)}'; fi
 }
 
-pair_value() {
-    case "$1" in
-        Herbalism/Alchemy) echo 1 ;;
-        Skinning/Leatherworking) echo 2 ;;
-        Mining/Blacksmithing) echo 3 ;;
-        Mining/Engineering) echo 4 ;;
-        Mining/Jewelcrafting) echo 5 ;;
-        Tailoring/Enchanting) echo 6 ;;
-        *) return 1 ;;
-    esac
-}
-
 validate_source() {
-    local source="$1" out="$2" actual header count
+    local source="$1" out="$2" actual header
     [ -r "$source" ] || die "canonical source is unreadable: $source"
     actual=$(sha256 "$source")
     [ "$actual" = "$SOURCE_PREFIX_SHA256" ] || die "canonical prefix SHA-256 mismatch ($actual)"
@@ -52,7 +40,7 @@ validate_source() {
 main() {
     local source="${ROSTER_V4_SOURCE:-/roster/v4-136-profession-prefix.csv}"
     local schema="${TWOW_CHAR_SCHEMA:-tw_char}"
-    local work target sql tuples actual changes
+    local work target sql tuples changes
     work=$(mktemp -d)
     trap 'rm -rf "${work:-}"' EXIT INT TERM
     target="$work/target.tsv"
@@ -97,6 +85,7 @@ INSERT INTO roster_v4_target (ordinal,guid,value) VALUES $tuples;
 CREATE TEMPORARY TABLE roster_v4_assert (ok TINYINT NOT NULL CHECK (ok = 1)) ENGINE=InnoDB;
 -- Schema/unique-key contract: this gate relies on exactly one owner/bot/event row.
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='cv_bots' AND table_name='ai_playerbot_random_bots' AND column_name IN ('owner','bot','time','validIn','event','value','data')) = 7, 1, 0);
+INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM (SELECT index_name FROM information_schema.statistics WHERE table_schema='cv_bots' AND table_name='ai_playerbot_random_bots' GROUP BY index_name HAVING MIN(non_unique)=0 AND COUNT(*)=3 AND GROUP_CONCAT(column_name ORDER BY seq_in_index SEPARATOR ',')='owner,bot,event') AS required_owner_bot_event_key) = 1, 1, 0);
 -- The snapshot pointer and its complete, ordered prefix must match the operator-supplied version.
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM ai_playerbot_roster_current WHERE singleton_id=1 AND version_id=${ROSTER_V4_EXPECTED_ROSTER_VERSION}) = 1, 1, 0);
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM ai_playerbot_roster_member m JOIN ai_playerbot_roster_current c ON c.version_id=m.version_id JOIN roster_v4_target t ON t.ordinal=m.ordinal AND t.guid=m.character_guid WHERE c.singleton_id=1) = $EXPECTED_COUNT, 1, 0);
