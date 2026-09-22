@@ -19,7 +19,7 @@ docker run -d --rm --name "$container" --label twow.contract=roster-v4 \
   -e "MARIADB_ROOT_PASSWORD=$db_auth" mariadb:11.8 >/dev/null
 ready=0
 for _ in $(seq 1 60); do
-  if docker exec -e "MYSQL_PWD=$db_auth" "$container" mariadb-admin -u root ping --silent >/dev/null 2>&1; then
+  if docker exec -e "MYSQL_PWD=$db_auth" "$container" mariadb -u root -N -B -e 'SELECT 1' >/dev/null 2>&1; then
     ready=1
     break
   fi
