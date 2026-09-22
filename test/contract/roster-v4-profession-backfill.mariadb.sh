@@ -39,7 +39,7 @@ done
 [ "$ready" = 1 ] || { docker logs --tail 80 "$container" >&2 || true; fail 'disposable MariaDB did not accept connections before timeout'; }
 docker cp "$repo/deploy/compose/roster-v4-profession-backfill.sh" "$container:$gate"
 docker cp "$source_csv" "$container:/v4-136-profession-prefix.csv"
-root_sql "CREATE USER '$contract_user'@'%' IDENTIFIED BY '$contract_auth'; GRANT SELECT, INSERT, UPDATE, CREATE TEMPORARY TABLES ON tw_char.* TO '$contract_user'@'%'; GRANT SELECT, INSERT, UPDATE ON cv_bots.* TO '$contract_user'@'%'; FLUSH PRIVILEGES;"
+root_sql "CREATE USER '$contract_user'@'%' IDENTIFIED BY '$contract_auth'; GRANT SELECT, INSERT, UPDATE, CREATE TEMPORARY TABLES ON tw_char.* TO '$contract_user'@'%'; GRANT SELECT ON tw_logon.* TO '$contract_user'@'%'; GRANT SELECT, INSERT, UPDATE ON cv_bots.* TO '$contract_user'@'%'; FLUSH PRIVILEGES;"
 contract_sql 'SELECT 1' >/dev/null || fail 'TCP contract user did not authenticate after creation'
 
 gate_run() {
@@ -55,10 +55,14 @@ fixture() {
     cat <<'SQL'
 DROP DATABASE IF EXISTS tw_char;
 DROP DATABASE IF EXISTS cv_bots;
+DROP DATABASE IF EXISTS tw_logon;
 CREATE DATABASE tw_char;
 CREATE DATABASE cv_bots;
+CREATE DATABASE tw_logon;
 CREATE TABLE tw_char.ai_playerbot_roster_current (singleton_id TINYINT NOT NULL PRIMARY KEY, version_id BIGINT NOT NULL);
 CREATE TABLE tw_char.ai_playerbot_roster_member (version_id BIGINT NOT NULL, ordinal INT NOT NULL, character_guid BIGINT UNSIGNED NOT NULL, PRIMARY KEY(version_id, ordinal));
+CREATE TABLE tw_char.characters (guid BIGINT UNSIGNED NOT NULL PRIMARY KEY, account BIGINT UNSIGNED NOT NULL);
+CREATE TABLE tw_logon.account (id BIGINT UNSIGNED NOT NULL PRIMARY KEY, username VARCHAR(32) NOT NULL);
 CREATE TABLE tw_char.character_talent (guid BIGINT UNSIGNED NOT NULL, spell BIGINT NOT NULL);
 CREATE TABLE tw_char.character_queststatus (guid BIGINT UNSIGNED NOT NULL, quest BIGINT NOT NULL);
 CREATE TABLE tw_char.character_inventory (guid BIGINT UNSIGNED NOT NULL, item BIGINT NOT NULL);
@@ -70,18 +74,19 @@ CREATE TABLE cv_bots.ai_playerbot_random_bots (
   UNIQUE KEY uq_owner_bot_event (owner, bot, event)
 );
 INSERT INTO tw_char.ai_playerbot_roster_current VALUES (1,42);
+INSERT INTO tw_logon.account VALUES (1,'RNDBOT1'),(2,'PLAYER1');
+INSERT INTO tw_char.characters VALUES (999,2);
 INSERT INTO tw_char.character_talent VALUES (999,11);
 INSERT INTO tw_char.character_queststatus VALUES (999,22);
 INSERT INTO tw_char.character_inventory VALUES (999,33);
 INSERT INTO tw_char.character_skills VALUES (999,44);
 INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES
   (0,999,1,4294967295,'profession_pair',6,'v1'),
-  (0,999,1,4294967295,'add',NULL,NULL),
   (0,50,1,4294967295,'strategy',17,'sentinel');
 SQL
     awk -F, 'NR > 1 {
       printf "INSERT INTO tw_char.ai_playerbot_roster_member VALUES (42,%s,%s);\n", $1, $2;
-      printf "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,%s,1,4294967295,\047add\047,NULL,NULL);\n", $2;
+      printf "INSERT INTO tw_char.characters VALUES (%s,1);\n", $2;
     }' "$source_csv"
   } | root_sql_stdin
 }
@@ -100,7 +105,7 @@ actual_target() {
   contract_sql "SELECT CONCAT(owner,'|',bot,'|',validIn,'|',event,'|',value,'|',data) FROM cv_bots.ai_playerbot_random_bots WHERE owner=0 AND event='profession_pair' AND bot<>999 ORDER BY bot;" | sort -t'|' -k2,2n
 }
 snapshot() {
-  contract_sql "SELECT CONCAT('E|',owner,'|',bot,'|',time,'|',COALESCE(validIn,'NULL'),'|',event,'|',COALESCE(value,'NULL'),'|',COALESCE(data,'NULL')) FROM cv_bots.ai_playerbot_random_bots WHERE bot=999 OR event<>'profession_pair' ORDER BY id; SELECT CONCAT('T|',guid,'|',spell) FROM tw_char.character_talent; SELECT CONCAT('Q|',guid,'|',quest) FROM tw_char.character_queststatus; SELECT CONCAT('I|',guid,'|',item) FROM tw_char.character_inventory; SELECT CONCAT('S|',guid,'|',skill) FROM tw_char.character_skills;"
+  contract_sql "SELECT CONCAT('E|',owner,'|',bot,'|',time,'|',COALESCE(validIn,'NULL'),'|',event,'|',COALESCE(value,'NULL'),'|',COALESCE(data,'NULL')) FROM cv_bots.ai_playerbot_random_bots WHERE bot=999 OR event<>'profession_pair' ORDER BY id; SELECT CONCAT('C|',guid,'|',account) FROM tw_char.characters ORDER BY guid; SELECT CONCAT('A|',id,'|',username) FROM tw_logon.account ORDER BY id; SELECT CONCAT('T|',guid,'|',spell) FROM tw_char.character_talent; SELECT CONCAT('Q|',guid,'|',quest) FROM tw_char.character_queststatus; SELECT CONCAT('I|',guid,'|',item) FROM tw_char.character_inventory; SELECT CONCAT('S|',guid,'|',skill) FROM tw_char.character_skills;"
 }
 expect_fail_atomic() {
   local label="$1"; shift
@@ -123,9 +128,9 @@ pass 'canonical APPLY and repeat NOOP preserve state'
 fixture; expect_fail_atomic wrong-roster-version gate_run 43
 fixture; root_sql "UPDATE tw_char.ai_playerbot_roster_member SET character_guid=100001 WHERE version_id=42 AND ordinal=1;"
 expect_fail_atomic roster-order-guid-deviation gate_run 42
-fixture; root_sql "DELETE FROM cv_bots.ai_playerbot_random_bots WHERE owner=0 AND bot=50 AND event='add';"
-expect_fail_atomic missing-add-event gate_run 42
-fixture; root_sql "UPDATE cv_bots.ai_playerbot_random_bots SET owner=77 WHERE owner=0 AND bot=50 AND event='add';"
+fixture; root_sql "DELETE FROM tw_char.characters WHERE guid=50;"
+expect_fail_atomic missing-character-identity gate_run 42
+fixture; root_sql "UPDATE tw_char.characters SET account=2 WHERE guid=50;"
 expect_fail_atomic foreign-bot-or-player gate_run 42
 fixture; root_sql "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,50,1,4294967295,'profession_pair',99,'v1');"
 expect_fail_atomic invalid-existing-profession-pair gate_run 42

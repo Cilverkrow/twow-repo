@@ -24,7 +24,8 @@ cp "$source_csv" "$tmp/invalid-pair.csv"; sed -i '2s/Herbalism\/Alchemy/Bad\/Pai
 expect_fail env ROSTER_V4_SOURCE="$tmp/invalid-pair.csv" "$gate" --validate-source; pass 'invalid pair fails closed'
 grep -q 'START TRANSACTION;' "$gate" && grep -q 'COMMIT;' "$gate" || fail 'atomic transaction contract missing'
 grep -q "p.event='\$EVENT_NAME'" "$gate" || fail 'event scope missing'
-grep -q 'a.owner=0 AND a.bot=t.guid AND a.event=' "$gate" || fail 'foreign/player target rejection missing'
+grep -q 'JOIN characters c ON c.guid=t.guid JOIN tw_logon.account a' "$gate" &&
+  grep -q 'RNDBOT\[0-9\]' "$gate" || fail 'persistent system-account target rejection missing'
 grep -q 'ai_playerbot_roster_member m JOIN ai_playerbot_roster_current' "$gate" || fail 'active-roster prefix identity check missing'
 grep -q 'p.validIn IS NULL' "$gate" && grep -q 'p.value IS NULL' "$gate" || fail 'ambiguous existing event rejection missing'
 grep -q 'LEFT JOIN cv_bots.ai_playerbot_random_bots p ON p.owner=0 AND p.bot=t.guid' "$gate" || fail 'keyed target update missing'
