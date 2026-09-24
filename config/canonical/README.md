@@ -29,8 +29,9 @@ their modules are their sole authoritative owners. `BOT_BRAIN_ENABLE` in
 The base templates are complete and move with the server source. The overlays
 contain every verified non-secret semantic deviation needed to retain the
 sanitized project baseline, plus reviewed Compose path changes. The complete
-130-row classification is `compose/semantic-baseline.tsv`: 89 `KEEP`, 25
-`INTENTIONAL_CHANGE`, 10 `DEPRECATED_OR_REMOVED`, and 6 `MACHINE_SECRET` entries.
+classification is `compose/semantic-baseline.tsv` (`KEEP`,
+`INTENTIONAL_CHANGE`, `DEPRECATED_OR_REMOVED`, `MACHINE_SECRET`); its rows are
+the only count, and `ops/config/test-config-provenance.sh` checks each row.
 
 The protected machine input in `deploy/compose/.env` supplies database
 credentials, the optional PlayerBot LLM API key, published ports, and the bot

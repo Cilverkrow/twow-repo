@@ -1,8 +1,6 @@
 # OPS-009-R1 sanitized semantic matrix; no configuration values or secrets.
-# Counts: KEEP=89 INTENTIONAL_CHANGE=25 DEPRECATED_OR_REMOVED=10 MACHINE_SECRET=6 TOTAL=130
-# This line is prose: nothing parses it, and it had already drifted from the
-# rows below once. The counts that are enforced are the literals in
-# ops/config/test-config-provenance.sh's assert_matrix; keep the two in step.
+# No counts are kept here or in the test (#230): the rows are the only count.
+# ops/config/test-config-provenance.sh validates structure and every row.
 service	key	classification	canonical_source	evidence
 aiplayerbot	AiPlayerbot.AutoLearnDroppedSpells	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.AutoLearnQuestSpells	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline

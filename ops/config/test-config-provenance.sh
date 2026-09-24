@@ -104,6 +104,9 @@ assert_no_duplicate_keys() {
     }
 }
 
+# Structure only. Row counts are deliberately not asserted (#230): a hardcoded
+# count caught nothing but intentional row changes, and its copies drifted.
+# What a row means is checked per row by assert_semantics.
 assert_matrix() {
     awk -F '\t' '
         /^#/ { next }
@@ -114,15 +117,9 @@ assert_matrix() {
             if (seen[identity]++) exit 11
             if ($3 != "KEEP" && $3 != "INTENTIONAL_CHANGE" &&
                 $3 != "DEPRECATED_OR_REMOVED" && $3 != "MACHINE_SECRET") exit 12
-            count[$3]++
             total++
         }
-        END {
-            if (total != 130 || count["KEEP"] != 89 ||
-                count["INTENTIONAL_CHANGE"] != 25 ||
-                count["DEPRECATED_OR_REMOVED"] != 10 ||
-                count["MACHINE_SECRET"] != 6) exit 13
-        }
+        END { if (!total) exit 13 }
     ' "$MATRIX" || { echo "ERROR: semantic matrix is incomplete or malformed" >&2; exit 1; }
 }
 
@@ -295,6 +292,46 @@ assert_rendered_contract() {
     assert_semantics
 }
 
+# Every profile row is rendered exactly once with the value its overlay states,
+# and every overlay key has a row. The approved values live in the reviewed
+# overlay only, never as a second copy in this test (#230, #321).
+assert_profile_semantics() {
+    local profile_dir=$1
+    local service key classification canonical_source evidence name overlay expected
+    while IFS=$'\t' read -r service key classification canonical_source evidence; do
+        [[ "$service" == service || "$service" == \#* || -z "$service" ]] && continue
+        case "$service" in
+            mangosd) name=mangosd.conf ;;
+            aiplayerbot) name=aiplayerbot.conf ;;
+            bot-brain) name=mod_bot_brain.conf ;;
+            *) echo "ERROR: unknown profile-matrix service: $service" >&2; exit 1 ;;
+        esac
+        overlay="$profile_dir/$canonical_source"
+        [[ -f "$overlay" && "$(key_count "$overlay" "$key")" == 1 ]] || {
+            echo "ERROR: profile row has no unique overlay source: $key" >&2
+            exit 1
+        }
+        expected=$(key_value "$overlay" "$key")
+        assert_key_once "$CONFIG_OUT_DIR/$name" "$key"
+        [[ "$(key_value "$CONFIG_OUT_DIR/$name" "$key")" == "$expected" ]] || {
+            echo "ERROR: profile value not rendered as approved: $key" >&2
+            exit 1
+        }
+        [[ -n "$evidence" ]]
+    done < "$profile_dir/semantic-profile.tsv"
+
+    for overlay in "$profile_dir"/*.overlay.conf; do
+        list_keys "$overlay" | while IFS= read -r key; do
+            awk -F '\t' -v key="$key" -v src="$(basename "$overlay")" '
+                $2 == key && $4 == src { found=1 } END { exit !found }
+            ' "$profile_dir/semantic-profile.tsv" || {
+                echo "ERROR: profile overlay key has no semantic-profile row: $key" >&2
+                exit 1
+            }
+        done
+    done
+}
+
 assert_funserver_test_profile() {
     local profile_dir="$ROOT/config/canonical/profiles/funserver-test"
 
@@ -302,8 +339,8 @@ assert_funserver_test_profile() {
         /^#/ || $1 == "service" || $1 == "" { next }
         NF != 5 || $3 != "INTENTIONAL_CHANGE" { exit 10 }
         seen[$1 SUBSEP $2]++ { exit 11 }
-        count++
-        END { exit !(count == 28) }
+        { count++ }
+        END { if (!count) exit 12 }
     ' "$profile_dir/semantic-profile.tsv" || {
         echo "ERROR: funserver test profile matrix is malformed" >&2
         exit 1
@@ -322,40 +359,7 @@ assert_funserver_test_profile() {
     assert_overlay_keys_once "$profile_dir/mangosd.overlay.conf" "$CONFIG_OUT_DIR/mangosd.conf"
     assert_overlay_keys_once "$profile_dir/aiplayerbot.overlay.conf" "$CONFIG_OUT_DIR/aiplayerbot.conf"
 
-    for expected in \
-        'Rate.XP.Kill=2' 'Rate.XP.Quest=4' 'Rate.Talent=2' \
-        'Rate.Drop.Item.Poor=2' 'Rate.Drop.Item.Normal=3' \
-        'Rate.Drop.Item.Uncommon=4' 'Rate.Drop.Item.Rare=4' \
-        'Rate.Drop.Item.Epic=4' 'Rate.Drop.Item.Legendary=2' \
-        'Rate.Drop.Item.Artifact=1' 'Rate.Drop.Item.Referenced=1' \
-        'Rate.Drop.Money=3' \
-        'Funserver.Loot.Bonus.Enabled=1' \
-        'Funserver.Loot.Bonus.Rare=1' \
-        'Funserver.Loot.Bonus.RareElite=1' \
-        'Funserver.Loot.Bonus.WorldBoss=1' \
-        'Funserver.Loot.Bonus.DungeonBoss=1' \
-        'Funserver.Loot.Bonus.RaidBoss=1' \
-        'Funserver.Loot.Bonus.SelectionMultiplier=5' \
-        'Funserver.Loot.Bonus.DuplicateDecay=0.25' \
-        'Funserver.Rare.Respawn.Enabled=1' \
-        'Funserver.Rare.PoolBypass.Enabled=1'; do
-        key=${expected%%=*}
-        value=${expected#*=}
-        [[ "$(key_count "$CONFIG_OUT_DIR/mangosd.conf" "$key")" == 1 ]]
-        [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" "$key")" == "$value" ]]
-    done
-    [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.RndBotCheats)" == repair,breath,item,taxi ]]
-    for expected in \
-        'AiPlayerbot.ProfessionTraining.FreeForPersistentRoster=1' \
-        'AiPlayerbot.ProfessionTraining.StartLevel=1' \
-        'AiPlayerbot.ProfessionTraining.LocalTrainerRadius=120' \
-        'AiPlayerbot.ProfessionTraining.Trace=1' \
-        'AiPlayerbot.ProfessionTraining.TraceCooldownSeconds=300'; do
-        key=${expected%%=*}
-        value=${expected#*=}
-        [[ "$(key_count "$CONFIG_OUT_DIR/aiplayerbot.conf" "$key")" == 1 ]]
-        [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" "$key")" == "$value" ]]
-    done
+    assert_profile_semantics "$profile_dir"
 
     mkdir -p "$TMP/profile-first"
     cp -- "$CONFIG_OUT_DIR"/*.conf "$TMP/profile-first/"

@@ -18,9 +18,10 @@ The complete source for the Compose configuration is:
 | Leech | `modules/mod-leech/conf/mod_leech.conf.dist` | `config/canonical/compose/mod-leech.overlay.conf` |
 
 [`semantic-baseline.tsv`](../config/canonical/compose/semantic-baseline.tsv)
-classifies all 130 service-key differences: 89 preserve verified behaviour, 25
-are reviewed Compose changes, 10 are removed from the obsolete mangosd owner,
-and 6 are protected machine secrets.
+classifies every service-key difference as preserved verified behaviour
+(`KEEP`), a reviewed Compose change (`INTENTIONAL_CHANGE`), removed from the
+obsolete mangosd owner (`DEPRECATED_OR_REMOVED`), or a protected machine secret
+(`MACHINE_SECRET`). The rows are the only count; no document repeats it.
 
 The bot-brain, donation, and leech rows have complete versioned bases in this
 repository's modules rather than the core submodule. Their rendered files are
