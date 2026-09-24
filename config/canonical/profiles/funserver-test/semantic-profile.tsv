@@ -19,6 +19,8 @@ mangosd	Funserver.Loot.Bonus.DungeonBoss	INTENTIONAL_CHANGE	mangosd.overlay.conf
 mangosd	Funserver.Loot.Bonus.RaidBoss	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-raid-boss-bonus-loot
 mangosd	Funserver.Loot.Bonus.SelectionMultiplier	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-five-total-safe-selections
 mangosd	Funserver.Loot.Bonus.DuplicateDecay	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-duplicate-weight-quarter
+mangosd	Funserver.Rare.Respawn.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-rare-accelerated-respawn
+mangosd	Funserver.Rare.PoolBypass.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-rare-pool-bypass
 aiplayerbot	AiPlayerbot.RndBotCheats	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	funserver-test-add-existing-taxi-cheat
 aiplayerbot	AiPlayerbot.ProfessionTraining.FreeForPersistentRoster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-306-free-roster-profession-training
 aiplayerbot	AiPlayerbot.ProfessionTraining.StartLevel	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-306-professions-from-level-1

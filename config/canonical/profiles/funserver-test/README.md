@@ -31,4 +31,8 @@ Persistent roster profession training (#306) is enabled only in this profile:
 free for roster bots, from level 1, trainers within 120 yards, with a
 throttled trace (300 s). Core trainer rank and level rules still apply.
 
-All twenty-six deviations are classified in `semantic-profile.tsv`.
+Audited open-world rares (#298) respawn faster and spawn outside their pools
+only in this profile. Both switches need the `creature_rare_respawn_registry`
+migration; with an empty registry they change nothing.
+
+All twenty-eight deviations are classified in `semantic-profile.tsv`.
