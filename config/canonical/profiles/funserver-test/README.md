@@ -9,8 +9,8 @@ It applies the separately approved XP, talent, item-quality, and
 set from `repair,breath,item`
 to `repair,breath,item,taxi`. It neither adds a taxi mechanic nor changes bot
 roster, bags, database state, loot tables, deployment scripts, or the default
-profile. `Rate.XP.Explore` is deliberately absent, so its canonical value is
-preserved.
+profile. XP is 1/1/1 (`Rate.XP.Kill`, `Rate.XP.Quest`, `Rate.XP.Explore`) for
+the test phase, by owner decision on 2026-09-24 (#321).
 
 The item multipliers affect existing eligible chance rolls only. They do not
 create additional independent boss or rare selections, guarantee four useful
@@ -23,8 +23,9 @@ No recipe-drop key is rendered. The optional recipe-rate contract is
 only then may this profile set that key to `0.65`.
 
 Boss and rare bonus loot is enabled only in this profile. Eligible rares and
-registered dungeon, raid, and world bosses receive four total safe selection
-rounds with a 0.25 duplicate-weight decay. Protected quest, key, reference,
+registered dungeon, raid, and world bosses get their safe selection rounds with
+`SelectionMultiplier = 8` (owner decision 2026-09-24, #321; the mechanism is
+reworked in #323) and a 0.25 duplicate-weight decay. Protected quest, key, reference,
 recipe, condition, uniqueness, and ownership semantics remain in the Core.
 
 Persistent roster profession training (#306) is enabled only in this profile:
@@ -35,4 +36,10 @@ Audited open-world rares (#298) respawn faster and spawn outside their pools
 only in this profile. Both switches need the `creature_rare_respawn_registry`
 migration; with an empty registry they change nothing.
 
-All twenty-eight deviations are classified in `semantic-profile.tsv`.
+The operating switches that used to be hand-edited into the live runtime
+config after rendering are rendered from here since #321: persistent roster,
+quest-first progression and its travel trace, `RandomBotGroupNearby = 0`, and
+the `BotBrain.*` keys in `mangosd.conf` (mod-bot-brain reads them through
+`sConfig`, not from `mod_bot_brain.conf`). No hand edits after rendering.
+
+All forty-seven deviations are classified in `semantic-profile.tsv`.
