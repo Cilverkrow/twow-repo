@@ -1,12 +1,28 @@
 ---
 id: WS10-ROSTER-PROFESSION-TRAINING-01
-title: [Gamebreaking] Enable roster professions from level 3
+title: [Gamebreaking] Opportunistic roster profession training from level 1
 workstream: WS-10
 priority: p1
 existing_ot: none
 source: Live roster audit 2026-09-16; 136 active Roster-v3 GUIDs
 superseded_by: none
 body: |
+  ## Contract amendment 2026-09-23 (OB-00, owner decision) — supersedes conflicting text below
+  
+  - Roster bots may learn their planned professions **from level 1**, under normal trainer prerequisites.
+  - Training is **opportunistic, not a travel goal**: a bot learns/upgrades a planned profession only when a suitable trainer is already nearby during normal play (quest hub, town visit, vendor/repair stop). A missing profession must **not** create dedicated remote trainer travel, city trips, hearths, transports or teleports.
+  - **Local reach (owner decision 2026-09-24):** "nearby" means a tradeskill trainer within **120 yards** of the bot, configurable via `AiPlayerbot.ProfessionTraining.LocalTrainerRadius` (default 120, 0 = off). Example: a bot that is in Stormwind anyway picks up its trainer on the way. This is a wider RPG reach, never a travel target. The targeted profession phase from ~level 30 (own travel to trainers, crafting own gear) is **out of scope** here and tracked in #318.
+  - **Diagnostics:** `[PersistentRosterProfessionTraining]` lines are logged at BASIC level (visible at LogLevel 1) when `ProfessionTraining.Trace = 1`, throttled per decision.
+  - The "seek an appropriate trainer at level >=3" acceptance line below is replaced by this rule. Core implementation candidate: Cilverkrow/twow-core#116.
+  
+  **Live measurement 2026-09-23 21:48 UTC (136 online roster bots):** 128/136 have no primary profession, 8 have one or two, all at skill 1. Secondary skills: First Aid 26 bots (max 31), Cooking 20, Fishing 15, Survival 16 — all at skill 1 except First Aid.
+  
+  **Acceptance metric (ADR-0031):** after deploy with the switch enabled, count of roster bots with ≥1 planned primary profession learned and skill > 1 rises measurably within 24 h of normal play, with no increase in trainer-travel events or lost bots.
+  
+  **Owner chat:** OB-10 Bot-Verhalten.
+  
+  ---
+  
   Observed on the 136-bot test roster: all 136 have a stored profession-pair plan, but none has learned a planned primary profession and no profession skill progression is visible. The current factory stores the plan only; the trainer path rejects generic profession training, and the trainability filter skips initial professions below level 10. This conflicts with the intended organic trainer visit and learning from level 3.
   
   Separately, 90/136 live profession-pair values differ from the offline V4 master prefix. Do not overwrite live plans or assume which source is authoritative. Compare the pinned V4 planner, 136-GUID prefix, current persisted event values and runtime mapping; publish a per-GUID mismatch matrix and resolve the intended policy before any migration.
@@ -38,7 +54,7 @@ body: |
 id: WS10-ROSTER-ROLE-AWARE-EQUIP-01
 title: Audit and improve role-aware bot gear selection
 workstream: WS-10
-priority: p1
+priority: p2
 existing_ot: none
 source: Live roster equipment audit 2026-09-16; 136 active GUIDs
 superseded_by: none
