@@ -303,7 +303,7 @@ assert_funserver_test_profile() {
         NF != 5 || $3 != "INTENTIONAL_CHANGE" { exit 10 }
         seen[$1 SUBSEP $2]++ { exit 11 }
         count++
-        END { exit !(count == 21) }
+        END { exit !(count == 26) }
     ' "$profile_dir/semantic-profile.tsv" || {
         echo "ERROR: funserver test profile matrix is malformed" >&2
         exit 1
@@ -343,6 +343,17 @@ assert_funserver_test_profile() {
         [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" "$key")" == "$value" ]]
     done
     [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" AiPlayerbot.RndBotCheats)" == repair,breath,item,taxi ]]
+    for expected in \
+        'AiPlayerbot.ProfessionTraining.FreeForPersistentRoster=1' \
+        'AiPlayerbot.ProfessionTraining.StartLevel=1' \
+        'AiPlayerbot.ProfessionTraining.LocalTrainerRadius=120' \
+        'AiPlayerbot.ProfessionTraining.Trace=1' \
+        'AiPlayerbot.ProfessionTraining.TraceCooldownSeconds=300'; do
+        key=${expected%%=*}
+        value=${expected#*=}
+        [[ "$(key_count "$CONFIG_OUT_DIR/aiplayerbot.conf" "$key")" == 1 ]]
+        [[ "$(key_value "$CONFIG_OUT_DIR/aiplayerbot.conf" "$key")" == "$value" ]]
+    done
 
     mkdir -p "$TMP/profile-first"
     cp -- "$CONFIG_OUT_DIR"/*.conf "$TMP/profile-first/"

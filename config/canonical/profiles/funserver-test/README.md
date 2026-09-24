@@ -27,4 +27,8 @@ registered dungeon, raid, and world bosses receive four total safe selection
 rounds with a 0.25 duplicate-weight decay. Protected quest, key, reference,
 recipe, condition, uniqueness, and ownership semantics remain in the Core.
 
-All twenty-one deviations are classified in `semantic-profile.tsv`.
+Persistent roster profession training (#306) is enabled only in this profile:
+free for roster bots, from level 1, trainers within 120 yards, with a
+throttled trace (300 s). Core trainer rank and level rules still apply.
+
+All twenty-six deviations are classified in `semantic-profile.tsv`.
