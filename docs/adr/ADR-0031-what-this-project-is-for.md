@@ -97,6 +97,39 @@ drafting it is a way of making the gap visible and offering specific words to ar
 of deciding it. The words above are assembled from statements already in the tree; if the assembly is
 wrong, the disagreement is worth having explicitly, because everything downstream inherits it.
 
+## Owner direction (2026-09-24)
+
+Recorded at the owner's request as the current guiding idea. It is expected to evolve; it does not
+change this ADR's status (still Proposed).
+
+**Organic, self-earned progression is the core loop.** The upstream bot fork is built around
+random bots that are summoned by command, arrive pre-geared and exist to fill a group. This project
+deliberately departs from that model, and from the Turtle WoW original, because neither was designed
+for what we want: persistent bots that quest, travel, learn and use professions, craft and equip
+their own gear, and progress through dungeons and later raids alongside the player -- ideally as
+members of the player's guild. The player gears up not only themselves but their bots.
+
+Consequences for game rules (funserver profile only; the default profile stays upstream-like):
+
+- **Rewards for showing up.** Content should not have to be repeated eight times. Bosses and rares
+  drop a fixed number of loot units with a quality profile that favours the content's tier
+  (raid: epic and better; dungeon: blue; rares: like dungeons), with diminishing repeats so a loot
+  table is actually explored. Tracked in #323 and #288.
+- **A world full of exciting rares.** Rares spawn reliably, respawn on a shortened, configurable
+  scale, and carry special loot, including a level-banded bind-on-equip pool. They are also an
+  observation point for bot behaviour. Tracked in #298 and #322.
+- **Bots first play competently alone.** Grouping between bots stays off until groups are
+  level-coherent and bots can leave on their own (#324). Test-phase XP rates are 1x so that
+  behavioural fixes are measured, not masked.
+- **Professions are part of progression**, first opportunistically from level 1 (#306), later as a
+  deliberate phase in which a bot crafts its own equipment (#318).
+
+**The long-term dream (third priority, after questing and levelling work):** a bot answers in chat
+from its own GUID-bound character sheet -- class, spec, quests, professions, recipes -- and in the
+voice of its personality: a human warrior proud and honourable, an undead rogue guarded and sly.
+This is the "indistinguishable from a living one" clause made concrete; see ADR-0039, ARCH-002 (#43)
+and #282.
+
 ## References
 
 - `docs/adr/ADR-0024-project-invariants.md` — the six invariants, and the veto clause above

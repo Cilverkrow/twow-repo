@@ -300,7 +300,11 @@ directory inside it**, not scattered.
 
 **Never:**
 - create directories at `C:\` root, or any other drive root
-- write to `V:`, `X:`, `Y:`, `Z:` -- these are network shares
+- write to `V:`, `X:`, `Y:`, `Z:` -- these are network shares. **One owner-approved exception
+  (2026-09-23, local overlay v2 §6 "Variante A"):** task-specific subdirectories below
+  `Y:\backup twwow\workspace-relocation-20260902\` -- `worktrees\<task>` for linked git worktrees,
+  `builds\<task>` for build/test output, and `evidence\<WS>\<task>` for hashed evidence. Nothing
+  else on `Y:`, never its root, and no other network share.
 - install software on the host: no MariaDB, no toolchains, no services, no PATH changes
 - touch `C:\temp`, `C:\tmp`, `C:\xampp` or anything else you did not create
 
