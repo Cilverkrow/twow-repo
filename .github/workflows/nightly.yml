@@ -135,11 +135,14 @@ jobs:
       - name: Build
         run: cmake --build build --parallel "$CI_BUILD_JOBS"
 
+      # The core is the core/ submodule (ADR-0020), so its targets land under
+      # build/core/, not build/src/. The old path made this step fail after a
+      # successful link.
       - name: Verify binaries exist
         run: |
-          test -x build/src/mangosd/mangosd
-          test -x build/src/realmd/realmd
-          ls -la build/src/mangosd/mangosd build/src/realmd/realmd
+          test -x build/core/src/mangosd/mangosd
+          test -x build/core/src/realmd/realmd
+          ls -la build/core/src/mangosd/mangosd build/core/src/realmd/realmd
 
   # Invariant 4 (ADR-0024): the core must still build and run with every project
   # feature switched off. Cheapest possible guard against a module that cannot be
@@ -203,7 +206,8 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --parallel "$CI_BUILD_JOBS"
-          test -x build/src/mangosd/mangosd
+          # build/core/, not build/src/ - see "Verify binaries exist" above.
+          test -x build/core/src/mangosd/mangosd || { echo "::error::build/core/src/mangosd/mangosd missing after build"; exit 1; }
 
   # How far has upstream moved, and into which of our files?
   #
@@ -358,6 +362,9 @@ jobs:
       # images. See the long note on the equivalent step in ci.yml.
       - name: Free runner disk
         run: |
+          # This job has no Runner preflight step, so $SUDO was never set and
+          # the rm below ran unprivileged on the hosted VM (Permission denied).
+          if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
           df -h .
           if [ "${RUNNER_ENVIRONMENT:-}" = "github-hosted" ]; then
             $SUDO rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
