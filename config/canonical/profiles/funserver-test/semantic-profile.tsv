@@ -46,3 +46,9 @@ aiplayerbot	AiPlayerbot.PersistentActiveRoster.Enabled	INTENTIONAL_CHANGE	aiplay
 aiplayerbot	AiPlayerbot.QuestFirstProgression.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-quest-first
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TraceTravelDecisions	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-quest-first-trace
 aiplayerbot	AiPlayerbot.RandomBotGroupNearby	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-no-random-grouping
+aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInMaxDeathsOnRoute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-death-route-cap-pinned-default
+aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInDeathRouteCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-death-route-cooldown-pinned-default
+aiplayerbot	AiPlayerbot.MaxAlternateGraveyardDistance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-276-graveyard-bound-pinned-default
+aiplayerbot	AiPlayerbot.DeadWaitForRealMasterSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-pinned-default
+aiplayerbot	AiPlayerbot.DeadWaitForRealMasterInstanceSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-instance-pinned-default
+aiplayerbot	AiPlayerbot.EquipDiagnostics.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-equip-trace-24h-window

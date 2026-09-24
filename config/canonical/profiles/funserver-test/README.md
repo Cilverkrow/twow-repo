@@ -42,4 +42,8 @@ quest-first progression and its travel trace, `RandomBotGroupNearby = 0`, and
 the `BotBrain.*` keys in `mangosd.conf` (mod-bot-brain reads them through
 `sConfig`, not from `mod_bot_brain.conf`). No hand edits after rendering.
 
-All forty-seven deviations are classified in `semantic-profile.tsv`.
+Release train 2 pins the new bot-death keys at their core defaults (quest
+turn-in death-route cap, graveyard bound, bounded master wait) and switches the
+equip-decision trace (#308) on for a 24-hour diagnostics window.
+
+All fifty-three deviations are classified in `semantic-profile.tsv`.
