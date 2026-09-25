@@ -43,8 +43,24 @@ TWOW_LIVE_MAX_LEVEL=1 \
 ops/live/live-smoke.sh
 ```
 
-Without it the verdict is `SKIP` (the online count cannot be proven from logs);
-`TWOW_LIVE_REQUIRE_ROSTER=0` accepts that for a routine check.
+Or, without any separate file, let it use the credentials of the live server
+itself (owner approval 2026-09-25, #36: SELECT only, never in output):
+
+```sh
+TWOW_LIVE_DB_CONTAINER=<db container> \
+TWOW_LIVE_DB_FROM_LIVE_CONF=1 \
+TWOW_LIVE_MAX_LEVEL=1 \
+ops/live/live-smoke.sh
+```
+
+It reads `CharacterDatabase.Info` from the `mangosd.conf` mounted into the live
+`mangosd` container and pipes a `[client]` block built in memory to the client
+(`--defaults-extra-file=/dev/stdin`): no file, no command-line argument, no
+environment variable. `TWOW_LIVE_DB_FROM_CONF=<path>` does the same for a given
+conf.
+
+Without database access the verdict is `SKIP` (the online count cannot be
+proven from logs); `TWOW_LIVE_REQUIRE_ROSTER=0` accepts that for a routine check.
 
 ## Error triage
 

@@ -31,6 +31,13 @@
 #                                user/password). It is streamed to the client
 #                                on stdin and never printed or put on a command
 #                                line.
+#   TWOW_LIVE_DB_FROM_CONF       instead: a mangosd.conf whose
+#                                CharacterDatabase.Info supplies user/password,
+#                                piped to the client from memory the same way
+#   TWOW_LIVE_DB_FROM_LIVE_CONF  1 = use the mangosd.conf mounted into the live
+#                                mangosd container [0]. Reading the live
+#                                credentials was approved by the owner on
+#                                2026-09-25 (#36): SELECT only, never output.
 #   TWOW_CHAR_SCHEMA             character schema [tw_char]
 #   TWOW_LIVE_REQUIRE_ROSTER     1 = without database access the verdict is
 #                                SKIP, because "136 online" cannot be proven
@@ -253,8 +260,26 @@ else
 fi
 
 # --------------------------------------------------------------- database ----
-if [[ -n "$DB_CONTAINER" && -n "$DB_DEFAULTS" && -f "$DB_DEFAULTS" ]]; then
-    sql() { docker exec -i "$DB_CONTAINER" mariadb --defaults-extra-file=/dev/stdin --batch --skip-column-names "$CHAR_SCHEMA" -e "$1" < "$DB_DEFAULTS"; }
+# The client options reach the database container only through a pipe: from
+# TWOW_LIVE_DB_DEFAULTS_FILE, or built in memory from CharacterDatabase.Info
+# ("host;port;user;password;schema") of the live mangosd.conf. Never a file,
+# a command-line argument, an environment variable or a line of output.
+db_options() {
+    if [[ -n "$DB_DEFAULTS" ]]; then cat -- "$DB_DEFAULTS"; return; fi
+    local info user pass
+    info=$(awk '/^[[:space:]]*CharacterDatabase\.Info[[:space:]]*=/ {
+                sub(/^[^=]*=[[:space:]]*/, ""); gsub(/"/, ""); sub(/[[:space:]\r]+$/, ""); print; exit }' "$DB_FROM_CONF")
+    IFS=';' read -r _ _ user pass _ <<<"$info"
+    pass=${pass//\\/\\\\}; pass=${pass//\"/\\\"}
+    printf '[client]\nuser="%s"\npassword="%s"\n' "$user" "$pass"
+}
+DB_FROM_CONF=${TWOW_LIVE_DB_FROM_CONF:-}
+if [[ -z "$DB_FROM_CONF" && "${TWOW_LIVE_DB_FROM_LIVE_CONF:-0}" == 1 && -n "${CNAME[mangosd]:-}" ]]; then
+    DB_FROM_CONF=$(state "${CNAME[mangosd]}" '{{range .Mounts}}{{if eq .Destination "/opt/turtle/etc/mangosd.conf"}}{{.Source}}{{end}}{{end}}')
+fi
+if [[ -n "$DB_CONTAINER" && ( ( -n "$DB_DEFAULTS" && -f "$DB_DEFAULTS" ) || ( -n "$DB_FROM_CONF" && -f "$DB_FROM_CONF" ) ) ]]; then
+    emit "DB_ACCESS=$([[ -n "$DB_DEFAULTS" ]] && echo option-file || echo "CharacterDatabase.Info of $(basename "$DB_FROM_CONF")") via $DB_CONTAINER (SELECT only)"
+    sql() { db_options | docker exec -i "$DB_CONTAINER" mariadb --defaults-extra-file=/dev/stdin --protocol=tcp --host=127.0.0.1 --batch --skip-column-names "$CHAR_SCHEMA" -e "$1"; }
     roster_join="FROM ai_playerbot_roster_current c JOIN ai_playerbot_roster_member m ON m.version_id = c.version_id LEFT JOIN characters ch ON ch.guid = m.character_guid WHERE c.singleton_id = 1"
     if row=$(sql "SELECT COUNT(*), COUNT(ch.guid), COALESCE(SUM(ch.online), 0), COALESCE(MAX(ch.level), 0) $roster_join;" 2>/dev/null); then
         read -r members present online maxlvl <<<"$row"
@@ -273,7 +298,7 @@ if [[ -n "$DB_CONTAINER" && -n "$DB_DEFAULTS" && -f "$DB_DEFAULTS" ]]; then
         check roster.online FAIL "roster SELECT through $DB_CONTAINER failed"
     fi
 else
-    check roster.online SKIP "no database access (TWOW_LIVE_DB_CONTAINER + TWOW_LIVE_DB_DEFAULTS_FILE); online count not provable from logs"
+    check roster.online SKIP "no database access (TWOW_LIVE_DB_CONTAINER + TWOW_LIVE_DB_DEFAULTS_FILE or TWOW_LIVE_DB_FROM_[LIVE_]CONF); online count not provable from logs"
     if [[ -n "$MAX_LEVEL" && -n "${levels:-}" ]]; then
         top=$(tr ' ' '\n' <<<"$levels" | awk -F: 'NF==2 && $1>m {m=$1} END {print m+0}')
         (( top <= MAX_LEVEL )) && check roster.max_level PASS "highest logged level $top <= $MAX_LEVEL (log proxy)" \
