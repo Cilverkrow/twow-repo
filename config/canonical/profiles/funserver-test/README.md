@@ -46,4 +46,9 @@ Release train 2 pins the new bot-death keys at their core defaults (quest
 turn-in death-route cap, graveyard bound, bounded master wait) and switches the
 equip-decision trace (#308) on for a 24-hour diagnostics window.
 
-All fifty-three deviations are classified in `semantic-profile.tsv`.
+Release train 3 switches the bots' auction-house use off
+(`AiPlayerbot.AuctionHouse.Enabled = 0`, owner decision 2026-09-25): items are
+no longer kept for the auction house, and there are no AH trips or bids. Vendor
+buying and selling are unchanged.
+
+All fifty-four deviations are classified in `semantic-profile.tsv`.

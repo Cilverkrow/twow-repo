@@ -51,4 +51,5 @@ aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInDeathRouteCooldownSeconds	IN
 aiplayerbot	AiPlayerbot.MaxAlternateGraveyardDistance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-276-graveyard-bound-pinned-default
 aiplayerbot	AiPlayerbot.DeadWaitForRealMasterSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-pinned-default
 aiplayerbot	AiPlayerbot.DeadWaitForRealMasterInstanceSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-instance-pinned-default
-aiplayerbot	AiPlayerbot.EquipDiagnostics.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-equip-trace-24h-window
+aiplayerbot	AiPlayerbot.EquipDiagnostics.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-equip-trace-measurement-window
+aiplayerbot	AiPlayerbot.AuctionHouse.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-owner-no-bot-auction-house
