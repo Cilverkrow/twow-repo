@@ -1,0 +1,45 @@
+# Triage of the error markers mangosd writes to server_<timestamp>.log (#36),
+# at startup and at runtime.
+#
+# Columns: class <TAB> phase <TAB> pattern [<TAB> tracking issue]
+#   class   fatal | known-data | known-runtime | known-bot (bot finding with
+#           an open issue: tolerated by the smoke, tracked in that issue)
+#   phase   startup (before "World server is up and running") | runtime | any
+#   pattern POSIX ERE, matched against the message in LOWER CASE with the
+#           "YYYY-MM-DD HH:MM:SS " prefix removed.
+# The first matching row wins. A marker that matches no row is "unknown", and
+# live-smoke.sh fails on unknown and fatal markers: extend this file only after
+# looking at the new pattern, never by widening a rule to make a run pass.
+#
+# Baselines:
+# - train 2 start 2026-09-25 14:21 UTC (core fc6afb9e): 1568 markers, 157
+#   distinct patterns, all "ERROR:" lines written while the world database
+#   loads; 4 markers (3 patterns) after world-up.
+# - train 1 run 2026-09-24 17:18 UTC, ~21 h (core 72b952ce): 1563 startup, 915
+#   runtime markers in 12 patterns, all listed below.
+
+fatal	any	(^|[^a-z])(fatal|crash|crashed|segmentation fault|core dumped|assertion|assert failed|out of memory|deadlock)([^a-z]|$)
+
+# World-database integrity reports while loading (creature_movement paths for
+# missing GUIDs, loot templates without creature, unknown spell categories,
+# missing broadcast texts, ...). The core skips or repairs the row and loads on.
+# They are data debt, not a runtime fault; they are counted, never ignored.
+known-data	startup	^error:
+
+# A bot repeatedly routing to an unreachable point 55-80 yd higher near
+# Ironforge, dying on the way (60 of 61 events one bot in train 1). Upstream
+# debug detector at error level; the loop itself is tracked in #335.
+known-bot	runtime	^error:\[bot path bug\] 	#335
+
+# World scripts and waypoints referring to content that is absent or not
+# loaded (script targets, conditions without target, creatures without a
+# waypoint path). The core skips the action; content debt, not a fault.
+known-runtime	runtime	^error:condition [0-9]+ type [0-9]+ used with bad parameters, called from script action
+known-runtime	runtime	^error:findscripttargets: failed to find target for script with id [0-9]+
+known-runtime	runtime	^error:script_command_start_waypoints \(script id [0-9]+\) call for a nullptr or non-creature source
+known-runtime	runtime	^error:waypointmovementgenerator::loadpath: guid [0-9]+ entry [0-9]+ doesn't have waypoint path$
+
+# Seen after world-up in the train 2 baseline; content data, not a fault.
+known-runtime	runtime	^error:castcustomspell: unknown spell id 0 by caster: player .* triggered by aura [0-9]+ \(eff [0-9]+\)$
+known-runtime	runtime	^error:creature [0-9]+ \(entry: [0-9]+\) have unit_npc_flag_vendor but have empty trading item list\.$
+known-runtime	runtime	^error:spell entry [0-9]+, effect [0-9]+ has effectimplicittargeta/effectimplicittargetb = target_gameobject_script_near_caster, but gameobject are not defined in `spell_script_target`$
