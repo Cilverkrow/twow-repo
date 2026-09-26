@@ -1,4 +1,4 @@
-# class	index	talent_path  (from twow-core aiplayerbot.conf.dist.in PremadeSpecName.<class>.<index>; specNo = index + 1; 11.3 bear from twow-core#162 73fe5ab2)
+# class	index	talent_path  (from twow-core aiplayerbot.conf.dist.in PremadeSpecName.<class>.<index>; specNo = index + 1; 11.3 bear from twow-core#162, merged e429cb45)
 1	0	fury
 1	1	protection
 1	2	arms
