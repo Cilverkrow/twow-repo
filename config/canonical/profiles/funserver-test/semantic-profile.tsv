@@ -58,3 +58,4 @@ aiplayerbot	AiPlayerbot.QuestFirstProgression.QuestAreaLevelMargin	INTENTIONAL_C
 aiplayerbot	AiPlayerbot.QuestFirstProgression.ProgressAwareObjectives	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-329-progress-aware-objectives-pinned-default
 aiplayerbot	AiPlayerbot.DestinationDeaths.Max	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-destination-death-cap-pinned-default
 aiplayerbot	AiPlayerbot.DestinationDeaths.CooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-destination-death-cooldown-pinned-default
+mangosd	Funserver.Loot.Bonus.BossChest	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-345-owner-boss-chest-bonus

@@ -55,6 +55,8 @@ Release train 4 pins three quest-routing keys at their core defaults: no
 cross-continent quest routes below level 10, quest areas at most five levels
 above the bot, and progress-aware quest objectives (0 restores the old time
 budget). It also pins the per-destination death rule (a travel target where a
-bot died twice is avoided for an hour).
+bot died twice is avoided for an hour). Bonus loot is extended to the
+reviewed boss reward chests (`Funserver.Loot.Bonus.BossChest = 1`, owner
+decision 2026-09-26, #345).
 
-All fifty-nine deviations are classified in `semantic-profile.tsv`.
+All sixty deviations are classified in `semantic-profile.tsv`.
