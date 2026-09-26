@@ -43,13 +43,20 @@
 #                                SKIP, because "136 online" cannot be proven
 #                                from the logs alone [1]
 #   TWOW_LIVE_EVIDENCE_DIR       also write the report here
-#   TWOW_LIVE_TRIAGE             triage rules [ops/live/error-triage.tsv]
+#   TWOW_LIVE_TRIAGE             triage rules [error-triage.tsv next to this
+#                                script]; set it when running a copy
+#   TWOW_LIVE_PERF_MAX_MS        fail if a logged "Update map system" of this
+#                                run took longer [3000] (D1 interim rule, #351)
 #
 # Exit codes as in test/smoke: 0 PASS, 1 FAIL, 77 SKIP (reason printed).
 set -euo pipefail
 
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TRIAGE=${TWOW_LIVE_TRIAGE:-$HERE/error-triage.tsv}
+[[ -f "$TRIAGE" ]] || {
+    echo "ERROR: triage rules not found: $TRIAGE (run ops/live/live-smoke.sh from the repository, or set TWOW_LIVE_TRIAGE)" >&2
+    exit 2
+}
 MARKER_RE='(^|[^[:alpha:]])([Ee][Rr][Rr][Oo][Rr]|[Ff][Aa][Tt][Aa][Ll]|[Cc][Rr][Aa][Ss][Hh]|[Aa][Ss][Ss][Ee][Rr][Tt])'
 
 # ---------------------------------------------------------------- triage ----
@@ -304,6 +311,27 @@ else
         (( top <= MAX_LEVEL )) && check roster.max_level PASS "highest logged level $top <= $MAX_LEVEL (log proxy)" \
                                || check roster.max_level FAIL "highest logged level $top > $MAX_LEVEL (log proxy)"
     fi
+fi
+
+# ------------------------------------------------------------------- perf ----
+# perf.log only records map-system updates slower than
+# PerformanceLog.SlowMapSystemUpdate (default 100 ms), so it yields the maximum
+# and the number of slow updates, never a tick p99 (#351). Only this run's
+# lines count: those not older than the first line of its server log.
+PERF_MAX_MS=${TWOW_LIVE_PERF_MAX_MS:-3000}
+if [[ -n "$SERVER_LOG" && -f "$LOG_DIR/perf.log" ]]; then
+    run_start=$(head -n 1 "$SERVER_LOG" | cut -c1-19)
+    read -r slow maxms <<<"$(awk -v s="$run_start" '
+        substr($0, 1, 19) >= s && match($0, /Update map system: [0-9]+ms/) {
+            v = substr($0, RSTART + 19, RLENGTH - 21) + 0; n++; if (v > m) m = v }
+        END { print n + 0, m + 0 }' "$LOG_DIR/perf.log")"
+    hours=$(awk -v a="$(date -u -d "$run_start" +%s 2>/dev/null || echo 0)" -v b="$(date -u +%s)" \
+        'BEGIN { h = (b - a) / 3600; printf "%.2f", (h > 0 ? h : 0) }')
+    emit "PERF slow_map_updates=$slow max_ms=$maxms run_hours=$hours (only updates > threshold are logged)"
+    (( maxms <= PERF_MAX_MS )) && check perf.max_ms PASS "longest logged map update ${maxms} ms <= ${PERF_MAX_MS} ms" \
+                               || check perf.max_ms FAIL "longest logged map update ${maxms} ms > ${PERF_MAX_MS} ms"
+else
+    check perf.max_ms SKIP "no perf.log for this run in ${LOG_DIR:-<unknown>}"
 fi
 
 # ----------------------------------------------------------------- triage ----

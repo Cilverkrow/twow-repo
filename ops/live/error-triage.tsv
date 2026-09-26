@@ -39,6 +39,10 @@ known-runtime	runtime	^error:findscripttargets: failed to find target for script
 known-runtime	runtime	^error:script_command_start_waypoints \(script id [0-9]+\) call for a nullptr or non-creature source
 known-runtime	runtime	^error:waypointmovementgenerator::loadpath: guid [0-9]+ entry [0-9]+ doesn't have waypoint path$
 
+# VMAP bookkeeping: unloading a tile that was never loaded. No functional
+# effect; seen once right after world-up on v7 (2026-09-26 08:00 UTC).
+known-runtime	runtime	^error:staticmaptree::unloadmaptile\(\): trying to unload non-loaded tile\. map:[0-9]+ x:[0-9]+ y:[0-9]+$
+
 # Seen after world-up in the train 2 baseline; content data, not a fault.
 known-runtime	runtime	^error:castcustomspell: unknown spell id 0 by caster: player .* triggered by aura [0-9]+ \(eff [0-9]+\)$
 known-runtime	runtime	^error:creature [0-9]+ \(entry: [0-9]+\) have unit_npc_flag_vendor but have empty trading item list\.$
