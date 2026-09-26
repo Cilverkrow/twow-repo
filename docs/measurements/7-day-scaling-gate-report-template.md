@@ -54,7 +54,7 @@ equipped item level (3.3), loot units (`loot.log`), BotBrain intents and handsha
 ## 3. Daily snapshot (read-only)
 
 Take once per day at a fixed UTC time and after any restart. Store under
-`Y:\backup twwow\workspace-relocation-20260902\evidence\ws-40\<run>\day-<n>\` with `SHA256SUMS`:
+`Y:\backup twwow\workspace-relocation-20260902\evidence\ws-60\longrun-7d\<YYYY-MM-DD>\` (D4) with `SHA256SUMS`:
 copies of the csv/log files, `docker inspect` of the stack, and the query results below.
 Credentials only in-process (runtime `mangosd.conf`, `MYSQL_PWD`), never printed.
 
