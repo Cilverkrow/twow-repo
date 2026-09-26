@@ -77,3 +77,4 @@ aiplayerbot	AiPlayerbot.ZoneEscape.CooldownSeconds	INTENTIONAL_CHANGE	aiplayerbo
 aiplayerbot	AiPlayerbot.FollowDiagnostics	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-303-follow-diagnostics
 aiplayerbot	AiPlayerbot.RosterControl.GmMinSecurity	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-354-owner-gm-min-security-3
 aiplayerbot	AiPlayerbot.RosterControl.SummonCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-292-summon-cooldown-pinned-default
+aiplayerbot	AiPlayerbot.AutoLearnTrainerSpells	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-356-owner-auto-learn-trainer-spells

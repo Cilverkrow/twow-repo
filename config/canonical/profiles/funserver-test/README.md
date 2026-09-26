@@ -64,7 +64,7 @@ profession use (gathering within 40 yards, crafting), role- and
 profession-aware group rolls, leaving zones clearly above the bot's level and
 the follow diagnostics, each with its trace where there is one. The
 roster-control keys for player commands are pinned at their code defaults.
-`AiPlayerbot.AutoLearnTrainerSpells` is prepared as a comment only; it waits
-for an owner decision (#356).
+Bots also learn their class trainer spells automatically
+(`AiPlayerbot.AutoLearnTrainerSpells = 1`, owner decision 2026-09-26, #356).
 
-All seventy-eight deviations are classified in `semantic-profile.tsv`.
+All seventy-nine deviations are classified in `semantic-profile.tsv`.
