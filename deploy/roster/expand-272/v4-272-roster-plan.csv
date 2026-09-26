@@ -60,9 +60,9 @@ ordinal,guid,account,name,race,class,gender,talent_path,role,profession_pair,sel
 59,92,94,Trialania,4,3,1,survival,DPS,Mining/Engineering,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
 60,98,94,Mudso,6,7,1,restoration,HEALER,Herbalism/Alchemy,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
 61,117,11,Briluknald,2,1,0,arms,DPS,Mining/Blacksmithing,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
-62,119,114,Thrigmor,2,7,0,enhancement,DPS,Herbalism/Alchemy,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
-63,148,13,Rhazkoz,8,7,0,elemental,DPS,Herbalism/Alchemy,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
-64,151,13,Emaleath,4,11,0,bear,TANK,Skinning/Leatherworking,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
+62,119,114,Thrigmor,2,7,0,restoration,HEALER,Herbalism/Alchemy,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
+63,148,13,Rhazkoz,8,7,0,restoration,HEALER,Herbalism/Alchemy,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
+64,151,13,Emaleath,4,11,0,bear,TANK,Herbalism/Alchemy,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
 65,153,13,Teryl,1,4,1,assassination,DPS,Skinning/Leatherworking,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
 66,175,166,Griram,2,3,1,beastmastery,DPS,Mining/Engineering,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
 67,291,446,Zavga,2,3,0,marksmanship,DPS,Mining/Engineering,prefix_identity; missing_talent_assigned_by_class_deficit_then_guid,
@@ -75,199 +75,199 @@ ordinal,guid,account,name,race,class,gender,talent_path,role,profession_pair,sel
 74,2,4,Gikiz,7,8,1,arcane,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 75,206,16,Oresto,1,2,0,retribution,DPS,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 76,41,47,Kaille,5,9,1,destruction,DPS,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-77,152,13,Thylaenea,4,1,1,protection,TANK,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+77,152,13,Thylaenea,4,1,1,arms,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 78,28,6,Agle,3,3,1,beastmastery,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 79,227,487,Karm,2,4,0,combat,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-80,95,94,Sevan,5,5,0,shadow,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-81,14,30,Hugiqime,6,11,0,bear,TANK,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+80,95,94,Sevan,5,5,0,discipline,HEALER,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+81,14,30,Hugiqime,6,11,0,restoration,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 82,352,25,Tulfigs,3,1,0,arms,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-83,54,7,Ekrann,8,3,1,marksmanship,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+83,54,7,Ekrann,8,3,1,beastmastery,DPS,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 84,3,4,Girio,1,4,0,assassination,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-85,58,282,Zorurdi,2,7,1,enhancement,DPS,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+85,58,282,Zorurdi,2,7,1,restoration,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 86,10,30,Beneland,5,8,0,fire,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 87,9,4,Arander,10,5,0,discipline,HEALER,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 88,1,4,Geny,9,1,1,fury,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 89,46,7,Kerania,1,2,1,holy,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-90,125,114,Wistera,1,9,1,affliction,DPS,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-91,68,8,Arango,10,3,0,survival,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+90,125,114,Wistera,1,9,1,affliction,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+91,68,8,Arango,10,3,0,survival,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 92,4,4,Inder,5,4,0,subtlety,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-93,37,47,Altaluna,10,1,1,protection,TANK,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+93,37,47,Altaluna,10,1,1,arms,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 94,128,12,Dannas,4,5,0,holy,HEALER,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-95,301,22,Irkaacawhup,6,7,0,elemental,DPS,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-96,84,299,Orestin,9,3,0,beastmastery,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+95,301,22,Irkaacawhup,6,7,0,restoration,HEALER,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+96,84,299,Orestin,9,3,0,beastmastery,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 97,44,47,Ronno,8,4,1,combat,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 98,71,8,Deliott,9,8,0,frost,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-99,77,292,Norma,6,1,1,arms,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-100,129,12,Relavanna,4,11,1,bear,TANK,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+99,77,292,Norma,6,1,1,arms,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+100,129,12,Relavanna,4,11,1,restoration,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 101,108,405,Deygo,3,2,1,protection,TANK,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-102,141,132,Omkitin,7,9,0,demonology,DPS,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-103,126,114,Kojo,6,3,0,marksmanship,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-104,56,282,Ewalvin,10,4,0,assassination,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-105,138,132,Stalen,5,5,0,shadow,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-106,81,292,Danklumash,7,1,0,fury,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+102,141,132,Omkitin,7,9,0,destruction,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+103,126,114,Kojo,6,3,0,survival,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+104,56,282,Ewalvin,10,4,0,subtlety,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+105,138,132,Stalen,5,5,0,holy,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+106,81,292,Danklumash,7,1,0,fury,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 107,848,56,Granzelku,2,7,1,restoration,HEALER,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-108,106,405,Galoreno,1,8,0,arcane,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-109,166,14,Konso,1,3,0,survival,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-110,118,114,Chilipe,9,4,1,subtlety,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-111,600,40,Valekaz,8,5,0,discipline,HEALER,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-112,183,15,Alvin,5,1,0,protection,TANK,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-113,51,7,Carler,10,2,0,retribution,DPS,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-114,16,30,Tanelor,4,3,0,beastmastery,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+108,106,405,Galoreno,1,8,0,fire,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+109,166,14,Konso,1,3,0,marksmanship,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+110,118,114,Chilipe,9,4,1,assassination,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+111,600,40,Valekaz,8,5,0,discipline,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+112,183,15,Alvin,5,1,0,protection,TANK,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+113,51,7,Carler,10,2,0,holy,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+114,16,30,Tanelor,4,3,0,beastmastery,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 115,328,387,Hjirogg,3,4,0,combat,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-116,601,40,Gregu,2,9,0,destruction,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-117,310,266,Ereron,4,1,0,arms,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-118,11,30,Peterent,10,5,0,holy,HEALER,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-119,1000,450,Sezukuh,8,7,1,enhancement,DPS,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-120,488,33,Tundazieth,8,8,1,fire,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-121,8,4,Lineriela,9,3,1,marksmanship,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-122,496,447,Thalbizz,7,4,1,assassination,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-123,533,390,Zolando,1,1,0,fury,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-124,136,132,Cushah,6,11,1,bear,TANK,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-125,478,271,Aslan,1,5,0,shadow,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-126,19,273,Aleria,10,3,1,survival,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-127,720,48,Ohmi,2,4,1,subtlety,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-128,880,283,Lyllenglun,3,1,1,protection,TANK,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+116,601,40,Gregu,2,9,0,demonology,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+117,310,266,Ereron,4,1,0,arms,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+118,11,30,Peterent,10,5,0,shadow,DPS,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+119,1000,450,Sezukuh,8,7,1,restoration,HEALER,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+120,488,33,Tundazieth,8,8,1,arcane,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+121,8,4,Lineriela,9,3,1,survival,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+122,496,447,Thalbizz,7,4,1,subtlety,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+123,533,390,Zolando,1,1,0,fury,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+124,136,132,Cushah,6,11,1,bear,TANK,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+125,478,271,Aslan,1,5,0,shadow,DPS,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+126,19,273,Aleria,10,3,1,marksmanship,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+127,720,48,Ohmi,2,4,1,assassination,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+128,880,283,Lyllenglun,3,1,1,fury,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 129,113,11,Dernouggs,3,2,0,holy,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 130,65,8,Talaster,9,9,0,affliction,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-131,339,24,Qojet,6,7,0,elemental,DPS,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-132,24,273,Calena,9,8,1,frost,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-133,88,299,Becalea,4,5,1,discipline,HEALER,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-134,32,6,Hakinn,3,3,0,beastmastery,DPS,Mining/Engineering,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-135,178,166,Curmir,2,1,0,arms,DPS,Mining/Blacksmithing,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
-136,13,30,Haronal,9,4,0,combat,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+131,339,24,Qojet,6,7,0,restoration,HEALER,Mining/Jewelcrafting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+132,24,273,Calena,9,8,1,arcane,DPS,Tailoring/Enchanting,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+133,88,299,Becalea,4,5,1,discipline,HEALER,Herbalism/Alchemy,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+134,32,6,Hakinn,3,3,0,marksmanship,DPS,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+135,178,166,Curmir,2,1,0,protection,TANK,Herbalism/Mining,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
+136,13,30,Haronal,9,4,0,assassination,DPS,Skinning/Leatherworking,"candidate_deficit(class,race,gender,talent); guid_tiebreak",397B47376F3F1E6972F9104134424ACEAB00D4DD6936566CE2459D0A6D699FB0
 137,15,30,Heriannah,9,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 138,21,273,Altali,10,2,1,protection,TANK,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-139,30,6,Esterva,9,3,1,survival,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-140,29,6,Gaerol,4,4,0,subtlety,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-141,89,299,Yehmo,8,5,1,discipline,HEALER,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+139,39,47,Delyn,1,3,1,beastmastery,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+140,40,47,Hammondor,5,4,0,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+141,43,47,Evanna,10,5,1,holy,HEALER,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 142,379,268,Flobivee,6,7,1,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 143,12,30,Joboz,8,8,0,arcane,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-144,17,30,Nero,5,9,0,affliction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+144,17,30,Nero,5,9,0,affliction,DPS,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 145,167,14,Nukkeh,6,11,1,bear,TANK,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-146,161,148,Fesodu,2,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+146,64,8,Terini,10,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 147,111,11,Junmin,3,2,1,protection,TANK,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-148,39,47,Delyn,1,3,1,beastmastery,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-149,40,47,Hammondor,5,4,0,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-150,156,148,Kinariane,5,5,1,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-151,381,268,Depu,6,7,0,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+148,45,47,Estellia,1,3,1,marksmanship,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+149,114,11,Gerollo,1,4,0,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+150,89,299,Yehmo,8,5,1,discipline,HEALER,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+151,398,388,Anumdest,2,7,0,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 152,25,273,Jiklinklen,7,8,1,arcane,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 153,20,273,Amanuele,9,9,1,affliction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 154,226,487,Rellaar,4,11,0,bear,TANK,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-155,165,14,Yoviwet,6,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+155,154,148,Krutleenk,7,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 156,127,12,Rilenia,1,2,1,protection,TANK,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-157,45,47,Estellia,1,3,1,marksmanship,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-158,47,7,Keeckezz,7,4,0,subtlety,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-159,173,166,Riley,5,5,1,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-160,398,388,Anumdest,2,7,0,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+157,70,8,Dellaemou,3,3,1,beastmastery,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+158,144,132,Narinaris,5,4,1,combat,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+159,156,148,Kinariane,5,5,1,discipline,HEALER,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+160,501,447,Brist,2,7,0,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 161,33,6,Branon,10,8,0,arcane,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 162,42,47,Juxe,7,9,1,affliction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-163,234,487,Nythadon,4,11,0,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-164,185,15,Emerineva,1,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+163,241,18,Melinne,4,11,1,bear,TANK,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+164,161,148,Fesodu,2,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 165,22,273,Esmerita,10,2,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-166,49,7,Natarinia,10,3,1,marksmanship,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-167,73,292,Icamer,9,4,0,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-168,210,209,Timeron,5,5,0,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-169,414,28,Pilgito,6,7,1,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-170,36,6,Larisca,9,8,1,arcane,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-171,48,7,Caramaston,9,9,0,demonology,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-172,241,18,Melinne,4,11,1,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-173,266,260,Inne,6,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-174,53,7,Tibal,10,2,0,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-175,70,8,Dellaemou,3,3,1,marksmanship,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-176,91,94,Saemulzi,8,4,1,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-177,218,17,Larinne,1,5,1,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-178,501,447,Brist,2,7,0,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+166,76,292,Cariona,1,3,1,survival,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+167,228,487,Aimlamdi,3,4,1,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+168,173,166,Riley,5,5,1,discipline,HEALER,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+169,1168,291,Dinne,8,7,1,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+170,36,6,Larisca,9,8,1,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+171,48,7,Caramaston,9,9,0,destruction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+172,302,22,Unhwo,6,11,0,bear,TANK,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+173,165,14,Yoviwet,6,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+174,181,15,Gunug,3,2,0,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+175,86,299,Zelzehdi,8,3,1,marksmanship,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+176,237,18,Iwarrett,1,4,0,combat,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+177,210,209,Timeron,5,5,0,holy,HEALER,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+178,381,268,Depu,6,7,0,elemental,DPS,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 179,85,299,Ivando,10,8,0,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 180,59,282,Tannie,5,9,1,demonology,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-181,300,22,Carshu,6,11,1,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-182,271,386,Ihlzurn,2,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-183,181,15,Gunug,3,2,0,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-184,74,292,Tudrol,4,3,0,marksmanship,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-185,114,11,Gerollo,1,4,0,combat,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-186,235,18,Celenella,1,5,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-187,934,490,Rokdomm,2,7,0,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+181,234,487,Nythadon,4,11,0,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+182,185,15,Emerineva,1,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+183,197,350,Geronica,1,2,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+184,124,114,Rontoh,8,3,1,survival,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+185,407,28,Amancy,1,4,1,subtlety,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+186,218,17,Larinne,1,5,1,discipline,HEALER,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+187,414,28,Pilgito,6,7,1,enhancement,DPS,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 188,94,94,Clarco,10,8,0,frost,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 189,115,11,Lekos,7,9,1,demonology,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-190,302,22,Unhwo,6,11,0,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-191,452,31,Brorriggs,3,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-192,197,350,Geronica,1,2,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-193,76,292,Cariona,1,3,1,marksmanship,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-194,228,487,Aimlamdi,3,4,1,combat,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-195,250,441,Deleri,5,5,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-196,970,396,Satoru,2,7,1,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+190,300,22,Carshu,6,11,1,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+191,266,260,Inne,6,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+192,207,16,Brinerie,1,2,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+193,191,350,Bangorn,3,3,0,marksmanship,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+194,418,269,Olaria,5,4,1,subtlety,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+195,235,18,Celenella,1,5,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+196,934,490,Rokdomm,2,7,0,elemental,DPS,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 197,100,405,Daral,5,8,0,arcane,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 198,213,209,Redaristo,5,9,0,destruction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 199,343,267,Vinacanna,4,11,1,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-200,453,31,Natarinne,5,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-201,207,16,Brinerie,1,2,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-202,86,299,Zelzehdi,8,3,1,beastmastery,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-203,237,18,Iwarrett,1,4,0,subtlety,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-204,265,260,Oloss,3,5,1,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-205,1168,291,Dinne,8,7,1,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+200,271,386,Ihlzurn,2,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+201,225,17,Gysa,3,2,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+202,238,18,Tahdu,2,3,1,beastmastery,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+203,645,43,Jarduggs,3,4,0,combat,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+204,250,441,Deleri,5,5,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+205,970,396,Satoru,2,7,1,enhancement,DPS,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 206,110,11,Kaileni,1,8,1,arcane,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 207,248,441,Tezet,2,9,1,affliction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 208,344,267,Shadris,4,11,1,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-209,655,276,Charnard,5,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-210,225,17,Gysa,3,2,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-211,124,114,Rontoh,8,3,1,survival,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-212,645,43,Jarduggs,3,4,0,subtlety,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-213,288,21,Nizmen,8,5,1,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-214,1169,291,Juvo,8,7,0,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-215,121,114,Giney,1,8,1,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+209,321,23,Karnea,4,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+210,216,209,Vanestra,1,2,1,retribution,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+211,263,260,Zebla,6,3,1,beastmastery,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+212,873,57,Trihlurist,2,4,0,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+213,265,260,Oloss,3,5,1,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+214,1169,291,Juvo,8,7,0,elemental,DPS,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+215,121,114,Giney,1,8,1,arcane,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 216,286,21,Reverona,1,9,1,affliction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 217,469,32,Iolgie,6,11,1,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-218,2051,124,Atojan,8,1,1,protection,TANK,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-219,216,209,Vanestra,1,2,1,retribution,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-220,238,18,Tahdu,2,3,1,beastmastery,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-221,873,57,Trihlurist,2,4,0,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-222,289,446,Gery,5,5,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-223,1195,75,Huhrur,8,7,1,restoration,HEALER,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+218,452,31,Brorriggs,3,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+219,256,19,Jager,3,2,0,retribution,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+220,294,446,Drordagg,3,3,0,survival,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+221,983,286,Umdank,2,4,0,combat,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+222,288,21,Nizmen,8,5,1,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+223,1195,75,Huhrur,8,7,1,enhancement,DPS,Mining/Jewelcrafting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 224,131,12,Pemlick,7,8,0,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 225,322,23,Lymke,7,9,1,destruction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-226,491,33,Ansedoovah,6,11,0,restoration,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-227,2120,128,Zhehdi,8,1,1,protection,TANK,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-228,263,260,Zebla,6,3,1,beastmastery,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-229,983,286,Umdank,2,4,0,assassination,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+226,491,33,Ansedoovah,6,11,0,restoration,HEALER,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+227,453,31,Natarinne,5,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+228,357,25,Avelsuso,6,3,0,marksmanship,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+229,1043,397,Umus,3,4,0,subtlety,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 230,323,23,Lataria,4,5,1,discipline,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-231,145,13,Adamelin,5,8,0,arcane,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+231,145,13,Adamelin,5,8,0,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 232,374,26,Ketkee,7,9,1,destruction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-233,347,267,Nynyae,4,11,1,balance,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-234,245,441,Amellie,1,1,1,arms,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-235,357,25,Avelsuso,6,3,0,survival,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-236,1372,297,Grotdontut,2,4,1,combat,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+233,347,267,Nynyae,4,11,1,balance,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+234,655,276,Charnard,5,1,0,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+235,364,475,Kruhlmuk,2,3,0,marksmanship,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+236,1372,297,Grotdontut,2,4,1,subtlety,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 237,417,269,Chadas,4,5,0,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 238,174,166,Fykoxu,7,8,1,frost,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 239,380,268,Eldamas,1,9,0,affliction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-240,348,267,Ryalyssa,4,11,1,balance,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-241,318,23,Kruth,2,1,0,arms,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-242,364,475,Kruhlmuk,2,3,0,survival,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-243,427,29,Velanie,5,5,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-244,229,487,Astorton,5,8,0,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+240,348,267,Ryalyssa,4,11,1,balance,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+241,2051,124,Atojan,8,1,1,protection,TANK,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+242,448,270,Krach,2,3,0,survival,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+243,652,276,Shihjal,8,5,0,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+244,229,487,Astorton,5,8,0,frost,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 245,392,27,Boscarad,1,9,0,demonology,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-246,373,26,Nelaei,4,11,1,feral,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-247,395,27,Noje,6,1,0,fury,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-248,448,270,Krach,2,3,0,survival,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-249,652,276,Shihjal,8,5,0,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+246,373,26,Nelaei,4,11,1,feral,DPS,Skinning/Leatherworking,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+247,318,23,Kruth,2,1,0,arms,DPS,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+248,473,32,Wichuvaul,6,3,0,survival,DPS,Mining/Engineering,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+249,658,44,Onchun,8,5,0,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 250,269,260,Nicata,1,8,1,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-251,419,269,Gwenne,1,9,1,destruction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+251,419,269,Gwenne,1,9,1,demonology,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 252,413,28,Moristra,4,11,1,feral,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-253,451,31,Pandra,1,1,1,fury,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-254,658,44,Onchun,8,5,0,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+253,395,27,Noje,6,1,0,fury,DPS,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+254,823,54,Golimle,3,5,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 255,315,266,Attian,1,8,0,frost,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 256,446,270,Rolander,1,9,0,destruction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 257,588,39,Deskovich,6,11,0,balance,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-258,458,31,Talozthe,2,1,1,fury,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-259,823,54,Golimle,3,5,1,holy,HEALER,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+258,458,31,Talozthe,2,1,1,fury,DPS,Mining/Blacksmithing,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+259,289,446,Gery,5,5,1,shadow,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 260,354,25,Vlarin,1,8,0,frost,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 261,463,389,Soznawzy,2,9,1,demonology,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 262,590,39,Dodrach,6,11,0,balance,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-263,547,36,Odig,3,1,0,arms,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-264,257,19,Nelis,1,5,1,shadow,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-265,370,26,Calastoren,5,8,0,frost,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+263,815,281,Barenevan,5,1,0,arms,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+264,427,29,Velanie,5,5,1,shadow,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+265,718,48,Ronri,8,8,0,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 266,464,389,Shasom,2,9,1,destruction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 267,698,392,Biatiozi,6,11,1,feral,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-268,815,281,Barenevan,5,1,0,fury,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-269,522,272,Alasteric,5,5,0,shadow,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
-270,718,48,Ronri,8,8,0,fire,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+268,820,54,Castria,5,1,1,fury,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+269,663,44,Palle,8,5,1,shadow,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
+270,1127,290,Sughinil,8,8,0,frost,DPS,Tailoring/Enchanting,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 271,477,32,Yamona,1,9,1,destruction,DPS,Herbalism/Mining,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183
 272,717,48,Zoboia,6,11,1,feral,DPS,Herbalism/Alchemy,"v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",8EB3F99417F7A7E12A8D8845270F6EF38A97B24304039B2BF2639D34104E8183

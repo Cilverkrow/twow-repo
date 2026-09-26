@@ -1,4 +1,4 @@
-# Roster plan 272, twow-repo#366 (version 2)
+# Roster plan 272, twow-repo#366 (version 3)
 
 **Planning data only.** Nothing here writes to a database, changes the active roster
 version, or is wired into `make`, `db-init.sh` or Helm. Activating it (EXPAND 3 → 4, respec
@@ -45,10 +45,14 @@ The whole 272 is planned from scratch. **Always more healers than tanks.**
 
 - **8 bears:** night elf and tauren, each gender twice.
 - **At least one warrior tank per race:** all 10 races covered.
-- **Existing 136** keep class, race, gender, name and level. A bot keeps its talent path
-  whenever that path still has room; only **13 need a respec** (7 warriors DPS → protection,
-  6 druids → bear), **75 get a new profession pair**, 60 stay unchanged
-  (`existing-136-diff.csv`).
+- **Ordinals 1–136 alone already follow the rules** (#366 part 4: they are re-specced and
+  reset before any expansion): exactly half of the target, **tank 20 / healer 30 / DPS 86**
+  (A 10/15/47, H 10/15/39), 4 bears (night elf and tauren, one per gender), a warrior tank
+  per race, professions at half the owner table. The new 137–272 get the rest
+  (again 20/30/86 and 4 bears), so all 272 give 40/60/172 and 8 bears.
+- **Existing 136** keep class, race, gender, name and level; `existing-136-diff.csv` lists
+  43 respecs and 78 profession changes (44 unchanged). A full level-1 reset follows, so the
+  number of respecs costs nothing: only the stored `specNo` matters.
 - **Professions over all 272** (owner table): Herbalism/Alchemy 54, Tailoring/Enchanting 49,
   Skinning/Leatherworking 49, Mining/Blacksmithing 33, Mining/Engineering 27,
   Mining/Jewelcrafting 22, Herbalism/Mining (double gatherers) 38. Assigned by class fit:
