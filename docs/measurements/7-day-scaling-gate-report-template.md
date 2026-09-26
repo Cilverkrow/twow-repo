@@ -12,7 +12,7 @@ may restart, reconfigure or write to the live stack.
 
 | # | Decision | Value |
 |---|---|---|
-| D1 | Tick budget | p99 of logged `Update map system` ≤ **1000 ms per day**, and no single tick > **3000 ms** |
+| D1 | Tick budget | **interim:** no logged `Update map system` > **3000 ms**, plus the **count of slow updates (> 100 ms) per day** as a trend. `perf.log` only records updates above `PerformanceLog.Slow*Update` (default 100 ms), so a real p99 cannot be computed from it. **Target p99 ≤ 1000 ms/day** becomes measurable with the tick statistics from #351, a prerequisite before scaling beyond 136 |
 | D2 | Plausible progress | roster **median level rises every day until level 20**; no roster bot online **≥ 24 h without XP** |
 | D3 | No loops | no bot with **≥ 10 deaths in one hour** at the same killer and place (≤ 30 yd); no bot with **≥ 5× `no destination`** as death reason per day |
 | D4 | Snapshot collection | **OB-00 takes the daily snapshot** (csv/log copies plus the DB queries in section 3) to `Y:\backup twwow\workspace-relocation-20260902\evidence\ws-60\longrun-7d\<YYYY-MM-DD>\`. Needed because mangosd **truncates the csv logs on every start** (`ops/live/live-smoke.sh`, header) |
@@ -42,7 +42,7 @@ before it is the only copy of that data.
 | Gate | Metric | Source | Threshold | Result |
 |---|---|---|---|---|
 | G1 0 lost bots | roster GUIDs present in `characters`, roster version unchanged or changed only through an audited operation, no `SNAPSHOT_HASH_MISMATCH`/`INVALID_FAIL_CLOSED` in the server log | DB (3.1), server log | 0 lost, 0 invalid | |
-| G2 tick budget | per day: count, p50/p95/p99/max of `Update map system: <n>ms` | `perf.log` (only ticks ≳ 200 ms are logged, so p99 over the logged lines is conservative) | D1 | |
+| G2 tick budget | per day: max of `Update map system: <n>ms`, count of slow updates (> 100 ms); p99 once #351 exists | `perf.log` (slow updates only), later #351 | D1 | |
 | G3 progress | roster level distribution per day, level-ups per day, bots without progress ≥ 24 h online | DB (3.2), `levelup.log` | D2 | |
 | G4 no loops | deaths per bot and hour, repeated killer+position, `no destination` count | `deaths.csv` (3.4) | D3 | |
 | G5 stability | server restarts, crashes (exit code ≠ 0, OOMKilled), MariaDB "marked as crashed" | `docker inspect`, `docker logs <db>` | 0 unplanned | |
@@ -113,7 +113,7 @@ WHERE ci.bag = 0 AND ci.slot < 19;
 
 ## 4. Daily table
 
-| Day | Date | Restarts | Roster present | Online | Median level | Level-ups | p99 tick | Max tick | Deaths | Loop hits | Quest turn-ins | Notes |
+| Day | Date | Restarts | Roster present | Online | Median level | Level-ups | Slow updates (> 100 ms) | Max tick | Deaths | Loop hits | Quest turn-ins | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 | | | /136 | | | | | | | | | |
 | 2 | | | | | | | | | | | | |
