@@ -47,10 +47,32 @@ deploy/roster/reset-l1/run-reset-l1.sh --container <db-container> --expected 136
 ```
 
 `--conf` reads the CharacterDatabase credentials and passes them only through
-`MYSQL_PWD`. Exit code 0 and `RESULT=PASS guards=7 asserts_pass=23` are required.
+`MYSQL_PWD`. Exit code 0 and `RESULT=PASS guards=8 asserts_pass=23` are required (the eighth guard is the target scope below).
 The script is idempotent: a second run on a reset roster passes again.
 
 ## Evidence
 
 Dry run 2026-09-25 on a disposable copy of the live database:
 `Y:\backup twwow\workspace-relocation-20260902\evidence\ws-60\ob40-334-roster-reset-l1-20260925\`.
+
+## Target scope (#366)
+
+To reset only part of the active roster, for example the new ordinals 137–272 after an
+expansion, pass an ordinal range and the SHA-256 of the approved target list:
+
+```bash
+h=$(deploy/roster/reset-l1/run-reset-l1.sh --hash-from-csv deploy/roster/expand-272/v4-272-roster-plan.csv --ordinals 137-272)
+deploy/roster/reset-l1/run-reset-l1.sh --container <db-container> --expected 136 \
+    --ordinals 137-272 --expect-guid-sha256 "$h" [--conf <runtime mangosd.conf>] --apply
+```
+
+The hash covers `ordinal:guid` pairs in ordinal order joined by `,`. The eighth guard,
+`guard_scope_guid_sha256`, aborts before the first mutation unless the active roster's
+members in that range match it exactly. Members outside the range are non-targets, so
+every `non_target_*` assert covers them. Without `--ordinals` the whole roster is the
+target, as in #334; `RESULT=PASS guards=8 asserts_pass=23` is required in both modes.
+
+`test-reset-l1-scope.sh` is the disposable-DB matrix for this (argument validation,
+wrong hash, player inside the scope, scoped reset with a byte-identical fingerprint
+outside the scope, repeat, full scope). It refuses containers that are not labelled
+`twow.purpose=*disposable*`.

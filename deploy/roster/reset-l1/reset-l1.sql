@@ -12,13 +12,20 @@
 -- starter outfit, quests, profession skills, level-range skills clamped to level 1,
 -- auras, cooldowns, action bars, pets, mail, reputation, forgotten skills, bot
 -- key/value store, group membership, corpses; spells and talents via at_login.
+--
+-- Target scope (#366): the wrapper sets @scope_from/@scope_to (ordinals, inclusive) and,
+-- for a partial scope, @expected_guid_sha256 = SHA-256 (lowercase hex) of
+-- "ordinal:guid" pairs in ordinal order joined by ",". Members outside the scope are
+-- non-targets and fall under every non_target_* assert.
 SET SESSION sql_mode = 'STRICT_ALL_TABLES,NO_ENGINE_SUBSTITUTION';
+SET SESSION group_concat_max_len = 1048576;
 
-CREATE TEMPORARY TABLE reset_targets (guid INT UNSIGNED NOT NULL PRIMARY KEY) ENGINE=MEMORY
-SELECT rm.character_guid AS guid
+CREATE TEMPORARY TABLE reset_targets (guid INT UNSIGNED NOT NULL PRIMARY KEY, ordinal INT UNSIGNED NOT NULL) ENGINE=MEMORY
+SELECT rm.character_guid AS guid, rm.ordinal AS ordinal
 FROM ai_playerbot_roster_current rc
 JOIN ai_playerbot_roster_member rm ON rm.version_id = rc.version_id
-WHERE rc.singleton_id = 1;
+WHERE rc.singleton_id = 1 AND rm.ordinal BETWEEN @scope_from AND @scope_to;
+SET @scope_guid_sha256 = (SELECT SHA2(GROUP_CONCAT(CONCAT(ordinal, ':', guid) ORDER BY ordinal SEPARATOR ','), 256) FROM reset_targets);
 
 -- ------------------------------------------------------------------ guards
 CREATE TEMPORARY TABLE reset_guard (
@@ -27,6 +34,10 @@ CREATE TEMPORARY TABLE reset_guard (
 ) ENGINE=MEMORY;
 INSERT INTO reset_guard VALUES ('guard_target_count',
     (SELECT COUNT(*) = @expected_targets FROM reset_targets));
+-- Full scope needs no hash; a partial scope must match the approved list exactly.
+INSERT INTO reset_guard VALUES ('guard_scope_guid_sha256',
+    (SELECT (@scope_from = 1 AND @scope_to = 4294967295 AND @expected_guid_sha256 IS NULL)
+         OR @scope_guid_sha256 = @expected_guid_sha256));
 INSERT INTO reset_guard VALUES ('guard_all_targets_exist',
     (SELECT COUNT(*) = @expected_targets FROM characters c JOIN reset_targets t ON t.guid = c.guid));
 INSERT INTO reset_guard VALUES ('guard_all_offline',
@@ -216,6 +227,6 @@ UNION ALL SELECT 'item_instance_non_target', COUNT(*) FROM item_instance x LEFT 
 INSERT INTO reset_assert
 SELECT CONCAT('non_target_', b.label), b.v = a.v FROM reset_baseline b JOIN reset_after a ON a.label = b.label;
 
-SELECT CONCAT('RESET_TARGETS=', COUNT(*)) FROM reset_targets;
+SELECT CONCAT('RESET_TARGETS=', COUNT(*), ' SCOPE=', MIN(ordinal), '-', MAX(ordinal), ' GUID_SHA256=', @scope_guid_sha256) FROM reset_targets;
 SELECT CONCAT('STARTER_ITEMS=', COUNT(*)) FROM reset_starter_items;
 SELECT CONCAT('ASSERT_', label, '=', IF(ok = 1, 'PASS', 'FAIL')) FROM reset_assert ORDER BY label;
