@@ -8,18 +8,17 @@ followed by an individual owner approval. A green report is necessary, not suffi
 Everything below is **read-only**: log files, `docker inspect`, and SELECTs. Nothing here
 may restart, reconfigure or write to the live stack.
 
-## 0. Open decisions before the first run
+## 0. Thresholds (owner decision 2026-09-26, via OB-00)
 
-These are not defined anywhere in the tree today (ADR-0031 names the goal but no thresholds).
-Until the owner decides them, the report states the measured values and marks the gate row
-`OPEN`, not `PASS`.
-
-| # | Decision | Proposal (to argue with) |
+| # | Decision | Value |
 |---|---|---|
-| D1 | Tick budget | p99 of logged `Update map system` ≤ 1000 ms per day **and** no single tick > 3000 ms; compare against the pre-scaling baseline of the same window |
-| D2 | "Plausible progress" | roster median level rises every day until level 20; no roster bot online ≥ 24 h without XP or level change |
-| D3 | "No loops" | no bot with ≥ 10 deaths in one hour at the same killer + ≤ 30 yd position; no bot whose death reason is `no destination` ≥ 5× per day |
-| D4 | Snapshot collection | daily read-only snapshot (section 3), because mangosd **truncates the csv logs on every start** (`ops/live/live-smoke.sh`, header). A scheduled job is persistent automation and needs its own approval; otherwise snapshots are taken by hand once a day |
+| D1 | Tick budget | p99 of logged `Update map system` ≤ **1000 ms per day**, and no single tick > **3000 ms** |
+| D2 | Plausible progress | roster **median level rises every day until level 20**; no roster bot online **≥ 24 h without XP** |
+| D3 | No loops | no bot with **≥ 10 deaths in one hour** at the same killer and place (≤ 30 yd); no bot with **≥ 5× `no destination`** as death reason per day |
+| D4 | Snapshot collection | **OB-00 takes the daily snapshot** (csv/log copies plus the DB queries in section 3) to `Y:\backup twwow\workspace-relocation-20260902\evidence\ws-60\longrun-7d\<YYYY-MM-DD>\`. Needed because mangosd **truncates the csv logs on every start** (`ops/live/live-smoke.sh`, header) |
+
+A changed threshold is a new owner decision and a change to this file, never an edit in a
+filled-in report.
 
 ## 1. Run identity
 
@@ -43,7 +42,7 @@ before it is the only copy of that data.
 | Gate | Metric | Source | Threshold | Result |
 |---|---|---|---|---|
 | G1 0 lost bots | roster GUIDs present in `characters`, roster version unchanged or changed only through an audited operation, no `SNAPSHOT_HASH_MISMATCH`/`INVALID_FAIL_CLOSED` in the server log | DB (3.1), server log | 0 lost, 0 invalid | |
-| G2 tick budget | per day: count, p50/p95/p99/max of `Update map system: <n>ms` | `perf.log` (only ticks ≳ 200 ms are logged) | D1 | |
+| G2 tick budget | per day: count, p50/p95/p99/max of `Update map system: <n>ms` | `perf.log` (only ticks ≳ 200 ms are logged, so p99 over the logged lines is conservative) | D1 | |
 | G3 progress | roster level distribution per day, level-ups per day, bots without progress ≥ 24 h online | DB (3.2), `levelup.log` | D2 | |
 | G4 no loops | deaths per bot and hour, repeated killer+position, `no destination` count | `deaths.csv` (3.4) | D3 | |
 | G5 stability | server restarts, crashes (exit code ≠ 0, OOMKilled), MariaDB "marked as crashed" | `docker inspect`, `docker logs <db>` | 0 unplanned | |
@@ -126,6 +125,6 @@ WHERE ci.bag = 0 AND ci.slot < 19;
 
 ## 5. Verdict
 
-`GATE=PASS|FAIL|OPEN` with one line per gate. `OPEN` whenever a threshold (section 0) is still
-undecided or a day's snapshot is missing. The report goes to OB-00; the scaling decision itself
+`GATE=PASS|FAIL|OPEN` with one line per gate. `OPEN` whenever a day's snapshot is missing or a restart
+lost data that no snapshot covers. The report goes to OB-00; the scaling decision itself
 is an individual owner approval (overlay §5).
