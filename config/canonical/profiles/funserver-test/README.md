@@ -51,4 +51,10 @@ Release train 3 switches the bots' auction-house use off
 no longer kept for the auction house, and there are no AH trips or bids. Vendor
 buying and selling are unchanged.
 
-All fifty-four deviations are classified in `semantic-profile.tsv`.
+Release train 4 pins three quest-routing keys at their core defaults: no
+cross-continent quest routes below level 10, quest areas at most five levels
+above the bot, and progress-aware quest objectives (0 restores the old time
+budget). It also pins the per-destination death rule (a travel target where a
+bot died twice is avoided for an hour).
+
+All fifty-nine deviations are classified in `semantic-profile.tsv`.
