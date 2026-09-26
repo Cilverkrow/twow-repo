@@ -59,4 +59,12 @@ bot died twice is avoided for an hour). Bonus loot is extended to the
 reviewed boss reward chests (`Funserver.Loot.Bonus.BossChest = 1`, owner
 decision 2026-09-26, #345).
 
-All sixty deviations are classified in `semantic-profile.tsv`.
+Release train 5 switches on the shared danger map for travel targets,
+profession use (gathering within 40 yards, crafting), role- and
+profession-aware group rolls, leaving zones clearly above the bot's level and
+the follow diagnostics, each with its trace where there is one. The
+roster-control keys for player commands are pinned at their code defaults.
+`AiPlayerbot.AutoLearnTrainerSpells` is prepared as a comment only; it waits
+for an owner decision (#356).
+
+All seventy-eight deviations are classified in `semantic-profile.tsv`.
