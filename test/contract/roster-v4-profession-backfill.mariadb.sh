@@ -134,6 +134,12 @@ fixture; root_sql "UPDATE tw_char.characters SET account=2 WHERE guid=50;"
 expect_fail_atomic foreign-bot-or-player gate_run 42
 fixture; root_sql "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,50,1,4294967295,'profession_pair',99,'v1');"
 expect_fail_atomic invalid-existing-profession-pair gate_run 42
+# Pair 7 (Herbalism/Mining, twow-core#161) is a valid existing value: the gate accepts it
+# and overwrites it with the canonical pair from the source.
+fixture; root_sql "INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data) VALUES (0,50,1,4294967295,'profession_pair',7,'v1');"
+gate_run 42 | grep -q 'ROSTER_V4_GATE=APPLIED' || fail 'existing pair 7 was not accepted'
+diff -u <(expected_target) <(actual_target) || fail 'existing pair 7 was not replaced by the canonical value'
+pass 'existing pair 7 is valid and replaced by the canonical value'
 fixture; root_sql "ALTER TABLE cv_bots.ai_playerbot_random_bots DROP INDEX uq_owner_bot_event;"
 expect_fail_atomic missing-owner-bot-event-unique-key gate_run 42
 

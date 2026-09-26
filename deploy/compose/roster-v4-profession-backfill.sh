@@ -29,7 +29,7 @@ validate_source() {
         NR == 1 { next }
         $1 !~ /^[0-9]+$/ || $2 !~ /^[0-9]+$/ { exit 1 }
         $1 != NR - 1 || $2 == 0 { exit 1 }
-        $10 !~ /^(Herbalism\/Alchemy|Skinning\/Leatherworking|Mining\/Blacksmithing|Mining\/Engineering|Mining\/Jewelcrafting|Tailoring\/Enchanting)$/ { exit 1 }
+        $10 !~ /^(Herbalism\/Alchemy|Skinning\/Leatherworking|Mining\/Blacksmithing|Mining\/Engineering|Mining\/Jewelcrafting|Tailoring\/Enchanting|Herbalism\/Mining)$/ { exit 1 }
         seen[$2]++ != 0 { exit 1 }
         { print $1 "\t" $2 "\t" $10; count++ }
         END { exit !(count == expected) }
@@ -66,6 +66,7 @@ main() {
             if (p == "Mining/Engineering") return 4;
             if (p == "Mining/Jewelcrafting") return 5;
             if (p == "Tailoring/Enchanting") return 6;
+            if (p == "Herbalism/Mining") return 7;
             exit 1;
         }
         { printf "%s(%s,%s,%s)", (NR == 1 ? "" : ","), $1, $2, value($3) }
@@ -94,7 +95,7 @@ INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM ai_playerbot_roster
 -- system ownership from the persisted character account instead.
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM roster_v4_target t JOIN characters c ON c.guid=t.guid JOIN tw_logon.account a ON a.id=c.account AND a.username REGEXP '^RNDBOT[0-9]+$') = $EXPECTED_COUNT, 1, 0);
 -- Existing target events must already be structurally valid.  Do not repair ambiguous rows.
-INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM cv_bots.ai_playerbot_random_bots p JOIN roster_v4_target t ON t.guid=p.bot WHERE p.event='$EVENT_NAME' AND (p.owner<>0 OR p.validIn IS NULL OR p.validIn<>$EVENT_VALID_IN OR p.data IS NULL OR p.data<>'$EVENT_DATA' OR p.value IS NULL OR p.value NOT BETWEEN 1 AND 6)) = 0, 1, 0);
+INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM cv_bots.ai_playerbot_random_bots p JOIN roster_v4_target t ON t.guid=p.bot WHERE p.event='$EVENT_NAME' AND (p.owner<>0 OR p.validIn IS NULL OR p.validIn<>$EVENT_VALID_IN OR p.data IS NULL OR p.data<>'$EVENT_DATA' OR p.value IS NULL OR p.value NOT BETWEEN 1 AND 7)) = 0, 1, 0);
 INSERT INTO roster_v4_assert SELECT IF((SELECT COUNT(*) FROM cv_bots.ai_playerbot_random_bots p JOIN roster_v4_target t ON t.guid=p.bot WHERE p.event='$EVENT_NAME') <= $EXPECTED_COUNT, 1, 0);
 -- Only the keyed profession_pair rows below can change; all other events and every non-target GUID are untouched.
 INSERT INTO cv_bots.ai_playerbot_random_bots (owner,bot,time,validIn,event,value,data)
