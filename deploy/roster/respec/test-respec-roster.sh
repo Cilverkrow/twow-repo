@@ -73,5 +73,13 @@ check "keeper kept herb spell 2366" "$(echo "SELECT COUNT(*) FROM character_spel
 # 6. repeat -> PASS, nothing to do
 "$run" --container "$container" --csv "$csv" --ordinals "$ordinals" --expect-guid-sha256 "$good" --spec-index "$tmp/index-with-bear.tsv" --apply >"$tmp/t6.out" 2>&1 && r=0 || r=$?
 check "repeat: exit" "$r" 0; check "repeat: nothing left to do" "$(grep -o 'RESPEC=0 PAIR_CHANGE=0' "$tmp/t6.out")" "RESPEC=0 PAIR_CHANGE=0"
+# 7. a member without events (new after an EXPAND): abort without the flag, create with it
+echo "DELETE FROM cv_bots.ai_playerbot_random_bots WHERE owner = 0 AND bot = $g1 AND event IN ('specNo', 'profession_pair');" | q
+b=$(state)
+"$run" --container "$container" --csv "$csv" --ordinals "$ordinals" --expect-guid-sha256 "$good" --spec-index "$tmp/index-with-bear.tsv" --apply >"$tmp/t7.out" 2>&1 && r=0 || r=$?
+check "missing events without flag: exit" "$r" 1; check "missing events without flag: nothing changed" "$(state)" "$b"
+"$run" --container "$container" --csv "$csv" --ordinals "$ordinals" --expect-guid-sha256 "$good" --spec-index "$tmp/index-with-bear.tsv" --insert-missing-events --apply >"$tmp/t8.out" 2>&1 && r=0 || r=$?
+check "missing events with flag: exit" "$r" 0; check "missing events with flag: inserted" "$(grep -o 'INSERTED_SPECNO=1 INSERTED_PAIR=1' "$tmp/t8.out")" "INSERTED_SPECNO=1 INSERTED_PAIR=1"
+check "inserted pair row format" "$(echo "SELECT CONCAT(validIn, '|', data) FROM cv_bots.ai_playerbot_random_bots WHERE owner = 0 AND bot = $g1 AND event = 'profession_pair';" | q)" "4294967295|v1"
 
 [ "$fail" -eq 0 ] && echo "MATRIX=PASS" || { echo "MATRIX=FAIL"; exit 1; }

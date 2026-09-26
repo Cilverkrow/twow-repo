@@ -51,3 +51,11 @@ Idempotent: a second run reports `RESPEC=0 PAIR_CHANGE=0`.
 containers not labelled `twow.purpose=*disposable*`): bear missing from the index, wrong
 hash, unknown pair, bot online (each aborts with no change), apply (synthetic profession
 state: a leaving skill and its spell are removed, a kept one stays), repeat.
+
+## New members (after an EXPAND)
+
+Bots that just joined the roster have no `specNo`/`profession_pair` events. Pass
+`--insert-missing-events` to create them from the plan (format of the existing roster rows:
+`specNo` with `validIn`/`data` NULL, `profession_pair` with `validIn = 4294967295`, `data = 'v1'`);
+without the flag a missing event aborts in `guard_events_present`. The output reports
+`INSERTED_SPECNO`/`INSERTED_PAIR`; inserted bots also get the talent-reset flag.

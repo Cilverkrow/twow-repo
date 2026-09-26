@@ -2,7 +2,11 @@
 # Wrapper for respec-roster.sql (twow-repo#366 A6).
 #
 #   run-respec-roster.sh --container <db> --csv <roster-plan.csv> --ordinals <from>-<to>
-#                        --expect-guid-sha256 <hex> [--spec-index <tsv>] [--conf <mangosd.conf>] --apply
+#                        --expect-guid-sha256 <hex> [--spec-index <tsv>] [--conf <mangosd.conf>]
+#                        [--insert-missing-events] --apply
+#
+# --insert-missing-events creates missing specNo/profession_pair events (new members after
+# an EXPAND); without it a missing event aborts in a guard.
 #
 # Applies talent path (as specNo) and profession pair of the given ordinal range of an
 # approved roster CSV to the active roster. --expect-guid-sha256 is the SHA-256 of the
@@ -18,7 +22,7 @@ set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 sql="$here/respec-roster.sql"
 spec_index="$here/premade-spec-index.tsv"
-container="" csv="" ordinals="" expect_hash="" conf="" apply=""
+container="" csv="" ordinals="" expect_hash="" conf="" apply="" insert_missing=0
 while [ $# -gt 0 ]; do
   case $1 in
     --container) container=$2; shift 2 ;;
@@ -28,6 +32,7 @@ while [ $# -gt 0 ]; do
     --spec-index) spec_index=$2; shift 2 ;;
     --conf) conf=$2; shift 2 ;;
     --apply) apply=1; shift ;;
+    --insert-missing-events) insert_missing=1; shift ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -68,7 +73,7 @@ fi
 
 echo "RESPEC_SQL_SHA256=$(sha256sum "$sql" | cut -d' ' -f1) SPEC_INDEX_SHA256=$(sha256sum "$spec_index" | cut -d' ' -f1) CSV_SHA256=$(sha256sum "$csv" | cut -d' ' -f1)"
 echo "CONTAINER=$container SCOPE=$from-$to ROWS=$expected START=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-out=$( { printf 'SET @expected_rows = %d;\nSET @expected_guid_sha256 = '\''%s'\'';\n' "$expected" "$expect_hash"
+out=$( { printf 'SET @expected_rows = %d;\nSET @expected_guid_sha256 = '\''%s'\'';\nSET @insert_missing = %d;\n' "$expected" "$expect_hash" "$insert_missing"
          printf 'CREATE TEMPORARY TABLE respec_plan (ordinal INT UNSIGNED NOT NULL, guid INT UNSIGNED NOT NULL PRIMARY KEY, class TINYINT UNSIGNED NOT NULL, spec_no INT UNSIGNED NOT NULL, pair TINYINT UNSIGNED NOT NULL) ENGINE=MEMORY;\n'
          printf 'INSERT INTO respec_plan (ordinal, guid, class, spec_no, pair) VALUES %s;\n' "$values"
          cat "$sql"; } |
