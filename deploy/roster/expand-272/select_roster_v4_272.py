@@ -1,62 +1,71 @@
 #!/usr/bin/env python3
-"""Deterministic selection of roster ordinals 137-272 (twow-repo#366).
+"""Deterministic 272-bot roster plan (twow-repo#366), version 2.
 
-Planning data only: reads the immutable 136 prefix and a read-only snapshot of the
-free RNDBOT pool, writes the 272-row plan CSV. It touches no database.
+Planning data only: reads the 136 live roster rows (V4 prefix) and a read-only
+snapshot of the free RNDBOT pool, writes the 272-row plan CSV and a diff of the
+existing 136. It touches no database.
 
     python3 select_roster_v4_272.py --prefix ../v4-136-profession-prefix.csv \
-        --pool free-pool-snapshot.tsv --out v4-272-roster-plan.csv
+        --pool free-pool-snapshot.tsv --out v4-272-roster-plan.csv \
+        --diff existing-136-diff.csv
 
-Targets come from the owner decisions D-A..D-C (#366, 2026-09-26): 20 % tanks over
-272, one extra bear per druid race, professions per the target table. Same inputs
-always give the same output: candidates are taken by (level, guid).
+Owner decisions (#366, 2026-09-26, part 3): plan all 272 from scratch; tanks 40,
+healers 60, DPS 172, factions 136/136; at least one warrior tank per race; 8 bears
+(night elf and tauren, each gender twice). The existing 136 keep class, race, gender,
+name and level: only talent path/role and profession pair may change, and a bot keeps
+its current path whenever that path still has room. New members come from the pool by
+(level, guid). Same inputs always give the same output.
 """
 import argparse
 import csv
 import hashlib
 import sys
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 
-ALLIANCE = {1, 3, 4, 7, 10}  # human, dwarf, night elf, gnome, high elf
-HORDE = {2, 5, 6, 8, 9}      # orc, undead, tauren, troll, goblin
+ALLIANCE = {1, 3, 4, 7, 10}
+HORDE = {2, 5, 6, 8, 9}
+NIGHT_ELF, TAUREN = 4, 6
 
-# class -> ordered list of (talent_path, role, count); counts sum to 136.
-SPECS = OrderedDict([
-    (1, [("protection", "TANK", 30)]),
-    (2, [("protection", "TANK", 13), ("holy", "HEALER", 4), ("retribution", "DPS", 2)]),
-    (11, [("bear", "TANK", 4), ("restoration", "HEALER", 2), ("balance", "DPS", 2), ("feral", "DPS", 2)]),
-    (5, [("discipline", "HEALER", 5), ("holy", "HEALER", 5), ("shadow", "DPS", 4)]),
-    (7, [("restoration", "HEALER", 5), ("elemental", "DPS", 3), ("enhancement", "DPS", 3)]),
-    (3, [("beastmastery", "DPS", 5), ("marksmanship", "DPS", 5), ("survival", "DPS", 4)]),
-    (4, [("assassination", "DPS", 5), ("combat", "DPS", 5), ("subtlety", "DPS", 4)]),
-    (8, [("arcane", "DPS", 5), ("fire", "DPS", 5), ("frost", "DPS", 3)]),
-    (9, [("affliction", "DPS", 4), ("demonology", "DPS", 4), ("destruction", "DPS", 3)]),
-])
 
-# Fixed race quotas where the plan prescribes them (#366 composition plan).
-FIXED_RACES = {
-    (1, "protection"): {2: 4, 6: 5, 5: 3, 8: 3, 9: 3, 1: 3, 3: 3, 4: 3, 7: 2, 10: 1},
-    (2, "protection"): {1: 5, 3: 4, 10: 4},  # >= 2 per race so both genders are covered
-    (2, None): {1: 2, 3: 1, 10: 3},  # holy + retribution
-    (11, "bear"): {4: 2, 6: 2},  # one per race x gender (owner D-B variant)
-    (11, None): {4: 3, 6: 3},  # the other six druids
+def faction(race):
+    return "A" if race in ALLIANCE else "H"
+
+
+# (faction, class) -> OrderedDict(path -> (role, count)). Each faction sums to 136.
+TARGETS = {
+    ("A", 1): OrderedDict([("protection", ("TANK", 10)), ("arms", ("DPS", 4)), ("fury", ("DPS", 4))]),
+    ("A", 2): OrderedDict([("protection", ("TANK", 6)), ("holy", ("HEALER", 10)), ("retribution", ("DPS", 4))]),
+    ("A", 11): OrderedDict([("bear", ("TANK", 4)), ("restoration", ("HEALER", 4)), ("balance", ("DPS", 2)), ("feral", ("DPS", 2))]),
+    ("A", 5): OrderedDict([("discipline", ("HEALER", 8)), ("holy", ("HEALER", 8)), ("shadow", ("DPS", 4))]),
+    ("A", 3): OrderedDict([("beastmastery", ("DPS", 6)), ("marksmanship", ("DPS", 6)), ("survival", ("DPS", 6))]),
+    ("A", 4): OrderedDict([("assassination", ("DPS", 6)), ("combat", ("DPS", 6)), ("subtlety", ("DPS", 6))]),
+    ("A", 8): OrderedDict([("arcane", ("DPS", 6)), ("fire", ("DPS", 5)), ("frost", ("DPS", 5))]),
+    ("A", 9): OrderedDict([("affliction", ("DPS", 5)), ("demonology", ("DPS", 4)), ("destruction", ("DPS", 5))]),
+    ("H", 1): OrderedDict([("protection", ("TANK", 16)), ("arms", ("DPS", 4)), ("fury", ("DPS", 4))]),
+    ("H", 11): OrderedDict([("bear", ("TANK", 4)), ("restoration", ("HEALER", 4)), ("balance", ("DPS", 2)), ("feral", ("DPS", 2))]),
+    ("H", 5): OrderedDict([("discipline", ("HEALER", 6)), ("holy", ("HEALER", 6)), ("shadow", ("DPS", 4))]),
+    ("H", 7): OrderedDict([("restoration", ("HEALER", 14)), ("elemental", ("DPS", 4)), ("enhancement", ("DPS", 4))]),
+    ("H", 3): OrderedDict([("beastmastery", ("DPS", 6)), ("marksmanship", ("DPS", 6)), ("survival", ("DPS", 6))]),
+    ("H", 4): OrderedDict([("assassination", ("DPS", 6)), ("combat", ("DPS", 5)), ("subtlety", ("DPS", 5))]),
+    ("H", 8): OrderedDict([("arcane", ("DPS", 5)), ("fire", ("DPS", 5)), ("frost", ("DPS", 4))]),
+    ("H", 9): OrderedDict([("affliction", ("DPS", 5)), ("demonology", ("DPS", 4)), ("destruction", ("DPS", 5))]),
 }
-# Tank paths alternate gender per race: owner D-B + tank coverage rule (#366,
-# 2026-09-26): every tank class covers every available race x gender combination.
-GENDER_SPLIT = {(11, "bear"), (1, "protection"), (2, "protection")}
-NEW_ALLIANCE_TARGET = 64
-NEW_HORDE_TARGET = 72
+# Bears: exact (race, gender) slots; each gender twice per race.
+BEAR_SLOTS = {"A": Counter({(NIGHT_ELF, 0): 2, (NIGHT_ELF, 1): 2}),
+              "H": Counter({(TAUREN, 0): 2, (TAUREN, 1): 2})}
 
-# Profession pairs, filled in this order; each takes all bots of its first preferred
-# class, then the next preferred class, ..., then any remaining bot (ordinal order).
+# Profession pairs over all 272 (owner table, #366), filled in this order; each takes all
+# unassigned bots of its first preferred class, then the next class, ..., then anyone.
 PROFESSIONS = [
-    ("Mining/Blacksmithing", 33, [1, 2]),
+    ("Mining/Blacksmithing", 33, [1]),
+    ("Skinning/Leatherworking", 49, [4, 11, 3, 7]),
     ("Mining/Engineering", 27, [3, 4, 1]),
-    ("Tailoring/Enchanting", 3, [8, 5, 9]),
-    ("Herbalism/Mining", 22, [4, 3, 11, 7]),  # double gatherer; core value pending (OB-10)
-    ("Mining/Jewelcrafting", 22, [2, 5]),
-    ("Herbalism/Alchemy", 29, [5, 8, 9, 7, 11]),
+    ("Tailoring/Enchanting", 49, [8, 5, 9]),
+    ("Herbalism/Alchemy", 54, [5, 2, 11, 7, 8, 9]),
+    ("Mining/Jewelcrafting", 22, [2, 5, 7]),
+    ("Herbalism/Mining", 38, []),  # double gatherers (ProfessionPair 7, core#161)
 ]
+ROLE_ORDER = {"TANK": 0, "HEALER": 1, "DPS": 2}
 
 
 def sha256(path):
@@ -64,81 +73,9 @@ def sha256(path):
         return hashlib.sha256(f.read()).hexdigest().upper()
 
 
-def load_pool(path, taken):
-    pool = []
-    with open(path, newline="", encoding="utf-8") as f:
-        for row in csv.reader(f, delimiter="\t"):
-            guid, account, name, race, cls, gender, level = row
-            if int(guid) in taken:
-                continue
-            pool.append(dict(guid=int(guid), account=int(account), name=name, race=int(race),
-                             cls=int(cls), gender=int(gender), level=int(level)))
-    pool.sort(key=lambda c: (c["level"], c["guid"]))
-    return pool
-
-
 def split_even(n, keys):
-    """n split over keys as evenly as possible, earlier keys get the remainder."""
     base, rest = divmod(n, len(keys))
     return {k: base + (1 if i < rest else 0) for i, k in enumerate(keys)}
-
-
-def race_quotas(pool):
-    races_by_class = {}
-    for c in pool:
-        races_by_class.setdefault(c["cls"], set()).add(c["race"])
-    quotas = {}  # (cls, path) -> {race: n}
-    alliance = horde = 0
-    flexible = []
-    for cls, specs in SPECS.items():
-        for path, _role, n in specs:
-            fixed = FIXED_RACES.get((cls, path)) or FIXED_RACES.get((cls, None))
-            if fixed and (cls, path) in FIXED_RACES:
-                q = dict(fixed)
-            elif fixed:
-                q = None  # class-level quota, distributed over the class's paths below
-            else:
-                flexible.append((cls, path, n))
-                continue
-            if q is not None:
-                quotas[(cls, path)] = q
-    # class-level fixed quotas (paladin, non-bear druids): hand races out path by path
-    for cls in (2, 11):
-        left = dict(FIXED_RACES[(cls, None)])
-        for path, _role, n in SPECS[cls]:
-            if (cls, path) in quotas:
-                continue
-            q = {}
-            for race in sorted(left):
-                take = min(left[race], n - sum(q.values()))
-                if take > 0:
-                    q[race] = take
-                    left[race] -= take
-            quotas[(cls, path)] = q
-    for q in quotas.values():
-        for race, n in q.items():
-            alliance += n if race in ALLIANCE else 0
-            horde += n if race in HORDE else 0
-    # flexible classes: shamans are Horde-only in the pool; the rest share the factions
-    a_left, h_left = NEW_ALLIANCE_TARGET - alliance, NEW_HORDE_TARGET - horde
-    for cls, path, n in [f for f in flexible if not (races_by_class[f[0]] & ALLIANCE)]:
-        quotas[(cls, path)] = split_even(n, sorted(races_by_class[cls] & HORDE))
-        h_left -= n
-    rest = [f for f in flexible if (cls_races := races_by_class[f[0]]) & ALLIANCE]
-    total = sum(n for _c, _p, n in rest)
-    exact = [(n * h_left / total) for _c, _p, n in rest]
-    h_parts = [int(x) for x in exact]
-    for i in sorted(range(len(rest)), key=lambda i: -(exact[i] - h_parts[i]))[: h_left - sum(h_parts)]:
-        h_parts[i] += 1
-    for (cls, path, n), h in zip(rest, h_parts):
-        a = n - h
-        q = {}
-        if h:
-            q.update(split_even(h, sorted(races_by_class[cls] & HORDE)))
-        if a:
-            q.update(split_even(a, sorted(races_by_class[cls] & ALLIANCE)))
-        quotas[(cls, path)] = {r: v for r, v in q.items() if v}
-    return quotas
 
 
 def main():
@@ -146,6 +83,7 @@ def main():
     ap.add_argument("--prefix", required=True)
     ap.add_argument("--pool", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--diff", required=True)
     args = ap.parse_args()
 
     with open(args.prefix, newline="", encoding="utf-8") as f:
@@ -153,73 +91,160 @@ def main():
     if len(prefix) != 136 or [int(r["ordinal"]) for r in prefix] != list(range(1, 137)):
         sys.exit("prefix must be the ordered 136-row V4 prefix")
     fields = list(prefix[0].keys())
-    taken = {int(r["guid"]) for r in prefix}
-    pool = load_pool(args.pool, taken)
     pool_hash = sha256(args.pool)
+    taken = {int(r["guid"]) for r in prefix}
+    pool = []
+    with open(args.pool, newline="", encoding="utf-8") as f:
+        for guid, account, name, race, cls, gender, level in csv.reader(f, delimiter="\t"):
+            if int(guid) not in taken:
+                pool.append(dict(guid=int(guid), account=int(account), name=name, race=int(race),
+                                 cls=int(cls), gender=int(gender), level=int(level)))
+    pool.sort(key=lambda c: (c["level"], c["guid"]))
 
-    quotas = race_quotas(pool)
-    used = set()
-    by_class = OrderedDict((cls, []) for cls in SPECS)
-    for cls, specs in SPECS.items():
-        for path, role, n in specs:
-            q = quotas[(cls, path)]
-            if sum(q.values()) != n:
-                sys.exit(f"quota mismatch for class {cls} {path}: {q} != {n}")
-            for race, want in sorted(q.items()):
-                free = [c for c in pool if c["cls"] == cls and c["race"] == race and c["guid"] not in used]
-                if (cls, path) in GENDER_SPLIT:
-                    # alternate male/female so each race gets both genders
-                    picks = []
-                    for i in range(want):
-                        g = i % 2
-                        cand = next((c for c in free if c["gender"] == g and c not in picks), None)
-                        if cand:
-                            picks.append(cand)
-                else:
-                    picks = free[:want]
-                if len(picks) != want:
-                    sys.exit(f"pool too small: class {cls} race {race} needs {want}, has {len(picks)}")
-                for c in picks:
-                    used.add(c["guid"])
-                    by_class[cls].append(dict(c, talent_path=path, role=role))
+    existing = [dict(ordinal=int(r["ordinal"]), guid=int(r["guid"]), account=int(r["account"]), name=r["name"],
+                     race=int(r["race"]), cls=int(r["class"]), gender=int(r["gender"]),
+                     old_path=r["talent_path"], old_role=r["role"], old_pair=r["profession_pair"], row=r)
+                for r in prefix]
 
-    # Round-robin over classes so that any later prefix of 137..272 stays mixed.
-    ordered, cursors = [], {cls: 0 for cls in by_class}
+    cap = {(fa, cl, p): n for (fa, cl), paths in TARGETS.items() for p, (_r, n) in paths.items()}
+    bear_left = {fa: Counter(s) for fa, s in BEAR_SLOTS.items()}
+
+    def take(bot, path):
+        key = (faction(bot["race"]), bot["cls"], path)
+        if cap.get(key, 0) <= 0:
+            sys.exit(f"no capacity for {key}")
+        cap[key] -= 1
+        bot["path"] = path
+        bot["role"] = TARGETS[key[:2]][path][0]
+
+    # 1. existing druids: bears first (exact race/gender slots).
+    for bot in existing:
+        if bot["cls"] == 11:
+            fa, slot = faction(bot["race"]), (bot["race"], bot["gender"])
+            if bear_left[fa][slot] > 0:
+                bear_left[fa][slot] -= 1
+                take(bot, "bear")
+    # 2. existing warriors: one protection tank per race (lowest ordinal of that race).
+    covered = set()
+    for bot in existing:
+        if bot["cls"] == 1 and bot["race"] not in covered:
+            covered.add(bot["race"])
+            take(bot, "protection")
+    # 3. everyone else keeps the current path if it still has room ...
+    for bot in existing:
+        if "path" not in bot:
+            key = (faction(bot["race"]), bot["cls"], bot["old_path"])
+            if cap.get(key, 0) > 0:
+                take(bot, bot["old_path"])
+    # ... otherwise the first non-bear path of the class that has room (roster order).
+    for bot in existing:
+        if "path" in bot:
+            continue
+        fa = faction(bot["race"])
+        for path in TARGETS[(fa, bot["cls"])]:
+            if path != "bear" and cap[(fa, bot["cls"], path)] > 0:
+                take(bot, path)
+                break
+        else:
+            sys.exit(f"no room for existing bot {bot['guid']} class {bot['cls']}")
+
+    # 4. new members fill every remaining slot from the pool.
+    used = set(taken)
+    new = []
+    for fa in ("A", "H"):
+        for (bear_race, gender), n in sorted(bear_left[fa].items()):
+            for _ in range(n):
+                c = next((c for c in pool if c["cls"] == 11 and c["race"] == bear_race
+                          and c["gender"] == gender and c["guid"] not in used), None)
+                if not c:
+                    sys.exit(f"pool has no druid race {bear_race} gender {gender}")
+                used.add(c["guid"])
+                bot = dict(c)
+                take(bot, "bear")
+                new.append(bot)
+        for (f2, cls), paths in TARGETS.items():
+            if f2 != fa:
+                continue
+            races = sorted({c["race"] for c in pool if c["cls"] == cls} & (ALLIANCE if fa == "A" else HORDE))
+            for path in paths:
+                n = cap[(fa, cls, path)]
+                if n <= 0:
+                    continue
+                for race, want in sorted(split_even(n, races).items()):
+                    got = [c for c in pool if c["cls"] == cls and c["race"] == race and c["guid"] not in used][:want]
+                    for c in got:
+                        used.add(c["guid"])
+                    if len(got) < want:  # race ran short: take other races of the faction
+                        extra = [c for c in pool if c["cls"] == cls and c["race"] in races
+                                 and c["guid"] not in used][: want - len(got)]
+                        for c in extra:
+                            used.add(c["guid"])
+                        got += extra
+                    if len(got) != want:
+                        sys.exit(f"pool too small for {fa} class {cls} {path}")
+                    for c in got:
+                        bot = dict(c)
+                        take(bot, path)
+                        new.append(bot)
+    if len(new) != 136 or any(v != 0 for v in cap.values()):
+        sys.exit(f"plan does not close: new={len(new)} open={ {k: v for k, v in cap.items() if v} }")
+
+    # New ordinals 137..272: round-robin over classes (tanks and healers first within a
+    # class) so that any later prefix stays mixed.
+    groups = OrderedDict()
+    for bot in sorted(new, key=lambda b: (b["cls"], ROLE_ORDER[b["role"]], b["guid"])):
+        groups.setdefault(bot["cls"], []).append(bot)
+    ordered, cursors = [], {k: 0 for k in groups}
     while len(ordered) < 136:
-        for cls, bots in by_class.items():
-            if cursors[cls] < len(bots):
-                ordered.append(bots[cursors[cls]])
-                cursors[cls] += 1
+        for k, bots in groups.items():
+            if cursors[k] < len(bots):
+                ordered.append(bots[cursors[k]])
+                cursors[k] += 1
+    for i, bot in enumerate(ordered, start=137):
+        bot["ordinal"] = i
 
+    # Professions over all 272: class fit in priority order, roster order within a class.
+    everyone = existing + ordered
     for label, count, prefer in PROFESSIONS:
         need = count
-        # preferred classes strictly in priority order, then any unassigned bot
         for pass_class in list(prefer) + [None]:
-            for bot in ordered:
+            for bot in everyone:
                 if need == 0:
                     break
-                if "profession" in bot or (pass_class is not None and bot["cls"] != pass_class):
+                if "pair" in bot or (pass_class is not None and bot["cls"] != pass_class):
                     continue
-                bot["profession"] = label
+                bot["pair"] = label
                 need -= 1
         if need:
             sys.exit(f"could not place {label}")
 
-    rows = list(prefix)
-    for i, bot in enumerate(ordered, start=137):
+    rows = []
+    for bot in existing:
+        r = dict(bot["row"])
+        r.update(talent_path=bot["path"], role=bot["role"], profession_pair=bot["pair"])
+        rows.append(r)
+    for bot in ordered:
         rows.append({
-            "ordinal": i, "guid": bot["guid"], "account": bot["account"], "name": bot["name"],
+            "ordinal": bot["ordinal"], "guid": bot["guid"], "account": bot["account"], "name": bot["name"],
             "race": bot["race"], "class": bot["cls"], "gender": bot["gender"],
-            "talent_path": bot["talent_path"], "role": bot["role"],
-            "profession_pair": bot["profession"],
-            "selection_reason": "v4_272_expand; owner D-A..D-C #366; quota class/path/race by (level,guid)",
+            "talent_path": bot["path"], "role": bot["role"], "profession_pair": bot["pair"],
+            "selection_reason": "v4_272_v2; owner #366 part 3; quota faction/class/path by (level,guid)",
             "source_candidate_hash": pool_hash,
         })
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
-    print(f"rows={len(rows)} pool_sha256={pool_hash} out_sha256={sha256(args.out)}")
+
+    with open(args.diff, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow(["ordinal", "guid", "name", "race", "class", "old_path", "new_path", "old_role", "new_role",
+                    "old_pair", "new_pair", "respec", "profession_change"])
+        for bot in existing:
+            w.writerow([bot["ordinal"], bot["guid"], bot["name"], bot["race"], bot["cls"], bot["old_path"],
+                        bot["path"], bot["old_role"], bot["role"], bot["old_pair"], bot["pair"],
+                        int(bot["old_path"] != bot["path"]), int(bot["old_pair"] != bot["pair"])])
+    print(f"rows={len(rows)} pool_sha256={pool_hash} out_sha256={sha256(args.out)} diff_sha256={sha256(args.diff)}")
 
 
 if __name__ == "__main__":
