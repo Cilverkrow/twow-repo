@@ -70,5 +70,12 @@ Bots also learn their class trainer spells automatically
 Release train 6 switches boss and rare loot to fixed loot units with quality
 weights, diminishing duplicates and a BoE fill-up pool (`Funserver.Loot.Units.Enabled = 1`,
 legendary weight 5 for rares and dungeon bosses; owner decisions 2026-09-26, #323).
+It also turns on the aggregated tick statistics (`PerformanceLog.TickStats = 1`,
+one line per 60 s in perf.log): the D1 source of the scaling gate (#351), since
+the slow-update lines alone give no percentile. Every quest becomes sharable
+(`Funserver.Quests.AllSharable = 1`); low-level roster bots grind within reach
+and avoid repeated killers; zone escape reads corrected zone levels
+(`AiPlayerbot.AreaLevelOverrides`) and retries; far follow to a real player is
+capped at 400 yards.
 
-All eighty-two deviations are classified in `semantic-profile.tsv`.
+All ninety-three deviations are classified in `semantic-profile.tsv`.
