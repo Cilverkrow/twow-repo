@@ -1,16 +1,20 @@
-# Roster plan 272 (ordinals 137–272), twow-repo#366
+# Roster plan 272, twow-repo#366 (version 3)
 
 **Planning data only.** Nothing here writes to a database, changes the active roster
-version, or is wired into `make`, `db-init.sh` or Helm. Activating it (EXPAND 3 → 4, reset of
-137–272, V4 profession gate for 272, renames) is a separate, individually approved
-maintenance operation after the Ä10 gate (see #366 for the hard prerequisites).
+version, or is wired into `make`, `db-init.sh` or Helm. Activating it (EXPAND 3 → 4, respec
+and profession change of the existing 136, reset of 137–272, specNo and V4 profession gate
+for 272, renames) is a separate, individually approved maintenance operation after the Ä10
+gate (see #366 for the hard prerequisites).
 
 ## Files
 
 | File | Content |
 |---|---|
-| `v4-272-roster-plan.csv` | 272 rows, same columns as `../v4-136-profession-prefix.csv`; rows 1–136 are that prefix byte for byte |
+| `v4-272-roster-plan.csv` | 272 rows, same columns as `../v4-136-profession-prefix.csv` |
+| `existing-136-diff.csv` | what changes for ordinals 1–136: old/new talent path, role, profession pair |
+| `new-136-names.tsv` | owner-approved creative names for ordinals 137–272 (`run-rename-roster.sh` format) |
 | `select_roster_v4_272.py` | deterministic generator (stdlib only) |
+| `make_expand_request.py`, `test_make_expand_request.py`, `testdata/` | EXPAND request generator and its golden test (A2, below) |
 
 ## Inputs and reproduction
 
@@ -23,36 +27,47 @@ maintenance operation after the Ä10 gate (see #366 for the hard prerequisites).
 
 ```sh
 python3 select_roster_v4_272.py --prefix ../v4-136-profession-prefix.csv \
-    --pool free-pool-snapshot.tsv --out v4-272-roster-plan.csv
+    --pool free-pool-snapshot.tsv --out v4-272-roster-plan.csv --diff existing-136-diff.csv
 ```
 
-Same inputs give the same output (run twice: SHA-256 identical). Candidates are taken by
-`(level, guid)`; all 136 selected characters are level 1.
+Same inputs give the same output (run twice: SHA-256 identical). New candidates are taken
+by `(level, guid)`; all 136 selected characters are level 1.
 
-## What the plan contains (owner decisions D-A..D-C, 2026-09-26)
+## What the plan contains (owner decisions #366 part 3, 2026-09-26)
 
-| | New 137–272 | All 272 |
-|---|---|---|
-| Tank / healer / DPS | 47 / 21 / 68 | **58 (21.3 %)** / 43 / 171 (prefix ferals counted as cat) |
-| Alliance / Horde | 64 / 72 | 136 / 136 |
+The whole 272 is planned from scratch. **Always more healers than tanks.**
 
-New classes: warrior 30 (all protection), paladin 19 (13 protection, 4 holy, 2 retribution),
-druid 10 (**4 bear**, night elf + tauren, one per gender, 2 restoration, 2 balance, 2 feral), priest 14,
-shaman 11, hunter 14, rogue 14, mage 13, warlock 11.
+| Role | Total | Alliance | Horde |
+|---|---|---|---|
+| Tank | **40** (14.7 %) | 20: warrior 10, paladin 6, bear 4 | 20: warrior 16, bear 4 |
+| Healer | **60** (22.1 %) | 30: priest 16, paladin 10, druid 4 | 30: priest 12, shaman 14, druid 4 |
+| DPS | **172** | 86 | 86 |
 
-New professions: Mining/Blacksmithing 33 (warriors, paladins), Mining/Engineering 27
-(hunters, rogues), Herbalism/Alchemy 29 (mages, warlocks, priests), Mining/Jewelcrafting 22,
-Herbalism/Mining 22 (double gatherers: druids, shamans, rogues), Tailoring/Enchanting 3.
+- **8 bears:** night elf and tauren, each gender twice.
+- **At least one warrior tank per race:** all 10 races covered.
+- **Ordinals 1–136 alone already follow the rules** (#366 part 4: they are re-specced and
+  reset before any expansion): exactly half of the target, **tank 20 / healer 30 / DPS 86**
+  (A 10/15/47, H 10/15/39), 4 bears (night elf and tauren, one per gender), a warrior tank
+  per race, professions at half the owner table. The new 137–272 get the rest
+  (again 20/30/86 and 4 bears), so all 272 give 40/60/172 and 8 bears.
+- **Existing 136** keep class, race, gender, name and level; `existing-136-diff.csv` lists
+  43 respecs and 78 profession changes (44 unchanged). A full level-1 reset follows, so the
+  number of respecs costs nothing: only the stored `specNo` matters.
+- **Professions over all 272** (owner table): Herbalism/Alchemy 54, Tailoring/Enchanting 49,
+  Skinning/Leatherworking 49, Mining/Blacksmithing 33, Mining/Engineering 27,
+  Mining/Jewelcrafting 22, Herbalism/Mining (double gatherers) 38. Assigned by class fit:
+  blacksmithing to warriors, leatherworking to rogues/druids/hunters/shamans, engineering to
+  hunters/rogues, tailoring/enchanting to mages/priests/warlocks, alchemy to
+  priests/paladins/druids/shamans, jewelcrafting to paladins/priests/shamans.
+- **Names** of the 137–272 bots: `new-136-names.tsv`, approved by the owner (adapted to this
+  mix in the same style); letters only, 2–12 characters, no collision with `characters`,
+  `ai_playerbot_names` or `creature_template`.
 
 ## Known gaps before activation
 
 - `talent_path = bear` needs premade path 11.3 in core (#308).
-- `Herbalism/Mining` has no `ProfessionPair` value yet (core, OB-10); Mining/Jewelcrafting
-  depends on the bot AI supporting Turtle jewelcrafting.
-- `name` is the current character name; the creative names are a separate owner review.
-- Tank coverage (owner, 2026-09-26): every tank class covers every available race × gender
-  combination over all 272: warrior 20/20, paladin 6/6, bear 4/4 (tank paths alternate gender
-  per race). Tanks over 272: warrior 38, paladin 16, bear 4.
+- `Herbalism/Mining` = ProfessionPair 7 (twow-core#161); the V4 gate must accept 1–7.
+- Respec and profession change of existing bots need their own guarded tool (#366 A6).
 
 ## EXPAND request (#366 A2)
 
