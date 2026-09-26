@@ -53,3 +53,26 @@ Herbalism/Mining 22 (double gatherers: druids, shamans, rogues), Tailoring/Encha
 - Tank coverage (owner, 2026-09-26): every tank class covers every available race × gender
   combination over all 272: warrior 20/20, paladin 6/6, bear 4/4 (tank paths alternate gender
   per race). Tanks over 272: warrior 38, paladin 16, bear 4.
+
+## EXPAND request (#366 A2)
+
+`make_expand_request.py` writes the canonical `ssc-rndbot-admin-request-v1` EXPAND
+request for a CSV range, byte for byte as the core's `SerializeAdminRequest()` produces it
+(LF, UTF-8 without BOM, unpadded base64url actor/reason, 10-digit `add` rows in ordinal
+order). It touches no database; the file is applied later in maintenance mode with the
+local console command `rndbot roster apply <absolute-path>` (ADR-0011).
+
+```sh
+python3 make_expand_request.py --csv v4-272-roster-plan.csv --ordinals 137-272 \
+    --expected-current-version 3 --actor <who> --reason <why> --out request.txt
+```
+
+It prints `operation_id` (a fresh UUIDv4 unless `--operation-id` is given) and
+`request_sha256`; the approval names that hash, and replaying the same operation id with
+other bytes fails closed in the core.
+
+`test_make_expand_request.py` (stdlib unittest) rebuilds the request stored with roster
+version 3 in the live database (`testdata/v3-expand-request.golden.txt`, request_sha256
+`6f0c1971…e88d`, the 2 → 3 expansion of ordinals 69–136) byte for byte, checks the shape of
+the 272 request and rejects bad operation ids, duplicate/zero GUIDs, an empty actor and a
+range beyond the CSV.
