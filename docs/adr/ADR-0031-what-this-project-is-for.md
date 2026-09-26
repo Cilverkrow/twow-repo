@@ -146,8 +146,17 @@ roster; the report template lives in `docs/measurements/7-day-scaling-gate-repor
 | **Equipment upgrades** | equip diagnostics / `bot_events.csv` | reported; no equip loops |
 | **Evidence (D4)** | daily copy of CSV logs + DB snapshot to `evidence\ws-60\longrun-7d\<date>` | a missing day or lost data leaves the verdict OPEN |
 
-**Scaling gate (overlay Ä10):** more than 136 active bots only after a documented run of ≥ 7 days
-that passes all gates above, plus #351 for the real tick p99, plus an explicit owner approval.
+**Base roster (owner decision 2026-09-26, overlay Ä10a, #366):** 154 active bots (77 per faction: 10 tanks,
+20 healers, 47 DPS), introduced with release train 6 together with a level-1 reset of all 154. The owner
+deliberately moved the base from 136 to 154 without a completed 7-day run. The 7-day measurement
+window restarts with 154 at train 6 world-up. The #351 prerequisite (tick p99) is deliberately not
+required for this step: the first 24 h after the train 6 deploy serve as the p99 baseline at 154.
+Rollback guard: if, after the 5-minute warm-up, tick p99 > 1000 ms or max > 3000 ms persists, the roster goes
+back to 136 (rollback stack of train 5), reported to the owner.
+
+**Scaling gate (overlay Ä10):** more than 154 active bots (next step: doubling to 308) only after a
+documented run of ≥ 7 days with the 154 base that passes all gates above, plus #351 for the real tick
+p99, plus an explicit owner approval.
 
 ## References
 
