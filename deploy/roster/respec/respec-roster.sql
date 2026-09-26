@@ -49,8 +49,10 @@ INSERT INTO respec_guard VALUES ('guard_all_offline',
 INSERT INTO respec_guard VALUES ('guard_all_rndbot_accounts',
     (SELECT COUNT(*) = @expected_rows FROM respec_plan p JOIN characters c ON c.guid = p.guid
      JOIN tw_logon.account a ON a.id = c.account WHERE a.username LIKE 'RNDBOT%'));
+-- New roster members (after an EXPAND) have no specNo/profession_pair events yet; they
+-- are only created with the wrapper's explicit --insert-missing-events (@insert_missing = 1).
 INSERT INTO respec_guard VALUES ('guard_events_present',
-    (SELECT COUNT(*) = @expected_rows FROM current_state WHERE spec_no IS NOT NULL AND pair IS NOT NULL));
+    (SELECT COUNT(*) = @expected_rows OR @insert_missing = 1 FROM current_state WHERE spec_no IS NOT NULL AND pair IS NOT NULL));
 INSERT INTO respec_guard VALUES ('guard_plan_values_valid',
     (SELECT COUNT(*) = @expected_rows FROM respec_plan WHERE spec_no BETWEEN 1 AND 10 AND pair BETWEEN 1 AND 7));
 SELECT CONCAT(label, '=PASS') FROM respec_guard ORDER BY label;
@@ -71,9 +73,11 @@ UNION ALL SELECT 'target_levels', COALESCE(BIT_XOR(CRC32(CONCAT_WS('|', c.guid, 
 UNION ALL SELECT 'target_inventory', COUNT(*) FROM character_inventory i JOIN respec_plan p ON p.guid = i.guid;
 
 CREATE TEMPORARY TABLE respec_bots (guid INT UNSIGNED NOT NULL PRIMARY KEY) ENGINE=MEMORY
-SELECT p.guid FROM respec_plan p JOIN current_state s ON s.guid = p.guid WHERE s.spec_no <> p.spec_no;
+SELECT p.guid FROM respec_plan p JOIN current_state s ON s.guid = p.guid WHERE s.spec_no IS NULL OR s.spec_no <> p.spec_no;
 CREATE TEMPORARY TABLE pair_bots (guid INT UNSIGNED NOT NULL PRIMARY KEY, new_pair TINYINT UNSIGNED NOT NULL) ENGINE=MEMORY
-SELECT p.guid, p.pair AS new_pair FROM respec_plan p JOIN current_state s ON s.guid = p.guid WHERE s.pair <> p.pair;
+SELECT p.guid, p.pair AS new_pair FROM respec_plan p JOIN current_state s ON s.guid = p.guid WHERE s.pair IS NULL OR s.pair <> p.pair;
+SET @insert_spec_count = (SELECT COUNT(*) FROM current_state WHERE spec_no IS NULL);
+SET @insert_pair_count = (SELECT COUNT(*) FROM current_state WHERE pair IS NULL);
 CREATE TEMPORARY TABLE drop_skill (guid INT UNSIGNED NOT NULL, skill SMALLINT UNSIGNED NOT NULL, PRIMARY KEY (guid, skill)) ENGINE=MEMORY
 SELECT s.guid, s.skill FROM character_skills s JOIN pair_bots b ON b.guid = s.guid JOIN primary_skill ps ON ps.skill = s.skill
 LEFT JOIN pair_skill keep ON keep.pair = b.new_pair AND keep.skill = s.skill WHERE keep.skill IS NULL;
@@ -88,6 +92,14 @@ SET @drop_skill_count = (SELECT COUNT(*) FROM drop_skill);
 SET @drop_spell_count = (SELECT COUNT(*) FROM drop_spell);
 
 -- ------------------------------------------------------------------ mutate
+-- Missing events (only reachable with @insert_missing = 1), in the format of the existing
+-- roster rows: specNo without validIn/data, profession_pair with validIn 4294967295, 'v1'.
+INSERT INTO cv_bots.ai_playerbot_random_bots (owner, bot, time, validIn, event, value, data)
+SELECT 0, p.guid, UNIX_TIMESTAMP(), NULL, 'specNo', p.spec_no, NULL
+FROM respec_plan p JOIN current_state s ON s.guid = p.guid WHERE s.spec_no IS NULL;
+INSERT INTO cv_bots.ai_playerbot_random_bots (owner, bot, time, validIn, event, value, data)
+SELECT 0, p.guid, UNIX_TIMESTAMP(), 4294967295, 'profession_pair', p.pair, 'v1'
+FROM respec_plan p JOIN current_state s ON s.guid = p.guid WHERE s.pair IS NULL;
 UPDATE cv_bots.ai_playerbot_random_bots e JOIN respec_plan p ON p.guid = e.bot JOIN respec_bots r ON r.guid = p.guid
 SET e.value = p.spec_no WHERE e.owner = 0 AND e.event = 'specNo';
 UPDATE characters c JOIN respec_bots r ON r.guid = c.guid SET c.at_login = c.at_login | 4;
@@ -124,6 +136,7 @@ UNION ALL SELECT 'target_levels', COALESCE(BIT_XOR(CRC32(CONCAT_WS('|', c.guid, 
 UNION ALL SELECT 'target_inventory', COUNT(*) FROM character_inventory i JOIN respec_plan p ON p.guid = i.guid;
 INSERT INTO respec_assert SELECT CONCAT('unchanged_', b.label), b.v = a.v FROM respec_baseline b JOIN respec_after a ON a.label = b.label;
 
+SELECT CONCAT('INSERTED_SPECNO=', @insert_spec_count, ' INSERTED_PAIR=', @insert_pair_count);
 SELECT CONCAT('RESPEC=', @respec_count, ' PAIR_CHANGE=', @pair_count,
               ' DROPPED_SKILLS=', @drop_skill_count, ' DROPPED_SPELLS=', @drop_spell_count, ' ROWS=', @expected_rows);
 SELECT CONCAT('ASSERT_', label, '=', IF(ok = 1, 'PASS', 'FAIL')) FROM respec_assert ORDER BY label;
