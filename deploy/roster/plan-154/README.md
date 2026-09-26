@@ -37,3 +37,18 @@ python3 select_roster_v4_154.py --base ../expand-272/v4-272-roster-plan.csv \
 
 Pool snapshot as for plan v3 (SHA-256 `8EB3F994…8183`, `evidence\ws-60\ob40-366-roster-272-selection\`).
 Same inputs, same output. The 272 plan remains the basis for a later expansion (308).
+
+## Rollback guard (train 6)
+
+**Stage 1, roster only (no progress loss):** `rollback-request-v4-to-v3.txt`, a canonical
+ROLLBACK request built by `../expand-272/make_rollback_request.py`:
+`operation_id = f5476697-5ec8-4619-8356-807f85f66a14`,
+`request_sha256 = b31512ba6120108fc7e9e5b704eeb6346919a6b0611977f0e63b44bbed4071a9`,
+`expected_current_version_id = 4`, `rollback_version_id = 3`, `requested_target_count = 136`.
+The core creates a new version with exactly the members of version 3 (ordinals 1–136);
+bots 137–154 stay offline, and every character keeps its progress. Same path as the EXPAND:
+`AiPlayerbot.PersistentActiveRoster.MaintenanceMode = 1`, world start without bots, local
+console `rndbot roster apply <absolute path>`, stop, normal start. About 6–8 min.
+
+**Stage 2, last resort only (failed apply):** restore the cold backup taken before the
+maintenance. It resets the whole database to that moment, including player progress.

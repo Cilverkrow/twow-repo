@@ -115,5 +115,30 @@ class RejectTest(unittest.TestCase):
             self.assertNotEqual(r.returncode, 0)
 
 
+
+
+class RollbackTest(unittest.TestCase):
+    def test_rollback_request_shape(self):
+        import make_rollback_request as mrr
+        data = mrr.build(4, 3, 136, "11111111-2222-4333-8444-555555555555", "ob40-test", "test")
+        lines = data.decode("utf-8").split("\n")
+        self.assertEqual(lines[-1], "")
+        keys = [l.split("=", 1)[0] for l in lines[1:-1]]
+        self.assertEqual(keys, ["schema_version", "operation_id", "operation_type", "expected_current_version_id",
+                                "actor_utf8_b64url", "reason_utf8_b64url", "requested_target_count",
+                                "add_count", "remove_count", "replace_count", "rollback_version_id"])
+        self.assertEqual(field(data, "operation_type"), "ROLLBACK")
+        self.assertEqual(field(data, "rollback_version_id"), "3")
+        self.assertEqual(field(data, "expected_current_version_id"), "4")
+        self.assertNotIn(b"\r", data)
+
+    def test_rollback_rejects_bad_versions(self):
+        import make_rollback_request as mrr
+        with self.assertRaises(ValueError):
+            mrr.build(3, 3, 136, "11111111-2222-4333-8444-555555555555", "a", "b")
+        with self.assertRaises(ValueError):
+            mrr.build(4, 3, 136, "not-a-uuid", "a", "b")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
