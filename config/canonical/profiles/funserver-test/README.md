@@ -67,4 +67,8 @@ roster-control keys for player commands are pinned at their code defaults.
 Bots also learn their class trainer spells automatically
 (`AiPlayerbot.AutoLearnTrainerSpells = 1`, owner decision 2026-09-26, #356).
 
-All seventy-nine deviations are classified in `semantic-profile.tsv`.
+Release train 6 switches boss and rare loot to fixed loot units with quality
+weights, diminishing duplicates and a BoE fill-up pool (`Funserver.Loot.Units.Enabled = 1`,
+legendary weight 5 for rares and dungeon bosses; owner decisions 2026-09-26, #323).
+
+All eighty-two deviations are classified in `semantic-profile.tsv`.
