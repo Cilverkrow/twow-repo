@@ -22,26 +22,28 @@ HORDE = {2, 5, 6, 8, 9}      # orc, undead, tauren, troll, goblin
 
 # class -> ordered list of (talent_path, role, count); counts sum to 136.
 SPECS = OrderedDict([
-    (1, [("protection", "TANK", 26)]),
+    (1, [("protection", "TANK", 30)]),
     (2, [("protection", "TANK", 13), ("holy", "HEALER", 4), ("retribution", "DPS", 2)]),
     (11, [("bear", "TANK", 4), ("restoration", "HEALER", 2), ("balance", "DPS", 2), ("feral", "DPS", 2)]),
     (5, [("discipline", "HEALER", 5), ("holy", "HEALER", 5), ("shadow", "DPS", 4)]),
     (7, [("restoration", "HEALER", 5), ("elemental", "DPS", 3), ("enhancement", "DPS", 3)]),
-    (3, [("beastmastery", "DPS", 5), ("marksmanship", "DPS", 5), ("survival", "DPS", 5)]),
-    (4, [("assassination", "DPS", 5), ("combat", "DPS", 5), ("subtlety", "DPS", 5)]),
-    (8, [("arcane", "DPS", 5), ("fire", "DPS", 5), ("frost", "DPS", 4)]),
-    (9, [("affliction", "DPS", 4), ("demonology", "DPS", 4), ("destruction", "DPS", 4)]),
+    (3, [("beastmastery", "DPS", 5), ("marksmanship", "DPS", 5), ("survival", "DPS", 4)]),
+    (4, [("assassination", "DPS", 5), ("combat", "DPS", 5), ("subtlety", "DPS", 4)]),
+    (8, [("arcane", "DPS", 5), ("fire", "DPS", 5), ("frost", "DPS", 3)]),
+    (9, [("affliction", "DPS", 4), ("demonology", "DPS", 4), ("destruction", "DPS", 3)]),
 ])
 
 # Fixed race quotas where the plan prescribes them (#366 composition plan).
 FIXED_RACES = {
-    (1, "protection"): {2: 4, 6: 4, 5: 3, 8: 3, 9: 3, 1: 2, 3: 3, 4: 2, 7: 1, 10: 1},
-    (2, None): {1: 7, 3: 5, 10: 7},
+    (1, "protection"): {2: 4, 6: 5, 5: 3, 8: 3, 9: 3, 1: 3, 3: 3, 4: 3, 7: 2, 10: 1},
+    (2, "protection"): {1: 5, 3: 4, 10: 4},  # >= 2 per race so both genders are covered
+    (2, None): {1: 2, 3: 1, 10: 3},  # holy + retribution
     (11, "bear"): {4: 2, 6: 2},  # one per race x gender (owner D-B variant)
     (11, None): {4: 3, 6: 3},  # the other six druids
 }
-# Paths whose per-race picks alternate gender (bear: one per race x gender).
-GENDER_SPLIT = {(11, "bear")}
+# Tank paths alternate gender per race: owner D-B + tank coverage rule (#366,
+# 2026-09-26): every tank class covers every available race x gender combination.
+GENDER_SPLIT = {(11, "bear"), (1, "protection"), (2, "protection")}
 NEW_ALLIANCE_TARGET = 64
 NEW_HORDE_TARGET = 72
 

@@ -33,12 +33,12 @@ Same inputs give the same output (run twice: SHA-256 identical). Candidates are 
 
 | | New 137–272 | All 272 |
 |---|---|---|
-| Tank / healer / DPS | 43 / 21 / 72 | **54 (19.9 %)** / 43 / 175 (prefix ferals counted as cat) |
+| Tank / healer / DPS | 47 / 21 / 68 | **58 (21.3 %)** / 43 / 171 (prefix ferals counted as cat) |
 | Alliance / Horde | 64 / 72 | 136 / 136 |
 
-New classes: warrior 26 (all protection), paladin 19 (13 protection, 4 holy, 2 retribution),
+New classes: warrior 30 (all protection), paladin 19 (13 protection, 4 holy, 2 retribution),
 druid 10 (**4 bear**, night elf + tauren, one per gender, 2 restoration, 2 balance, 2 feral), priest 14,
-shaman 11, hunter 15, rogue 15, mage 14, warlock 12.
+shaman 11, hunter 14, rogue 14, mage 13, warlock 11.
 
 New professions: Mining/Blacksmithing 33 (warriors, paladins), Mining/Engineering 27
 (hunters, rogues), Herbalism/Alchemy 29 (mages, warlocks, priests), Mining/Jewelcrafting 22,
@@ -50,4 +50,6 @@ Herbalism/Mining 22 (double gatherers: druids, shamans, rogues), Tailoring/Encha
 - `Herbalism/Mining` has no `ProfessionPair` value yet (core, OB-10); Mining/Jewelcrafting
   depends on the bot AI supporting Turtle jewelcrafting.
 - `name` is the current character name; the creative names are a separate owner review.
-- Variant "4 bears" (one per race × gender): 26 warrior tanks + 4 bears instead of 28 + 2; tank share, factions and profession totals unchanged.
+- Tank coverage (owner, 2026-09-26): every tank class covers every available race × gender
+  combination over all 272: warrior 20/20, paladin 6/6, bear 4/4 (tank paths alternate gender
+  per race). Tanks over 272: warrior 38, paladin 16, bear 4.
