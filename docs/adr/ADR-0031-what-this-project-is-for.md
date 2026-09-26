@@ -130,6 +130,25 @@ voice of its personality: a human warrior proud and honourable, an undead rogue 
 This is the "indistinguishable from a living one" clause made concrete; see ADR-0039, ARCH-002 (#43)
 and #282.
 
+## Metrics and gates (2026-09-26)
+
+Owner decisions D1–D4 (2026-09-26). They make "a player would notice" measurable for the persistent
+roster; the report template lives in `docs/measurements/7-day-scaling-gate-report-template.md` (#349).
+
+| Metric | Source | Gate |
+|---|---|---|
+| **Lost bots** | roster version vs. characters/accounts | **0** (hard gate, ADR-0024 invariant 1) |
+| **Tick budget (D1)** | `perf.log` (logs only map updates > 100 ms) | max ≤ 3000 ms; slow updates (> 100 ms) per day as a trend. Target p99 ≤ 1000 ms per day once a per-tick statistic exists (#351, prerequisite for scaling) |
+| **Levelling progress (D2)** | `tw_char.characters` daily snapshot | median roster level rises daily (up to level 20); no bot online ≥ 24 h without XP gain |
+| **Loops (D3)** | `deaths.csv`, `bot_events.csv` | none: ≥ 10 deaths/h by the same killer at the same position, or ≥ 5× "no destination" per bot and day, counts as a loop |
+| **Quest turn-ins** | `character_queststatus.rewarded` | rising; reported per day and per bot-hour |
+| **Profession skill** | `character_skills` (primary professions) | share of bots with a learned profession and with skill > 1 rising |
+| **Equipment upgrades** | equip diagnostics / `bot_events.csv` | reported; no equip loops |
+| **Evidence (D4)** | daily copy of CSV logs + DB snapshot to `evidence\ws-60\longrun-7d\<date>` | a missing day or lost data leaves the verdict OPEN |
+
+**Scaling gate (overlay Ä10):** more than 136 active bots only after a documented run of ≥ 7 days
+that passes all gates above, plus #351 for the real tick p99, plus an explicit owner approval.
+
 ## References
 
 - `docs/adr/ADR-0024-project-invariants.md` — the six invariants, and the veto clause above
