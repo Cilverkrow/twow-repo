@@ -22,9 +22,9 @@ HORDE = {2, 5, 6, 8, 9}      # orc, undead, tauren, troll, goblin
 
 # class -> ordered list of (talent_path, role, count); counts sum to 136.
 SPECS = OrderedDict([
-    (1, [("protection", "TANK", 28)]),
+    (1, [("protection", "TANK", 26)]),
     (2, [("protection", "TANK", 13), ("holy", "HEALER", 4), ("retribution", "DPS", 2)]),
-    (11, [("bear", "TANK", 2), ("restoration", "HEALER", 2), ("balance", "DPS", 2), ("feral", "DPS", 2)]),
+    (11, [("bear", "TANK", 4), ("restoration", "HEALER", 2), ("balance", "DPS", 2), ("feral", "DPS", 2)]),
     (5, [("discipline", "HEALER", 5), ("holy", "HEALER", 5), ("shadow", "DPS", 4)]),
     (7, [("restoration", "HEALER", 5), ("elemental", "DPS", 3), ("enhancement", "DPS", 3)]),
     (3, [("beastmastery", "DPS", 5), ("marksmanship", "DPS", 5), ("survival", "DPS", 5)]),
@@ -35,11 +35,13 @@ SPECS = OrderedDict([
 
 # Fixed race quotas where the plan prescribes them (#366 composition plan).
 FIXED_RACES = {
-    (1, "protection"): {2: 5, 6: 4, 5: 3, 8: 3, 9: 3, 1: 3, 3: 3, 4: 2, 7: 1, 10: 1},
+    (1, "protection"): {2: 4, 6: 4, 5: 3, 8: 3, 9: 3, 1: 2, 3: 3, 4: 2, 7: 1, 10: 1},
     (2, None): {1: 7, 3: 5, 10: 7},
-    (11, "bear"): {4: 1, 6: 1},
+    (11, "bear"): {4: 2, 6: 2},  # one per race x gender (owner D-B variant)
     (11, None): {4: 3, 6: 3},  # the other six druids
 }
+# Paths whose per-race picks alternate gender (bear: one per race x gender).
+GENDER_SPLIT = {(11, "bear")}
 NEW_ALLIANCE_TARGET = 64
 NEW_HORDE_TARGET = 72
 
@@ -162,7 +164,17 @@ def main():
             if sum(q.values()) != n:
                 sys.exit(f"quota mismatch for class {cls} {path}: {q} != {n}")
             for race, want in sorted(q.items()):
-                picks = [c for c in pool if c["cls"] == cls and c["race"] == race and c["guid"] not in used][:want]
+                free = [c for c in pool if c["cls"] == cls and c["race"] == race and c["guid"] not in used]
+                if (cls, path) in GENDER_SPLIT:
+                    # alternate male/female so each race gets both genders
+                    picks = []
+                    for i in range(want):
+                        g = i % 2
+                        cand = next((c for c in free if c["gender"] == g and c not in picks), None)
+                        if cand:
+                            picks.append(cand)
+                else:
+                    picks = free[:want]
                 if len(picks) != want:
                     sys.exit(f"pool too small: class {cls} race {race} needs {want}, has {len(picks)}")
                 for c in picks:

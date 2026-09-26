@@ -36,8 +36,8 @@ Same inputs give the same output (run twice: SHA-256 identical). Candidates are 
 | Tank / healer / DPS | 43 / 21 / 72 | **54 (19.9 %)** / 43 / 175 (prefix ferals counted as cat) |
 | Alliance / Horde | 64 / 72 | 136 / 136 |
 
-New classes: warrior 28 (all protection), paladin 19 (13 protection, 4 holy, 2 retribution),
-druid 8 (**2 bear** night elf + tauren, 2 restoration, 2 balance, 2 feral), priest 14,
+New classes: warrior 26 (all protection), paladin 19 (13 protection, 4 holy, 2 retribution),
+druid 10 (**4 bear**, night elf + tauren, one per gender, 2 restoration, 2 balance, 2 feral), priest 14,
 shaman 11, hunter 15, rogue 15, mage 14, warlock 12.
 
 New professions: Mining/Blacksmithing 33 (warriors, paladins), Mining/Engineering 27
@@ -50,4 +50,4 @@ Herbalism/Mining 22 (double gatherers: druids, shamans, rogues), Tailoring/Encha
 - `Herbalism/Mining` has no `ProfessionPair` value yet (core, OB-10); Mining/Jewelcrafting
   depends on the bot AI supporting Turtle jewelcrafting.
 - `name` is the current character name; the creative names are a separate owner review.
-- Bears per race (2) vs. per race × gender (4) is still open with the owner.
+- Variant "4 bears" (one per race × gender): 26 warrior tanks + 4 bears instead of 28 + 2; tank share, factions and profession totals unchanged.
