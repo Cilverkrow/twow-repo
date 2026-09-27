@@ -22,7 +22,6 @@ the train 7 pin.
 | `select_roster_v5.py` | deterministic generator (stdlib only), any size, EXPAND and REPLACE |
 | `race-class-catalog.tsv` | the 61 race × class pairs after train 7, with source (`live`, `new-178`, `new-165`) |
 | `spec-roles.tsv` | talent path → role; every path is in `../respec/premade-spec-index.tsv` |
-| `spec-roles-pending.tsv` | rogue/shaman tank rows (OB-10, not in the premade index yet); wave 2 preview only |
 | `test_select_roster_v5.py` | 16 tests on the real 154 base with synthetic pools |
 | `../expand-272/make_replace_request.py` | canonical REPLACE request (+ `test_make_replace_request.py`) |
 | `../reset-l1`, `../respec` | `--ordinals` now accepts lists such as `89,109,140,149,155-180` |
@@ -68,7 +67,7 @@ against a name snapshot; the owner "wants to be surprised".
 - The factory run is only needed for the pairs that wave 1 actually uses (`demand.tsv`,
   `FACTORY` column against the pool snapshot).
 
-## Wave 2 preview (180 → 360, `20,40,120`, cap 7, with the pending tank rows)
+## Wave 2 preview (180 → 360, `20,40,120`, cap 7, incl. rogue/shaman tank from twow-core#183)
 
 | | Races | Tanks by class |
 |---|---|---|
@@ -145,7 +144,7 @@ stage 1 or 2.
 ## Runbook wave 2 (180 → 360), delta to wave 1
 
 - Base = the live `v5-180-roster-plan.csv`; `--target 360 --per-faction 20,40,120 --cap 7`.
-- The tank rows from OB-10 have moved to `spec-roles.tsv` and `premade-spec-index.tsv`.
+- Rogue tank (4.3) and shaman tank (7.3) are in `spec-roles.tsv` and `premade-spec-index.tsv` (twow-core#183).
 - EXPAND only (`--ordinals 181-360 --expected-current-version 6`); REPLACE only if a race is
   above its share.
 - reset-l1 and A6 cover 181–360, so 180 new bots log in in 8 waves of 24 (≈2 h).

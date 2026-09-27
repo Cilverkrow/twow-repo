@@ -148,7 +148,9 @@ class GeneratorTest(unittest.TestCase):
         self.assert_hard_rules(rows, (20, 40, 120), 7)
         for races in (gen.ALLIANCE, gen.HORDE):
             have = Counter(int(r["class"]) for r in base_rows() if int(r["race"]) in races and r["role"] == "TANK")
-            classes = sorted({c for c in (1, 2, 11) if any((r, c) in catalog() for r in races)})
+            tank_cls = {int(c) for c, _, role in gen.read_tsv(SPECS) if role == "TANK"}
+            classes = sorted({c for c in tank_cls if any((r, c) in catalog() for r in races)})
+            self.assertEqual(len(classes), 5, "owner: five tank classes per faction")
             want = gen.water_fill(have, 20 - sum(have.values()), classes)
             tanks = Counter(int(r["class"]) for r in rows if int(r["race"]) in races and r["role"] == "TANK")
             self.assertEqual(dict(tanks), want, "tank classes fill up evenly, nobody shrinks")
