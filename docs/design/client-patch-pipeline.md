@@ -411,11 +411,14 @@ What it is, from its code at `a3b04f2` [nostalgia]:
    `services/mpq.py:48-66`). In the Assets panel's optional scan, Turtle's
    `patch-3` … `patch-9` show as **"Foreign / untracked"** with a Remove button.
    Removal needs a click plus confirmation and never happens automatically
-   (`mpq.py:264-280`, `controllers/assets.py:83-92`). Friend instructions must
-   say "never remove these" (section 5.6).
+   (`mpq.py:264-280`, `controllers/assets.py:83-92`). The scan runs on every
+   render of the Assets panel (`ui/qt/assets_panel.py:131-134`), so the red
+   list is always in view. **These files must not be removed.** An instruction
+   alone is too weak, so section 5.7 adds a technical guard.
 6. **`dlls.txt` entries no catalogue mod claims** (Turtle's `WoWTranslate.dll`)
    show as "Detected (not in catalog)" with a Remove button (`mods.py:292-334`).
-   The same instruction applies.
+   Removing one drops the `dlls.txt` line first and then deletes the file
+   (`mods.py:301-334`). Section 5.7 covers it too.
 7. **It contacts GitHub** once a day for its own updates
    (`services/self_update.py`), and the GitHub API for addon commit SHAs. It
    contacts nothing else beyond the hosts in our config.
@@ -697,10 +700,62 @@ Optional later (a twow-core PR, not stage 1):
    base zip. Run the base check (a small hash list script, or compare against
    the owner's listing).
 5. Assets → the essential `twow-patch` installs. Addons → TWPatch (and BotMenu).
-6. **Never remove** `patch-3` … `patch-9` in the Assets panel's scan, or
-   `WoWTranslate.dll` in "Detected (not in catalog)". They are Turtle's.
+6. **Run the base guard** (section 5.7). It sets the read-only attribute on
+   the Turtle files and records their hashes. **Never remove** `patch-3` …
+   `patch-9` in the Assets panel's scan, or `WoWTranslate.dll` in "Detected (not
+   in catalog)". They are Turtle's, and the guard makes such a click fail.
 7. Play → accept the realm write → log in. The MOTD line and the TWPatch addon
    both say "up to date".
+
+### 5.7 Base guard: Turtle's files must not be removed
+
+Turtle's `patch.MPQ`, `patch-2.MPQ` and `patch-3` … `patch-9` are the client
+base. Since the shutdown **there is no source to download them again** except
+the owner's own copy. Losing one breaks the client, and the Nostalgia UI shows
+them in red next to a Remove button (constraint 5). Three measures, from
+cheapest to most thorough:
+
+1. **Read-only attribute (technical guard, stage 1).** A small script
+   `base-guard.ps1` (in `ops/client-patch/`, run once during onboarding and
+   again after every restore) does two things:
+   - it sets the Windows read-only attribute (`attrib +R`) on
+     `Data\patch.MPQ`, `Data\patch-2.MPQ`, `Data\patch-3.mpq` … `patch-9.mpq`
+     and on `WoWTranslate.dll`;
+   - it writes their names, sizes and sha256 to `TWPatchase.sha256`.
+
+   **Why this works:**
+   - Nostalgia removes a foreign MPQ with a plain `os.remove()` (`mpq.py:264-280`).
+     On Windows that raises `PermissionError` for a read-only file, so the
+     launcher reports "Could not remove …" and the file stays. This is
+     [speculation] until test N6 confirms it on a friend's PC.
+   - The same applies to a slip in Explorer, which asks an extra question for
+     read-only files.
+
+   **Why it does not get in the way:**
+   - The client only reads its archives, so read-only MPQs still load
+     [speculation, test N6].
+   - Nothing is left that would legitimately rewrite them: the Turtle launcher
+     cannot update any more.
+   - **Our own `patch-X.mpq` stays writable**, because Nostalgia replaces it on
+     every update (`deploy.py:118-128`).
+
+   **Limit:** for `WoWTranslate.dll`, Nostalgia drops the `dlls.txt` line
+   *before* it tries to delete the file (`mods.py:301-334`). The read-only
+   attribute saves the DLL but not the line. The guard therefore also keeps a
+   copy of the original `dlls.txt`, and the check below restores the line.
+   Whether that DLL still does anything after the shutdown is open; it stays
+   untouched either way.
+2. **Check and restore.** `base-guard.ps1 -Check`:
+   - compares the Turtle files with `TWPatchase.sha256`;
+   - reports any missing or changed file;
+   - restores it from the owner's base zip on the patch host (section 5.2
+     `client/base-1.18.1.zip`), or from a local copy the friend keeps.
+
+   The TWPatch addon's in-game warning also points to this check when the
+   sentinel is missing (section 5.4).
+3. **Upstream fix (later, optional).** A small contribution to Nostalgia: a
+   config key that declares extra "stock" archive names, so `patch-3` …
+   `patch-9` stop showing as foreign at all (decision 9.16).
 
 ## 6. Security and legal
 
@@ -793,10 +848,11 @@ test, and put the results in the stage-1 PR.
 | N3 | a fresh folder with no `WoW.exe`, `download.update: false` | Does the zip fallback work, or is a hand-over needed? |
 | N4 | bump the catalogue to v2, then reload and update; publish v1 again (rollback) | Badge, update and rollback behave as in section 5.5. |
 | N5 | TWPatch addon versus the MOTD line, and the sentinel | Warning on mismatch, silence on match; sentinel visible. |
+| N6 | run `base-guard.ps1`, start the game, then press Remove on `patch-3.mpq` in Nostalgia's scan and on `WoWTranslate.dll` under "Detected"; then `base-guard.ps1 -Check` | The game loads read-only MPQs. Both removals fail and the files stay. The check reports the dropped `dlls.txt` line and restores it. |
 
 **Acceptance:**
 
-- T4 and N1–N5 pass, or their fallbacks are decided and recorded.
+- T4 and N1–N6 pass, or their fallbacks are decided and recorded.
 - `dbcdiff` round trip: the Spell Editor's import + export of **unchanged**
   base DBCs is field-identical.
 - Step 2 (consistency) reports zero differences between the client base and the
@@ -920,9 +976,15 @@ Each decision comes with a recommendation.
 15. **Public repos in the current legal climate.** Recommendation: **owner to
     decide** whether `twow-repo`/`twow-core` stay public. Either way: no host
     names, IPs, real configs or client-derived files in Git.
-16. **Upstream contribution to Nostalgia** (for example teaching its MPQ scanner
-    about Turtle 1.18.1's `patch-3` … `patch-9`). Recommendation: **not now**. It
-    is a cosmetic issue; the onboarding instructions cover it.
+16. **Protecting Turtle's base files.** Owner line of 2026-09-27: they **must
+    not be removed**. Recommendation:
+    - **stage 1:** the base guard of section 5.7 (read-only attribute, hash
+      list, check and restore from the owner's base zip);
+    - **later:** a small upstream contribution to Nostalgia (a config key for
+      extra stock archive names), so the files stop showing as "foreign".
+
+    Until then, the guard makes an accidental removal fail rather than relying
+    on the instruction alone.
 
 ## 10. Sources
 
