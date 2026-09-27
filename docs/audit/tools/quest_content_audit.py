@@ -957,7 +957,7 @@ def main():
     json.dump(dict(stats=stats, quests=len(Q), verdicts=verdicts), open(ARGS.json, 'w'), indent=1) if ARGS.json else None
     with open(ARGS.out, 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=['quest_id', 'title', 'level', 'zone', 'category', 'cause', 'evidence', 'effort', 'verdict', 'blocked_follow_ups'],
-                           extrasaction='ignore')
+                           extrasaction='ignore', lineterminator='\n')
         w.writeheader()
         for fd in sorted(findings, key=lambda x: (x['quest_id'] != '', x['zone'], str(x['quest_id']).zfill(8), x['_rank'])):
             w.writerow(fd)
