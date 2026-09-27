@@ -71,14 +71,16 @@ against a name snapshot; the owner "wants to be surprised".
 
 | | Races | Tanks by class |
 |---|---|---|
-| Alliance | 36 each | warrior 5, paladin 4, rogue tank 4, shaman tank 4, bear 3 |
-| Horde | 36 each | warrior 8, paladin 3, rogue tank 3, shaman tank 3, bear 3 |
+| Alliance | 36 each | warrior 4, paladin 4, rogue tank 4, shaman tank 4, bear 4 |
+| Horde | 36 each | warrior 4, paladin 4, rogue tank 4, shaman tank 4, bear 4 |
 
 - Capacity per faction: 20 dungeon groups (0/20/60), 8 raids of 20 (4/0/16), 3 raids of 40
   (8/4/48). Largest cell 7 (= cap).
-- **Exact 20 % tanks** would need respeccing existing warrior tanks: Horde 8 → 4 and
-  Alliance 5 → 4. That is an A6 respec (talent reset, level kept) and an owner decision.
-  Without it, the generator only fills up.
+- **Exact 20 % tanks (owner decision 2026-09-27):** `--respec-tanks` respecs the surplus
+  warrior tanks to a DPS path of their class (preview: Alliance 1, Horde 4). The level stays;
+  A6 sets the talent reset, with no L1 reset and no login wave. The race with the most tanks
+  of that class goes first, then the highest ordinal. `--respec-out` lists them;
+  `A6_ORDINALS` = new + replaced + respecced, `CHANGED_ORDINALS` (reset-l1) = new + replaced.
 
 ## Candidates for the new pairs: factory run (DB mutation, individual approval)
 
@@ -149,7 +151,9 @@ stage 1 or 2.
   above its share.
 - reset-l1 and A6 cover 181–360, so 180 new bots log in in 8 waves of 24 (≈2 h).
 - ROLLBACK to version 6.
-- Optional after an owner decision: respec warrior tanks to meet exactly 20 % per tank class.
+- `--respec-tanks --respec-out respec.tsv` (owner decision): A6 runs with `--ordinals <A6_ORDINALS>`;
+  reset-l1 only runs with `<CHANGED_ORDINALS>`. Final check: 4 tanks per class and faction;
+  the respecced bots keep level, items and profession, and get specNo = new path.
 
 ## Reproduction and tests
 
