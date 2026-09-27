@@ -9,18 +9,21 @@ two steps:
    - every race ends within +-1 of the faction's size / 5 (hard);
    - tanks / healers / DPS end at --per-faction (hard);
    - bears end at --bears-per-race-gender for each race x gender that has druids (hard);
-   - otherwise each slot takes, in this order: the role furthest behind its target; among the
-     races that keep all targets reachable, the one with the smallest share of that role, then
-     the one furthest behind its size; the class of that race and role that is rarest in the
-     race; the rarest talent path; the rarest gender for that race and class. Only pairs of
-     --catalog and paths of --specs are used.
+   - no race x class x role has more than --cap bots (hard, owner diversity cap; plan v2);
+   - every slot keeps all hard rules reachable (max-flow check over race -> class/role cells);
+   - otherwise each slot takes, in this order: the role furthest behind its target; the race
+     with the smallest share of that role relative to its room for it (cap x classes that can
+     play the role), so races with several healer classes carry the healers; the race furthest
+     behind its size; the emptiest class cell; the rarest talent path; the rarest gender for
+     that race and class. Only pairs of --catalog and paths of --specs are used.
+   `--summary-out` writes the result per race and the group capacity (dungeon, raid 20/40).
    `--demand` writes the slots as candidate demand per race x class x gender. Compared with
    a pool snapshot it gives the number of bots the factory must create (FACTORY column).
 2. Fill (--pool): every slot takes the free pool character of its race and class, same
    gender first, lowest (level, guid). New names come from --names-out.
 
     python3 select_roster_v5.py --base ../plan-154/v4-154-roster-plan.csv --target 308 \
-        --per-faction 20,40,94 --bears-per-race-gender 2 --demand demand.tsv [--pool pool.tsv \
+        --per-faction 20,40,94 --bears-per-race-gender 2 --cap 6 --demand demand.tsv [--pool pool.tsv \
         --taken-names names.txt --out v5-308-roster-plan.csv --names-out new-names.tsv]
 """
 import argparse
@@ -73,20 +76,51 @@ def largest_remainder(total, weights):
     return out
 
 
-def feasible(race_rem, role_rem, can):
-    """Transportation feasibility: the remaining race counts can take the remaining roles."""
-    if sum(race_rem.values()) != sum(role_rem.values()):
+def max_flow_ok(race_rem, role_rem, cell_free):
+    """Can the remaining race counts be spread over cells (free capacity) onto the roles?"""
+    total = sum(race_rem.values())
+    if total != sum(role_rem.values()):
         return False
-    roles = [r for r in ROLES if role_rem[r] > 0]
-    for n in range(1, len(roles) + 1):
-        for subset in itertools.combinations(roles, n):
-            supply = sum(race_rem[race] for race in race_rem if any(can[race][r] for r in subset))
-            if sum(role_rem[r] for r in subset) > supply:
-                return False
-    return True
+    # nodes: "s", ("r", race), ("c", race, cls, role), ("o", role), "t"
+    cap = {}
+
+    def edge(u, v, c):
+        cap[(u, v)] = cap.get((u, v), 0) + c
+        cap.setdefault((v, u), 0)
+    for race, n in race_rem.items():
+        edge("s", ("r", race), n)
+    for (race, cls, role), free in cell_free.items():
+        if race in race_rem and free > 0:
+            edge(("r", race), ("c", race, cls, role), free)
+            edge(("c", race, cls, role), ("o", role), free)
+    for role, n in role_rem.items():
+        edge(("o", role), "t", n)
+    adj = {}
+    for u, v in cap:
+        adj.setdefault(u, []).append(v)
+    flow = 0
+    while True:
+        prev, stack = {"s": None}, ["s"]
+        while stack and "t" not in prev:
+            u = stack.pop()
+            for v in adj.get(u, []):
+                if v not in prev and cap[(u, v)] > 0:
+                    prev[v] = u
+                    stack.append(v)
+        if "t" not in prev:
+            return flow == total
+        path, v = [], "t"
+        while prev[v] is not None:
+            path.append((prev[v], v))
+            v = prev[v]
+        push = min(cap[e] for e in path)
+        for u, v in path:
+            cap[(u, v)] -= push
+            cap[(v, u)] += push
+        flow += push
 
 
-def plan_slots(base, catalog, specs, target, per_faction, bears_per_rg):
+def plan_slots(base, catalog, specs, target, per_faction, bears_per_rg, cell_cap):
     """Return the new slots in ordinal order: dicts race, cls, gender, path, role."""
     if target % 2:
         fail("target must be even (50/50 factions)")
@@ -120,8 +154,13 @@ def plan_slots(base, catalog, specs, target, per_faction, bears_per_rg):
         for r, n in role_rem.items():
             if n < 0:
                 fail(f"faction {fa} already has {have_role[r]} {r}, above {role_target[r]}")
-        can = {race: {role: any((race, c) in catalog and paths.get((c, role)) for c in {c for _, c in catalog})
-                      for role in ROLES} for race in races}
+        cell_count = Counter((b["race"], b["cls"], b["role"]) for b in mine)
+        for cell, n in cell_count.items():
+            if n > cell_cap:
+                fail(f"race {cell[0]} class {cell[1]} {cell[2]} already has {n} bots, above the cap {cell_cap}")
+        # cells a normal slot may use (bears are placed separately)
+        usable = {(race, cls, role) for race, cls in catalog if race in races for role in ROLES
+                  if [p for p in paths.get((cls, role), []) if p != "bear"]}
         slots = []
 
         def take(race, cls, gender, path, role):
@@ -130,6 +169,7 @@ def plan_slots(base, catalog, specs, target, per_faction, bears_per_rg):
             mine.append(s)
             race_rem[race] -= 1
             role_rem[role] -= 1
+            cell_count[(race, cls, role)] += 1
 
         # bears first: they are a hard count per race x gender
         for race in races:
@@ -139,8 +179,16 @@ def plan_slots(base, catalog, specs, target, per_faction, bears_per_rg):
                 have = sum(1 for b in mine if b["race"] == race and b["gender"] == gender and b["path"] == "bear")
                 for _ in range(bears_per_rg - have):
                     take(race, DRUID, gender, "bear", "TANK")
-        if not feasible(race_rem, role_rem, can):
-            fail(f"faction {fa}: race and role targets cannot both be met")
+        for cell, n in cell_count.items():
+            if n > cell_cap:
+                fail(f"bears put race {cell[0]} druid tanks at {n}, above the cap {cell_cap}")
+
+        def free():
+            return {c: cell_cap - cell_count[c] for c in usable}
+        if not max_flow_ok(race_rem, role_rem, free()):
+            fail(f"faction {fa}: races +-1, roles {per_faction} and cap {cell_cap} cannot all be met")
+        room = {(race, role): sum(cell_cap for c in usable if c[0] == race and c[2] == role)
+                for race in races for role in ROLES}
         total_new = {r: max(role_rem[r], 1) for r in ROLES}
         while sum(role_rem.values()):
             for role in sorted(ROLES, key=lambda r: (-role_rem[r] / total_new[r], ROLES.index(r))):
@@ -148,28 +196,34 @@ def plan_slots(base, catalog, specs, target, per_faction, bears_per_rg):
                     continue
                 options = []
                 for race in races:
-                    if race_rem[race] == 0 or not can[race][role]:
+                    if race_rem[race] == 0:
                         continue
-                    race_rem[race] -= 1
-                    role_rem[role] -= 1
-                    ok = feasible(race_rem, role_rem, can)
-                    race_rem[race] += 1
-                    role_rem[role] += 1
-                    if ok:
-                        have = sum(1 for b in mine if b["race"] == race)
-                        in_role = sum(1 for b in mine if b["race"] == race and b["role"] == role)
-                        options.append(((in_role / race_target[race], have / race_target[race], race), race))
+                    for cls in sorted({c for r, c, o in usable if r == race and o == role}):
+                        cell = (race, cls, role)
+                        if cell_count[cell] >= cell_cap:
+                            continue
+                        race_rem[race] -= 1
+                        role_rem[role] -= 1
+                        cell_count[cell] += 1
+                        ok = max_flow_ok(race_rem, role_rem, free())
+                        race_rem[race] += 1
+                        role_rem[role] += 1
+                        cell_count[cell] -= 1
+                        if ok:
+                            have = sum(1 for b in mine if b["race"] == race)
+                            in_role = sum(1 for b in mine if b["race"] == race and b["role"] == role)
+                            in_class = sum(1 for b in mine if b["race"] == race and b["cls"] == cls)
+                            # a race with more classes for the role takes a larger share of it
+                            options.append(((in_role / room[(race, role)], have / race_target[race], race,
+                                             cell_count[cell], in_class, cls), race, cls))
                 if options:
                     break
             else:
                 fail(f"faction {fa}: no feasible slot left")
-            race = min(options)[1]
+            _, race, cls = min(options)
             in_race = [b for b in mine if b["race"] == race]
-            rc = Counter(b["cls"] for b in in_race)
             rcp = Counter((b["cls"], b["path"]) for b in in_race)
-            cells = [(c, p) for (r, c) in catalog if r == race for p in paths.get((c, role), [])
-                     if p != "bear"]
-            cls, path = min(cells, key=lambda cp: (rc[cp[0]], rcp[cp], cp[0], cp[1]))
+            path = min((p for p in paths[(cls, role)] if p != "bear"), key=lambda p: (rcp[(cls, p)], p))
             rg = Counter(b["gender"] for b in in_race if b["cls"] == cls)
             g_all = Counter(b["gender"] for b in in_race)
             gender = min((0, 1), key=lambda g: (rg[g], g_all[g], g))
@@ -206,6 +260,38 @@ def assign_professions(base, slots, target):
                 n -= 1
         if n:
             fail(f"could not place {label}")
+
+
+# Group templates (tanks, healers, dps) for the capacity table: 5-man dungeon, 20-man raid
+# (ZG/AQ20), 40-man raid (MC/BWL/AQ40/Naxx).
+GROUPS = [("dungeon 5", (1, 1, 3)), ("raid 20", (2, 5, 13)), ("raid 40", (4, 12, 24))]
+
+
+def summary(base, slots):
+    rows = [(int(r["race"]), int(r["class"]), r["role"]) for r in base]
+    rows += [(s["race"], s["cls"], s["role"]) for s in slots]
+    lines = []
+    for fa, races in (("Alliance", ALLIANCE), ("Horde", HORDE)):
+        mine = [r for r in rows if r[0] in races]
+        roles = Counter(r[2] for r in mine)
+        lines += [f"## {fa}: {len(mine)} bots, tanks {roles['TANK']} / healers {roles['HEALER']} / DPS {roles['DPS']}",
+                  "", "| race | bots | tanks | healers | DPS | largest race x class x role |", "|---|---|---|---|---|---|"]
+        for race in races:
+            r_rows = [r for r in mine if r[0] == race]
+            rr = Counter(r[2] for r in r_rows)
+            (cls, role), top = Counter((r[1], r[2]) for r in r_rows).most_common(1)[0]
+            lines.append(f"| {race} | {len(r_rows)} | {rr['TANK']} | {rr['HEALER']} | {rr['DPS']} | "
+                         f"class {cls} {role}: {top} |")
+        lines += ["", "| groups at the same time | template T/H/D | full groups | left over T/H/D |", "|---|---|---|---|"]
+        have = (roles["TANK"], roles["HEALER"], roles["DPS"])
+        for name, need in GROUPS:
+            n = min(h // q for h, q in zip(have, need))
+            left = "/".join(str(h - n * q) for h, q in zip(have, need))
+            lines.append(f"| {name} | {'/'.join(map(str, need))} | {n} | {left} |")
+        lines.append("")
+    top = max(Counter(rows).values())
+    lines.append(f"Largest race x class x role in the whole roster: {top}.")
+    return "\n".join(lines) + "\n"
 
 
 def demand_rows(slots, pool):
@@ -300,6 +386,8 @@ def main(argv=None):
     ap.add_argument("--target", type=int, required=True)
     ap.add_argument("--per-faction", required=True, help="tanks,healers,dps per faction")
     ap.add_argument("--bears-per-race-gender", type=int, required=True)
+    ap.add_argument("--cap", type=int, required=True, help="max bots per race x class x role (whole roster)")
+    ap.add_argument("--summary-out", help="output: markdown summary with the group capacity table")
     ap.add_argument("--demand", required=True, help="output: candidate demand TSV")
     ap.add_argument("--slots-out", help="output: the planned slots before the fill (review)")
     ap.add_argument("--pool", help="free pool TSV: guid account name race class gender level")
@@ -324,7 +412,7 @@ def main(argv=None):
     if len(per_faction) != 3:
         fail("--per-faction needs tanks,healers,dps")
 
-    slots = plan_slots(base, catalog, specs, args.target, per_faction, args.bears_per_race_gender)
+    slots = plan_slots(base, catalog, specs, args.target, per_faction, args.bears_per_race_gender, args.cap)
     assign_professions(base, slots, args.target)
 
     pool = None
@@ -346,6 +434,9 @@ def main(argv=None):
             f.write("# slot\trace\tclass\tgender\ttalent_path\trole\tprofession_pair\n")
             for i, s in enumerate(slots, start=len(base) + 1):
                 f.write(f"{i}\t{s['race']}\t{s['cls']}\t{s['gender']}\t{s['path']}\t{s['role']}\t{s['pair']}\n")
+    if args.summary_out:
+        with open(args.summary_out, "w", newline="", encoding="utf-8") as f:
+            f.write(summary(base, slots))
     print(f"slots={len(slots)} demand_sha256={sha256(args.demand)}")
     if pool is None:
         return 0

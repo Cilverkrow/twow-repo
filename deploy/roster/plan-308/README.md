@@ -14,12 +14,17 @@ Owner requirements (2026-09-27, via OB-00):
 
 Existing rules stay: role ratio, bears per race × gender, factions 50/50, profession pairs.
 
+**Plan v2 (owner, 2026-09-27, via OB-00):** "11 orc shaman healers" is exactly what the owner
+does not want. New diversity cap: no race × class × role above `--cap` (6 for 308, about 2 %
+of the roster). Healers go mainly to races with several healer classes. Race totals stay ±1;
+the orcs fill up with tanks and DPS.
+
 | File | Content |
 |---|---|
 | `select_roster_v5.py` | deterministic generator (stdlib only), any size |
 | `race-class-catalog.tsv` | the 61 race × class pairs a roster bot may have after train 7 |
 | `spec-roles.tsv` | talent path → role; every path must be in `../respec/premade-spec-index.tsv` |
-| `test_select_roster_v5.py` | 12 tests on the real 154 base with synthetic pools |
+| `test_select_roster_v5.py` | 15 tests on the real 154 base with synthetic pools |
 
 ## How the generator decides
 
@@ -31,17 +36,23 @@ per faction:
    If a race is already above its target, the generator stops: only a REPLACE could fix that.
 2. Tanks / healers / DPS = `--per-faction`.
 3. Bears = `--bears-per-race-gender` for every race × gender with druids.
-4. Every slot must keep rules 1–2 reachable (transportation check).
+4. No race × class × role above `--cap` over the whole roster (base included).
+5. Every slot must keep rules 1–4 reachable: a max-flow check race → class/role cell (free
+   capacity) → role.
 
 **Soft, in this order:**
 1. the role furthest behind;
-2. the race with the smallest share of that role, then the race furthest behind its size;
-3. the rarest class of that race and role;
-4. the rarest talent path;
-5. the rarest gender.
+2. the race with the smallest share of that role **relative to its room for it** (cap × number
+   of its classes that can play the role). Tauren (priest, shaman, druid) therefore carry about
+   three times the healers of the orc (shaman only);
+3. the race furthest behind its size;
+4. the emptiest class cell;
+5. the rarest talent path;
+6. the rarest gender.
 
 Professions follow the owner shares over the whole roster (HA 20 %, TE 18 %, SL 18 %,
 MB 12 %, ME 10 %, MJ 8 %, HM 14 %). The new ordinals alternate Alliance and Horde.
+`--summary-out` writes the result per race and the group capacity table.
 
 **Phase 1** (`--demand`, no pool needed) writes the candidate demand per race × class ×
 gender. With `--pool` it also writes the shortage and the `FACTORY` count: twice the larger
@@ -54,19 +65,40 @@ endings). They are deterministic for `--name-seed` and never repeat a name from
 `--taken-names`. The rename tool checks the name format and uniqueness against the database
 again. The owner "wants to be surprised": the names are not approved one by one.
 
-## Result on the real base (v4/154 → 308, `20,40,94`, 2 bears per race × gender)
+## Result on the real base, plan v2 (v4/154 → 308, `20,40,94`, 2 bears per race × gender, cap 6)
 
-| Faction | Races | Roles |
-|---|---|---|
-| Alliance | human 31, dwarf 31, night elf 31, gnome 30, high elf 31 | 20 / 40 / 94 |
-| Horde | orc 31, undead 31, tauren 31, troll 31, goblin 30 | 20 / 40 / 94 |
+**Is the cap feasible with races ±1?** Tested on the real base:
 
-- Tanks per race 3–5.
-- Healers about 10 per race that has a healer class. Gnome and goblin have none, so they take
-  tanks and DPS.
-- Class spread inside a race (max − min) is 0–5. The one outlier is the orc (shaman 11)
-  because the shaman is the only orc healer.
-- Every new pair gets bots. 8 bears.
+| Cap | Result |
+|---|---|
+| 3 | impossible: 2 bears per race × gender already means 4 druid tanks per race |
+| 4 | impossible: Alliance races ±1 + 40 healers do not fit |
+| **5** | **feasible** (orc healers 5, tauren 15) |
+| **6** | **feasible**, recommended (orc healers 6, tauren 13, largest cell 6) |
+
+For other sizes, scale the cap at about 2 % of the roster (462 → 9, tested).
+
+**Cap 6 per race:**
+
+| Alliance | Bots | T / H / D | | Horde | Bots | T / H / D |
+|---|---|---|---|---|---|---|
+| Human | 31 | 4 / 8 / 19 | | Orc | 31 | 4 / **6** / 21 |
+| Dwarf | 31 | 3 / 10 / 18 | | Undead | 31 | 4 / 10 / 17 |
+| Night elf | 31 | 5 / 12 / 14 | | Tauren | 31 | 5 / 13 / 13 |
+| Gnome | 30 | 4 / 0 / 26 | | Troll | 31 | 2 / 11 / 18 |
+| High elf | 31 | 4 / 10 / 17 | | Goblin | 30 | 5 / 0 / 25 |
+
+Every new pair gets bots, 8 bears, no race × class × role above 6.
+
+**Group capacity per faction (20 tanks / 40 healers / 94 DPS)**, the proof for the owner:
+
+| At the same time | Template T/H/D | Full groups | Left over T/H/D |
+|---|---|---|---|
+| 5-man dungeon | 1/1/3 | **20** | 0/20/34 |
+| 20-man raid (ZG/AQ20) | 2/5/13 | **7** | 6/5/3 |
+| 40-man raid | 4/12/24 | **3** | 8/4/22 |
+
+The 20-man template (2/5/13) is an assumption; the 40-man template comes from OB-00/the owner.
 
 ## Where the new pairs' candidates come from: factory run (DB mutation, individual approval)
 
@@ -138,9 +170,9 @@ bots keep their progress and log in at once.
 
 ```sh
 python3 select_roster_v5.py --base ../plan-154/v4-154-roster-plan.csv --catalog race-class-catalog.tsv \
-    --specs spec-roles.tsv --target 308 --per-faction 20,40,94 --bears-per-race-gender 2 \
-    --demand demand.tsv --slots-out slots.tsv
+    --specs spec-roles.tsv --target 308 --per-faction 20,40,94 --bears-per-race-gender 2 --cap 6 \
+    --demand demand.tsv --slots-out slots.tsv --summary-out summary.md
 python3 -m unittest test_select_roster_v5.py
 ```
 
-Phase 1 on the real base: `demand_sha256 = 65DFC229CCD5E55CA43FB4A65B020C94792E1028560642D14FD2B7808632DDE8` (`slots.tsv` sha256 5236ac039c9962b9…).
+Phase 1 on the real base (plan v2, cap 6): `demand_sha256 = 38DCB3EE18CB10C658E4B11DE3E2C9A204696C13A94D2D4971D67D3B5B19D45C`.

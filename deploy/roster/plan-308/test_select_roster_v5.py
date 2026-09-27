@@ -29,12 +29,13 @@ def catalog():
 
 
 class Run:
-    def __init__(self, tmp, target=308, per_faction="20,40,94", bears=2, pool=None, extra=()):
+    def __init__(self, tmp, target=308, per_faction="20,40,94", bears=2, cap=6, pool=None, extra=()):
         self.demand = os.path.join(tmp, "demand.tsv")
         self.out = os.path.join(tmp, "plan.csv")
         self.names = os.path.join(tmp, "names.tsv")
         argv = ["--base", BASE, "--catalog", CATALOG, "--specs", SPECS, "--target", str(target),
-                "--per-faction", per_faction, "--bears-per-race-gender", str(bears), "--demand", self.demand]
+                "--per-faction", per_faction, "--bears-per-race-gender", str(bears), "--cap", str(cap),
+                "--demand", self.demand, "--summary-out", os.path.join(tmp, "summary.md")]
         if pool:
             argv += ["--pool", pool, "--out", self.out, "--names-out", self.names]
             for t in TAKEN:
@@ -50,7 +51,7 @@ class Run:
             return list(csv.DictReader(f))
 
 
-def write_pool(tmp, per_gender=4, drop=(), only_male=()):
+def write_pool(tmp, per_gender=6, drop=(), only_male=()):
     path = os.path.join(tmp, "pool.tsv")
     guid = 900000
     with open(path, "w", encoding="utf-8") as f:
@@ -104,7 +105,29 @@ class GeneratorTest(unittest.TestCase):
         rows = run.rows()
         for race in range(1, 11):
             tanks = sum(1 for r in rows if int(r["race"]) == race and r["role"] == "TANK")
-            self.assertGreaterEqual(tanks, 3, f"race {race} tanks")
+            self.assertGreaterEqual(tanks, 2, f"race {race} tanks")
+
+    def test_diversity_cap(self):
+        for cap in (5, 6):
+            run = Run(self.tmp, cap=cap, pool=write_pool(self.tmp))
+            rows = run.rows()
+            cells = Counter((r["race"], r["class"], r["role"]) for r in rows)
+            self.assertLessEqual(max(cells.values()), cap)
+            orc_healers = sum(1 for r in rows if r["race"] == "2" and r["role"] == "HEALER")
+            tauren_healers = sum(1 for r in rows if r["race"] == "6" and r["role"] == "HEALER")
+            self.assertLessEqual(orc_healers, cap, "orcs have one healer class")
+            self.assertGreaterEqual(tauren_healers, 2 * orc_healers, "three healer classes carry more")
+
+    def test_cap_too_small_stops(self):
+        with self.assertRaisesRegex(SystemExit, "cannot all be met"):
+            Run(self.tmp, cap=4)
+
+    def test_summary_capacity(self):
+        Run(self.tmp)
+        with open(os.path.join(self.tmp, "summary.md"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertEqual(text.count("| raid 40 | 4/12/24 | 3 | 8/4/22 |"), 2)
+        self.assertEqual(text.count("| dungeon 5 | 1/1/3 | 20 |"), 2)
 
     def test_names(self):
         run = Run(self.tmp, pool=write_pool(self.tmp))
@@ -131,11 +154,11 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(sum(int(r[2]) + int(r[3]) for r in rows), 154)
 
     def test_demand_with_full_pool_needs_no_factory(self):
-        run = Run(self.tmp, pool=write_pool(self.tmp, per_gender=8))
+        run = Run(self.tmp, pool=write_pool(self.tmp, per_gender=12))
         self.assertTrue(all(int(r[8]) == 0 for r in gen.read_tsv(run.demand)))
 
     def test_gender_fallback(self):
-        run = Run(self.tmp, pool=write_pool(self.tmp, per_gender=8, only_male=NEW_PAIRS))
+        run = Run(self.tmp, pool=write_pool(self.tmp, per_gender=12, only_male=NEW_PAIRS))
         self.assertNotIn("gender_fallback=0", run.stdout)
         self.assertEqual(len(run.rows()), 308)
 
@@ -153,7 +176,7 @@ class GeneratorTest(unittest.TestCase):
             Run(self.tmp, per_faction="20,40,90")
 
     def test_scales_to_462(self):
-        run = Run(self.tmp, target=462, per_faction="30,60,141", bears=3,
+        run = Run(self.tmp, target=462, per_faction="30,60,141", bears=3, cap=9,
                   pool=write_pool(self.tmp, per_gender=12))
         rows = run.rows()
         self.assertEqual(len(rows), 462)
