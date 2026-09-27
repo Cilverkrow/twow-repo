@@ -27,6 +27,7 @@ This repository is a source-controlled project view, not a self-contained server
 
 - [Rogue as a tank variant](design/rogue-tank.md) — Turtle data analysis and bot design for #367; needs owner decisions before any implementation.
 - [Shaman tank: Enhancement rework](design/shaman-tank.md) — phase 1 (bots first) design for #357 based on the owner talent line of 2026-09-27: per-row IDs, route (spell change vs. bot aura), Elemental Weapons values, bot design; owner decisions in section 11.
+- [Client patch pipeline](design/client-patch-pipeline.md) — design for #409: Turtle 1.18.1 MPQ load order and our `patch-X.mpq`, client vs. server DBCs, build pipeline (CSV → DBC → MPQ + manifest), distribution options incl. the Turtle launcher and `dlls.txt`, version check, graphics, staged plan; owner decisions in section 9.
 
 ## Authority warning
 
