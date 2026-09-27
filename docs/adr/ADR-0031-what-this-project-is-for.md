@@ -57,6 +57,12 @@ to ARCH-001's own decision gate — p99 intent latency, messages/sec at 1000 bot
 delta — which has produced no numbers to date. If those numbers come back badly, the right response
 is to change the means, not to defend it.
 
+> **This clause no longer describes how the project scales (noted 2026-09-27).** ARCH-001 is closed,
+> its gate never produced numbers, and scaling is now being pursued in-core under the D1–D4 gates
+> below. The sentence is left exactly as written because changing what the project is *for* is the
+> owner's call; see [Open contradiction](#open-contradiction-the-second-clause-2026-09-27) for the
+> facts and two candidate rewordings to choose between.
+
 **"Never at the cost of losing a bot or blocking the world thread"** is ADR-0024, restated here
 because it is the clause that overrides the other two. A feature that advances the product goal and
 risks invariant 1 does not ship. This is not a tiebreaker; it is a veto.
@@ -154,9 +160,96 @@ required for this step: the first 24 h after the train 6 deploy serve as the p99
 Rollback guard: if, after the 5-minute warm-up, tick p99 > 1000 ms or max > 3000 ms persists, the roster goes
 back to 136 (rollback stack of train 5), reported to the owner.
 
-**Scaling gate (overlay Ä10):** more than 154 active bots (next step: doubling to 308) only after a
-documented run of ≥ 7 days with the 154 base that passes all gates above, plus #351 for the real tick
+**Wave 1 (owner decision 2026-09-27, overlay Ä10b, #366):** 180 bots (per faction 10 tanks, 20 healers, 60 DPS, race-balanced, including the new race/class pairs) come with release train 7 **as soon as train 7 is ready, without waiting for the 7-day run with 154**; the 7-day window restarts at train 7 world-up. The long-term target is 360 (per faction 20/40/120, wave 2).
+
+**Scaling gate (overlay Ä10):** more than 180 active bots (next step: wave 2 up to 360) only after a
+documented run of ≥ 7 days with the 180 base that passes all gates above, plus #351 for the real tick
 p99, plus an explicit owner approval.
+
+## Open contradiction: the second clause (2026-09-27)
+
+Recorded, not resolved. The Decision above has three load-bearing clauses; **the middle one has
+stopped matching practice**, and this ADR exists precisely so that kind of drift is visible instead
+of inherited.
+
+What changed, as facts rather than judgements:
+
+- **ARCH-001 is closed** (#42). The snapshot/intent contract shipped: it stands at version 1.6, the
+  Go service is built, vetted and race-tested in CI, and `modules/mod-bot-brain` is still wired.
+- **ARCH-001's decision gate never produced numbers, and now cannot.** p99 intent latency, messages
+  per second at 1000 bots and worldserver CPU delta are all measurements *of out-of-process
+  planning*. Nothing plans out of process in a running deployment today, so there is nothing to
+  measure. The gate is not pending; it is unreachable in the current configuration.
+- **Scaling is being pursued in-core instead**, and deliberately: the owner direction of 2026-09-24
+  ranks the brain-side work as *third* priority, behind questing and levelling. The roster has gone
+  136 → 154 → 180 with 360 as the target, gated on D1–D4 — tick budget, levelling, loops, evidence.
+- **Those are a different question.** ARCH-001's gate asked *"should decisions move out of the
+  world thread?"*. D1–D4 ask *"is the population alive and is the tick holding?"*. Both are worth
+  asking. Only the second is being asked, and the Decision clause still advertises the first.
+
+None of this is a process failure — every roster step is a recorded owner decision with a stated
+rationale and a rollback guard, which is more discipline than the clause it contradicts ever got.
+The problem is narrower and entirely fixable: **the document that exists to settle "which statement
+do I believe?" now contains two answers.** A reader following the Decision would go looking for an
+out-of-process scaling story; a reader following the gates would find an in-core one.
+
+### Two candidate rewordings, for the owner to pick
+
+**(a) Amend the clause to describe what the project does.** Replace "planned out of process so it
+scales" with a clause about the scaling property actually being pursued — a persistent roster that
+grows without breaking the tick budget — and demote out-of-process planning to a means held in
+reserve, named in the Consequences rather than in the Decision. This is the honest option if the
+in-core path is expected to carry the project to its roster target.
+
+**(b) Keep the clause and say out loud that it is deferred.** Leave the Decision untouched, and add
+one sentence stating that the means is parked behind the two higher priorities, with the condition
+that would revive it — most plausibly a tick budget that in-core planning cannot hold at the roster
+target. This is the honest option if out-of-process planning is still the intended endgame.
+
+**Recommendation: (a).** Two roster increases have now been taken on in-core evidence, the contract
+has had one commit in eighteen days, and ARCH-004 and ARCH-005 — both explicitly downstream of
+ARCH-001's measurements — cannot be started while those measurements are unreachable. Under (b)
+that backlog stays blocked on numbers nobody is in a position to produce. (a) unblocks it by
+admitting the means changed; the *goal* is untouched either way, which is the part that matters.
+
+### Two smaller notes, while this section is open
+
+**Correction (2026-09-27, same day): the earlier version of this section was wrong about the
+instrument, and the error is recorded rather than quietly edited.** It claimed the scaling gate
+"cannot fire" and the rollback guard was "half-inert" because a real tick p99 could not be computed.
+That is not true:
+
+- **The per-tick statistic exists and is switched on.** `core/src/game/TickStats.h` computes
+  `p50`/`p95`/`p99`/`max`/`over100`/`over200` by nearest rank, fed from the world loop by
+  `PerformanceMonitor::RecordTick`, emitted as one aggregated `perf.log` line per interval, with a
+  `tick_stats_test` in ctest. The code default is off (`World.cpp:1396`), **but the deployed profile
+  turns it on**: `config/canonical/profiles/funserver-test/mangosd.overlay.conf:43-44` sets
+  `PerformanceLog.TickStats = 1` and `TickStatsInterval = 60`, tagged `INTENTIONAL_CHANGE` /
+  `issue-351-tick-stats-d1` in `semantic-profile.tsv`, and the live runtime overrides are rendered
+  from that profile. So D1's own caveat — "a real p99 cannot be computed" — is itself now stale.
+- **`.perfmon` was never the p99 blocker.** It is a bot-internal profiler (which triggers, values and
+  actions cost what) reporting min/max/avg/total with **no percentile of any kind**. It was genuinely
+  broken — `Init()` sat below three early returns in `RandomPlayerbotMgr::UpdateAIInternal`, so under
+  a persistent roster `mapsData` stayed empty and every probe returned `nullptr` — and it is fixed in
+  twow-core#186. But fixing it was never going to serve a p99 gate.
+
+**What is actually missing is the report, not the instrument.** `docs/measurements/` still holds only
+the template; no filled-in run exists. The base has moved 136 → 154 → 180, each step a recorded owner
+decision with a rationale and a rollback stack, and each restarting the 7-day window — so the gate has
+still never guarded an actual step, and the threshold has been rewritten three times to track the
+base. That part of the earlier text stands. The difference is that the obstacle is a measurement
+nobody has taken, not a number nobody can take, which is a much smaller problem and a much cheaper
+one to close.
+
+One thing twow-core#186 did surface that does bear on D1: `.perfmon` aggregated its **max column out
+of each bucket's minimum** (`PerformanceMonitor.cpp:139-140`), so every `max` it has ever printed was
+really a minimum. Anyone who read a `max` off a `.perfmon` report — as opposed to the `perf.log` tick
+line — was reading the wrong number.
+
+**This section does not change this ADR's status.** It remains Proposed — which is itself worth a
+decision now, because a Proposed ADR is currently carrying the D1–D4 gates that release trains are
+managed against. Either accepting it or moving the owner decisions somewhere with standing would
+remove that mismatch.
 
 ## References
 

@@ -499,3 +499,24 @@ script can pull exactly these rows.
 - Talent positions and ranks as the client shows them, tooltips, durations, and
   client spell ID collisions are **(nv)**. They must be checked against the
   client data (section 9) before step 1 of section 7.
+
+## 11. Owner decisions and implementation (2026-09-27)
+
+The owner decided the open numbers of section 8 (recorded in #357; approval of
+release train 7 in #319 issuecomment-5855818540). Where this section differs
+from the proposals above, this section applies.
+
+| # | Decision | Implemented in |
+|---|---|---|
+| O-1 | Ghost Wolf cast time is 3000 ms (`SpellCastTimes.dbc` index 14). **Improved Ghost Wolf 2/2 = instant for players and bots** (rank 2 −3000 ms, rank 1 stays −1000 ms); no bot aura for rank 3. | twow-core#187 |
+| O-2 / O-3 | Attack speed and defense are two separate talents with their own points; defense +30. | twow-core#187 (90100–90109) |
+| O-4 / O-5 | Imbue mastery +3 %/rank on all imbue effects; Rockbiter threat rises with it (≈ +38 % at 3/3). | twow-core#187 (90111–90113) |
+| O-6 | Retaliation internal cooldown **1 s**. | twow-core#187 (90114–90116) |
+| O-7 | No cap on the charge-scaled talents; the acceptance run measures the average charge count. | twow-core#187 (90126–90129) |
+| O-8 | Stormstrike consumes up to 3 Lightning Shield charges, **+10 % damage per charge (max +30 %)**, bot aura. | twow-core#187 (90117) |
+| O-9 | Storm wisdom lasts 30 s; −20 % cast time and −20 % cost per stack. | twow-core#187 (90118–90125) |
+| O-10 | Elemental Weapons: Flametongue 17/33/50, Frostbrand 16/33/50, Windfury 2 %/stack at 2/4/6, Rockbiter 10/20/30 + 15/20/25, Earthen Bulwark cap 13/27/40 % of max health. | twow-core#182 (merged) |
+| O-11 | Tank Stormstrike only from ≥ 4 charges and with aggro (bot strategy). | OB-10 |
+| O-12 | Variant A: bots pay for their auras; premade trims **7.1 = 14, 7.3 = 21 points** (Ghost Wolf no longer counts). | OB-10 |
+| O-14 | Bot aura IDs 90100–90199: shaman 90100–90139, rogue 90140–90199. | #357, #367 |
+| O-15 | Shaman tanks = 20 % of a faction's tanks. | OB-40 |

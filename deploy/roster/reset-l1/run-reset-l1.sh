@@ -2,8 +2,11 @@
 # Wrapper for reset-l1.sql (twow-repo#334, target scope #366). See README.md.
 #
 #   run-reset-l1.sh --container <db-container> --expected <n> [--conf <mangosd.conf>]
-#                   [--ordinals <from>-<to> --expect-guid-sha256 <hex>] --apply
-#   run-reset-l1.sh --hash-from-csv <roster.csv> --ordinals <from>-<to>
+#                   [--ordinals <list> --expect-guid-sha256 <hex>] --apply
+#   run-reset-l1.sh --hash-from-csv <roster.csv> --ordinals <list>
+#
+# <list> is a range "155-180" or a comma list of ordinals and ranges in increasing order,
+# e.g. "89,109,140,149,155-180" (REPLACE + EXPAND, #366 wave 1).
 #
 # Without --ordinals the whole active roster is the target (the #334 behaviour).
 # With --ordinals only those members are reset; --expect-guid-sha256 is then
@@ -35,16 +38,26 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-scope_from=1 scope_to=4294967295
+scope_from=1 scope_to=4294967295 scope_list="" scope_n=0
 if [ -n "$ordinals" ]; then
-  [[ $ordinals =~ ^([1-9][0-9]*)-([1-9][0-9]*)$ ]] && [ "${BASH_REMATCH[1]}" -le "${BASH_REMATCH[2]}" ] ||
-    { echo "--ordinals must be <from>-<to> with 1 <= from <= to" >&2; exit 2; }
-  scope_from=${BASH_REMATCH[1]} scope_to=${BASH_REMATCH[2]}
+  [[ $ordinals =~ ^[1-9][0-9]*(-[1-9][0-9]*)?(,[1-9][0-9]*(-[1-9][0-9]*)?)*$ ]] ||
+    { echo "--ordinals must be <from>-<to> or a comma list of ordinals/ranges" >&2; exit 2; }
+  prev=0
+  IFS=, read -ra parts <<<"$ordinals"
+  for part in "${parts[@]}"; do
+    a=${part%-*} b=${part#*-}
+    [ "$a" -le "$b" ] && [ "$a" -gt "$prev" ] ||
+      { echo "--ordinals must be strictly increasing, ranges with from <= to" >&2; exit 2; }
+    for ((i = a; i <= b; i++)); do scope_list+="${scope_list:+,}$i"; scope_n=$((scope_n + 1)); done
+    prev=$b
+  done
+  scope_from=${scope_list%%,*} scope_to=${scope_list##*,}
 fi
 
 if [ -n "$hash_csv" ]; then
   [ -n "$ordinals" ] || { echo "--hash-from-csv needs --ordinals" >&2; exit 2; }
-  awk -F, -v a="$scope_from" -v b="$scope_to" 'NR > 1 && $1 >= a && $1 <= b { printf "%s%s:%s", (n++ ? "," : ""), $1, $2 }' "$hash_csv" |
+  awk -F, -v list="$scope_list" 'BEGIN { split(list, l, ","); for (i in l) want[l[i]] = 1 }
+    NR > 1 && ($1 in want) { printf "%s%s:%s", (n++ ? "," : ""), $1, $2 }' "$hash_csv" |
     sha256sum | cut -d' ' -f1
   exit 0
 fi
@@ -53,7 +66,7 @@ fi
   { echo "usage: $0 --container C --expected N [--conf F] [--ordinals A-B --expect-guid-sha256 H] --apply" >&2; exit 2; }
 if [ -n "$ordinals" ]; then
   [[ $expect_hash =~ ^[0-9a-f]{64}$ ]] || { echo "--ordinals requires --expect-guid-sha256 <64 lowercase hex>" >&2; exit 2; }
-  [ $((scope_to - scope_from + 1)) -eq "$expected" ] || { echo "--expected must equal the ordinal range size" >&2; exit 2; }
+  [ "$scope_n" -eq "$expected" ] || { echo "--expected must equal the number of ordinals in the scope" >&2; exit 2; }
 elif [ -n "$expect_hash" ]; then
   echo "--expect-guid-sha256 is only valid together with --ordinals" >&2; exit 2
 fi
@@ -66,12 +79,13 @@ if [ -n "$conf" ]; then
   export MYSQL_PWD; MYSQL_PWD=$(cut -d';' -f4 <<<"$info")
 fi
 
-hash_sql=NULL
+hash_sql=NULL list_sql=NULL
 [ -n "$expect_hash" ] && hash_sql="'$expect_hash'"
+[ -n "$scope_list" ] && list_sql="'$scope_list'"
 echo "RESET_SQL_SHA256=$(sha256sum "$sql" | cut -d' ' -f1)"
 echo "CONTAINER=$container EXPECTED=$expected SCOPE=$scope_from-$scope_to START=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-out=$( { printf 'SET @expected_targets = %d;\nSET @scope_from = %d;\nSET @scope_to = %d;\nSET @expected_guid_sha256 = %s;\n' \
-           "$expected" "$scope_from" "$scope_to" "$hash_sql"; cat "$sql"; } |
+out=$( { printf 'SET @expected_targets = %d;\nSET @scope_from = %d;\nSET @scope_to = %d;\nSET @scope_list = %s;\nSET @expected_guid_sha256 = %s;\n' \
+           "$expected" "$scope_from" "$scope_to" "$list_sql" "$hash_sql"; cat "$sql"; } |
        docker exec -i ${MYSQL_PWD+-e MYSQL_PWD} "$container" mariadb -u "$user" -N -B tw_char 2>&1 ) && rc=0 || rc=$?
 unset MYSQL_PWD
 printf '%s\n' "$out"

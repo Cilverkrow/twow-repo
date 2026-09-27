@@ -11,6 +11,11 @@
 > that trusted the wrong one test-merged a dead branch and measured a whole delta
 > against a stale ref. That is why this rule exists.
 
+> **Amended 2026-09-27: the upstream of record announced its own retirement.** The chain
+> below is still the correct history, but Shyalya is no longer a live upstream — read
+> [the amendment](#amendment-2026-09-27-the-upstream-of-record-announced-its-retirement)
+> before acting on the merge rules.
+
 ## Context
 
 The project's ancestry was not written down anywhere in the repository. Reconstructing
@@ -149,6 +154,78 @@ and must say so.
   container images of it.
 - Licence: AGPL-3.0, inherited. Modules that link the core are derivative works and
   carry the same licence.
+
+## Amendment (2026-09-27): the upstream of record announced its retirement
+
+Recorded as a fact. The response is an owner decision and is deliberately **not** made here.
+
+`Shyalya/tortoise-wow` announced its own wind-down in `README.md` at commit **`9c1e8266`**
+(2026-09-08, author `shyalya`):
+
+> **Project status — winding down (September 2026).** This fork is being retired. Through
+> 30 September 2026 it will be kept in sync **only** with upstream
+> [Penqle/tortoise-wow](https://github.com/Penqle/tortoise-wow) changes — no further work
+> of our own. After that it will be **discontinued and archived** (read-only).
+
+### What this invalidates above
+
+- **"Commits daily" is no longer true.** Last push 2026-09-14, last authored commit
+  2026-09-10 — idle 13 days when this was written. The announcement says the remaining
+  activity is Penqle sync only, not their own work.
+- **"THE UPSTREAM OF RECORD" is true historically and expiring operationally.** It remains
+  the correct ref for *what our delta applies to*; it stops being a source of future
+  change after 2026-09-30.
+- **"Upstream is 385 commits ahead of the fork point" is stale.** Measured 2026-09-27
+  against merge base `6be01e53`: we are **224 ahead, upstream 164 ahead**. The 385 counted
+  from the original fork point `61a8269`, which `UPSTREAM.lock` also still recorded until
+  today (twow-core#184).
+
+### The history is preserved regardless
+
+Snapshotted into our own repository before the archival date, so nothing here depends on
+someone else's repository staying reachable:
+
+```
+tag:  upstream-archive/shyalya-playerbots-integration-gh-2026-09-27   (Cilverkrow/twow-core)
+tip:  f2df1b6aff7ea589db4682836d7652ada77f9377
+```
+
+Verified to contain all 164 commits our `main` lacked, 945 commits of reachable history.
+An archived GitHub repository stays readable, so this is insurance rather than rescue.
+
+### Why this matters beyond bookkeeping
+
+ADR-0040 and this ADR justify upstream closeness as **a means of keeping merge cost low**.
+After 2026-09-30 there is no future merge from this ref, so there is no future cost, and
+the justification for the constraint goes with it. What remains is a one-off *content*
+question — which of upstream's 164 commits do we want — and cherry-picking answers that
+better than merging. A staged assessment is recorded in twow-core `docs/UPSTREAM-CATCHUP-PLAN.md`
+(twow-core#185), including the finding that a straight merge does not compile: upstream's
+`Unit.cpp` reads `CONFIG_BOOL_LEECH_ENABLE`, an enumerator we removed.
+
+### The open decision, stated so it is not decided by default
+
+`Penqle/tortoise-wow` — the ref Shyalya itself was syncing from, and the real Turtle-WoW
+in the chain above — is **alive**: `isArchived: false`, last push 2026-09-25, default
+branch `main`. So there are two coherent positions and no need to drift into either:
+
+**(a) Retire upstream tracking.** Accept that this fork is now its own trunk. `UPSTREAM.lock`
+becomes a historical record, the freshness guard and the tracking-branch ceremony are
+retired rather than fed, and future upstream content arrives by deliberate cherry-pick.
+
+**(b) Retarget `UPSTREAM.lock` at `Penqle/tortoise-wow`.** Keeps a live upstream and keeps
+the merge discipline meaningful, at the cost of a new fork point, a new delta measurement,
+and a merge surface we have never assessed.
+
+Both are ADR-level changes to this document's Decision. **Neither is taken here.** Drifting
+into (a) by simply never merging again is the outcome to avoid, because it is (a) without
+the bookkeeping — which is how the stale `fork_point` and the 115-commit-ahead tracking
+mirror happened in the first place.
+
+One thing that should happen under either: the freshness guard currently sits at **49 of
+`max_drift_commits = 50`** and goes red on upstream's next push. Under (a) it should be
+retired; under (b) it should be retargeted. Feeding it one more commit at a time is the
+option that serves neither.
 
 ## Consequences
 

@@ -13,7 +13,8 @@
 -- auras, cooldowns, action bars, pets, mail, reputation, forgotten skills, bot
 -- key/value store, group membership, corpses; spells and talents via at_login.
 --
--- Target scope (#366): the wrapper sets @scope_from/@scope_to (ordinals, inclusive) and,
+-- Target scope (#366): the wrapper sets @scope_from/@scope_to (ordinals, inclusive), for a
+-- scattered scope also @scope_list (comma-separated ordinals, e.g. replaced + new) and,
 -- for a partial scope, @expected_guid_sha256 = SHA-256 (lowercase hex) of
 -- "ordinal:guid" pairs in ordinal order joined by ",". Members outside the scope are
 -- non-targets and fall under every non_target_* assert.
@@ -24,7 +25,8 @@ CREATE TEMPORARY TABLE reset_targets (guid INT UNSIGNED NOT NULL PRIMARY KEY, or
 SELECT rm.character_guid AS guid, rm.ordinal AS ordinal
 FROM ai_playerbot_roster_current rc
 JOIN ai_playerbot_roster_member rm ON rm.version_id = rc.version_id
-WHERE rc.singleton_id = 1 AND rm.ordinal BETWEEN @scope_from AND @scope_to;
+WHERE rc.singleton_id = 1 AND rm.ordinal BETWEEN @scope_from AND @scope_to
+  AND (@scope_list IS NULL OR FIND_IN_SET(rm.ordinal, @scope_list) > 0);
 SET @scope_guid_sha256 = (SELECT SHA2(GROUP_CONCAT(CONCAT(ordinal, ':', guid) ORDER BY ordinal SEPARATOR ','), 256) FROM reset_targets);
 
 -- ------------------------------------------------------------------ guards
