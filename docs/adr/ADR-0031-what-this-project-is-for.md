@@ -214,20 +214,37 @@ admitting the means changed; the *goal* is untouched either way, which is the pa
 
 ### Two smaller notes, while this section is open
 
-**The scaling gate cannot currently fire.** Its own prerequisite, #351, is open, so the "real tick
-p99" it requires does not exist — and #384 reports that `.perfmon` collects no data at all, so the
-instrument that would produce it is broken. No filled-in report exists; `docs/measurements/` holds
-only the template. Meanwhile the gate's threshold has been rewritten twice to track the new base
-(>136 → >154 → >180), and each increase restarts the 7-day window. A window that restarts on every
-approach does not close, so the gate has never guarded an actual step. Both issues were raised to p1
-on 2026-09-27 for this reason.
+**Correction (2026-09-27, same day): the earlier version of this section was wrong about the
+instrument, and the error is recorded rather than quietly edited.** It claimed the scaling gate
+"cannot fire" and the rollback guard was "half-inert" because a real tick p99 could not be computed.
+That is not true:
 
-**The rollback guard depends on the number that is missing.** It reads *"if, after the 5-minute
-warm-up, tick p99 > 1000 ms or max > 3000 ms persists, the roster goes back"*. D1 states in its own
-text that a real p99 cannot be computed from `perf.log`. So the first half of the condition cannot
-be evaluated, and the second half sits beside a documented ~2.3 s startup peak that D1 already has
-to exclude by hand. The guard is not wrong; it is half-inert, and worth knowing about before the
-next increase rather than after.
+- **The per-tick statistic exists and is switched on.** `core/src/game/TickStats.h` computes
+  `p50`/`p95`/`p99`/`max`/`over100`/`over200` by nearest rank, fed from the world loop by
+  `PerformanceMonitor::RecordTick`, emitted as one aggregated `perf.log` line per interval, with a
+  `tick_stats_test` in ctest. The code default is off (`World.cpp:1396`), **but the deployed profile
+  turns it on**: `config/canonical/profiles/funserver-test/mangosd.overlay.conf:43-44` sets
+  `PerformanceLog.TickStats = 1` and `TickStatsInterval = 60`, tagged `INTENTIONAL_CHANGE` /
+  `issue-351-tick-stats-d1` in `semantic-profile.tsv`, and the live runtime overrides are rendered
+  from that profile. So D1's own caveat — "a real p99 cannot be computed" — is itself now stale.
+- **`.perfmon` was never the p99 blocker.** It is a bot-internal profiler (which triggers, values and
+  actions cost what) reporting min/max/avg/total with **no percentile of any kind**. It was genuinely
+  broken — `Init()` sat below three early returns in `RandomPlayerbotMgr::UpdateAIInternal`, so under
+  a persistent roster `mapsData` stayed empty and every probe returned `nullptr` — and it is fixed in
+  twow-core#186. But fixing it was never going to serve a p99 gate.
+
+**What is actually missing is the report, not the instrument.** `docs/measurements/` still holds only
+the template; no filled-in run exists. The base has moved 136 → 154 → 180, each step a recorded owner
+decision with a rationale and a rollback stack, and each restarting the 7-day window — so the gate has
+still never guarded an actual step, and the threshold has been rewritten three times to track the
+base. That part of the earlier text stands. The difference is that the obstacle is a measurement
+nobody has taken, not a number nobody can take, which is a much smaller problem and a much cheaper
+one to close.
+
+One thing twow-core#186 did surface that does bear on D1: `.perfmon` aggregated its **max column out
+of each bucket's minimum** (`PerformanceMonitor.cpp:139-140`), so every `max` it has ever printed was
+really a minimum. Anyone who read a `max` off a `.perfmon` report — as opposed to the `perf.log` tick
+line — was reading the wrong number.
 
 **This section does not change this ADR's status.** It remains Proposed — which is itself worth a
 decision now, because a Proposed ADR is currently carrying the D1–D4 gates that release trains are
