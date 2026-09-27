@@ -126,6 +126,7 @@ The factory deletes temporary bots and empty rndbot accounts. Pre-check (read-on
 | 9 | OB-40 | A6 `run-respec-roster.sh --csv <plan> --ordinals <CHANGED_ORDINALS> --expect-guid-sha256 <hash> --insert-missing-events --conf $CONF --apply` | `guards=8 asserts_pass=11`, INSERTED 30/30 |
 | 10 | OB-40 | rename `run-rename-roster.sh --map new-names.tsv --expect-map-sha256 <sha> --expected 30` | `RENAMED=30`, 9/4 |
 | 11 | OB-40 | reset-l1 `run-reset-l1.sh --ordinals <CHANGED_ORDINALS> --expected 30 --expect-guid-sha256 <hash>` | `guards=8 asserts_pass≥23` |
+| 11b | OB-40 | **talent reset for the changed shaman paths** (OB-10 SpecAura + premade trims, #357): `../talent-reset/run-talent-reset.sh --class 7 --spec-nos 2,4 --dry-run`, then `--expected <n> --expect-guid-sha256 <h> --apply`. It covers **all** roster shamans on 7.1/7.3, old and new | `guards=4 asserts_pass=4`; only bit 4 is set (no L1, no login wave, the marker is `&6`); players fingerprint unchanged in step 12 |
 | 12 | OB-40 | final check | 180 members; the 30 at L1 with `at_login & 6`; the other 150 unchanged; the 4 replaced humans unchanged and outside the roster; players fingerprint = step 2 |
 | 13 | OB-00 | normal start | `loaded version 6 with 180`; 150 log in at once, 30 in 2 waves (24 + 6, ≈15 min); `[RosterLoginWave] complete waiting=0`; 180/180 online |
 
@@ -150,6 +151,7 @@ stage 1 or 2.
 - EXPAND only (`--ordinals 181-360 --expected-current-version 6`); REPLACE only if a race is
   above its share.
 - reset-l1 and A6 cover 181–360, so 180 new bots log in in 8 waves of 24 (≈2 h).
+- Talent reset (step 11b) again for every class whose premade links or auras changed with that deploy, e.g. rogues `--class 4 --spec-nos <paths>`.
 - ROLLBACK to version 6.
 - `--respec-tanks --respec-out respec.tsv` (owner decision): A6 runs with `--ordinals <A6_ORDINALS>`;
   reset-l1 only runs with `<CHANGED_ORDINALS>`. Final check: 4 tanks per class and faction;
