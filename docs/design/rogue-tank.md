@@ -1,8 +1,8 @@
 # Rogue as a tank variant — analysis and design
 
 Refs #367. Status: **design only**. This document changes no spell, DBC, SQL or
-core code. Every change it describes is a proposal that needs the owner
-decisions in [section 5](#5-owner-decisions) first; the spell/rule part is a
+core code. Section 3 holds the owner's design of 2026-09-27; the open points
+are in [section 5](#5-owner-decisions). The spell/rule part is a
 rule and balance change (single owner approval, OB-20), the bot part belongs to
 OB-10.
 
@@ -40,8 +40,8 @@ Turtle has exactly one rogue poison that generates threat. The owner's memory
 
 Important for the design: Agitating Poison adds a **flat** amount of threat per
 proc (395 at a 20 % proc chance per hit), not a percentage. The owner's
-"+30 % … +100 %" is therefore not a new rank of the existing mechanic but a
-different mechanic (see 3.2).
+first idea ("+30 % … +100 %") would have been a different mechanic. The owner
+has since decided to keep the flat amount and grade it by level (3.1).
 
 ### 2.2 Poison access by level
 
@@ -117,73 +117,127 @@ temporary weapon enchant whose enchantment casts a passive aura
 
 A rogue poison that grants a percentage threat aura is therefore a data change
 only if its enchantment uses type `EQUIP_SPELL`. Reusing the Rockbiter
-enchantment type `TOTEM` would need a core change.
+enchantment type `TOTEM` would need a core change. (The owner decided
+against a Rockbiter-style imbue for the rogue, D-3; this section is kept as
+background.)
 
-## 3. What would have to change for the owner's idea
+## 3. Owner design (decided 2026-09-27)
 
-The owner's idea (examples, not a spec): a taunt at level 10–15; the threat
-poison earlier and in ranks, roughly +30 % → 50/70/90 % → +100 % at level 60.
+The owner reviewed the first draft and decided the kit below. It replaces the
+earlier variants (percentage threat poison, Rockbiter-style parry imbue). The
+owner still has to approve it as a rule change (single approval, OB-20)
+before anything is implemented.
 
-### 3.1 Taunt (level 10–15)
+The rogue tank kit has three parts: the **threat poison**, the **Spit** taunt,
+and a **tank stance**. There is **no** extra Rockbiter-style weapon imbue. The
+poison already takes the weapon's temporary-enchant slot.
 
-New rogue spell cloned from Taunt `355` (effect 114 + aura 11, 10 s cooldown,
-melee range), `spellFamilyName 8`, energy cost instead of rage. Trainer rows
-in `npc_trainer` for all 16 rogue trainers at the chosen level.
+### 3.1 Threat poison: Agitating Poison in ranks (flat threat)
 
-Suggested level: **12** (with Kick; after the other taunts at 10, before the
-first dungeons at 13–18).
+The existing mechanic stays: a flat threat amount per proc, as in `45613`
+(+395). What changes is that it becomes available **from level 20 in ranks
+every 10 levels**, starting at +150 and reaching today's +395 at level 60.
+The intermediate values are linear. The owner may round them.
 
-### 3.2 Graded threat poison
+| Rank | Level | Threat per proc | Proc spell | Status |
+|---|---|---|---|---|
+| I | 20 | +150 | new | new |
+| II | 30 | +211 | new | new |
+| III | 40 | +273 | new | new |
+| IV | 50 | +334 | new | new |
+| V | 60 | +395 | `45613` | exists (item `65032`, trainer `47312`) |
 
-Two technically clean variants:
+Open detail (O-3a): the proc's Nature damage (67–85 at level 60) should
+presumably scale down in the same ratio (about 38 % at rank I).
 
-**Variant A — ranks of the existing flat-threat mechanic.**
-New Agitating Poison ranks cloned from `45611/45612/45613`, each with its own
-proc spell (threat and damage scaled by level), coating spell, item, recipe
-and trainer row. Every rank needs its **own `SpellItemEnchantment.dbc` entry**,
-because the enchantment decides which proc spell fires (`3006` → `45613`).
-Pro: keeps Turtle's mechanic. Con: DBC work for every rank, and flat threat
-does not produce the "+X %" the owner described; scaling is guesswork per
-level.
+Level 20 fits the Poisons skill, which rogues get from the level-20 class
+quests (2.2). Every rank is therefore crafted normally.
 
-**Variant B — percentage threat like Rockbiter (recommended).**
-Each rank is a weapon coating whose enchantment (type `EQUIP_SPELL`) casts a
-passive aura with MOD_THREAT +N %, exactly like Rockbiter's `10400`. The
-existing `45613` proc can stay as the level-60 rank or be retired.
-Pro: gives the owner's "+30 % … +100 %" literally, scales with the rogue's
-damage automatically, reuses a pattern Turtle already ships and the core
-already handles for all classes. Con: still one new enchantment entry per
-rank (DBC), plus aura spells.
+Change set per new rank (I–IV), cloned from rank V:
 
-Rank ladder for variant B (the owner's numbers, levels at 12-level spacing,
-first rank without the Poisons skill because item use is not skill-gated,
-see 2.2):
+- world DB:
+  - proc spell (effect 2 + effect 63)
+  - coating spell (effect 54, 20 % proc, 115 charges)
+  - item (`required_level` = rank level)
+  - recipe (skill line 40, a skill window matching the level)
+  - trainer-teach spell
+  - `npc_trainer` rows for all 16 rogue trainers
+- **`SpellItemEnchantment.dbc`**: one new enchantment per rank. The
+  enchantment decides which proc spell fires (`3006` → `45613`), just as each
+  Deadly Poison rank has its own enchantment. The server reads this DBC from
+  client data. For players the client needs the same entries (client patch,
+  see 3.4).
 
-| Rank | Level | Threat | Obtained |
-|---|---|---|---|
-| I | 12 | +30 % | vendor (poison supplier) or trainer book, no craft |
-| II | 24 | +50 % | recipe, Poisons skill |
-| III | 36 | +70 % | recipe |
-| IV | 48 | +90 % | recipe |
-| V | 60 | +100 % | recipe (replaces or accompanies `45611`) |
+A DBC-free shortcut exists but does not match the owner's stepped ranks: one
+proc spell with `effectRealPointsPerLevel` scales continuously with the
+caster's level (`WorldObject::CalculateSpellDamage`,
+`src/game/Objects/Object.cpp`).
 
-Per rank, the change set would be: 1 aura spell (MOD_THREAT), 1 coating spell
-(effect 54), 1 item, 1 recipe + 1 trainer-teach spell, `npc_trainer` rows,
-1 `SpellItemEnchantment` entry. All spell/item/trainer rows are world-DB data
-(`spell_template` etc. are loaded from SQL in this core); the enchantment is
-DBC.
+### 3.2 Taunt: Spit
 
-**Balance note:** +100 % on a rogue (2.0×) is well above a protection
-warrior (≈ 1.56×, 2.5) and Rockbiter (1.35×), and it multiplies rogue damage,
-which is higher than tank damage. See decision O-3.
+A new rogue ability, **Spit**: the rogue spits at the enemy.
 
-### 3.3 Players versus bots only
+| Property | Owner decision | Implementation note |
+|---|---|---|
+| Effect | taunt | effect 114 (ATTACK_ME) + aura 11 (MOD_TAUNT), as in Taunt `355` |
+| Range | 15 yards | new or existing range index for 15 yd |
+| Targets | main target plus **two more around it** | target area around the main target, `maxAffectedTargets = 3`, main target always included |
+| Emote | the rogue plays a spit emote on the target | `TEXTEMOTE_SPIT` (89) exists in `src/game/SharedDefines.h`; triggered by a spell script or an emote effect |
+| Level | open (10–15 in the original idea) | recommendation: 12 |
+| Cost / cooldown | open | recommendation: energy cost, 10–15 s cooldown (it hits three targets, so it is stronger than Taunt `355`) |
 
-Server-side only (world DB) is enough for bots: they never read tooltips.
-For **players**, new spells and the new enchantments need a **client patch**
-(`Spell.dbc`, `SpellItemEnchantment.dbc`, icons/tooltips); otherwise players
-see unknown spells. A bots-only variant can even skip the poison items and
-grant the MOD_THREAT aura directly by level. See decision O-2.
+The world-DB part (spell, trainer rows) is data. The emote and the
+"main target plus two around it" selection need a small spell script
+(`src/scripts/spells/spell_rogue.cpp` in twow-core already exists) if no
+existing target type fits. That is core code, so it goes to a twow-core PR.
+
+### 3.3 Tank stance (working name "Shadow Dance")
+
+A stance or toggle buff that makes the rogue alternate between dodge and
+parry. It also makes each avoided hit generate threat.
+
+| Trigger | Effect |
+|---|---|
+| the rogue **parries** | +5 % dodge for 3 s |
+| the rogue **dodges** | +5 % parry for 3 s |
+| every dodge **and** every parry | a fixed amount of threat on the attacker |
+
+Implementation (data only, no core code):
+
+- The stance is a self-aura. A rogue has no stance bar (stealth is its only
+  form), so a toggle buff like Righteous Fury is the simpler form. A real
+  shapeshift form is possible but costs a form ID and client work.
+- Two passive proc auras (aura 42, PROC_TRIGGER_SPELL), with rows in
+  `spell_proc_event`:
+  - `procEx` = `PROC_EX_PARRY` (0x20) triggers the "+5 % dodge, 3 s" buff plus
+    the threat effect on the attacker;
+  - `procEx` = `PROC_EX_DODGE` (0x10) triggers the "+5 % parry, 3 s" buff plus
+    the threat effect.
+
+  `spell_proc_event` already supports both flags in this core (for example
+  entry `23547`, `procEx 32`). Two auras are needed because a spell has only
+  one `spell_proc_event` row.
+- The buffs refresh rather than stack.
+
+Open points:
+- the threat per dodge/parry (O-4a; recommendation: scale by level like the
+  poison, for example 50 → 130);
+- the learn level (O-4b);
+- the name. "Shadow Dance" is the name of a rogue ability in later
+  expansions and may confuse players (O-4c).
+
+### 3.4 Players versus bots only
+
+Server-side data (world DB) is enough for bots, since they never read
+tooltips. For **players**, new spells and the new enchantments need a
+**client patch** (`Spell.dbc`, `SpellItemEnchantment.dbc`, icons, tooltips);
+otherwise players see unknown spells. See O-2.
+
+### 3.5 Talents
+
+The tank rogue gets **no new talent tree**. The owner will supply a template
+that extends the existing rogue trees. The premade path (4.1) is built from
+that template once it arrives. Until then no talent links are written.
 
 ## 4. Bot design (mod-playerbots)
 
@@ -200,16 +254,17 @@ A rogue tank cannot be told apart by tree (it would be a Combat build), so it
 follows the **bear 11.3 pattern** from #308:
 
 - New premade path `AiPlayerbot.PremadeSpecName.4.3 = tank` in
-  `aiplayerbot.conf.dist.in`, links generated and validated with
-  `tools/build_premade_specs.py` against Turtle's `Talent.dbc` (parry,
-  dodge and Riposte talents; exact picks need the DBC).
+  `aiplayerbot.conf.dist.in`. There is no new talent tree (3.5): the links
+  come from the owner's template that extends the existing trees, and they
+  are generated and validated with `tools/build_premade_specs.py` against
+  Turtle's `Talent.dbc`.
 - `IsRogueTankSpec(player)` next to `IsBearSpec` in `AiFactory.cpp`, reading
   `specNo` the same way.
 - Decision order as for the feral druid: forced role
   (`facade->GetForcedRole()` has `BOT_ROLE_TANK`) wins, then the premade path.
 - `GetPlayerRoles(const Player*)` returns `BOT_ROLE_TANK` for a rogue on path
   `tank`; `IsTank` then works unchanged via `STRATEGY_TYPE_TANK`.
-- Below the taunt level the tank path plays as `combat` DPS (like the druid
+- Below the Spit level the tank path plays as `combat` DPS (like the druid
   below level 10).
 
 Combat engine for a rogue tank:
@@ -228,8 +283,8 @@ mixins via `SPEC_COMPOSE_4` like the other specs. Triggers, by priority:
 |---|---|---|
 | EMERGENCY | `critical health` | `evasion`, then `vanish` only if the group is wiping (not as a normal cooldown: it drops aggro) |
 | EMERGENCY | `has blessing of salvation` | remove it (as for the protection warrior) |
-| MOVE+4 | `lose aggro` | `rogue taunt` (the new spell) |
-| MOVE | `taunt on snare target` | `rogue taunt` |
+| MOVE+4 | `lose aggro` | `spit` (hits up to three targets, so also for adds around the main target) |
+| MOVE | `taunt on snare target` | `spit` |
 | HIGH+5 | `medium health` + combo points ≥ 3 | `flourish` (+20 % parry, level 42+) |
 | HIGH+4 | `riposte` (after parry) | `riposte` |
 | HIGH+3 | `ghostly strike` available | `ghostly strike` |
@@ -241,21 +296,25 @@ Never: `feint` (lowers own threat), `blind`/`sap` on the tanked target.
 The tank strategy must also stop `ApplyPoisonAction` from putting a DPS poison
 on the main hand (see 4.3).
 
+Tank stance (3.3): a non-combat and combat buff trigger `tank stance` keeps
+the self-aura up (like `righteous fury` for the paladin). The two short
+dodge/parry buffs are procs and need no bot logic.
+
 ### 4.3 Poison upkeep
 
 `ApplyPoisonAction` (`strategy/rogue/RogueActions.h`) picks the highest
 usable item from a fixed ID list per poison type. Proposed:
 
-- New `ApplyThreatPoisonAction` with the IDs of the new ranks (and `65032`),
-  `apply threat poison`, **main hand**; off hand keeps Instant/Deadly for
-  damage (which also produces threat under a percentage modifier).
+- New `ApplyThreatPoisonAction` with the item IDs of ranks I–IV (new) and V
+  (`65032`), `apply threat poison`, **main hand**. The off hand also gets
+  the threat poison: with a flat amount per proc, more procs mean more
+  threat, and the off hand swings faster.
 - A `tank rogue poisons` strategy (analogous to
   `CombatRoguePoisonsPveStrategy`) replacing the DPS poison triggers when the
   rogue is on the tank path.
 - Supply: bots get poisons from `PlayerbotFactory` (`StoreItem(CONSUM_ID_*)`
   by level, `PlayerbotFactory.cpp` around line 512). Add the new item IDs to
-  `CONSUM_ID_*` and hand them out by level for tank-path rogues. In variant
-  "bots only, aura granted directly" (3.3) this whole point disappears.
+  `CONSUM_ID_*` and hand them out by level for tank-path rogues.
 
 ### 4.4 Stat priorities
 
@@ -267,9 +326,8 @@ PR about an MSVC rename, so the intended reference is presumably #308
 |---|---|
 | rogue tank | Stamina > Agility (dodge, armor, AP) > Defense > Parry/Dodge > Hit > Armor > Strength/AP |
 
-Weapons: slow main hand (threat per hit with a percentage modifier, Riposte
-damage), fast off hand for poison procs; swords/daggers per the tank talent
-path. Defense and parry/dodge as item stats need a check against Turtle's
+Weapons: fast weapons in both hands, because every hit is a chance for a
+flat-threat poison proc. The weapon types follow the owner's talent template. Defense and parry/dodge as item stats need a check against Turtle's
 item data before they go into the table.
 
 ### 4.5 Tests
@@ -277,26 +335,45 @@ item data before they go into the table.
 Like #357: policy/source contract tests in
 `modules/mod-playerbots/t/` (role mapping for path 4.3 with and without
 forced role; `tank rogue` never adds `behind`/`stealth`/`dps assist`;
-`feint` never in the tank action list), and a runtime acceptance in 5-man
+`feint` never in the tank action list; the threat poison is picked by rank
+level), and a runtime acceptance in 5-man
 test groups: the rogue tank holds threat, no regression for rogue DPS paths
 4.0–4.2.
 
 ## 5. Owner decisions
 
-| # | Decision | Options | Recommendation |
-|---|---|---|---|
-| O-1 | Do it at all, and when | backlog (p3) / after the shaman tank #357 / now | **after #357**: same pattern (tank path, taunt, threat enchant), do the one with existing Turtle talents first |
-| O-2 | Scope | bots only (server data) / bots and players (client patch) | **bots only first**: no client patch, no effect on players' game; players later if it proves itself |
-| O-3 | Threat ladder | owner ladder +30/50/70/90/100 % / capped at the warrior level (≈ +30 … +55 %) | **capped**, start with +30 % and raise after measurement; 2.0× is above every existing tank |
-| O-4 | Mechanic | variant A (flat-threat ranks of Agitating Poison) / variant B (percentage aura, Rockbiter pattern) / bots only: aura without a poison item | **B**, or for O-2 = bots only the aura without an item (no DBC work at all) |
-| O-5 | Taunt level | 10 / 12 / 15 | **12** |
-| O-6 | Mitigation | threat only / also a defensive lever (e.g. armor or Flourish earlier) | **threat only** at first; measure survival in 5-man runs before touching mitigation |
-| O-7 | Stat reference | #141 as written / #308 | confirm **#308** |
-| O-8 | Roster share | how many rogues get path 4.3 (relevant to #366, 22 new rogues in 137–272) | decide together with D-A in #366 |
+Decided by the owner on 2026-09-27 (still subject to the formal rule-change
+approval, OB-20):
+
+| # | Decision |
+|---|---|
+| D-1 | Threat poison: keep the flat-threat mechanic of Agitating Poison, in ranks from level 20 (+150) to level 60 (+395), one rank every 10 levels (3.1). |
+| D-2 | Taunt: **Spit**, 15 yd range, main target plus two targets around it, plays a spit emote on the target (3.2). |
+| D-3 | No Rockbiter-style weapon imbue for the rogue; the poison covers that slot. |
+| D-4 | Tank stance: parry → +5 % dodge for 3 s, dodge → +5 % parry for 3 s, fixed threat per dodge and parry (3.3). |
+| D-5 | No new talent tree. The owner provides a template that extends the existing trees; the bot's tank path is built from it (3.5, 4.1). |
+
+Still open:
+
+| # | Decision | Recommendation |
+|---|---|---|
+| O-1 | When | **after #357** (shaman tank, same pattern) |
+| O-2 | Scope: bots only (server data) or also players (client patch for `Spell.dbc`, `SpellItemEnchantment.dbc`) | **bots only first** |
+| O-3a | Proc damage of the lower poison ranks | scale by the same ratio as the threat |
+| O-3b | Round the intermediate threat values (211/273/334)? | owner's choice |
+| O-4a | Threat per dodge/parry of the stance | scaled by level, e.g. 50 → 130 |
+| O-4b | Learn level of the stance | together with Spit or at 20 |
+| O-4c | Name of the stance ("Shadow Dance" clashes with a later-expansion rogue ability) | a new name |
+| O-5 | Spit: level, energy cost, cooldown | level 12, energy cost, 10–15 s |
+| O-6 | Mitigation beyond the stance | none at first; measure in 5-man runs |
+| O-7 | Stat reference: #141 as written in the issue, or #308 | confirm **#308** |
+| O-8 | How many rogues get path 4.3 (#366: 22 new rogues in 137–272) | decide together with D-A in #366 |
 
 ## 6. What this document does not do
 
 No spell, item, trainer, DBC or core change; no config change; no build
-(`BUILD_REQUIRED=NO`, docs only). Implementation needs O-1…O-5 first and then
-separate PRs: world data (OB-20) and mod-playerbots (OB-10) in
-`Cilverkrow/twow-core`, pin bump here.
+(`BUILD_REQUIRED=NO`, docs only). Implementation needs the rule-change
+approval, O-1, O-2, O-4a and O-5, and the owner's talent template. Then it
+goes as separate PRs in `Cilverkrow/twow-core`: world data (OB-20),
+spell script for Spit (core), `SpellItemEnchantment.dbc` entries (client
+data, outside Git), and mod-playerbots (OB-10). The pin bump comes here.
