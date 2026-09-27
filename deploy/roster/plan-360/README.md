@@ -100,6 +100,12 @@ AiPlayerbot.ClassRace.UseFixedClassRaceCounts = 1
 AiPlayerbot.ClassRaceProb.<class>.<race> = <FACTORY>   # only pairs with a shortage
 ```
 
+**Pitfall (OB-30, probe 2026-09-27):** with `UseFixedClassRaceCounts = 1` **every** `ClassRaceProb.<c>.<r>` key in the
+rendered config counts as a fixed count (`PlayerbotAIConfig.cpp` ~l.613). The normal profile carries all 48
+pairs with defaults (e.g. `1.1 = 40`), so the new accounts would be filled at random from all pairs.
+The factory profile must contain **only** the `FACTORY > 0` pairs; remove or comment out every other
+`ClassRaceProb.c.r`.
+
 The factory deletes temporary bots and empty rndbot accounts. Pre-check (read-only): no
 `bot_delete` event and no `temporary` events.
 
@@ -117,6 +123,7 @@ The factory deletes temporary bots and empty rndbot accounts. Pre-check (read-on
 |---|---|---|---|
 | 1 | OB-00 | stop world/realm/BotBrain | 154 roster bots `online=0`, otherwise STOP |
 | 2 | OB-40 | dump + cold backup (as train 6); **player-account list** (accounts with 1–4 characters) + players fingerprint over exactly these accounts | SHA256SUMS; the fingerprint must not depend on the roster (lesson from train 6) |
+| 2b | OB-30/OB-40 | migration step of the train 7 image: world `20260927120000` (#165: playercreateinfo 3/7 and 5/2) and the others; **ledger backfill only** for `20260912120000_world` (#288, effect already present, sha1 `37A56611…`); **old event table** `tw_char.ai_playerbot_random_bots` (core#55 `character/20260906120000`): export first (`mariadb-dump … tw_char ai_playerbot_random_bots`, sha256), then apply unchanged; the roster uses `cv_bots` (#366 comment 5857484217) | playercreateinfo 61; old event table 0 duplicates with a UNIQUE key; the `cv_bots` event table checksum unchanged |
 | 3 | OB-40 | pre-checks read-only: roster current = 4, `SHA2(ordinal:guid)` = `6de61611…`; no `bot_delete`/`temporary` events; free pool snapshot (`free-pool.sql`), levels snapshot, name snapshot | any deviation → STOP (nothing changed yet) |
 | 4 | OB-40 | phase 1 with pool + levels → `demand.tsv` → factory overrides (only `FACTORY > 0` pairs) | counts posted in #366 |
 | 5 | OB-00 | **factory run** (overrides), wait for the end of creation, stop, remove overrides | new characters ≈ sum FACTORY; 0 bots online; roster v4 unchanged; players fingerprint unchanged; otherwise STOP → stage 0 |
