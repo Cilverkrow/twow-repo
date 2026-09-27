@@ -23,6 +23,10 @@ This repository is a source-controlled project view, not a self-contained server
 - [Modularization roadmap](MODULARIZATION-ROADMAP.md)
 - [Security policy](SECURITY.md)
 
+## Designs (proposals, not decisions)
+
+- [Enhancement shaman as a tank variant](design/shaman-tank.md) — phase 1 (bots first): Turtle data analysis, spell list and bot design for #357; needs owner decisions before any implementation.
+
 ## Authority warning
 
 The repository documents and reproduces work, but it does not authorize deployment, database mutation, process control, or rollback. Current verified runtime state outranks these documents. Historical runbooks can contain workstation-specific absolute paths and point-in-time observations; treat them as evidence, not executable instructions.
