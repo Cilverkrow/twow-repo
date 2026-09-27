@@ -204,7 +204,7 @@ For each row: what changes, the dependencies, and the test and acceptance.
   That needs a script, because charges and stacks are separate in the core.
 - **Values (owner-confirmed):** −20 % cast time and −20 % cost per stack. At
   5 stacks Lightning Bolt is instant and free.
-- **Duration:** still open (O-9).
+- **Duration:** 30 s (owner decision).
 - **Test:** 5 stacks → Lightning Bolt cast time 0 and cost 0; the stacks are
   gone after the cast.
 
@@ -239,15 +239,15 @@ For each row: what changes, the dependencies, and the test and acceptance.
 - **Test:** as for R6/C4.
 
 **W Weapon talent "Ancestral Arms" (B + data).**
-- **Position:** a free slot in the Enhancement tree, 1 rank. The owner picks the
-  slot; free slots are **(nv)** without `Talent.dbc`. The grant level follows
+- **Position:** the free slot in the shaman Enhancement tree, 1 rank (owner
+  decision, O-16). Its exact row and column are **(nv)** without `Talent.dbc`. The grant level follows
   the tier formula of section 2 once the row is fixed.
 - **Effects and templates** (1H value / 2H value):
 
   | Weapon | Owner effect | 1H | 2H | Template |
   |---|---|---|---|---|
   | Sword | usable + extra attack | 5 % (mask 128) | 10 % (mask 256) | Sword Master `51668` (aura 42 → `16459`, `procFlags 20`) |
-  | Axe | crit | +4 or +5 % (mask 1, O-17) | +8 or +10 % (mask 2) | Axe Master `51663` (aura 52) |
+  | Axe | crit | +4 % (mask 1) | +8 % (mask 2) | Axe Master `51663` (aura 52) |
   | Mace | "expertise" | +5 skill (skill 54) | +10 skill (skill 160) | racial Mace Specialization `20864` (aura 98) |
   | Dagger | crit + "expertise" | +5 % crit (mask 32768), +5 skill (skill 173) | – (no 2H daggers) | Close Quarters Combat `13804` (aura 52), aura 98 |
 
@@ -256,7 +256,7 @@ For each row: what changes, the dependencies, and the test and acceptance.
 - **"Expertise" does not exist in 1.12.** The core has no expertise stat (no
   hit in `src/game`). Weapon skill is the closest equivalent: it lowers miss,
   dodge, parry and glancing like expertise does later. Proposal: **1 expertise
-  = 1 weapon skill** (O-18). Real TBC expertise (target dodge/parry −0.25 %
+  = 1 weapon skill** (owner decision, O-18). Real TBC expertise (target dodge/parry −0.25 %
   per point) would need core code.
 - **The sword skill needs server data, but not for weapon masters:**
   - Without a `skill_race_class_info_mod` row, a shaman **cannot keep** skill
@@ -282,7 +282,7 @@ For each row: what changes, the dependencies, and the test and acceptance.
   - A shaman bot with the talent has skills 43/55 after relog; without it, it
     has neither.
   - A player shaman at the weapon master still sees swords red.
-  - Proc and crit rates per weapon type over N swings (5/10 %, 4–5/8–10 %).
+  - Proc and crit rates per weapon type over N swings (5/10 %, 4/8 %).
   - Weapon skill +5/+10 visible on the character.
 
 ## 4. Elemental Weapons 3/3: current vs. owner
@@ -460,18 +460,18 @@ measurement.
 | O-6 | Retaliation R4/C4: internal cooldown of the free shield proc | 3 s shared with Lightning Shield |
 | O-7 | Charge scaling R6/C4 and R7/C4 | **decided:** no cap (the charges are used up); measure the average charge count in the acceptance run |
 | O-8 | Stormstrike R5/C4: damage per consumed charge, school | the damage of the active shield rank's proc per charge, Nature (like Lightning Strike) |
-| O-9 | Storm wisdom R6/C1 | **decided:** −20 % cast time and −20 % cost per stack. Open: duration, proposal 30 s |
+| O-9 | Storm wisdom R6/C1 | **decided:** −20 % cast time and −20 % cost per stack, duration **30 s** |
 | O-10 | Elemental Weapons ranks 1/2 and the unclear Frostbrand value (25/50) | Flametongue 17/33/50, Frostbrand 16/33/50, Windfury **2 % per stack** at 2/4/6 stacks, Rockbiter build 10/20/30, absorb 15/20/25 |
 | O-11 | Tank Stormstrike threshold | only at ≥ 4 charges, and only while the tank has aggro |
 | O-12 | Point budget of the bot auras (section 2) | 7.1 = column 1, 7.3 = column 4, W on both; each premade link gives up the same number of points |
 | O-13 | Earlier brief wishes | **decided:** magic damage reduction, a dedicated AoE ability and the standalone extra attack are dropped; sword + extra attack goes into the weapon talent W |
 | O-14 | New spell ID range | `90100`–`90199`, after a one-time check against the client `Spell.dbc` **(nv)** |
 | O-15 | Share of path 7.3 in the roster | Prob 30 until the acceptance run passes (together with #366) |
-| O-16 | Slot of the weapon talent W | owner picks a free slot from the client tree (**nv** here); proposal: a middle tier (R3 or R5), so both paths reach it before L35 |
-| O-17 | W: axe crit +4 or +5 % (2H: 8 or 10 %) | **+4 %** (8 % 2H): swords get an extra-attack proc on top, maces and daggers get skill |
-| O-18 | W: "expertise" in 1.12 | **1 expertise = 1 weapon skill** (maces +5/+10, daggers +5); real expertise would need core code |
-| O-19 | W: two-handed swords too? | **yes**, because the owner doubled the 2H values (2H sword 10 % extra attack) |
-| O-20 | W: fist weapons (not in the owner text) | no bonus; fist weapons stay usable as today |
+| O-16 | Slot of the weapon talent W | **decided:** the free slot in the shaman Enhancement tree. Its exact row and column come from `Talent.dbc` (**nv** here, section 9); the grant level follows from that row |
+| O-17 | W: axe crit | **decided:** **+4 %** (2H +8 %) |
+| O-18 | W: "expertise" in 1.12 | **decided:** 1 expertise = 1 weapon skill (maces +5/+10, daggers +5) |
+| O-19 | W: two-handed swords | **decided:** yes (2H sword 10 % extra attack) |
+| O-20 | W: fist weapons | **decided:** no bonus; fist weapons stay usable as today |
 
 ## 9. Client data needed
 
