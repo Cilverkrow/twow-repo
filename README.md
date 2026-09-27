@@ -23,12 +23,15 @@ merge rules are recorded once, in
 restate them.
 
 **Playerbots are the foundation of this fork, not a side feature.** Upstream still lists
-them as planned; here they are what the server is built around, and running a thousand of
-them permanently is what shapes everything else. Load like that reaches code paths a
-few dozen players never touch — stale cached pointers, an unsynchronised battleground
-queue, navmesh tiles unloaded under a running query. Most of the fixes below started as
-something that went wrong in game and was traced back to its cause, which is why the
-commit messages read like bug reports rather than feature notes.
+them as planned; here they are what the server is built around, and running a persistent
+roster of them is what shapes everything else. How large that roster is is an owner
+decision gated on measured tick budget, recorded in
+[ADR-0031](docs/adr/ADR-0031-what-this-project-is-for.md), rather than a headline number
+here. Load like that reaches code paths a few dozen players never touch — stale cached
+pointers, an unsynchronised battleground queue, navmesh tiles unloaded under a running
+query. Most of the fixes below started as something that went wrong in game and was
+traced back to its cause, which is why the commit messages read like bug reports rather
+than feature notes.
 
 ### Playerbots
 
