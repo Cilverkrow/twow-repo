@@ -139,6 +139,15 @@ The factory deletes temporary bots and empty rndbot accounts. Pre-check (read-on
 
 `<hash>` = `run-reset-l1.sh --hash-from-csv <plan> --ordinals <CHANGED_ORDINALS>`.
 
+**Notes from the probe on a live copy (2026-09-27, #366 comment 5858173246):**
+- After `rndbot roster apply`, `rndbot roster status` shows `state=INVALID_FAIL_CLOSED version=<old>` until the
+  restart. That is **expected** (the new version only loads at the next start) and is not an error.
+- The world migrations (step 2b) must run **before** the factory run (step 5). Otherwise the factory
+  cannot create dwarf shamans and undead paladins (playercreateinfo is missing).
+- Newly created factory characters carry `at_login = 0`, so only reset-l1 opens login waves.
+- Measured: factory ≈ 2.5 min, two maintenance applies ≈ 3.5 min, tools (steps 9–11b) < 1 min, normal
+  start with waves ≈ 15 min, rollback stage 1 ≈ 3–4 min until everyone is back online.
+
 **Rollback levels:**
 - **Stage 0 (before step 7):** abort. The roster is unchanged (v4). Factory characters stay as
   unused pool characters. Normal start with 154.
