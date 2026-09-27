@@ -154,8 +154,10 @@ required for this step: the first 24 h after the train 6 deploy serve as the p99
 Rollback guard: if, after the 5-minute warm-up, tick p99 > 1000 ms or max > 3000 ms persists, the roster goes
 back to 136 (rollback stack of train 5), reported to the owner.
 
-**Scaling gate (overlay Ä10):** more than 154 active bots (next step: doubling to 308) only after a
-documented run of ≥ 7 days with the 154 base that passes all gates above, plus #351 for the real tick
+**Wave 1 (owner decision 2026-09-27, overlay Ä10b, #366):** 180 bots (per faction 10 tanks, 20 healers, 60 DPS, race-balanced, including the new race/class pairs) come with release train 7 **as soon as train 7 is ready, without waiting for the 7-day run with 154**; the 7-day window restarts at train 7 world-up. The long-term target is 360 (per faction 20/40/120, wave 2).
+
+**Scaling gate (overlay Ä10):** more than 180 active bots (next step: wave 2 up to 360) only after a
+documented run of ≥ 7 days with the 180 base that passes all gates above, plus #351 for the real tick
 p99, plus an explicit owner approval.
 
 ## References
