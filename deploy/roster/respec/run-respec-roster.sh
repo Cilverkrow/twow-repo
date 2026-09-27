@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Wrapper for respec-roster.sql (twow-repo#366 A6).
 #
-#   run-respec-roster.sh --container <db> --csv <roster-plan.csv> --ordinals <from>-<to>
+#   run-respec-roster.sh --container <db> --csv <roster-plan.csv> --ordinals <list>
 #                        --expect-guid-sha256 <hex> [--spec-index <tsv>] [--conf <mangosd.conf>]
 #                        [--insert-missing-events] --apply
+#
+# <list> is a range "155-180" or a comma list of ordinals and ranges in increasing order,
+# e.g. "89,109,140,149,155-180" (REPLACE + EXPAND, #366 wave 1).
 #
 # --insert-missing-events creates missing specNo/profession_pair events (new members after
 # an EXPAND); without it a missing event aborts in a guard.
@@ -37,16 +40,26 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$container" ] && [ -f "$csv" ] && [ -f "$spec_index" ] && [[ $expect_hash =~ ^[0-9a-f]{64}$ ]] &&
-  [[ $ordinals =~ ^([1-9][0-9]*)-([1-9][0-9]*)$ ]] && [ "${BASH_REMATCH[1]}" -le "${BASH_REMATCH[2]}" ] ||
-  { echo "usage: $0 --container C --csv F --ordinals A-B --expect-guid-sha256 H [--spec-index F] [--conf F] --apply" >&2; exit 2; }
-from=${BASH_REMATCH[1]} to=${BASH_REMATCH[2]} expected=$((BASH_REMATCH[2] - BASH_REMATCH[1] + 1))
+  [[ $ordinals =~ ^[1-9][0-9]*(-[1-9][0-9]*)?(,[1-9][0-9]*(-[1-9][0-9]*)?)*$ ]] ||
+  { echo "usage: $0 --container C --csv F --ordinals LIST --expect-guid-sha256 H [--spec-index F] [--conf F] --apply" >&2; exit 2; }
+list="" expected=0 prev=0
+IFS=, read -ra parts <<<"$ordinals"
+for part in "${parts[@]}"; do
+  a=${part%-*} b=${part#*-}
+  [ "$a" -le "$b" ] && [ "$a" -gt "$prev" ] ||
+    { echo "--ordinals must be strictly increasing, ranges with from <= to" >&2; exit 2; }
+  for ((i = a; i <= b; i++)); do list+="${list:+,}$i"; expected=$((expected + 1)); done
+  prev=$b
+done
 [ -n "$apply" ] || { echo "refusing to run without --apply (this changes specs and professions)" >&2; exit 2; }
 
-hash=$(awk -F, -v a="$from" -v b="$to" 'NR > 1 && $1 >= a && $1 <= b { printf "%s%s:%s", (n++ ? "," : ""), $1, $2 }' "$csv" | sha256sum | cut -d' ' -f1)
+hash=$(awk -F, -v list="$list" 'BEGIN { split(list, l, ","); for (i in l) want[l[i]] = 1 }
+  NR > 1 && ($1 in want) { printf "%s%s:%s", (n++ ? "," : ""), $1, $2 }' "$csv" | sha256sum | cut -d' ' -f1)
 [ "$hash" = "$expect_hash" ] || { echo "CSV range $ordinals has GUID SHA-256 $hash, not the approved $expect_hash" >&2; exit 1; }
 
-values=$(awk -F'\t' -v a="$from" -v b="$to" -v n="$expected" '
+values=$(awk -F'\t' -v list="$list" -v n="$expected" '
   BEGIN {
+    split(list, l, ","); for (i in l) want[l[i]] = 1
     pair["Herbalism/Alchemy"] = 1; pair["Skinning/Leatherworking"] = 2; pair["Mining/Blacksmithing"] = 3
     pair["Mining/Engineering"] = 4; pair["Mining/Jewelcrafting"] = 5; pair["Tailoring/Enchanting"] = 6
     pair["Herbalism/Mining"] = 7
@@ -55,7 +68,7 @@ values=$(awk -F'\t' -v a="$from" -v b="$to" -v n="$expected" '
   FNR == 1 { next }
   {
     split($0, f, ",")
-    if (f[1] < a || f[1] > b) next
+    if (!(f[1] in want)) next
     k = f[6] " " f[8]
     if (!(k in spec)) { bad = "talent path \"" f[8] "\" of class " f[6] " is not in the spec index (ordinal " f[1] ")"; exit }
     if (!(f[10] in pair)) { bad = "unknown profession pair \"" f[10] "\" (ordinal " f[1] ")"; exit }
@@ -72,7 +85,7 @@ if [ -n "$conf" ]; then
 fi
 
 echo "RESPEC_SQL_SHA256=$(sha256sum "$sql" | cut -d' ' -f1) SPEC_INDEX_SHA256=$(sha256sum "$spec_index" | cut -d' ' -f1) CSV_SHA256=$(sha256sum "$csv" | cut -d' ' -f1)"
-echo "CONTAINER=$container SCOPE=$from-$to ROWS=$expected START=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "CONTAINER=$container SCOPE=$ordinals ROWS=$expected START=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 out=$( { printf 'SET @expected_rows = %d;\nSET @expected_guid_sha256 = '\''%s'\'';\nSET @insert_missing = %d;\n' "$expected" "$expect_hash" "$insert_missing"
          printf 'CREATE TEMPORARY TABLE respec_plan (ordinal INT UNSIGNED NOT NULL, guid INT UNSIGNED NOT NULL PRIMARY KEY, class TINYINT UNSIGNED NOT NULL, spec_no INT UNSIGNED NOT NULL, pair TINYINT UNSIGNED NOT NULL) ENGINE=MEMORY;\n'
          printf 'INSERT INTO respec_plan (ordinal, guid, class, spec_no, pair) VALUES %s;\n' "$values"

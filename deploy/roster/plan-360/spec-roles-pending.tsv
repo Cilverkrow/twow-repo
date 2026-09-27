@@ -1,0 +1,8 @@
+# class	talent_path	role
+# PENDING: rogue tank (PremadeSpecName.4.3) and shaman tank (7.3), names from OB-10 (2026-09-27,
+# #357/#367). Dist weight 0; the core PR sets BOT_ROLE_TANK from the path. When it is merged these
+# rows move to spec-roles.tsv and ../respec/premade-spec-index.tsv (specNo = index + 1 = 4).
+# Owner: 5 tank classes per faction, 20 % each; dwarf shaman (Alliance) and undead paladin (Horde)
+# from twow-core#165 make all five available in both factions.
+4	rogue tank	TANK
+7	shaman tank	TANK
