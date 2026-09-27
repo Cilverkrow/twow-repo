@@ -57,6 +57,12 @@ to ARCH-001's own decision gate — p99 intent latency, messages/sec at 1000 bot
 delta — which has produced no numbers to date. If those numbers come back badly, the right response
 is to change the means, not to defend it.
 
+> **This clause no longer describes how the project scales (noted 2026-09-27).** ARCH-001 is closed,
+> its gate never produced numbers, and scaling is now being pursued in-core under the D1–D4 gates
+> below. The sentence is left exactly as written because changing what the project is *for* is the
+> owner's call; see [Open contradiction](#open-contradiction-the-second-clause-2026-09-27) for the
+> facts and two candidate rewordings to choose between.
+
 **"Never at the cost of losing a bot or blocking the world thread"** is ADR-0024, restated here
 because it is the clause that overrides the other two. A feature that advances the product goal and
 risks invariant 1 does not ship. This is not a tiebreaker; it is a veto.
@@ -159,6 +165,74 @@ back to 136 (rollback stack of train 5), reported to the owner.
 **Scaling gate (overlay Ä10):** more than 180 active bots (next step: wave 2 up to 360) only after a
 documented run of ≥ 7 days with the 180 base that passes all gates above, plus #351 for the real tick
 p99, plus an explicit owner approval.
+
+## Open contradiction: the second clause (2026-09-27)
+
+Recorded, not resolved. The Decision above has three load-bearing clauses; **the middle one has
+stopped matching practice**, and this ADR exists precisely so that kind of drift is visible instead
+of inherited.
+
+What changed, as facts rather than judgements:
+
+- **ARCH-001 is closed** (#42). The snapshot/intent contract shipped: it stands at version 1.6, the
+  Go service is built, vetted and race-tested in CI, and `modules/mod-bot-brain` is still wired.
+- **ARCH-001's decision gate never produced numbers, and now cannot.** p99 intent latency, messages
+  per second at 1000 bots and worldserver CPU delta are all measurements *of out-of-process
+  planning*. Nothing plans out of process in a running deployment today, so there is nothing to
+  measure. The gate is not pending; it is unreachable in the current configuration.
+- **Scaling is being pursued in-core instead**, and deliberately: the owner direction of 2026-09-24
+  ranks the brain-side work as *third* priority, behind questing and levelling. The roster has gone
+  136 → 154 → 180 with 360 as the target, gated on D1–D4 — tick budget, levelling, loops, evidence.
+- **Those are a different question.** ARCH-001's gate asked *"should decisions move out of the
+  world thread?"*. D1–D4 ask *"is the population alive and is the tick holding?"*. Both are worth
+  asking. Only the second is being asked, and the Decision clause still advertises the first.
+
+None of this is a process failure — every roster step is a recorded owner decision with a stated
+rationale and a rollback guard, which is more discipline than the clause it contradicts ever got.
+The problem is narrower and entirely fixable: **the document that exists to settle "which statement
+do I believe?" now contains two answers.** A reader following the Decision would go looking for an
+out-of-process scaling story; a reader following the gates would find an in-core one.
+
+### Two candidate rewordings, for the owner to pick
+
+**(a) Amend the clause to describe what the project does.** Replace "planned out of process so it
+scales" with a clause about the scaling property actually being pursued — a persistent roster that
+grows without breaking the tick budget — and demote out-of-process planning to a means held in
+reserve, named in the Consequences rather than in the Decision. This is the honest option if the
+in-core path is expected to carry the project to its roster target.
+
+**(b) Keep the clause and say out loud that it is deferred.** Leave the Decision untouched, and add
+one sentence stating that the means is parked behind the two higher priorities, with the condition
+that would revive it — most plausibly a tick budget that in-core planning cannot hold at the roster
+target. This is the honest option if out-of-process planning is still the intended endgame.
+
+**Recommendation: (a).** Two roster increases have now been taken on in-core evidence, the contract
+has had one commit in eighteen days, and ARCH-004 and ARCH-005 — both explicitly downstream of
+ARCH-001's measurements — cannot be started while those measurements are unreachable. Under (b)
+that backlog stays blocked on numbers nobody is in a position to produce. (a) unblocks it by
+admitting the means changed; the *goal* is untouched either way, which is the part that matters.
+
+### Two smaller notes, while this section is open
+
+**The scaling gate cannot currently fire.** Its own prerequisite, #351, is open, so the "real tick
+p99" it requires does not exist — and #384 reports that `.perfmon` collects no data at all, so the
+instrument that would produce it is broken. No filled-in report exists; `docs/measurements/` holds
+only the template. Meanwhile the gate's threshold has been rewritten twice to track the new base
+(>136 → >154 → >180), and each increase restarts the 7-day window. A window that restarts on every
+approach does not close, so the gate has never guarded an actual step. Both issues were raised to p1
+on 2026-09-27 for this reason.
+
+**The rollback guard depends on the number that is missing.** It reads *"if, after the 5-minute
+warm-up, tick p99 > 1000 ms or max > 3000 ms persists, the roster goes back"*. D1 states in its own
+text that a real p99 cannot be computed from `perf.log`. So the first half of the condition cannot
+be evaluated, and the second half sits beside a documented ~2.3 s startup peak that D1 already has
+to exclude by hand. The guard is not wrong; it is half-inert, and worth knowing about before the
+next increase rather than after.
+
+**This section does not change this ADR's status.** It remains Proposed — which is itself worth a
+decision now, because a Proposed ADR is currently carrying the D1–D4 gates that release trains are
+managed against. Either accepting it or moving the owner decisions somewhere with standing would
+remove that mismatch.
 
 ## References
 
