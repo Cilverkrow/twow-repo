@@ -21,6 +21,23 @@ In short:
 The owner approved the direction. The numbers become final only after the design
 review ([section 8](#8-owner-decisions-open-numbers)).
 
+**Owner decisions of 2026-09-27, second round** (CL-357 session, on the first
+version of this rework). They are worked in below:
+
+- **Windfury** (Elemental Weapons): **6 × 2 %** instead of 6 × 1 %. The earlier
+  "2 × 3 %" was a mistake.
+- **R2/C4 is Improved Ghost Wolf.** It gets **3 ranks**, and rank 3 makes Ghost
+  Wolf **instant**.
+- **Shield charges** (R6/C4, R7/C4): **no cap**. Lightning Shield is a consumed
+  resource, so the maximum is rarely reached.
+- **Storm wisdom** stays as specified: −20 % cast time and −20 % cost per stack.
+- **Imbue mastery** stays as specified, **including the effect on Rockbiter
+  threat**.
+- **Old wishes are dropped** (magic damage reduction, a dedicated AoE ability,
+  the standalone extra attack), **except the sword skill with an extra attack**.
+  These become a new one-point **weapon talent** on a free slot of the
+  Enhancement tree (row W in section 3).
+
 Related: #356 (auto-learn, ClassGrant), #308 (premade paths, bear 11.3, gear),
 #367 (the rogue follows the same approach).
 
@@ -90,7 +107,7 @@ original is in the owner chat.
 |---|---|---|---|---|---|---|
 | R1/C1 | **Attack speed** (new) | 5 | +2 % attack speed per rank (10 %) | template **"Haste 2"** `8815` (aura 138 MOD_MELEE_HASTE, passive, `attributes 448`); no shaman talent exists | B | 7.1 (and 7.3, O-12) |
 | R1/C4 | **Defense** (new) | 5 | +6 defense per rank (30) | template **Anticipation** `12297`/`12750`/`12751` (aura 98 MOD_SKILL_TALENT, skill 95, warrior +7/14/20) | B | 7.3 |
-| R2/C4 | existing talent, purple icon | 3 | rank 3 makes the ability instant | **(nv)**: candidate **Improved Ghost Wolf** `16262`/`16287` (aura 107 SPELLMOD_CASTING_TIME, Ghost Wolf mask `0x800`, −1.0/−2.0 s). The DB has **only 2 ranks**. Ghost Wolf `2645` uses `castingTimeIndex 14` **(nv)** | A | all |
+| R2/C4 | **Improved Ghost Wolf** (existing, owner-confirmed) | 3 (today 2) | rank 3 makes Ghost Wolf instant | `16262`/`16287` (aura 107 SPELLMOD_CASTING_TIME, Ghost Wolf mask `0x800`, −1.0/−2.0 s). The DB has **only 2 ranks**. Ghost Wolf `2645` uses `castingTimeIndex 14`, whose cast time is **(nv)** | A (ranks 1/2) + B (rank 3 in phase 1) | all |
 | R4/C1 | **Imbue mastery** (new) | 3 | all weapon imbues +3 % per rank (9 %) | no template; imbue spells: Flametongue proc `8026`… (mask `0x200000`), Frostbrand Attack `8034`… (`0x1000000`), Windfury Weapon `8233`… (`0x800000`), Rockbiter passive `10400`… (`0x400000`); Rockbiter proc `20865`… (mask 0) | B | 7.1, 7.3 |
 | R4/C4 | **Retaliation** (new) | 3 | 30/60/90 % on dodge, parry or block: a free Lightning Shield proc against the attacker **and** +1 Lightning Shield charge | block-proc shape of warrior Shield Specialization `12298` (`procFlags 680`, `spell_proc_event.procEx`); charge restore like **Undertow** (`spell_shaman_undertow`, `SS` ~l.1045); free shield proc like `spell_shaman_lightning_strike_shield` (`SS` ~l.908) | B + script | 7.3 |
 | R5/C4 | **Stormstrike change** (existing) | – | Stormstrike consumes up to 3 Lightning Shield charges and deals more damage | Stormstrike `17364` (effect 31, 100 % weapon damage, trigger `52412` +25 % Nature, 2 charges, 8 s cooldown); charge consumption exists for Lightning Strike via `52679` → `spell_shaman_lightning_strike_shield` | A | all |
@@ -98,6 +115,7 @@ original is in the owner chat.
 | R6/C4 | **Shield constitution** (new) | 3 | +1/2/3 % stamina per active Lightning Shield charge | aura 137 MOD_TOTAL_STAT_PERCENTAGE (stamina), amount = rank × charges; needs a script | B + script | 7.3 |
 | R7/C1 | **Chain storm** (new, needs R6/C1) | 1 | the R6/C1 effect also reduces Chain Lightning cast time | Chain Lightning mask `0x2` (cf. Lightning Mastery `16578`: mask `0x3` = Lightning Bolt + Chain Lightning) | B | 7.1 |
 | R7/C4 | **Shield ward** (new, arrow from R5/C4) | 1 | −2 % damage taken per active Lightning Shield charge | aura 87 MOD_DAMAGE_PERCENT_TAKEN, amount = −2 × charges; needs a script | B + script | 7.3 |
+| W (free slot, **nv**) | **Weapon talent** (new; working name "Ancestral Arms") | 1 | enables **swords**; swords: **5 % extra attack**; axes: **+4 or 5 % crit**; maces: **+5 expertise**; daggers: **+5 % crit and +5 expertise**; **two-handed: values doubled** | extra attack: Sword Master `51664`–`51668` (aura 42 → `16459`, sword mask `384`); crit: Axe Master `51659`–`51663` (aura 52, axe mask `3`), Close Quarters Combat `13804` (daggers); "expertise": there is **no expertise in the 1.12 core**, so the closest equivalent is weapon skill (aura 98, racial Mace Specialization `20864` +3); sword skill: spells `201`/`202`, skills 43/55 | B + data (sword skill) | 7.1, 7.3 |
 
 ### 3.1 Details per row
 
@@ -119,33 +137,34 @@ For each row: what changes, the dependencies, and the test and acceptance.
 - **Acceptance:** crit taken from a L63 mob in a 5-man test group, compared
   with the warrior.
 
-**R2/C4 (A).**
-- **Identity (nv).** If it is Improved Ghost Wolf, Turtle has 2 ranks
-  (−1/−2 s) in the DB, while the owner describes **3** ranks with an instant
-  cast at rank 3.
-- **Change:** a new third rank (a new ID, **as a talent it needs `Talent.dbc`,
-  so phase 2**) or re-cut values on the existing 2 ranks (A: rank 2 = full cast
-  time).
-- **Recommendation:**
-  - owner confirms which talent it is (O-1);
-  - in phase 1, rank 2 gets the full cast-time reduction, because that needs no
-    new slot;
-  - the 3-rank split comes in phase 2.
-- **Test:** the Ghost Wolf cast time with the full rank is 0.
+**R2/C4 Improved Ghost Wolf, 3 ranks (A + B).**
+- **Today:** 2 ranks (`16262` −1.0 s, `16287` −2.0 s). The owner wants 3 ranks,
+  with an **instant** cast at rank 3.
+- **Change:**
+  - rank 3 = a new spell cloned from `16287` with −(full Ghost Wolf cast time);
+  - if the cast time is 3 s, the ranks are **−1/−2/−3 s**; the cast time behind
+    `castingTimeIndex 14` is **(nv)**.
+- **A third talent rank is client data** (`Talent.dbc`, phase 2). In phase 1:
+  - ranks 1 and 2 stay as they are, for players too;
+  - bots on 7.1/7.3 get rank 3 as a bot aura (B) at the rank-3 level of the
+    tier-2 formula (**L17**), replacing rank 2;
+  - players get rank 3 with the client patch.
+- **Test:** Ghost Wolf cast time with rank 3 = 0; with rank 2, 1 s is left (at
+  a 3 s base).
 
 **R4/C1 Imbue mastery (B).**
 - **Change:** three passives with aura 108 (percent spell mod) on the imbue
   mask `0x1E00000` (Flametongue, Frostbrand, Windfury, Rockbiter passive).
-- **Caveats:**
-  - **`SPELLMOD_ALL_EFFECTS` on the Rockbiter passive `10400` would also raise
-    its effect 2 (+35 % threat) to about +38 %.** Either that is accepted, or
-    Rockbiter is handled in the script (only the AP effect 1).
+- **Notes:**
+  - `SPELLMOD_ALL_EFFECTS` on the Rockbiter passive `10400` also raises its
+    effect 2: +35 % threat × 1.09 ≈ **+38 % at 3/3**. The **owner accepted
+    this** (second round). So route B needs no special case for threat.
   - The Rockbiter damage proc `20865`… (Turtle, `spell_shaman_rockbiter_proc`)
     has **mask 0**, so the mask does not reach it. It needs a script or a
     changed `spellFamilyFlags` (route A, also affects players).
   - The Windfury AP bonus sits in `8233` effect 1 (`bp 45`).
 - **Test:** per imbue, damage, AP or chance is +9 % at 3/3 compared with 0/3.
-  Rockbiter threat stays +35 % unless O-5 says otherwise.
+  Rockbiter threat is ≈ +38 % at 3/3.
 
 **R4/C4 Retaliation (B + script).**
 - **Change:** three passives (`procFlags 680`, `spell_proc_event.procEx =
@@ -183,11 +202,11 @@ For each row: what changes, the dependencies, and the test and acceptance.
   Lightning Bolt).
 - **Stack removal:** the whole stack is removed when Lightning Bolt is cast.
   That needs a script, because charges and stacks are separate in the core.
-- **Balance:** at 5 stacks Lightning Bolt is **instant and free** (−100 %
-  cost). Maelstrom only affected cast time (O-9).
-- **Duration:** open (O-9).
-- **Test:** 5 stacks → Lightning Bolt cast time 0 and cost 0 (or the value
-  from O-9); the stacks are gone after the cast.
+- **Values (owner-confirmed):** −20 % cast time and −20 % cost per stack. At
+  5 stacks Lightning Bolt is instant and free.
+- **Duration:** still open (O-9).
+- **Test:** 5 stacks → Lightning Bolt cast time 0 and cost 0; the stacks are
+  gone after the cast.
 
 **R6/C4 Shield constitution (B + script).**
 - **Change:** three passives. A script sets the stamina percentage =
@@ -197,7 +216,9 @@ For each row: what changes, the dependencies, and the test and acceptance.
   `SetAuraCharges` directly (Undertow, R4/C4) must fire it too, or the script
   recomputes on every shield event.
 - **Maximum:** with Stable Shields 3/3 there are 3 + 6 = **9 charges**, so
-  **+27 % stamina** (O-7).
+  **+27 % stamina**. The owner decided on **no cap**: the charges are used up,
+  so the maximum is rarely reached. The acceptance run measures the average
+  charge count.
 - **Test:** stamina follows the charges on charge loss, restore, recast and
   expiry.
 
@@ -213,9 +234,56 @@ For each row: what changes, the dependencies, and the test and acceptance.
   by the same script as R6/C4.
 - **Dependency:** the arrow from R5/C4. Bots get it only with the R5/C4 change
   in place.
-- **Maximum:** 9 charges = **−18 % damage taken**. That is more than Defensive
-  Stance `7376` (−10 %) (O-7).
+- **Maximum:** 9 charges = **−18 % damage taken** (Defensive Stance `7376`:
+  −10 %). No cap (owner decision), as for R6/C4.
 - **Test:** as for R6/C4.
+
+**W Weapon talent "Ancestral Arms" (B + data).**
+- **Position:** a free slot in the Enhancement tree, 1 rank. The owner picks the
+  slot; free slots are **(nv)** without `Talent.dbc`. The grant level follows
+  the tier formula of section 2 once the row is fixed.
+- **Effects and templates** (1H value / 2H value):
+
+  | Weapon | Owner effect | 1H | 2H | Template |
+  |---|---|---|---|---|
+  | Sword | usable + extra attack | 5 % (mask 128) | 10 % (mask 256) | Sword Master `51668` (aura 42 → `16459`, `procFlags 20`) |
+  | Axe | crit | +4 or +5 % (mask 1, O-17) | +8 or +10 % (mask 2) | Axe Master `51663` (aura 52) |
+  | Mace | "expertise" | +5 skill (skill 54) | +10 skill (skill 160) | racial Mace Specialization `20864` (aura 98) |
+  | Dagger | crit + "expertise" | +5 % crit (mask 32768), +5 skill (skill 173) | – (no 2H daggers) | Close Quarters Combat `13804` (aura 52), aura 98 |
+
+  Each line is its own passive, restricted by `equippedItemSubClassMask`, so
+  the talent is a bundle of about 8 passives granted together.
+- **"Expertise" does not exist in 1.12.** The core has no expertise stat (no
+  hit in `src/game`). Weapon skill is the closest equivalent: it lowers miss,
+  dodge, parry and glancing like expertise does later. Proposal: **1 expertise
+  = 1 weapon skill** (O-18). Real TBC expertise (target dodge/parry −0.25 %
+  per point) would need core code.
+- **The sword skill needs server data, but not for weapon masters:**
+  - Without a `skill_race_class_info_mod` row, a shaman **cannot keep** skill
+    43/55: the core adds weapon skills on learning only with a race/class entry
+    (`Player.cpp` ~l.7573), and drops a "forbidden skill" on character load
+    (~l.22935).
+  - Therefore: two new `skill_race_class_info_mod` rows (skill 43 and skill
+    55), `ClassMask 64` (shaman), all shaman races, all fields explicit (the
+    loader rejects `-1` without a DBC row, `SpellMgr.cpp` ~l.2727). The values
+    for `Flags` and `SkillTierId` are taken from the DBC rows of the other
+    classes **(nv)**.
+  - `skill_line_ability` rows `5`/`7` (`class_mask 399`/`7`) stay
+    **unchanged**. Weapon masters check that mask
+    (`Player::IsSpellFitByClassAndRace`, ~l.21884, via `GetTrainerSpellState`
+    ~l.5410), so they **keep refusing** swords for shamans. The skill comes
+    only from the talent (phase 1: bot grant of `201`/`202`; phase 2: the
+    talent teaches them).
+  - Players are therefore unaffected in phase 1.
+- **Bot factory:** `InitSkills` (~l.4121), `CanEquipWeapon` (~l.2903) and
+  `RandomItemMgr` (~l.668) allow swords only for bots with the talent (7.1:
+  1H/2H, 7.3: 1H + shield).
+- **Tests:**
+  - A shaman bot with the talent has skills 43/55 after relog; without it, it
+    has neither.
+  - A player shaman at the weapon master still sees swords red.
+  - Proc and crit rates per weapon type over N swings (5/10 %, 4–5/8–10 %).
+  - Weapon skill +5/+10 visible on the character.
 
 ## 4. Elemental Weapons 3/3: current vs. owner
 
@@ -229,7 +297,7 @@ For each row: what changes, the dependencies, and the test and acceptance.
 |---|---|---|---|---|
 | Flametongue | trigger `52972` "Enkindled Flames" (aura 79, school Fire) | **+30 %** fire damage (R1/R2: `52970` +10 %, `52971` +20 %) | **+50 %** fire totems and fire spells, 5 s | `52972` value 30 → 50 (R1/R2 proportional: 17/33? O-10). Whether aura 79 also covers **totem** damage (totems are separate units) is to be checked. Otherwise a script is needed |
 | Frostbrand | `58250` (aura 107 SPELLMOD_CHANCE_OF_SUCCESS 18) + guaranteed crit on Frost Shock (`spell_shaman_frostbrand_attack`) | **+25 %** trigger chance (R1/R2 +8/+16) | **+50 %** (image partly overwritten: 25/50) | `58250` value 25 → 50 once O-10 is decided; the crit part already exists |
-| Windfury | trigger `52969` "Rushing Winds" (aura 9 MOD_ATTACKSPEED) | **+1 % per stack, 6 stacks** (R1 2, R2 4, R3 6) | **+3 %** for 5 s, **max 2 stacks** | `52969` value 1 → 3, `stackAmount` 6 → 2. **The maximum stays 6 %**; only the build-up changes |
+| Windfury | trigger `52969` "Rushing Winds" (aura 9 MOD_ATTACKSPEED) | **+1 % per stack, 6 stacks** (R1 2, R2 4, R3 6) | **6 × 2 %** (owner correction, second round), 5 s | `52969` value 1 → 2, `stackAmount` stays 6. The maximum goes from 6 % to **12 %**. Ranks 1/2 (`52967`/`52968`, 2/4 stacks) are adjusted accordingly (O-10) |
 | Rockbiter | effect 3 of the talent (build %) + Earthen Bulwark `58130` (aura 69 absorb) | build **20 %** of damage (×3 with a shield), absorbs **15 %** of incoming damage, cap = **20 % of max health** | build **30 %** (×3 with a shield), absorbs **25 %**, 8 s, cap **40 % of max health** | talent effect 3 value 20 → 30; `58130` 15 → 25. The **cap is tied to the build percentage in code** (`GetEarthenBulwarkCap` = build % × max health, `SS` ~l.376). The 40 % cap therefore needs a **code change** (a separate value, e.g. `58127` "Earthen Bulwark Durability" or a constant) |
 
 All three ranks carry identical base points in effects 1–3. The ranks differ
@@ -267,9 +335,9 @@ Winds `51383`… (−8/16/25 % threat) is wrong for a tank.
 threat to the shaman) is implemented in `ThreatManager::addThreat` (~l.437).
 
 **Swords:** `skill_line_ability` row 5 (skill 43) has `class_mask 399`, which
-excludes the shaman. An override is possible through
-`skill_race_class_info_mod`, but it also opens swords to players at the weapon
-masters.
+excludes the shaman. Row W (section 3.1) describes how the weapon talent
+unlocks swords through `skill_race_class_info_mod` while the weapon masters
+keep refusing shamans.
 
 ## 6. Bot logic (mod-playerbots)
 
@@ -278,7 +346,8 @@ Nothing here is implemented. Code lives in twow-core `modules/mod-playerbots/`.
 ### 6.1 Role and paths
 
 - **Path 7.1 `enhancement` stays the melee DPS path.**
-  - It gets the column-1 auras (R1/C1, R4/C1, R6/C1, R7/C1) through
+  - It gets the column-1 auras (R1/C1, R4/C1, R6/C1, R7/C1), plus the
+    weapon talent W and Improved Ghost Wolf rank 3, through
     ClassGrant.
   - Route-A changes apply to it automatically.
 - **Path 7.3 `tank` is new.** It follows the bear 11.3 pattern (#308):
@@ -286,7 +355,8 @@ Nothing here is implemented. Code lives in twow-core `modules/mod-playerbots/`.
     `tools/build_premade_specs.py`. The picks are Shield Specialization, Spirit
     Armor, Ancestral Guardian, Stable Shields, Elemental Weapons and
     Stormstrike, and **no** Calming Winds. The exact link is **(nv)**.
-  - It gets the column-4 auras (R1/C4, R4/C4, R6/C4, R7/C4).
+  - It gets the column-4 auras (R1/C4, R4/C4, R6/C4, R7/C4), plus W and
+    Improved Ghost Wolf rank 3.
 - **Role mapping:**
   - `IsShamanTankSpec(player)` next to `IsBearSpec` (`AiFactory.cpp` ~l.27).
   - The forced role wins, then the path (as for the feral druid, ~l.475).
@@ -328,8 +398,8 @@ For path 7.1 (DPS), the existing `enhancement` strategy adds:
 **Equipment:**
 - The tank off-hand filter (`PlayerbotFactory.cpp` ~l.3463, today
   `specId == 3 || 5`) also applies to the shaman tank spec: shield only.
-- `CanEquipWeapon` (~l.2903) stays for 7.3 at mace, axe or fist weapon (no
-  swords, see O-13).
+- `CanEquipWeapon` (~l.2903): 7.3 uses a one-handed mace, axe, fist weapon or,
+  with the weapon talent W, a sword. 7.1 may also use two-handed swords with W.
 - A new weight scale `shamantank` (`ai_playerbot_weightscales.sql`, next to
   `prot` 3/5 and `feraltank` 30) with the priority:
 
@@ -362,11 +432,13 @@ For path 7.1 (DPS), the existing `enhancement` strategy adds:
 
 1. **twow-core, route A (OB-20).** Forward-only world migrations for Elemental
    Weapons (`52972`, `58250`, `52969`, `16266`/`29079`/`29080` effect 3,
-   `58130`), R2/C4, Stormstrike, plus the code changes: Earthen Bulwark cap
-   (`SS` ~l.376) and the Stormstrike charge script.
+   `58130`), Stormstrike, plus the code changes: Earthen Bulwark cap
+   (`SS` ~l.376) and the Stormstrike charge script. The same step adds the two
+   `skill_race_class_info_mod` rows for skills 43/55 (row W).
 2. **twow-core, route B data and scripts.** The new passives in `90100`–`90199`,
    `spell_proc_event` rows, and AuraScripts for R4/C4, R6/C1 (+R7/C1) and
-   R6/C4 + R7/C4 in `SS`.
+   R6/C4 + R7/C4 in `SS`. Also Improved Ghost Wolf rank 3 and the weapon talent
+   W (about 8 passives).
 3. **twow-core, mod-playerbots (OB-10).** ClassGrant path table, path 7.3,
    `IsShamanTankSpec`, `getPremadePaths` fix, `TankShamanStrategy`, the
    Earthshaker Slam action, the 7.1 additions, gear and weights, tests.
@@ -380,26 +452,50 @@ measurement.
 
 | # | Question | Recommendation |
 |---|---|---|
-| O-1 | Which talent is R2/C4 (purple, 3 ranks, instant at rank 3)? | Owner confirms from the client; working assumption Improved Ghost Wolf. Phase 1: rank 2 = instant; 3 ranks in phase 2 |
+| O-1 | R2/C4 | **decided:** Improved Ghost Wolf, 3 ranks, rank 3 instant. Open: rank values −1/−2/−3 s (depends on the Ghost Wolf cast time, **nv**) |
 | O-2 | Attack speed R1/C1: +2 %/rank as a flat haste aura — also for 7.3? | yes, 7.1 and 7.3 (a tank gets more Rockbiter/bulwark procs) |
 | O-3 | Defense R1/C4 +6/rank = +30 (warrior +20) | take the owner value; measure in 5-man |
-| O-4 | Imbue mastery R4/C1: which quantity per imbue is "more effective" (Flametongue damage, Frostbrand damage, Windfury AP, Rockbiter AP and/or bulwark)? | damage/AP/bulwark +3 %/rank, **not** threat and **not** proc chance |
-| O-5 | Imbue mastery raises Rockbiter threat to ~38 % if applied flatly | no: threat stays 35 % (script only on the AP effect) |
+| O-4 | Imbue mastery R4/C1 | **decided:** stays as specified, +3 %/rank on all imbue effects |
+| O-5 | Rockbiter threat under imbue mastery | **decided:** threat rises too (≈ +38 % at 3/3) |
 | O-6 | Retaliation R4/C4: internal cooldown of the free shield proc | 3 s shared with Lightning Shield |
-| O-7 | Charge scaling R6/C4 and R7/C4 at 9 charges (Stable Shields 3/3): +27 % stamina, −18 % damage taken | cap the count at **5 charges** (≤ +15 % stamina, ≤ −10 % damage taken = Defensive Stance), or leave Stable Shields out of path 7.3 |
+| O-7 | Charge scaling R6/C4 and R7/C4 | **decided:** no cap (the charges are used up); measure the average charge count in the acceptance run |
 | O-8 | Stormstrike R5/C4: damage per consumed charge, school | the damage of the active shield rank's proc per charge, Nature (like Lightning Strike) |
-| O-9 | Storm wisdom R6/C1: −20 % cost per stack (free at 5)? duration? | cast time −20 %/stack as the owner wants, cost −10 %/stack (−50 % max), duration 30 s |
-| O-10 | Elemental Weapons ranks 1/2 and the unclear Frostbrand value (25/50) | Flametongue 17/33/50, Frostbrand 16/33/50, Windfury +1/+2/+3 % × 2 stacks, Rockbiter build 10/20/30, absorb 15/20/25 |
+| O-9 | Storm wisdom R6/C1 | **decided:** −20 % cast time and −20 % cost per stack. Open: duration, proposal 30 s |
+| O-10 | Elemental Weapons ranks 1/2 and the unclear Frostbrand value (25/50) | Flametongue 17/33/50, Frostbrand 16/33/50, Windfury **2 % per stack** at 2/4/6 stacks, Rockbiter build 10/20/30, absorb 15/20/25 |
 | O-11 | Tank Stormstrike threshold | only at ≥ 4 charges, and only while the tank has aggro |
-| O-12 | Point budget of the bot auras (section 2) | 7.1 = column 1, 7.3 = column 4; each premade link gives up the same number of points |
-| O-13 | Earlier brief wishes that are **not** in the owner line: extra attack 5 × 2 %, magic damage reduction, sword skill, a dedicated AoE threat ability | drop them in phase 1: attack speed replaces the extra attack, AoE runs through Totemic Alignment + Magma Totem, swords would affect players (phase 2). The owner confirms |
+| O-12 | Point budget of the bot auras (section 2) | 7.1 = column 1, 7.3 = column 4, W on both; each premade link gives up the same number of points |
+| O-13 | Earlier brief wishes | **decided:** magic damage reduction, a dedicated AoE ability and the standalone extra attack are dropped; sword + extra attack goes into the weapon talent W |
 | O-14 | New spell ID range | `90100`–`90199`, after a one-time check against the client `Spell.dbc` **(nv)** |
 | O-15 | Share of path 7.3 in the roster | Prob 30 until the acceptance run passes (together with #366) |
+| O-16 | Slot of the weapon talent W | owner picks a free slot from the client tree (**nv** here); proposal: a middle tier (R3 or R5), so both paths reach it before L35 |
+| O-17 | W: axe crit +4 or +5 % (2H: 8 or 10 %) | **+4 %** (8 % 2H): swords get an extra-attack proc on top, maces and daggers get skill |
+| O-18 | W: "expertise" in 1.12 | **1 expertise = 1 weapon skill** (maces +5/+10, daggers +5); real expertise would need core code |
+| O-19 | W: two-handed swords too? | **yes**, because the owner doubled the 2H values (2H sword 10 % extra attack) |
+| O-20 | W: fist weapons (not in the owner text) | no bonus; fist weapons stay usable as today |
 
-## 9. What this document does not do
+## 9. Client data needed
+
+Several open points need client data. By invariant 5 (`AGENTS.md`, ADR-0024),
+**client data does not go into Git**. The proposal: the owner extracts only
+the listed fields and posts them as a comment or attachment on #357 (or in the
+evidence folder), not in the repo.
+
+| File | What exactly | For |
+|---|---|---|
+| `Talent.dbc` | all rows of the shaman Enhancement tab: talent ID, row, column, spell ID per rank, prerequisite talent | R2/C4, free slots for W (O-16), exact premade links 7.1/7.3, point budget (O-12) |
+| `TalentTab.dbc` | the shaman tab IDs and order | assigning the tab |
+| `SkillRaceClassInfo.dbc` | rows for skills 43, 55 (swords) and 44, 54, 160, 172, 173 (for comparison): ID, race mask, class mask, flags, skill tier | the `skill_race_class_info_mod` rows of W |
+| `Spell.dbc` | whether IDs `90100`–`90199` are free; tooltips of `16262`/`16287`, `16266`/`29079`/`29080` | O-14, tooltip text for phase 2 |
+| `SpellCastTimes.dbc` | index 14 | Ghost Wolf cast time (O-1) |
+| `SpellDuration.dbc` | indexes 7, 21, 29, 31 | durations of Rushing Winds, Enkindled Flames, Stormstrike, Earthen Bulwark |
+
+Alternatively, once the files are extracted, `core/tools` or a short Python
+script can pull exactly these rows.
+
+## 10. What this document does not do
 
 - No spell, item, trainer, DBC, SQL, config or core change.
 - No build: `BUILD_REQUIRED=NO`, docs only.
 - Talent positions and ranks as the client shows them, tooltips, durations, and
   client spell ID collisions are **(nv)**. They must be checked against the
-  client data before step 1 of section 7.
+  client data (section 9) before step 1 of section 7.
