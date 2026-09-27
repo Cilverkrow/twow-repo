@@ -1,4 +1,4 @@
-# class	index	talent_path  (from twow-core aiplayerbot.conf.dist.in PremadeSpecName.<class>.<index>; specNo = index + 1; 11.3 bear from twow-core#162, merged e429cb45)
+# class	index	talent_path  (from twow-core aiplayerbot.conf.dist.in PremadeSpecName.<class>.<index>; specNo = index + 1; 11.3 bear from twow-core#162, merged e429cb45; 4.3 rogue tank and 7.3 shaman tank from twow-core#183, merged 332b6efa)
 1	0	fury
 1	1	protection
 1	2	arms
@@ -11,12 +11,14 @@
 4	0	combat
 4	1	assassination
 4	2	subtlety
+4	3	rogue tank
 5	0	holy
 5	1	shadow
 5	2	discipline
 7	0	restoration
 7	1	enhancement
 7	2	elemental
+7	3	shaman tank
 8	0	arcane
 8	1	fire
 8	2	frost
