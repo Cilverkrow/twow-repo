@@ -71,6 +71,17 @@ b=$(all_fingerprint)
 check "player in scope: exit" "$r" 1; check "player in scope: nothing changed" "$(all_fingerprint)" "$b"
 echo "UPDATE ai_playerbot_roster_member m JOIN ai_playerbot_roster_current c ON c.version_id = m.version_id AND c.singleton_id = 1 SET m.character_guid = $victim WHERE m.ordinal = $victim_ord;" | q
 
+# 3b. scattered list (REPLACE + EXPAND, #366 wave 1) -> only the listed ordinals are reset
+list="$from,$((from + 2)),$((to - 1))-$to"
+lgood=$("$run" --hash-from-csv "$csv" --ordinals "$list")
+"$run" --container "$container" --expected 3 --ordinals "$list" --expect-guid-sha256 "$lgood" --apply >/dev/null 2>&1 && r=0 || r=$?; check "list: --expected != list size" "$r" 2
+"$run" --container "$container" --expected 4 --ordinals "$list" --expect-guid-sha256 "$good" --apply >/tmp/t3b0.out 2>&1 && r=0 || r=$?; check "list: range hash rejected" "$r" 1
+"$run" --container "$container" --expected 4 --ordinals "$list" --expect-guid-sha256 "$lgood" --apply >/tmp/t3b.out 2>&1 && r=0 || r=$?
+check "list: exit" "$r" 0; check "list: RESULT" "$(grep -o 'RESULT=PASS guards=8' /tmp/t3b.out || true)" "RESULT=PASS guards=8"
+l_in=$(echo "SELECT SUM(c.level = 1) FROM characters c JOIN ai_playerbot_roster_member m ON m.character_guid = c.guid JOIN ai_playerbot_roster_current rc ON rc.version_id = m.version_id AND rc.singleton_id = 1 WHERE FIND_IN_SET(m.ordinal, '$from,$((from + 2)),$((to - 1)),$to');" | q)
+l_out=$(echo "SELECT COALESCE(SUM(c.level = 1), 0) FROM characters c JOIN ai_playerbot_roster_member m ON m.character_guid = c.guid JOIN ai_playerbot_roster_current rc ON rc.version_id = m.version_id AND rc.singleton_id = 1 WHERE NOT FIND_IN_SET(m.ordinal, '$from,$((from + 2)),$((to - 1)),$to');" | q)
+check "list: the 4 listed are level 1" "$l_in" 4; check "list: nobody else level 1" "$l_out" 0
+
 # 4. scoped reset -> PASS, outside the scope unchanged
 before=$(fingerprint)
 "$run" --container "$container" --expected "$n" --ordinals "$ordinals" --expect-guid-sha256 "$good" --apply >/tmp/t4.out 2>&1 && r=0 || r=$?

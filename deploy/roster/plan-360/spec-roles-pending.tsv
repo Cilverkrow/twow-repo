@@ -1,0 +1,6 @@
+# class	talent_path	role
+# PENDING (preview only): rogue tank (PremadeSpecName.4.3) and shaman tank (7.3) from OB-10,
+# train 7. Owner: 5 tank classes per faction, each 20 % of the tanks. The final path names come
+# from OB-10; then these rows move to spec-roles.tsv and ../respec/premade-spec-index.tsv.
+4	tank	TANK
+7	tank	TANK
