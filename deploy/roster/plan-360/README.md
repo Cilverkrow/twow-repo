@@ -134,7 +134,8 @@ The factory deletes temporary bots and empty rndbot accounts. Pre-check (read-on
 | 10 | OB-40 | rename `run-rename-roster.sh --map new-names.tsv --expect-map-sha256 <sha> --expected 30` | `RENAMED=30`, 9/4 |
 | 11 | OB-40 | reset-l1 `run-reset-l1.sh --ordinals <CHANGED_ORDINALS> --expected 30 --expect-guid-sha256 <hash>` | `guards=8 asserts_pass≥23` |
 | 11b | OB-40 | **talent reset for the changed shaman paths** (OB-10 SpecAura + premade trims, #357): `../talent-reset/run-talent-reset.sh --class 7 --spec-nos 2,4 --dry-run`, then `--expected <n> --expect-guid-sha256 <h> --apply`. It covers **all** roster shamans on 7.1/7.3, old and new | `guards=4 asserts_pass=4`; only bit 4 is set (no L1, no login wave, the marker is `&6`); players fingerprint unchanged in step 12 |
-| 12 | OB-40 | final check | 180 members; the 30 at L1 with `at_login & 6`; the other 150 unchanged except bit 4 on the 11b shamans; the 4 replaced humans unchanged and outside the roster; players fingerprint = step 2 |
+| 11c | OB-40 | **talent reset for all rogues** (the owner's rogue talent line #367 changes all three trees and adds 4.3 rogue tank): `../talent-reset/run-talent-reset.sh --class 4 --spec-nos 1,2,3,4 --dry-run`, then `--expected <n> --expect-guid-sha256 <h> --apply`. It covers **all** roster rogues, old and new | as 11b: `guards=4 asserts_pass=4`, only bit 4 set, no login wave |
+| 12 | OB-40 | final check | 180 members; the 30 at L1 with `at_login & 6`; the other 150 unchanged except bit 4 on the 11b shamans and the 11c rogues; the 4 replaced humans unchanged and outside the roster; players fingerprint = step 2 |
 | 13 | OB-00 | normal start | `loaded version 6 with 180`; 150 log in at once, 30 in 2 waves (24 + 6, ≈15 min); `[RosterLoginWave] complete waiting=0`; 180/180 online |
 
 `<hash>` = `run-reset-l1.sh --hash-from-csv <plan> --ordinals <CHANGED_ORDINALS>`.
