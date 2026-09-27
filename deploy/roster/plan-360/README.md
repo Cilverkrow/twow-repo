@@ -100,6 +100,12 @@ AiPlayerbot.ClassRace.UseFixedClassRaceCounts = 1
 AiPlayerbot.ClassRaceProb.<class>.<race> = <FACTORY>   # only pairs with a shortage
 ```
 
+**Pitfall (OB-30, probe 2026-09-27):** with `UseFixedClassRaceCounts = 1` **every** `ClassRaceProb.<c>.<r>` key in the
+rendered config counts as a fixed count (`PlayerbotAIConfig.cpp` ~l.613). The normal profile carries all 48
+pairs with defaults (e.g. `1.1 = 40`), so the new accounts would be filled at random from all pairs.
+The factory profile must contain **only** the `FACTORY > 0` pairs; remove or comment out every other
+`ClassRaceProb.c.r`.
+
 The factory deletes temporary bots and empty rndbot accounts. Pre-check (read-only): no
 `bot_delete` event and no `temporary` events.
 
@@ -117,6 +123,7 @@ The factory deletes temporary bots and empty rndbot accounts. Pre-check (read-on
 |---|---|---|---|
 | 1 | OB-00 | stop world/realm/BotBrain | 154 roster bots `online=0`, otherwise STOP |
 | 2 | OB-40 | dump + cold backup (as train 6); **player-account list** (accounts with 1–4 characters) + players fingerprint over exactly these accounts | SHA256SUMS; the fingerprint must not depend on the roster (lesson from train 6) |
+| 2b | OB-30/OB-40 | migration step of the train 7 image: world `20260927120000` (#165: playercreateinfo 3/7 and 5/2) and the others; **ledger backfill only** for `20260912120000_world` (#288, effect already present, sha1 `37A56611…`); **old event table** `tw_char.ai_playerbot_random_bots` (core#55 `character/20260906120000`): export first (`mariadb-dump … tw_char ai_playerbot_random_bots`, sha256), then apply unchanged; the roster uses `cv_bots` (#366 comment 5857484217) | playercreateinfo 61; old event table 0 duplicates with a UNIQUE key; the `cv_bots` event table checksum unchanged |
 | 3 | OB-40 | pre-checks read-only: roster current = 4, `SHA2(ordinal:guid)` = `6de61611…`; no `bot_delete`/`temporary` events; free pool snapshot (`free-pool.sql`), levels snapshot, name snapshot | any deviation → STOP (nothing changed yet) |
 | 4 | OB-40 | phase 1 with pool + levels → `demand.tsv` → factory overrides (only `FACTORY > 0` pairs) | counts posted in #366 |
 | 5 | OB-00 | **factory run** (overrides), wait for the end of creation, stop, remove overrides | new characters ≈ sum FACTORY; 0 bots online; roster v4 unchanged; players fingerprint unchanged; otherwise STOP → stage 0 |
@@ -126,7 +133,8 @@ The factory deletes temporary bots and empty rndbot accounts. Pre-check (read-on
 | 9 | OB-40 | A6 `run-respec-roster.sh --csv <plan> --ordinals <CHANGED_ORDINALS> --expect-guid-sha256 <hash> --insert-missing-events --conf $CONF --apply` | `guards=8 asserts_pass=11`, INSERTED 30/30 |
 | 10 | OB-40 | rename `run-rename-roster.sh --map new-names.tsv --expect-map-sha256 <sha> --expected 30` | `RENAMED=30`, 9/4 |
 | 11 | OB-40 | reset-l1 `run-reset-l1.sh --ordinals <CHANGED_ORDINALS> --expected 30 --expect-guid-sha256 <hash>` | `guards=8 asserts_pass≥23` |
-| 12 | OB-40 | final check | 180 members; the 30 at L1 with `at_login & 6`; the other 150 unchanged; the 4 replaced humans unchanged and outside the roster; players fingerprint = step 2 |
+| 11b | OB-40 | **talent reset for the changed shaman paths** (OB-10 SpecAura + premade trims, #357): `../talent-reset/run-talent-reset.sh --class 7 --spec-nos 2,4 --dry-run`, then `--expected <n> --expect-guid-sha256 <h> --apply`. It covers **all** roster shamans on 7.1/7.3, old and new | `guards=4 asserts_pass=4`; only bit 4 is set (no L1, no login wave, the marker is `&6`); players fingerprint unchanged in step 12 |
+| 12 | OB-40 | final check | 180 members; the 30 at L1 with `at_login & 6`; the other 150 unchanged except bit 4 on the 11b shamans; the 4 replaced humans unchanged and outside the roster; players fingerprint = step 2 |
 | 13 | OB-00 | normal start | `loaded version 6 with 180`; 150 log in at once, 30 in 2 waves (24 + 6, ≈15 min); `[RosterLoginWave] complete waiting=0`; 180/180 online |
 
 `<hash>` = `run-reset-l1.sh --hash-from-csv <plan> --ordinals <CHANGED_ORDINALS>`.
@@ -150,6 +158,7 @@ stage 1 or 2.
 - EXPAND only (`--ordinals 181-360 --expected-current-version 6`); REPLACE only if a race is
   above its share.
 - reset-l1 and A6 cover 181–360, so 180 new bots log in in 8 waves of 24 (≈2 h).
+- Talent reset (step 11b) again for every class whose premade links or auras changed with that deploy, e.g. rogues `--class 4 --spec-nos <paths>`.
 - ROLLBACK to version 6.
 - `--respec-tanks --respec-out respec.tsv` (owner decision): A6 runs with `--ordinals <A6_ORDINALS>`;
   reset-l1 only runs with `<CHANGED_ORDINALS>`. Final check: 4 tanks per class and faction;
