@@ -1,7 +1,7 @@
 # class	talent_path	role
 # Every talent path a roster bot may get, with its role. talent_path must exist in
-# ../respec/premade-spec-index.tsv before A6 can apply it. Shaman and rogue tank paths are
-# added here when OB-10 fixes their premade index (train 7, #366 addendum).
+# ../respec/premade-spec-index.tsv before A6 can apply it. The rogue tank (4.3) and shaman tank
+# (7.3) rows come from twow-core#183 (merged 332b6efa).
 1	fury	DPS
 1	arms	DPS
 1	protection	TANK
@@ -14,12 +14,14 @@
 4	combat	DPS
 4	assassination	DPS
 4	subtlety	DPS
+4	rogue tank	TANK
 5	holy	HEALER
 5	discipline	HEALER
 5	shadow	DPS
 7	restoration	HEALER
 7	enhancement	DPS
 7	elemental	DPS
+7	shaman tank	TANK
 8	arcane	DPS
 8	fire	DPS
 8	frost	DPS
