@@ -13,7 +13,8 @@ Plan v3 (owner decisions 2026-09-27): wave 1 = 180 (10/20/60 per faction), wave 
      --levels, then highest ordinal; the replacement keeps the role);
    - tanks / healers / DPS end at --per-faction (hard);
    - every tank class fills up to an equal share of the tanks (owner: bear, warrior, paladin,
-     rogue tank, shaman tank, 20 % each; classes above their share keep their tanks);
+     rogue tank, shaman tank, 20 % each); classes above their share keep their tanks unless
+     --respec-tanks respecs the surplus to a DPS path of their class (wave 2, level kept);
    - no race x class x role above --cap, except cells the unchanged base already has above;
    - every slot keeps all of this reachable (max-flow check race -> class/role cell -> role,
      tanks through a per-class node);
@@ -142,7 +143,8 @@ def max_flow_ok(race_rem, role_rem, cell_free, tank_class_rem):
         flow += push
 
 
-def plan_slots(base, catalog, known, specs, target, per_faction, cell_cap, replace_excess=False, levels=None):
+def plan_slots(base, catalog, known, specs, target, per_faction, cell_cap, replace_excess=False, levels=None,
+               respec_tanks=False, respecs=None):
     """Return the new slots: dicts race, cls, gender, path, role; a slot with "replace" takes
     over that base ordinal (REPLACE), the others are appended in order (EXPAND)."""
     if target % 2:
@@ -161,6 +163,7 @@ def plan_slots(base, catalog, known, specs, target, per_faction, cell_cap, repla
         if (b["race"], b["cls"]) not in known:
             fail(f"base row race {b['race']} class {b['cls']} is not a known pair")
     levels = levels or {}
+    respecs = respecs if respecs is not None else []
     per_faction_slots = {}
     for fa, races in (("A", ALLIANCE), ("H", HORDE)):
         mine = [b for b in roster if faction(b["race"]) == fa]
@@ -186,15 +189,33 @@ def plan_slots(base, catalog, known, specs, target, per_faction, cell_cap, repla
             mine = [b for b in mine if b not in replaced]
         race_target = water_fill(Counter(b["race"] for b in mine), half - len(mine), list(races))
         race_rem = {r: race_target[r] - sum(1 for b in mine if b["race"] == r) for r in races}
+        usable = {(race, cls, role) for race, cls in catalog if race in races for role in ROLES
+                  if paths.get((cls, role))}
+        # owner: every tank class takes an equal share of the tanks (bear, warrior, paladin, ...)
+        tank_classes = sorted({cls for _, cls, role in usable if role == "TANK"})
+        if respec_tanks:
+            # owner (wave 2): tanks of a class above its share are respecced to a DPS path of
+            # their class (level kept; A6 sets the talent reset). Taken from the race with the
+            # most tanks of that class first, then the highest ordinal.
+            share = water_fill({}, role_target["TANK"], tank_classes)
+            for cls in tank_classes:
+                have = [b for b in mine if b["role"] == "TANK" and b["cls"] == cls]
+                excess = len(have) - share[cls]
+                if excess <= 0:
+                    continue
+                per_race = Counter(b["race"] for b in have)
+                for b in sorted(have, key=lambda b: (-per_race[b["race"]], -b["ordinal"]))[:excess]:
+                    in_race = Counter(x["path"] for x in mine if x["race"] == b["race"] and x["cls"] == cls)
+                    new_path = min(paths[(cls, "DPS")], key=lambda p: (in_race[p], p))
+                    respecs.append(dict(ordinal=b["ordinal"], guid=b["guid"], old_path=b["path"],
+                                        path=new_path, role="DPS"))
+                    per_race[b["race"]] -= 1
+                    b["path"], b["role"] = new_path, "DPS"
         have_role = Counter(b["role"] for b in mine)
         role_rem = {r: role_target[r] - have_role[r] for r in ROLES}
         for r, n in role_rem.items():
             if n < 0:
                 fail(f"faction {fa} already has {have_role[r]} {r}, above {role_target[r]}")
-        usable = {(race, cls, role) for race, cls in catalog if race in races for role in ROLES
-                  if paths.get((cls, role))}
-        # owner: every tank class takes an equal share of the tanks (bear, warrior, paladin, ...)
-        tank_classes = sorted({cls for _, cls, role in usable if role == "TANK"})
         have_tank = Counter(b["cls"] for b in mine if b["role"] == "TANK")
         tank_target = water_fill(have_tank, role_rem["TANK"], tank_classes)
         tank_class_rem = {c: tank_target[c] - have_tank[c] for c in tank_classes}
@@ -439,6 +460,9 @@ def main(argv=None):
                     help="REPLACE bots of races above their even share (owner decision, wave 1)")
     ap.add_argument("--levels", help="TSV guid level of the base members (REPLACE picks the lowest)")
     ap.add_argument("--replace-out", help="output: TSV ordinal old_guid new_guid for the REPLACE request")
+    ap.add_argument("--respec-tanks", action="store_true",
+                    help="respec tanks of a class above its equal share to DPS (owner decision, wave 2)")
+    ap.add_argument("--respec-out", help="output: TSV ordinal guid old_path new_path for A6")
     ap.add_argument("--summary-out", help="output: markdown summary with the group capacity table")
     ap.add_argument("--demand", required=True, help="output: candidate demand TSV")
     ap.add_argument("--slots-out", help="output: the planned slots before the fill (review)")
@@ -467,9 +491,14 @@ def main(argv=None):
         fail("--per-faction needs tanks,healers,dps")
 
     levels = {int(g): int(l) for g, l, *_ in read_tsv(args.levels)} if args.levels else {}
+    respecs = []
     slots = plan_slots(base, catalog, set(known), specs, args.target, per_faction, args.cap,
-                       args.replace_excess, levels)
+                       args.replace_excess, levels, args.respec_tanks, respecs)
     replaced = {s["replace"] for s in slots if "replace" in s}
+    by_ordinal = {r["ordinal"]: r for r in respecs}
+    base = [dict(r, talent_path=by_ordinal[int(r["ordinal"])]["path"], role="DPS",
+                 selection_reason=r["selection_reason"] + "; respec TANK->DPS (owner 20 % tank classes)")
+            if int(r["ordinal"]) in by_ordinal else r for r in base]
     kept = [r for r in base if int(r["ordinal"]) not in replaced]
     assign_professions(kept, slots, args.target)
     ordinal = len(base)
@@ -545,6 +574,11 @@ def main(argv=None):
                 f.write(f"{s['ordinal']}\t{s['old_guid']}\t{s['guid']}\n")
     changed = sorted(s["ordinal"] for s in slots)
     print("CHANGED_ORDINALS=" + ",".join(map(str, changed)))
+    print("A6_ORDINALS=" + ",".join(map(str, sorted(changed + list(by_ordinal)))))
+    if args.respec_out:
+        with open(args.respec_out, "w", newline="", encoding="utf-8") as f:
+            for r in sorted(respecs, key=lambda r: r["ordinal"]):
+                f.write(f"{r['ordinal']}\t{r['guid']}\t{r['old_path']}\t{r['path']}\n")
     with open(args.names_out, "w", newline="", encoding="utf-8") as f:
         for s in sorted(slots, key=lambda s: s["ordinal"]):
             f.write(f"{s['ordinal']}\t{s['guid']}\t{s['name']}\t{s['race']}\t{s['cls']}\t{s['gender']}\t{names[s['guid']]}\n")

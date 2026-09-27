@@ -157,6 +157,29 @@ class GeneratorTest(unittest.TestCase):
         new = {(int(r["race"]), int(r["class"])) for r in rows[154:]}
         self.assertEqual(NEW_PAIRS - new, set(), "every new race/class pair gets bots")
 
+    def test_respec_tanks_exact_share(self):
+        respec = os.path.join(self.tmp, "respec.tsv")
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--respec-tanks", "--respec-out", respec])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        for races in (gen.ALLIANCE, gen.HORDE):
+            tanks = Counter(r["class"] for r in rows if int(r["race"]) in races and r["role"] == "TANK")
+            self.assertEqual(set(tanks.values()), {4}, "owner: 5 tank classes x 20 % of 20")
+        base = base_rows()
+        moves = gen.read_tsv(respec)
+        self.assertTrue(moves)
+        for ordinal, guid, old, new in moves:
+            b, r = base[int(ordinal) - 1], rows[int(ordinal) - 1]
+            self.assertEqual((b["guid"], b["role"], b["talent_path"]), (guid, "TANK", old))
+            self.assertEqual((r["guid"], r["class"], r["role"], r["talent_path"]), (guid, b["class"], "DPS", new))
+            self.assertEqual(r["profession_pair"], b["profession_pair"])
+        lines = run.stdout.splitlines()
+        changed = next(l for l in lines if l.startswith("CHANGED_ORDINALS=")).split("=")[1].split(",")
+        a6 = next(l for l in lines if l.startswith("A6_ORDINALS=")).split("=")[1].split(",")
+        self.assertFalse({o for o, *_ in moves} & set(changed), "a respec is no L1 reset")
+        self.assertTrue({o for o, *_ in moves} <= set(a6), "A6 applies the respec")
+
     def test_healers_follow_healer_classes(self):
         run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20))
         rows = run.rows()
