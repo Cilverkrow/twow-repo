@@ -139,7 +139,8 @@ poison already takes the weapon's temporary-enchant slot.
 The existing mechanic stays: a flat threat amount per proc, as in `45613`
 (+395). What changes is that it becomes available **from level 20 in ranks
 every 10 levels**, starting at +150 and reaching today's +395 at level 60.
-The intermediate values are linear. The owner may round them.
+The intermediate values are linear, rounded to the nearest 5 (owner
+decision).
 
 The proc's Nature damage **scales in the same ratio** as the threat (owner
 decision). Values are rounded from rank V's 67–85:
@@ -147,9 +148,9 @@ decision). Values are rounded from rank V's 67–85:
 | Rank | Level | Threat per proc | Nature damage | Proc spell | Status |
 |---|---|---|---|---|---|
 | I | 20 | +150 | 25–32 | new | new |
-| II | 30 | +211 | 36–45 | new | new |
-| III | 40 | +273 | 46–59 | new | new |
-| IV | 50 | +334 | 57–72 | new | new |
+| II | 30 | +210 | 36–45 | new | new |
+| III | 40 | +275 | 47–59 | new | new |
+| IV | 50 | +335 | 57–72 | new | new |
 | V | 60 | +395 | 67–85 | `45613` | exists (item `65032`, trainer `47312`) |
 
 Level 20 fits the Poisons skill, which rogues get from the level-20 class
@@ -211,9 +212,9 @@ and again at **level 60**.
 
 | Rank | Level | Threat per dodge/parry |
 |---|---|---|
-| I | 20 | open (proposal: 50) |
-| II | 40 | open (proposal: 90) |
-| III | 60 | open (proposal: 130) |
+| I | 20 | +50 |
+| II | 40 | +90 |
+| III | 60 | +130 |
 
 Each rank is a new set of three spells (stance aura, parry proc, dodge proc).
 The +5 % buffs themselves stay the same for all ranks.
@@ -236,8 +237,8 @@ Implementation (data only, no core code):
 - The buffs refresh rather than stack.
 
 The name stays **Shadow Dance** (Schattentanz), by owner decision, although
-a rogue ability in later expansions has the same name. Only the threat values
-per rank are still open (O-4a).
+a rogue ability in later expansions has the same name. The threat values
+above were approved by the owner.
 
 ### 3.4 Bots only (release train 7), players later
 
@@ -397,23 +398,24 @@ approval, OB-20):
 | D-5 | No new talent tree. The owner provides a template that extends the existing trees; the bot's tank path is built from it (3.5, 4.1). |
 | D-6 | Bots only first, for release train 7; players later (3.4). |
 | D-7 | The poison's Nature damage scales with the rank, in the same ratio as the threat (3.1). |
+| D-8 | Poison intermediate values rounded to the nearest 5: +210 / +275 / +335 (3.1). |
+| D-9 | Shadow Dance threat per dodge/parry: +50 / +90 / +130 at ranks I/II/III (3.3). |
+| D-10 | How many rogues get tank path 4.3 was decided by the owner with the Leitstand (outside this document; see #366). |
 
 Still open:
 
 | # | Decision | Recommendation |
 |---|---|---|
-| O-3b | Round the intermediate poison threat values (211/273/334)? | owner's choice |
-| O-4a | Shadow Dance threat per dodge/parry for ranks I/II/III | 50 / 90 / 130 |
 | O-6 | Mitigation beyond Shadow Dance | none at first; measure in 5-man runs |
 | O-7 | Stat reference: #141 as written in the issue, or #308 | confirm **#308** |
-| O-8 | How many rogues get path 4.3 (#366: 22 new rogues in 137–272) | decide together with D-A in #366 |
+| T-1 | Talent template for path 4.3 | the owner will add it later; the tank path waits for it |
 | O-9 | Poison ranks for bots: spell script on `45613` with level bands, or server-side DBC entries (3.4) | **spell script** (no client-data work for train 7) |
 
 ## 6. What this document does not do
 
 No spell, item, trainer, DBC or core change; no config change; no build
 (`BUILD_REQUIRED=NO`, docs only). For train 7, implementation needs the
-rule-change approval, O-4a, O-9 and the owner's talent template. It then goes
+rule-change approval, O-9 and the owner's talent template. It then goes
 as separate PRs in `Cilverkrow/twow-core`:
 - world data: spells and poison items, no trainer or vendor rows (OB-20);
 - spell scripts for Spit and, with O-9 (a), for the poison proc (core);
