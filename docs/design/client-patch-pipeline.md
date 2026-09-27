@@ -3,10 +3,15 @@
 Refs #409. Status: **design only**. This document changes no code, config, DBC,
 SQL or client file. It adds no binaries and no Blizzard or Turtle client data.
 
-**Brief:** the "Cloud brief (OB-00, 2026-09-27)" in the body of #409, plus the
-owner's local client facts in
-[#409 issuecomment-5858846212](https://github.com/Cilverkrow/twow-repo/issues/409#issuecomment-5858846212)
-(file listing only).
+**Inputs:**
+
+- the "Cloud brief (OB-00, 2026-09-27)" in the body of #409;
+- the owner's client file listing
+  ([#409 issuecomment-5858846212](https://github.com/Cilverkrow/twow-repo/issues/409#issuecomment-5858846212));
+- OB-00's research findings
+  ([#409 issuecomment-5858920431](https://github.com/Cilverkrow/twow-repo/issues/409#issuecomment-5858920431));
+- the owner direction of 2026-09-27
+  ([#409 issuecomment-5859017022](https://github.com/Cilverkrow/twow-repo/issues/409#issuecomment-5859017022)).
 
 **Goal (owner):** the owner and 2–3 friends (Radmin VPN) all run the **same
 client state**, and a new client change reaches everyone with one step. Once
@@ -14,12 +19,31 @@ that works, the project can do more on the client side: talent trees (#357,
 #367), new race/class combinations (#379), tooltips of changed spells, a
 graphics package (#362) and addons (#360, BotMenu).
 
-**Short answer to the owner's question.** The Turtle launcher cannot be pointed
-at our own patch source, and it is more likely to fight our files than to carry
-them (section 4.1). Redistributing the whole client for every change is too
-heavy. The recommendation is a **hybrid**: one full client package per friend,
-once, to make everyone's base identical, then a **small script updater** for our
-own ~MB-sized patch over Radmin (sections 4 and 5).
+**Revision 2 (2026-09-27).** It reworks revision 1 after the owner direction:
+
+- **Nostalgia Launcher** is the preferred distribution route. It also
+  distributes our own addons, driven by catalogues.
+- **WoW-Spell-Editor** is the DBC tool.
+- The Turtle launcher is **a fallback only**.
+- Revision 1's own PowerShell updater is demoted to a last resort
+  (section 4.4).
+- New fact: **Turtle WoW was shut down on 2026-05-15 after Blizzard won an
+  injunction** (research comment). This changes both the risk picture
+  (section 4.1) and the legal frame (section 6).
+
+**Short answer to the owner's question:**
+
+- The Turtle launcher cannot carry our patches, and since the shutdown it
+  cannot update anything any more.
+- **Nostalgia Launcher fits the job.** It is open source (Apache-2.0) and is
+  configured by one JSON file with catalogues. It installs an MPQ patch as a
+  sha1-pinned **asset**, DLL mods through `dlls.txt`, and addons from Git. It
+  sets the realm and starts `WoW.exe`.
+- There are two hard requirements:
+  - **every URL must be HTTPS with a certificate the friend's PC trusts**
+    (section 5.3);
+  - **Turtle's `WoW.exe` must run without Turtle's launcher**. That is test T4,
+    and it is the go/no-go for stage 1.
 
 ## Contents
 
@@ -27,7 +51,7 @@ own ~MB-sized patch over Radmin (sections 4 and 5).
 2. [Client inventory: MPQs, load order, DBCs](#2-client-inventory-mpqs-load-order-dbcs)
 3. [Tools and build process](#3-tools-and-build-process)
 4. [Distribution options](#4-distribution-options)
-5. [Recommendation and version check](#5-recommendation-and-version-check)
+5. [Recommended setup: Nostalgia Launcher](#5-recommended-setup-nostalgia-launcher)
 6. [Security and legal](#6-security-and-legal)
 7. [Graphics (#362)](#7-graphics-362)
 8. [Staged plan with acceptance checks](#8-staged-plan-with-acceptance-checks)
@@ -36,715 +60,913 @@ own ~MB-sized patch over Radmin (sections 4 and 5).
 
 ## 1. Evidence base and confidence markers
 
-Every claim below carries one of these markers:
-
 | Marker | Meaning |
 |---|---|
-| **[code]** | Read from `Cilverkrow/twow-core` at `main` = `33210d8` or `twow-repo` at `main` = `9616bf7`. File and line are given. |
-| **[owner]** | From the owner's client listing in the #409 comment. |
-| **[community]** | From public Turtle / vanilla modding sources (section 10). The cloud session could not open the Turtle forum or wiki directly (egress blocked); these claims come from **search-engine excerpts** of those pages and are not verified against the page text. |
-| **[speculation]** | Reasoned, but not backed by a source. Each one has a test in section 8. |
+| **[code]** | Read from `Cilverkrow/twow-core` `main` = `33210d8` or `twow-repo` `main` = `9616bf7`, with file and line. |
+| **[nostalgia]** | Read from `Ourouk/nostalgia-launcher` at `a3b04f2` (2026-09-21), with file and line under `src/nostalgia_launcher/`. |
+| **[spell-editor]** | Read from `stoneharry/WoW-Spell-Editor` at `e69ae90` (2026-08-20). |
+| **[owner]** | From the owner's client listing and the research comment in #409. |
+| **[community]** | Public Turtle / vanilla modding sources (section 10). The cloud session could not open the Turtle forum or wiki directly (egress blocked); these come from **search excerpts** and are not verified against the page text. |
+| **[speculation]** | Reasoned, not sourced. Each one has a test in section 8. |
 
-The cloud session had **no access to the client**. Nothing in this document is
-based on reading client files.
+The cloud session had **no access to the client**. Nothing here is based on
+reading client files.
 
 ## 2. Client inventory: MPQs, load order, DBCs
 
 ### 2.1 What is on disk [owner]
 
-- `Data\`: the base archives `base, dbc, fonts, interface, misc, model, sound,
-  speech, terrain, texture, wmo, backup` (`.MPQ`), plus **`patch.MPQ`
-  (≈1.9 GB), `patch-2.MPQ`, `patch-3.mpq` … `patch-9.mpq`** (Turtle, up to 2 GB
-  each). File extensions mix upper and lower case.
-- Client root: `turtle-wow.exe` (≈33 MB, launcher), `WoW.exe`, `twloader.dll`,
-  `dlls.txt` (currently `WoWTranslate.dll`), `Optional dlls\` (SuperWoWhook,
-  UnitXP_SP3, VfPatcher, nampower), `realmlist.wtf`.
+- `Data\`:
+  - the base archives `base, dbc, fonts, interface, misc, model, sound, speech,
+    terrain, texture, wmo, backup` (`.MPQ`);
+  - **`patch.MPQ` (≈1.9 GB), `patch-2.MPQ`, `patch-3.mpq` … `patch-9.mpq`**
+    (Turtle, up to 2 GB each). File extensions mix upper and lower case.
+- Client root:
+  - `turtle-wow.exe` (≈33 MB, launcher), `WoW.exe`, `twloader.dll`;
+  - `dlls.txt` (currently `WoWTranslate.dll`);
+  - `Optional dlls\` (SuperWoWhook, UnitXP_SP3, VfPatcher, nampower);
+  - `realmlist.wtf`.
 - **No `patch-<letter>` archive** exists yet, and in particular no `patch-Z`.
 
 ### 2.2 Load order and our file name
 
-How a 1.12 client resolves a file:
-
 - Archives are opened in a fixed order. A file that exists in several archives
-  is taken from the archive **loaded last**. The override is **per file**: a
-  patch that contains `DBFilesClient\Spell.dbc` replaces the whole `Spell.dbc`,
-  not single rows.
+  is taken from the archive **loaded last**.
+- The override is **per file**: a patch containing `DBFilesClient\Spell.dbc`
+  replaces the whole `Spell.dbc`.
 - The order runs `patch.MPQ`, `patch-2` … `patch-9`, then letters up to
-  `patch-Z` [community: "The client loads the mods in order, starting with
-  patch-1.mpq, ending in patch-Z.mpq"].
-- **Turtle occupies** `patch-2` … `patch-9` [owner] and uses **`patch-Z`
-  internally for localisation** [community: a mod "used to be called Patch-Z
-  but TWoW is using that internally for language localization" and was renamed
-  to Patch-Y].
-- **Popular community mods** use letters too: Reforged HD uses A, B, C, D, E,
-  G, I, M, P, S, T; other mods use J, W (water) and Y (fog / night sky)
-  [community, RetroCro/TurtleWoW-Mods].
-- Windows treats `patch-x.mpq` and `patch-X.MPQ` as the **same file name**.
-  Whether the client sorts letters case-insensitively is not documented
-  [speculation: yes, because it asks the file system for a fixed name per
-  slot]; the stage-1 test settles it.
+  `patch-Z` [community; also the research comment].
+- **Turtle occupies** `patch-2` … `patch-9` [owner] and uses **`patch-Z` for
+  localisation** [community].
+- Community mods use letters too [community, RetroCro/TurtleWoW-Mods]:
+  - Reforged HD uses A, B, C, D, E, G, I, M, P, S, T;
+  - others use J, W (water) and Y (fog / night sky).
+- Windows treats `patch-x.mpq` and `patch-X.MPQ` as the same name. Whether the
+  client sorts letters case-insensitively is not documented [speculation: yes];
+  test T6 settles it.
 
-**Proposal: `Data\patch-X.mpq`** (upper-case letter, lower-case extension,
-matching Turtle's newer files).
+**Proposal: `Data\patch-X.mpq`.**
 
-- It loads after all Turtle numbers, so our DBCs win over Turtle's.
-- It avoids the letters of the well-known community mods.
-- It loads **before** `Y` and `Z`. That is deliberate: `Z` is Turtle's own
-  localisation slot and we must not claim it.
-- **Consequence:** a friend with a **localised** client (a `patch-Z` that
-  contains DBCs) would silently override our tooltips. The updater therefore
-  warns about every `patch-Y*`/`patch-Z*` it finds (section 5.2). All players
-  should run the **English** client, as the owner does (decision 9.8).
-- The name lives in the manifest, not in code, so it can move later.
+- It loads after all Turtle numbers and avoids the well-known community
+  letters.
+- It leaves Turtle's `Z` alone. As a consequence, a **localised** client (a
+  `patch-Z` with DBCs) would override our texts, so all players run the
+  **English** client (decision 9.9).
+- The name lives only in the asset catalogue (`dest`), so it can move later.
 
 ### 2.3 The relevant DBCs: client, server, or both
 
 The question for every DBC is: does the server load it too? If yes, client and
-server must hold **the same file**, and a change is a coupled release. If no, it
-is client-only and a mismatch is at worst cosmetic.
+server must hold **the same file**, and a change is a coupled release.
 
 **Server facts [code]:**
 
-- The server loads its DBCs from `DataDir/dbc/` (`src/game/Database/DBCStores.cpp:203-494`).
-  In the compose deployment `DataDir = "/opt/turtle/data"`
+- DBCs are loaded from `DataDir/dbc/` (`src/game/Database/DBCStores.cpp:203-494`).
+  In compose, `DataDir = "/opt/turtle/data"`
   (`config/canonical/compose/mangosd.overlay.conf:6`), bind-mounted from the
   host (the brief's `C:\TW\ComTW\data\dbc`).
 - **Spells come from SQL, not from `Spell.dbc`.** `LoadSpellsFromSql = 1` is the
-  default (`src/mangosd/mangosd.conf.dist.in:681`, `src/game/World.cpp:1542`), so
-  the server reads `tw_world.spell_template` (`src/game/Spells/SpellMgr.cpp:3614-3624`).
-  `Spell.dbc` is loaded only when that switch is off
-  (`DBCStores.cpp:184-200`).
-- **`SkillLineAbility` comes from SQL** (`sql/base/tw_world_skill_line_ability.sql`),
-  not from the DBC.
-- The server rejects a DBC whose field count does not match its 1.12 format
-  ("Wrong client version DBC file?", `DBCStores.cpp:175`). The Turtle 1.18.1
-  DBCs it loads today therefore have the 1.12 layout. `Spellfmt` has 173 fields
-  (`src/game/Database/DBCfmt.h:64`), the 1.12 layout.
-- realmd accepts **every build ≥ 7272** (1.18.1) as valid
-  (`src/realmd/RealmList.cpp:37-47`). A friend whose client was auto-updated to
-  a newer Turtle build would still log in, with **silently mismatched data**.
-  This matters for section 4.1.
+  default (`src/mangosd/mangosd.conf.dist.in:681`, `src/game/World.cpp:1542`),
+  so the server reads `tw_world.spell_template`
+  (`src/game/Spells/SpellMgr.cpp:3614-3624`).
+- **`SkillLineAbility` comes from SQL** (`sql/base/tw_world_skill_line_ability.sql`).
+- A DBC with a wrong field count is rejected ("Wrong client version DBC
+  file?", `DBCStores.cpp:175`). The Turtle 1.18.1 DBCs the server loads
+  therefore have the 1.12 layout. `Spellfmt` has 173 fields
+  (`src/game/Database/DBCfmt.h:64`).
+- realmd accepts **every build ≥ 7272** (1.18.1) (`src/realmd/RealmList.cpp:37-47`).
+  A newer client would log in with silently mismatched data.
 
 | DBC | What the client uses it for | Server loads it? | Must match? | Stage |
 |---|---|---|---|---|
-| `Talent.dbc` | Talent UI: slots, rows/columns, rank spell IDs, prerequisites | **yes** (`DBCStores.cpp:326`; builds `sTalentSpellPosMap` and the inspect bit sizes, `:329-345`) | **exactly**: `CMSG_LEARN_TALENT` sends talent ID + rank, and the server resolves them in its own copy | 2 |
-| `TalentTab.dbc` | Tab names, icons, background, class mask | **yes** (`:340`, fields class mask and tab page) | exactly | 2 (probably unchanged: no 4th tree, #357) |
-| `Spell.dbc` | Names, **tooltip text and the numbers in it** (`$s1`, `$d`, `$o1` are computed from the client's own DBC fields), icon, **client-side prediction**: cast bar time, range check, cast-while-moving | **no** (SQL `spell_template`) | the **numbers must mirror `spell_template`**, or tooltips lie and the client may refuse or mis-time casts | 2 |
-| `SpellIcon.dbc` | Icon path per icon ID | yes (`:324`) | exactly; **reuse existing icon IDs** first | 2 (ideally unchanged) |
-| `SpellItemEnchantment.dbc` | Weapon imbue names/values on the item tooltip | yes (`:319`) | exactly, only if an imbue text changes | 2 (optional) |
-| `SpellCastTimes`, `SpellDuration`, `SpellRange` | Index tables used by `Spell.dbc` / `spell_template` | yes (`:315-321`) | exactly; **reuse existing indices** | 2 (ideally unchanged) |
-| `CharBaseInfo.dbc` | **Which classes a race may pick on the creation screen** | **no** (not in the server's load list) | client-only | 3 |
-| `CharStartOutfit.dbc` | Outfit shown in the creation preview | no (server uses `playercreateinfo_item`) | client-only, cosmetic | 3 (optional) |
-| `ChrRaces.dbc`, `ChrClasses.dbc` | Race/class definitions | yes (`:217-218`) | exactly; **no change needed**, both races and both classes exist | – |
-| `SkillRaceClassInfo.dbc` | Which race/class gets which skill line | yes (`:280`) | exactly; the race masks of shaman and paladin skill lines may need dwarf/undead (OB-20 to verify) | 3 |
-| `SkillLineAbility.dbc` | Spellbook/trainer race and class masks | no (server: SQL table) | **content** must agree with `skill_line_ability` | 3 (verify) |
-| `SkillLine.dbc` | Skill names | yes (`:279`) | unchanged | – |
+| `Talent.dbc` | Talent UI: slots, rows/columns, rank spell IDs, prerequisites | **yes** (`DBCStores.cpp:326-345`, incl. `sTalentSpellPosMap` and the inspect bit sizes) | **exactly**: `CMSG_LEARN_TALENT` sends talent ID + rank, resolved in the server's copy | 2 |
+| `TalentTab.dbc` | Tab names, icons, class mask | **yes** (`:340`) | exactly | 2 (probably unchanged: no 4th tree, #357) |
+| `Spell.dbc` | Names, **tooltip text and its numbers** (`$s1`, `$d`, `$o1` are computed from the client's DBC), icon, **client-side prediction** (cast bar, range, cast-while-moving) | **no** (SQL) | the **numbers must mirror `spell_template`**, or tooltips lie and the client may refuse or mis-time casts | 2 |
+| `SpellIcon.dbc` | Icon path per icon ID | yes (`:324`) | exactly; **reuse existing icon IDs** | 2 (ideally unchanged) |
+| `SpellItemEnchantment.dbc` | Imbue names/values on items | yes (`:319`) | exactly, only if an imbue text changes | 2 (optional) |
+| `SpellCastTimes`, `SpellDuration`, `SpellRange` | Index tables | yes (`:315-321`) | exactly; **reuse existing indices** | 2 (ideally unchanged) |
+| `CharBaseInfo.dbc` | **Which classes a race may pick on the creation screen** | **no** | client-only | 3 |
+| `CharStartOutfit.dbc` | Outfit in the creation preview | no (server: `playercreateinfo_item`) | client-only, cosmetic | 3 (optional) |
+| `ChrRaces.dbc`, `ChrClasses.dbc` | Race/class definitions | yes (`:217-218`) | exactly; **no change needed** | – |
+| `SkillRaceClassInfo.dbc` | Which race/class gets which skill line | yes (`:280`) | exactly; shaman/paladin race masks may need dwarf/undead (OB-20) | 3 |
+| `SkillLineAbility.dbc` | Spellbook/trainer race and class masks | no (server: SQL) | **content** must agree with `skill_line_ability` | 3 (verify) |
 
 **Where character creation checks race/class:**
 
-- **Client:** the glue screen offers per race only the classes listed in
+- **Client:** the glue screen offers per race only the classes in
   `CharBaseInfo.dbc` [community knowledge for 1.12; stage 3 verifies it for
-  Turtle]. Turtle added races (high elf, goblin), so its `GlueXML` may hold its
-  own race/class tables [speculation]. If it does, stage 3 has to override a
-  Turtle glue file, and that override must be rebased on every Turtle update.
+  Turtle, whose `GlueXML` may carry its own tables for high elf and goblin
+  [speculation]].
 - **Server [code]:** `WorldSession::HandleCharCreateOpcode`
-  (`src/game/Handlers/CharacterHandler.cpp:203`) checks that race and class
-  exist in `ChrRaces`/`ChrClasses` (`:251-261`) and that the race is not flagged
-  `NOT_PLAYABLE` (`:263-271`). Then `Player::Create` fails with
-  `CHAR_CREATE_ERROR` when there is **no `playercreateinfo` row** for the pair
-  (`Objects/Player.cpp:917-921`, handler `:365-371`).
+  (`src/game/Handlers/CharacterHandler.cpp:203`) checks, in order:
+  1. race and class exist in `ChrRaces`/`ChrClasses` (`:251-261`);
+  2. the race is not `NOT_PLAYABLE` (`:263-271`);
+  3. `Player::Create` fails with `CHAR_CREATE_ERROR` when there is **no
+     `playercreateinfo` row** for the pair (`Objects/Player.cpp:917-921`,
+     handler `:365-371`).
 - **Consequence:** the server gate is `playercreateinfo` (#379, OB-20). The
-  client patch only **unhides** the combination. A friend without the patch
-  simply does not see it; nothing breaks. Bots are created server-side and need
-  no patch.
+  client patch only unhides the combination. Without the patch nothing breaks.
+  Bots need no patch.
 
-### 2.4 Mismatch effects, ranked
+### 2.4 Mismatch effects
 
 | Mismatch | Effect | Severity |
 |---|---|---|
-| `Talent.dbc` client ≠ server | wrong talent learned for a clicked slot, inspect garbled, points "lost" | **high**: talent releases must be coupled |
-| `Spell.dbc` numbers ≠ `spell_template` | wrong tooltip; wrong cast bar; client may block moving casts for a spell the server made instant | medium |
-| Client auto-updated to a newer Turtle build | our `patch-X` shadows Turtle's newer DBCs (missing new rows); maps/DBCs differ from the server's extraction | **high**, and realmd will not stop it (see above) |
-| Patch missing entirely | old tooltips, no new talent slots, no new creation options | low (safe fallback) |
+| `Talent.dbc` client ≠ server | wrong talent learned for a clicked slot, inspect garbled | **high**: talent releases must be coupled |
+| `Spell.dbc` numbers ≠ `spell_template` | wrong tooltip and cast bar; client may block moving casts of a spell the server made instant | medium |
+| Client base differs from the server's extraction (other build, other Turtle MPQs) | `patch-X` shadows newer DBCs, maps/DBCs differ | high, not caught by realmd; now unlikely, see 4.1 |
+| Patch missing | old tooltips, no new slots/options | low (safe fallback) |
 
-The last row is why the design **fails closed**: without our patch the client is
-simply the plain Turtle 1.18.1 client.
+Without our patch, the client is simply the plain Turtle 1.18.1 client. This is
+the fail-closed state.
 
 ## 3. Tools and build process
 
-### 3.1 MPQ tools
+### 3.1 DBC editing: WoW-Spell-Editor (owner direction)
 
-| Tool | Licence / form | Use here |
-|---|---|---|
-| **StormLib** (Ladislav Zezula) | open source (MIT), C library | the reference MPQ implementation under everything below |
-| **mpqcli** | open source, StormLib-based **CLI** (create, add, list, extract, verify) | **build step** in the container; flags for a v1 (vanilla) archive to be pinned in stage 1 |
-| **Ladik's MPQ Editor** | freeware GUI, Windows | inspection and manual checks only; not part of the build |
+**Facts [spell-editor]:**
 
-Archive requirements for the 1.12 client: **MPQ format v1**, zlib compression,
-with `(listfile)`. We avoid newer compression types [speculation: the 1.12
-reader may not handle them; v1 + zlib is the safe subset].
+- It supports **1.12.1**, 2.4.3 and 3.3.5. Its import/export works **DBC ↔ SQL**
+  (MySQL/MariaDB or SQLite), driven by text "binding" files per DBC and version.
+- **1.12 bindings shipped:** `Spell`, `SpellIcon`, `SkillLine`,
+  `SkillRaceClassInfo`, `SpellCastTimes`, `SpellDuration`, `SpellRange`,
+  `SpellCategory`, `SpellRadius`, visual tables and a few others
+  (`Documentation/Bindings_112_vanilla/`).
+- **Not shipped for 1.12:** `Talent`, `TalentTab`, `CharBaseInfo`,
+  `CharStartOutfit`, `ChrRaces`, `ChrClasses`, `SpellItemEnchantment`. We would
+  write these bindings ourselves, as small text files that are our own work.
+  The field layouts come from WoWDBDefs and are cross-checked against the
+  core's format strings (`DBCfmt.h:75-76` for `Talent`/`TalentTab`).
+- **Platform:** .NET Framework **4.8**, WPF. That means **Windows only**; there
+  is no container build. `HeadlessExport` (a console program in the same repo)
+  exports **all bound tables from MySQL to DBC** without the GUI
+  (`HeadlessExport/Program.cs`). Import is a GUI step.
+- **Licence:** the repository has **no licence file** at `e69ae90`. We use the
+  published binaries locally. We **do not vendor or fork its code** into our
+  repos. Our binding files are ours.
 
-### 3.2 DBC tools
+**Consequence for the pipeline:**
 
-- **WoWDBDefs** (open source) provides field definitions per build. Our field
-  names come from there, cross-checked against the core's format strings
-  (`DBCfmt.h`).
-- **WDBX Editor** (open source GUI) is for looking at files, not for the build.
-- **Our own small Python module** (≈200–300 lines, stage 1) does the pipeline
-  work. It reads and writes `WDBC` (header, fixed-size records, string block),
-  applies row patches, and diffs two DBCs to CSV. It **fails closed** when the
-  record size or field count differs from the schema. That matters for
-  `Spell.dbc`, whose Turtle layout the server never validates (it reads SQL).
-  - Acceptance: read + write of an unchanged file is **byte-identical**.
-  - Strings: 1.12 stores 8 locale columns plus a flag per text field. We write
-    `enUS` (index 0).
+- Base DBCs are imported **once per client base** into a **dedicated database**
+  (for example `twow_clientdbc`).
+  - It must never be one of the upstream schemas (ADR-0024 invariant 2).
+  - It lives in the compose MariaDB or in a throwaway MariaDB container whose
+    port is published to the Windows host.
+- **Our changes are ordered, idempotent SQL scripts** in Git: `UPDATE`/`INSERT …
+  ON DUPLICATE KEY` against `twow_clientdbc`, containing only values we authored.
+  - Tooltip numbers are **copied from `tw_world.spell_template` by a join**,
+    which only reads the upstream schema. The server stays the single source of
+    truth.
+- **Host rule:** the Spell Editor runs on the owner's Windows host. `AGENTS.md`
+  forbids host installs and says "if a step genuinely requires something on the
+  host, stop and ask". Since the tool is Windows-only, this needs the owner's
+  explicit approval: a portable copy in a task directory, no installer, no PATH
+  change (decision 9.7).
+
+### 3.2 Independent check and MPQ packing
+
+- **`dbcdiff` (ours, ≈150 lines of Python, in a container)** parses base and
+  exported DBCs and writes a **field-level diff** (`review.csv`).
+  - The build **fails** when anything differs that no change script declared.
+  - This guards against a wrong binding layout, which the export alone would
+    never notice. That matters especially for our self-written `Talent`
+    binding, and for `Spell.dbc`, whose Turtle layout the server never validates.
+  - Round-trip acceptance: import + export of an **unchanged** DBC is
+    **field-identical** to the original. Byte identity may fail only on
+    string-block ordering, which `dbcdiff` reports separately.
+- **MPQ:** **mpqcli** (open source, StormLib-based CLI) packs `patch-X.mpq` in a
+  container.
+  - Format **v1** (vanilla), zlib compression, with `(listfile)`.
+  - Ladik's MPQ Editor is for manual inspection only.
+  - The exact mpqcli flags are pinned in stage 1.
 
 ### 3.3 What is in Git and what is not
 
-In Git (`twow-repo`, stage 1: `ops/client-patch/`):
+The repos are **public** (section 6). Git holds **only our own work, templates
+with placeholders, and hashes**:
 
 ```text
-ops/client-patch/
-  Dockerfile              StormLib + mpqcli + Python, pinned versions
-  dbc.py                  WDBC read/write/diff (tested with self-made fixtures)
-  build.py                sources -> DBC -> MPQ -> manifest
-  schema/                 field names per DBC (from WoWDBDefs / DBCfmt.h)
-  changes/                OUR changes only, as row patches:
-    talent.csv            id, field, value, issue, note
-    spell-tooltips.csv    spell id, field, value | "from:spell_template"
-    charbaseinfo.csv      race, class, issue
-  addon/TWPatch/          the version-check addon (section 5.2)
-  updater/                twpatch.ps1 + twpatch.cmd (section 5.1)
-  releases.md             ledger: version, date, sha256, base fingerprint
+ops/client-patch/                      (twow-repo, stage 1)
+  README.md                            how to build and publish
+  bindings/112/Talent.txt …            our Spell-Editor bindings for missing 1.12 tables
+  changes/0001_<desc>.sql …            ordered, idempotent change scripts (own values only)
+  tools/dbcdiff.py, Dockerfile         diff/verify + mpqcli, pinned versions
+  catalog-gen.py                       writes assets/mods/addons catalogues from a release record
+  templates/nostalgia_launcher.json    placeholders only (<patch-host>, <realm-ip>)
+  releases.md                          ledger: version, date, sha1/sha256, size, base fingerprint
 ```
 
-**Not in Git, ever:** extracted DBCs, the built MPQ, any client file. The
-`changes/*.csv` files contain only values we authored (numbers, our tooltip
-text), never whole extracted tables.
+**Never in Git:**
+
+- extracted DBCs, the SQL dump of the imported base, the built MPQ;
+- the real launcher config and catalogues, which contain the private host name
+  (they live on the patch host);
+- any client file.
 
 ### 3.4 Build pipeline
 
-The build runs in a **container on the owner's machine**. Rationale: the
-project's tooling platform is Linux + Docker, and `AGENTS.md` forbids host
-installs. CI cannot build the patch, because it has no client data; CI only
-tests the tools against synthetic fixtures.
+The steps run on the owner's machine: Windows for the Spell Editor, containers
+for everything else.
 
 ```text
- (1) BASE      extract DBFilesClient\*.dbc from the pinned client's MPQs in load
-               order (mpqcli), highest-priority copy wins  ->  base/ (+ sha256 list)
- (2) CONSIST.  for every DBC the server loads: base/X.dbc == server data/dbc/X.dbc ?
-               mismatch -> STOP (the server and client were extracted differently)
- (3) SPELLS    for spell IDs in changes/spell-tooltips.csv marked from:spell_template,
-               read the rows from tw_world (read-only query in the compose DB)
-               and map them to Spell.dbc fields; also emit a REPORT of every
-               tooltip-relevant field where spell_template != base Spell.dbc
- (4) PATCH     apply changes/*.csv to copies of base DBCs -> out/DBFilesClient/
- (5) DIFF      dbc.py diff base vs out -> review.csv (goes into the PR description)
- (6) PACK      mpqcli: out/ -> patch-X.mpq (v1, zlib, listfile)
- (7) SERVER    copy the changed server-loaded DBCs (Talent, TalentTab, SkillRaceClassInfo, ...)
-               -> out-server/dbc/  (deployed only with owner approval, coupled release)
- (8) MANIFEST  version, sha256 + size per file, base fingerprint, git commit,
-               tool versions -> manifest.json + SHA256SUMS
+ (1) BASE     extract DBFilesClient\*.dbc from the client's MPQs in load order
+              (mpqcli, highest-priority copy wins) -> base/ + sha256 list
+ (2) CONSIST. for every DBC the server loads: base/X.dbc == server data/dbc/X.dbc ?
+              mismatch -> STOP (client and server were extracted differently)
+ (3) IMPORT   once per base: Spell Editor imports base/ into twow_clientdbc
+              (GUI; our 1.12 bindings for Talent/TalentTab/CharBaseInfo …)
+ (4) CHANGE   run changes/*.sql in order against a fresh copy of twow_clientdbc;
+              tooltip numbers joined from tw_world.spell_template (read-only)
+ (5) EXPORT   HeadlessExport (or GUI) -> out/DBFilesClient/*.dbc
+ (6) VERIFY   dbcdiff base/ vs out/ -> review.csv; undeclared difference -> STOP
+ (7) PACK     mpqcli: out/ (+ sentinel texture) -> patch-X-v<N>.mpq (v1, zlib, listfile)
+ (8) SERVER   changed server-loaded DBCs -> out-server/dbc/ (deploy only with owner
+              approval, coupled release, section 5.5)
+ (9) PUBLISH  copy the MPQ to the patch host, catalog-gen.py rewrites assets.json
+              (version N, url, sha1, size), add a line to releases.md
 ```
 
-- **Versioning:** `patch_version` is an integer that only goes up (1, 2, 3 …).
-  Each release also has a label (`2026-10-xx talents-shaman`) and the git commit
-  of `changes/`.
-- **Reproducibility:** the same inputs must give the same inner files
-  (sha256 per DBC). Whether the MPQ **container** is byte-identical depends on
-  StormLib writing timestamps into `(attributes)`. Stage 1 either disables
-  attributes and gets identical archives, or records that identity is measured
-  per inner file.
-- **Base fingerprint:** sha256 of every extracted base DBC, plus name, size and
-  sha256 of each Turtle `patch*.mpq`. If Turtle's files change, the fingerprint
-  changes and a rebuild is required (sections 4.1 and 5.2).
-- **The Spell report in step 3** is the tool that answers "which server values
-  have we already changed?" (Earthen Bulwark, Ghost Wolf, imbues …) without
-  anyone listing them by hand. It will also show Turtle's own differences, so
-  `changes/spell-tooltips.csv` stays an explicit allowlist.
-- **New IDs:** new talent spells need IDs that are free in **both**
-  `spell_template` and the client `Spell.dbc`. Stage 2 reads both maxima and
-  reserves a range. No number is fixed here, because none has been measured.
+- **Versioning:** `N` is an integer that only goes up. Every release has a
+  label, the git commit of `changes/`, and the base fingerprint.
+- **Base fingerprint:** sha256 of every base DBC, plus name, size and sha256 of
+  each Turtle `patch*.mpq`.
+- **Reproducibility:** the same base plus the same scripts must give the same
+  inner files (sha256 per DBC). Whether the MPQ container is byte-identical
+  depends on `(attributes)` timestamps; stage 1 decides and records it.
+- **Spell report:** step 4 can also list every tooltip-relevant field where
+  `spell_template` differs from the base `Spell.dbc`. That is the list of
+  "server values already changed" (Earthen Bulwark, Ghost Wolf, imbues …). The
+  change scripts stay an explicit allowlist.
+- **New IDs** (new talent spells) must be free in both `spell_template` and the
+  base `Spell.dbc`. Stage 2 measures both maxima and reserves a range.
 
 ## 4. Distribution options
 
-### 4.1 (a) The Turtle launcher (`turtle-wow.exe`)
+### 4.1 (a) Turtle launcher: fallback only
 
-**What is known:**
+**Facts:**
 
-- The launcher updates the client from **Turtle's** servers. No documented
-  setting points it at another patch source [community: none of the launcher
-  documentation found mentions one]. It is closed-source.
-- It has a **Mods tab**:
-  - it lists recommended mods and "any custom patches that you have
-    installed";
-  - a custom `.mpq` goes into `Data\`, is **checked in the tab and applied**
-    with the green **Apply** button;
-  - unchecking + Apply removes it again [community];
-  - users have reported the tab showing "No custom patches to load" with the
-    files present; one fix was unchecking the launcher's DXVK option [community].
-- **Deletion:** a forum excerpt says the installer "automatically checks your
-  Data folder for any .MPQs that aren't supposed to be there and wipes them
-  out", and the thread is titled "How do I add a custom MPQ / patch without Twow
-  overwriting or deleting it?" [community, search excerpt only]. The same thread
-  says the fix is a correct name plus enabling it once in the Mods tab.
-- It offers a **DXVK** toggle among its "custom mods" [community].
+- **Turtle WoW was shut down on 2026-05-15** after Blizzard won an injunction
+  [owner, research comment; PC Gamer, PCGamesN]. The launcher's update servers
+  are therefore presumably gone. How it behaves offline is unknown
+  [speculation]; test T1.
+- It never had a documented custom patch source [community].
+- It has a **Mods tab**: custom `.mpq` files in `Data\` are checked there and
+  applied with **Apply**. That is the documented way to keep it from deleting
+  them. An excerpt says the installer "automatically checks your Data folder for
+  any .MPQs that aren't supposed to be there and wipes them out" [community].
+- It offers a **DXVK** toggle [community].
 
-**What follows:**
+**Assessment:**
 
-- **As a distribution channel: no.** It cannot fetch our patch.
-- **As a neighbour it is a risk,** for three reasons:
-  1. It may delete or disable an MPQ it does not know. Enabling it once in the
-     Mods tab seems to be the supported way to protect it [community].
-  2. It **auto-updates the client to the public Turtle version**. Our server
-     pins 1.18.1 data, and realmd accepts any newer build (section 2.3). A
-     Turtle update on one friend's PC would desync that friend silently, and
-     our `patch-X` would shadow Turtle's newer DBCs.
-  3. It may rewrite `realmlist.wtf` to Turtle's realm on start [speculation].
-- **Unknown, and critical:** does the Turtle client load **only** the MPQs that
-  the launcher enabled? That would mean "Apply" writes a list that `WoW.exe` /
-  `twloader.dll` reads. Or does it load every `patch-?` like the 1.12 client, so
-  that the Mods tab is just the launcher's own bookkeeping? [speculation, both
-  possible]. **Stage 1 tests T1–T5 answer this** before anything else is built.
+- **Not a channel.**
+- The earlier main risk, auto-updating the client to a newer public Turtle
+  build, **has largely disappeared with the shutdown**. The client base is now
+  frozen de facto at 1.18.1. The base check (section 5.4) stays as a cheap
+  guard against a friend copying in a different client.
+- It remains relevant only **if T4 fails**, that is, if Turtle's `WoW.exe` does
+  not work without it. Then our patch must be enabled once in its Mods tab (T2,
+  T3).
 
-**Pros:** nothing to build; friends already know it.
-**Cons:** no own source; opaque; can delete our file; drifts the client
-version.
-**Effort:** 0 as a channel, but the stage-1 tests are mandatory either way.
-**Risk:** high (silent desync).
+**`dlls.txt` / `twloader.dll`:**
 
-**Second channel: `dlls.txt` / `twloader.dll`.** Turtle's client has an
-integrated **DLL sideloader**: `twloader.dll` loads the DLLs listed in
-`dlls.txt` [community: Turtle team, "our client includes an integrated
-sideloader, allowing you to add custom DLLs"]. It is a real channel, and the
-most dangerous one:
+- Turtle's client has an integrated DLL sideloader: `twloader.dll` loads what
+  `dlls.txt` lists [community: Turtle team].
+- A DLL is **arbitrary native code** on the friends' PCs.
+- **We never ship our own DLL.** Everything we need is data (MPQ) or Lua
+  (addon).
+- Nostalgia manages `dlls.txt` for catalogue mods (section 5.2). Community DLLs
+  (SuperWoW, nampower, UnitXP, VanillaFixes) are offered only as opt-in mods,
+  pinned by URL + sha1.
 
-- A DLL runs **arbitrary native code** inside `WoW.exe` with the friend's user
-  rights. A DLL we build ourselves is unsigned and would trip antivirus. If the
-  owner's host or the Radmin network were compromised, it would be the perfect
-  delivery path for malware to all friends.
-- Everything we need (DBCs, textures, glue files, addons) is **data**, and data
-  goes through the MPQ. We need no code injection.
-- **Recommendation: never ship our own DLL.** Well-known community DLLs
-  (SuperWoW, nampower, UnitXP, VanillaFixes) stay the friend's choice, or go as
-  an optional package with a **pinned sha256 of the official release** and a
-  link to the source. The updater edits `dlls.txt` only for lines it added
-  itself, and never touches the owner's existing `WoWTranslate.dll` line.
+### 4.2 (b) Nostalgia Launcher (owner's preferred route)
 
-### 4.2 (b) Our own mini updater
+What it is, from its code at `a3b04f2` [nostalgia]:
 
-A **PowerShell script** (`twpatch.ps1` + a double-click `twpatch.cmd` wrapper),
-detailed in section 5.1.
+- **Licence and form:** Apache-2.0, PySide6. A Windows **onefile exe** from its
+  GitHub releases (PyInstaller). No game files, no server list, no telemetry.
+- **One config file** `nostalgia_launcher.json`. The friend imports it once, from
+  a file the owner sends or from an HTTPS link, and sees a summary of every host
+  it will contact before accepting (`docs/developer-guide.md`, "Security Model").
+  - The config points to **three catalogues**: `assets`, `mods` and `addons`.
+  - It can also embed entries, and it has an optional **news feed**.
+- **Assets = MPQ patches** (`services/assets.py`):
+  - an entry is `{id, url, dest, version, sha1, size, essential}`;
+  - the download is streamed beside the target, SHA-1 checked and
+    size-enforced, then moved into place (`services/sources/direct_file.py:102-166`,
+    `sources/deploy.py:118-128`);
+  - an asset is "stale" by precedence: **`version` pin**, then `sha1`, then
+    `size`, then an HTTP probe (`assets.py:238-280`);
+  - `essential: true` assets are auto-installed when missing
+    (`controllers/assets.py:225-250`).
+- **Mods** (`services/mods.py`) come from a GitHub/Codeberg release,
+  `direct_file`/`direct_tar` (a pinned URL with optional sha1/size) or a Git
+  archive.
+  - `register_dll` writes the DLL into **`dlls.txt`** (`mods.py:269-378`).
+  - `type: external-launcher` can replace `WoW.exe` as the start binary
+    (`mods.py:419-444`).
+  - DXVK has an allowlisted `write_dxvk_conf` post-install hook
+    (`sources/hooks.py`).
+- **Addons** (`services/addons.py`) are installed from a **Git host**:
+  `github.com`, `gitlab.com`, `gitea.com`, `codeberg.org`, plus hosts named in
+  `addon_git_hosts`.
+  - The pin is `ref`, a tag or commit (`sources/git_archive.py`).
+  - Inside the repo archive, an addon is found only as **`<Folder>/<Folder>.toc`**
+    (folder name == `.toc` stem). A single-addon repo may instead have its
+    `.toc` at the root (`addons.py:375-460`).
+- **Realm:** the config's `realm` is written into `realmlist.wtf` and
+  `Config.wtf` (`realmList`/`patchList`).
+  - A fresh `Config.wtf` is seeded **only when none exists**.
+  - The realm is re-synced at Play **with the player's consent**
+    (`services/tweaks.py:131-446`, `services/update/workflow.py:104-107`,
+    `:650-655`).
+  - Seeded defaults include `farclip 777` (`tweaks.py:174`).
+- **Play** starts the first active external-launcher mod, else **`WoW.exe`**
+  (`core/filesystem.py:127-144`, `controllers/update.py:414-470`). It clears the
+  WDB cache after client installs.
+- **Client base:**
+  - incremental client updates are **torrent-only**;
+  - a single HTTPS zip (`download.http.fallback`) is used only when no `WoW.exe`
+    exists (`docs/developer-guide.md`, "Client Update Pipeline").
 
-- It fetches `manifest.json` from a private source, compares sha256 values,
-  downloads only what changed, verifies, backs up, installs, and can roll back.
-- **Source options:**
+**Constraints that shape our setup:**
 
-| Source | Pros | Cons | Verdict |
-|---|---|---|---|
-| **HTTP on the owner's host, bound to the Radmin IP only** (a tiny static file container next to the server stack) | no credentials (Radmin membership is the access control), trivial for PowerShell, same host as the server | host must be online (it is whenever the server is) | **recommended** |
-| Windows SMB share over Radmin | no extra service | guest shares are awkward on Windows 10/11, or friends need a Windows account/password (credentials) | fallback |
-| Private GitHub release | reliable CDN | friends need a token (credentials in the updater); puts Blizzard-derived DBCs on GitHub | **rejected** (section 6) |
+1. **HTTPS only, with TLS verified against the system trust store plus
+   certifi** (`core/security_http.py:26-45`). Plain `http://` is rejected
+   everywhere, including redirects. Our Radmin-only host therefore needs a
+   certificate the friends' PCs trust (section 5.3).
+2. **Catalogues refresh at most weekly** by themselves (`CATALOG_TTL = 7 days`,
+   `services/catalog.py:60`). A new patch becomes visible at once only after
+   **"reload catalogue"** (`controllers/assets.py:138-170`). The in-game version
+   warning (section 5.4) tells the friend to do exactly that.
+3. **No local backup/rollback.** Rollback means publishing the previous file
+   again under the catalogue (section 5.5).
+4. **Addons need a Git host.** Private repos are not supported: there is no
+   token field, and the archive is fetched anonymously. BotMenu's folder
+   `BotMenu-1.12` holds `BotMenu.toc`, so it **cannot** be installed straight
+   from `twow-core`. Discovery would fail and fall back to unpacking the whole
+   repo into one addon folder (`addons.py:639-644`). Hence a dedicated addons
+   repo (section 5.2).
+5. **The MPQ scanner knows only stock 1.12.1 names** (`patch`, `patch-2`, …;
+   `services/mpq.py:48-66`). In the Assets panel's optional scan, Turtle's
+   `patch-3` … `patch-9` show as **"Foreign / untracked"** with a Remove button.
+   Removal needs a click plus confirmation and never happens automatically
+   (`mpq.py:264-280`, `controllers/assets.py:83-92`). Friend instructions must
+   say "never remove these" (section 5.6).
+6. **`dlls.txt` entries no catalogue mod claims** (Turtle's `WoWTranslate.dll`)
+   show as "Detected (not in catalog)" with a Remove button (`mods.py:292-334`).
+   The same instruction applies.
+7. **It contacts GitHub** once a day for its own updates
+   (`services/self_update.py`), and the GitHub API for addon commit SHAs. It
+   contacts nothing else beyond the hosts in our config.
 
-- **Pros:** small updates (MB, not GB); sha256-verified; rollback; the script is
-  readable, so friends can see what it does; fully under our control.
-- **Cons:** we have to build and maintain it (≈1–2 days for stage 1).
-  PowerShell execution policy and Mark-of-the-Web need a wrapper (section 6).
-- **Risk:** low to medium. The main risk is launcher interaction, which stage 1
-  settles.
+**Pros:**
+
+- A finished, tested, open-source tool; no updater of our own to maintain.
+- sha1-pinned MPQ install; version badges; realm handling.
+- Mods, addons, news and profiles, which covers LAN and Radmin.
+
+**Cons:**
+
+- The HTTPS requirement, and with it certificate work.
+- The weekly catalogue cache.
+- No local rollback.
+- Addons need a public Git repo.
+- A PyInstaller exe can trigger antivirus false positives.
+- Turtle patches look "foreign" in the scanner.
+
+**Effort:** about 1–2 days for stage 1: host, certificate, config, catalogues,
+tests.
+
+**Risk:** medium until T4 and the HTTPS setup are proven, low afterwards.
 
 ### 4.3 (c) Full client package from the owner
 
-The owner zips his client (`7z`, including `patch-X.mpq`) and hands it over.
+- **What:** a one-off zip of a clean client (no `WTF\`, `Cache\`, `Logs\`,
+  `Screenshots\`).
+- **Pros:** guarantees an identical base.
+- **Cons:** many GB (to be measured) over Radmin.
+- **Fit:** it becomes Nostalgia's `download.http.fallback` for a friend who has
+  **no** client yet, or it is handed over directly. It is **not** a way to ship
+  changes.
 
-- **Pros:** simplest. It guarantees the identical base: same Turtle build, same
-  MPQs, same `WoW.exe`. That is exactly what the base fingerprint needs.
-- **Cons:** the size. The listing alone shows `patch.MPQ` ≈ 1.9 GB and
-  `patch-3` … `patch-9` at up to 2 GB each [owner]. The package is many GB
-  (to be measured), and Radmin relay throughput makes that hours. Doing it for
-  every tooltip change is not realistic. It also carries the owner's `WTF\`
-  (account name, settings) unless that is excluded explicitly.
-- **Effort:** low. **Risk:** low (mind the `WTF\` exclusion).
+### 4.4 (d) Own script updater: last resort
 
-### 4.4 Comparison
+Revision 1 designed a PowerShell updater: a manifest, sha256, backup/rollback,
+plain HTTP over Radmin. It stays a documented fallback **only if** Nostalgia
+fails stage 1. Examples of failure: the HTTPS setup is not workable, or the
+friends' antivirus blocks the exe. It would need no certificate, because it can
+use plain HTTP inside the tunnel, but we would have to write and maintain it.
 
-| | (a) Turtle launcher | (b) Script updater | (c) Full package |
-|---|---|---|---|
-| Own patch source | no | yes | yes (manual) |
-| Transfer per change | – | MB | many GB |
-| Identical base guaranteed | no (auto-update) | only with a base check | yes |
-| Rollback | no | yes | keep the old zip |
-| Build effort | 0 | ≈1–2 days (stage 1) | ≈1 hour |
-| Main risk | silent desync, deletion | launcher interaction | size, `WTF\` leak |
+### 4.5 Comparison
 
-## 5. Recommendation and version check
+| | (a) Turtle launcher | (b) Nostalgia | (c) Full package | (d) Own script |
+|---|---|---|---|---|
+| Own patch source | no | **yes** (catalogues) | manual | yes |
+| Addons/mods too | no | **yes** | manual | would need building |
+| Transfer per change | – | MB | many GB | MB |
+| Integrity | – | sha1 + size per asset, TLS | – | sha256 |
+| Rollback | no | republish old version | old zip | local backup |
+| Build effort | 0 | config + host + certificate | ≈1 h | ≈1–2 days of code |
+| Main risk | offline behaviour, deletion | T4, HTTPS setup | size | maintenance |
 
-**Recommendation for 3–4 players: (c) once + (b) for every change.**
+## 5. Recommended setup: Nostalgia Launcher
 
-1. **Onboarding (c), once per friend.** The owner packs a clean client (no
-   `WTF\`, no `Cache\`, no `Logs\`, no `Screenshots\`) as the frozen **base
-   1.18.1**. Friends who already have a Turtle client only need the base check
-   below; if it passes, they skip the download.
-2. **Every change (b).** Friends double-click `twpatch.cmd`. It updates our
-   files and then starts the game.
-3. **(a) stays out of the loop.** Whether friends may still open the Turtle
-   launcher (and whether we must protect our patch via its Mods tab) is decided
-   by the stage-1 tests. The expected outcome is that **our script starts
-   `WoW.exe` directly**, to freeze the client version, provided T4 shows that
-   `WoW.exe` + `twloader.dll` work without the launcher. That is decision 9.3.
+**Recommendation:** **(b) Nostalgia** for every change, **(c) once** for friends
+without a client, **(a) only if T4 fails**, and **(d) only if (b) fails
+stage 1**.
 
-### 5.1 Updater behaviour (`twpatch.ps1`, PowerShell 5.1, preinstalled on Windows 10/11)
+### 5.1 Components
 
-1. **Locate** the client root: the script lives there, and `WoW.exe` + `Data\`
-   must exist. Abort if `WoW.exe` is running.
-2. **Fetch** `http://<radmin-ip>:<port>/client/manifest.json` with a short
-   timeout. If the host is unreachable, say so and offer to start the game
-   anyway (the old patch keeps working).
-3. **Base check.** Compare name, size and sha256 of the Turtle `Data\patch*.mpq`
-   with `manifest.base`. A full hash of GB files takes time, so the result is
-   cached in `TWPatch\state.json` by size + modification time. On mismatch:
-   **refuse to install** and explain ("your Turtle client differs from the
-   server's base: it was probably auto-updated; get the base package").
-4. **Diff.** For each required file, and each optional file the player opted
-   into, compare the local sha256 with the manifest.
-5. **Download** changed files to `TWPatch\staging\`, then verify size and
-   sha256. Any mismatch: delete staging and abort.
-6. **Backup.** Move replaced files to `TWPatch\backup\v<old>\` and keep the last
-   two versions.
-7. **Install.** Move files into place (`Data\patch-X.mpq`,
-   `Interface\AddOns\TWPatch\…`), then write `TWPatch\installed.json` (version +
-   our file list).
-8. **Warn.**
-   - About any `Data\patch-Y*` / `patch-Z*` (they load after ours; section 2.2).
-   - About a **foreign** `patch-X.mpq` whose hash we never shipped. It is backed
-     up, never silently overwritten.
-9. **Start** the game (`WoW.exe` or the launcher, per decision 9.3).
-10. **Other modes.**
-    - `-Rollback` restores the previous backup.
-    - `-Uninstall` removes exactly the files listed in `installed.json`.
-    - `-Status` prints the installed version, the manifest version and the base
-      check.
+```text
+ owner's host (Radmin)                         friend's PC
+ ┌──────────────────────────────┐              ┌───────────────────────────────┐
+ │ realmd / mangosd (existing)  │◄── game ─────│ WoW.exe (Turtle 1.18.1 base)  │
+ │                              │              │   Data\patch-X.mpq  (asset)   │
+ │ patch-host (static HTTPS,    │── HTTPS ────►│   Interface\AddOns\TWPatch …  │
+ │  bound to Radmin IP only)    │              │   dlls.txt (opt-in mods)      │
+ │   /nostalgia_launcher.json   │              │ NostalgiaLauncher.exe         │
+ │   /catalog/assets.json       │              │   imports the config once,    │
+ │   /catalog/mods.json         │              │   Play = WoW.exe              │
+ │   /catalog/addons.json       │              └───────────────────────────────┘
+ │   /news.json                 │                       ▲
+ │   /files/patch-X-v<N>.mpq    │   github.com (public) │ addon archives by tag
+ │   /client/base-1.18.1.zip    │   Cilverkrow/twow-client-addons
+ └──────────────────────────────┘
+```
 
-**Manifest sketch** (contains no secrets, and may be committed as a template):
+- **Patch host:** a small static-file container (for example Caddy) in the
+  compose stack.
+  - It is **bound to the Radmin IP**, so nothing is published to the internet.
+  - Its files live in a host directory outside Git.
+  - Deploying it needs the owner's approval.
+
+### 5.2 Config and catalogues (templates; real values only on the host)
+
+**`nostalgia_launcher.json`:** the friend imports it once; the owner sends it as
+a file.
 
 ```json
 {
-  "patch_version": 3,
-  "label": "2026-10-xx talents-shaman",
-  "git_commit": "<sha>",
-  "min_server_patch": 3,
-  "base": { "client_build": 7272,
-            "files": [ { "path": "Data/patch-9.mpq", "size": 0, "sha256": "…" } ] },
-  "files": [
-    { "path": "Data/patch-X.mpq", "size": 0, "sha256": "…", "required": true },
-    { "path": "Interface/AddOns/TWPatch/TWPatch.toc", "size": 0, "sha256": "…", "required": true },
-    { "path": "Interface/AddOns/TWPatch/TWPatch.lua", "size": 0, "sha256": "…", "required": true }
-  ],
-  "optional": [
-    { "group": "gfx-medium", "files": [ "…" ] }
-  ]
+  "server": {
+    "name": "TWOW (private)",
+    "url": "https://<patch-host>",
+    "realm": "<radmin-ip-of-realmd>",
+    "client_version": "1.12.1",
+    "news_url": "https://<patch-host>/news.json",
+    "assets_registry_url": "https://<patch-host>/catalog/assets.json",
+    "mods_registry_url": "https://<patch-host>/catalog/mods.json",
+    "addons_registry_url": "https://<patch-host>/catalog/addons.json",
+    "download": {
+      "update": false,
+      "http": { "fallback": "https://<patch-host>/client/base-1.18.1.zip" },
+      "content": { "type": "zip" }
+    }
+  }
 }
 ```
 
-### 5.2 Version check against the server
+- `client_version: "1.12.1"` makes addon discovery accept `## Interface: 11200`.
+- `download.update: false` switches off the torrent client check, because we
+  publish no torrent. Whether the zip fallback still works with `update: false`
+  for a friend without `WoW.exe` is **not verified** [speculation]; that is test
+  N3. If it does not, the base is handed over directly.
+- For the owner's LAN play, a second profile with a LAN `realm` can be used.
+  Nostalgia supports several profiles.
 
-There are three layers. Each one works without the next.
+**`catalog/assets.json`:** generated by `catalog-gen.py` in pipeline step 9.
 
-1. **Updater versus manifest (stage 1).** The manifest on the owner's host *is*
-   the server-side truth. The updater compares against it before every start.
-2. **In-game warning with no core change (stage 1).**
-   - The server's `Motd` is split at `@` and sent as **system messages** at
-     login (`CharacterHandler.cpp:765-773` [code]).
-   - The owner adds a MOTD line such as `[TWPatch] 3`. That is a config change
-     in the funserver profile, not code.
-   - The **TWPatch addon** (Lua, `## Interface: 11200`, installed by the
-     updater) holds its own version. It watches `CHAT_MSG_SYSTEM` for that line
-     and, on mismatch, shows a clear warning: "Client patch v2, server expects
-     v3: run twpatch.cmd".
-   - The same line is visible to players without the addon.
-3. **Sentinel: is the MPQ actually loaded?**
-   - The addon checks something that only exists when `patch-X.mpq` is read.
-   - In stage 1 that is a small texture we create ourselves
-     (`Interface\TWPatch\sentinel`), shown on the addon frame.
-   - From stage 2 on it is also a DBC fact, for example `GetTalentInfo` returning
-     our new talent's name.
-   - This catches the case "file present, but the client or launcher did not
-     load it" [speculation that texture loading from our MPQ works like any
-     other texture; test T6].
+```json
+[
+  {
+    "id": "twow-patch",
+    "name": "TWOW client patch",
+    "description": "Talents, tooltips, character creation (v3: shaman talents)",
+    "url": "https://<patch-host>/files/patch-X-v3.mpq",
+    "dest": "Data/patch-X.mpq",
+    "version": "3",
+    "sha1": "<40 hex>",
+    "size": 0,
+    "essential": true
+  }
+]
+```
 
-**Optional later (core change, twow-core PR):**
+- Every release gets a **new versioned file name** on the host; `dest` never
+  changes. Old files stay on the host, which is what makes rollback possible.
+- `essential: true` means the patch installs automatically on a fresh setup.
+  Updates show as "update available" once the catalogue has been reloaded.
+- Optional graphics presets (`ReShade.ini`, preset files) are further assets
+  with `essential: false` (section 7).
 
-- A login hook sends `TWP\tEXPECT\t<n>` on the addon channel, following the
-  existing `mod-dungeon-clear` pattern (`DungeonClearAddonHook.cpp:40-50` [code]),
-  behind a config key with a neutral default.
-- The server also receives every client's **addon name list** at login
-  (`src/game/Handlers/AddonHandler.cpp:51-120` [code]). A log line such as
-  `[ClientPatch] account=<id> TWPatch=present` would give the owner a view of
-  who is up to date.
-- **Not needed for stage 1.**
+**`catalog/addons.json`:** our own addons, from a public addons repo pinned by
+tag.
 
-**Strictness.** A **warning** is the right default. A hard block at login would
-lock out a friend whose updater failed, which is worse than old tooltips. The
-exception is a coupled talent release (`Talent.dbc` changed). There a mismatch
-causes real errors (section 2.4), so the owner may want a block later
-(decision 9.6).
+```json
+[
+  { "name": "TWPatch",  "git": "https://github.com/Cilverkrow/twow-client-addons",
+    "ref": "v3", "description": "Client patch version check", "recommended": true,
+    "toc": { "Title": "TWPatch", "Interface": "11200" } },
+  { "name": "BotMenu",  "git": "https://github.com/Cilverkrow/twow-client-addons",
+    "ref": "v3", "description": "Bot command menu", "recommended": true }
+]
+```
+
+- **New repo `Cilverkrow/twow-client-addons`** (decision 9.13):
+  - layout `<Name>/<Name>.toc` per addon, so Nostalgia's discovery installs each
+    addon folder separately;
+  - it contains **only our own Lua/XML**, no Blizzard art;
+  - releases are tags;
+  - BotMenu's canonical source stays in `twow-core/modules/mod-playerbots/addon/BotMenu-1.12`.
+    A small sync script copies it into `BotMenu/` at release time, and the copy
+    is checked against the source by hash.
+- **VoiceOver (#360):** the third-party addon and its 1.2 GB data pack stay a
+  **manual install**, unless stage 1 shows that its repository tree has a
+  Nostalgia-compatible 1.12 layout at a pinned tag. Our own adjustments (a
+  separate speech volume) become an addon of ours in `twow-client-addons`.
+
+**`catalog/mods.json`:** optional, opt-in only. Pinned `direct_file` entries
+with sha1 and size, **never "latest release"**.
+
+```json
+[
+  { "id": "dxvk", "type": "mod", "installation": "user_opt_in",
+    "name": "DXVK (D3D9 -> Vulkan)",
+    "source": { "kind": "direct_tar", "url": "https://github.com/doitsujin/dxvk/releases/download/<tag>/dxvk-<tag>.tar.gz",
+                "extract_map": { "dxvk-<tag>/x32/d3d9.dll": "d3d9.dll" },
+                "post_install": ["write_dxvk_conf"] },
+    "installed_files": ["d3d9.dll", "dxvk.conf"] }
+]
+```
+
+- The DXVK archive members are placeholders until stage 4 pins a release.
+  Archive mode has no sha1 check (`direct_file.py:168-176`), so for DLLs a
+  single-file `direct_file` with `sha1` is preferred where the upstream ships a
+  bare DLL.
+
+### 5.3 HTTPS for a Radmin-only host
+
+Nostalgia refuses anything but verified HTTPS (constraint 1). Two workable ways:
+
+1. **Own domain + Let's Encrypt via DNS-01 (recommended).**
+   - A domain the owner controls (about €10 a year).
+   - An `A` record such as `patch.<domain>` pointing to the host's **Radmin IP**
+     (a private address; unreachable from the internet).
+   - A certificate obtained through the DNS-01 challenge, which needs no inbound
+     port. The DNS API token stays in the host's `.env` and **never in Git**.
+   - **Pros:** publicly trusted, so friends import nothing.
+   - **Cons:** a domain and a DNS token to manage. The host name becomes public
+     through Certificate Transparency logs; the content does not.
+2. **Own CA with name constraints.**
+   - A private root CA limited (X.509 name constraints) to the one host name or
+     IP. Each friend imports it once into the Windows "Trusted Root" store.
+   - Python's `ssl.create_default_context()` on Windows reads the system store
+     (`security_http.py:26`).
+   - **Pros:** no domain.
+   - **Cons:** asks friends to trust a root certificate, a real security
+     decision even when name-constrained. Also, whether the frozen Nostalgia exe
+     honours the Windows store as expected is **not verified** [speculation];
+     that is test N2.
+
+Rejected: plain HTTP (refused by Nostalgia), and GitHub releases for the MPQ
+(it would publish Blizzard-derived files; section 6).
+
+### 5.4 Version check against the server
+
+There are three layers. Each works without the next.
+
+1. **Nostalgia's own badge.** After "reload catalogue", the asset shows
+   "server version changed" when its `version` differs from the installed one
+   (`assets.py:260-263`).
+2. **In game, no core change:**
+   - the server's `Motd` is split at `@` and sent as **system messages** at
+     login (`CharacterHandler.cpp:765-773` [code]);
+   - the owner adds a line `[TWPatch] 3` (a config change in the funserver
+     profile);
+   - the **TWPatch addon** compares that line with its own version and warns:
+     "Client patch v2, server expects v3: open Nostalgia → Assets → Reload →
+     Update".
+3. **Sentinel:** the addon shows a small texture that exists only inside
+   `patch-X.mpq` (`Interface\TWPatch\sentinel-v<N>`). This proves that the MPQ is
+   really loaded and has the expected version. Whether a missing texture can be
+   detected reliably from Lua in 1.12 is **not verified** [speculation]; test N5
+   (it is at least visible to the player). From stage 2 on, a DBC fact such as
+   `GetTalentInfo` returning our new talent name adds a second check.
+
+The **base check** (fingerprint of the Turtle MPQs) is part of the owner's build,
+and it is included in the friend onboarding checklist (section 5.6).
+
+Optional later (a twow-core PR, not stage 1):
+
+- a login hook that sends `TWP\tEXPECT\t<n>` on the addon channel, following the
+  `mod-dungeon-clear` pattern (`DungeonClearAddonHook.cpp:40-50`);
+- a `[ClientPatch]` log line built from the addon list the server already
+  receives at login (`AddonHandler.cpp:51-120`).
+
+**Strictness:** warn, never block by default (decision 9.6).
+
+### 5.5 Releases and rollback
+
+- **Client-only release** (a `Spell.dbc` tooltip or `CharBaseInfo` change):
+  1. new MPQ `patch-X-v<N>.mpq` on the host;
+  2. `assets.json` version `N`;
+  3. MOTD line `[TWPatch] N`;
+  4. a news item.
+- **Coupled release** (`Talent`, `TalentTab`, `SkillRaceClassInfo`, `SpellIcon`
+  or the index tables change): the same steps **plus** the server DBCs from step
+  8 deployed to `data/dbc` and a server restart, all under the same `N`. Owner
+  approval is required, as for any deploy.
+- **Rollback:**
+  1. `catalog-gen.py --release <N-1>` points `assets.json` back to the previous
+     file and version string;
+  2. friends reload the catalogue and press Update;
+  3. for a coupled release, the previous server DBCs go back together with it.
+
+  Nostalgia keeps no local backup, so the host keeps **at least the last three**
+  MPQ versions and the matching server DBC sets, with hashes in `releases.md`.
+
+### 5.6 Friend onboarding (one-off, stage 1)
+
+1. Download `NostalgiaLauncher-windows-x86_64.exe` from the **official GitHub
+   release** of a version the owner names, and check its sha256 against
+   `releases.md`.
+2. Only if needed (section 5.3 option 2): import the owner's CA certificate.
+3. Start Nostalgia, import `nostalgia_launcher.json` (file from the owner), check
+   the host summary, accept.
+4. Choose the game folder: the existing Turtle 1.18.1 English client, or the
+   base zip. Run the base check (a small hash list script, or compare against
+   the owner's listing).
+5. Assets → the essential `twow-patch` installs. Addons → TWPatch (and BotMenu).
+6. **Never remove** `patch-3` … `patch-9` in the Assets panel's scan, or
+   `WoWTranslate.dll` in "Detected (not in catalog)". They are Turtle's.
+7. Play → accept the realm write → log in. The MOTD line and the TWPatch addon
+   both say "up to date".
 
 ## 6. Security and legal
 
-- **No redistribution to strangers.** The client, `patch-X.mpq` and the server
-  DBCs contain Blizzard / Turtle derived data. They go **only** to the named
-  friends over Radmin, never to a public URL, a public or private GitHub
-  release, or a file hoster.
-- **Git holds only our own work:** tool code, our change CSVs, the addon, the
-  updater, manifest templates and the release ledger with hashes. This is
-  invariant 5 of ADR-0024 ("No secrets, binaries or client data in Git").
-- **No credentials** in the patch, the updater or the manifest.
-  - Access control is Radmin network membership.
-  - The updater never reads or writes account data. It does not touch `WTF\`,
-    and it touches `realmlist.wtf` only with an explicit `-SetRealmlist` flag
-    (backup first), if the owner wants that (decision 9.10).
-  - The full client package (c) excludes `WTF\`.
-- **Integrity.** sha256 per file, taken from the manifest. The manifest arrives
-  over plain HTTP inside the Radmin tunnel. A member of the Radmin network could
-  therefore swap both the manifest and the file. For 3–4 trusted friends that is
-  acceptable. If it is not, the next step is signing the manifest with a
-  key-pair tool (for example minisign), with the public key embedded in the
-  script [not proposed for stage 1].
-- **Antivirus and signatures.**
-  - A **readable PowerShell script** triggers far fewer antivirus false
-    positives than a packed `.exe` (PyInstaller and similar are often flagged).
-    Friends can also read what it does.
-  - Code-signing certificates cost money and are not worth it for four people.
-  - Windows marks downloaded zips with Mark-of-the-Web. Friends run
-    `Unblock-File` once, or extract with 7-Zip. The `.cmd` wrapper calls
-    `powershell -NoProfile -ExecutionPolicy Bypass -File twpatch.ps1`, which
-    affects only this one process, not the system policy.
-- **No own DLLs** (section 4.1). Third-party DLL and graphics packages are
-  pinned to the official release sha256, and the friend sees the source link.
+- **Turtle shutdown and injunction** [owner, research comment]:
+  - Turtle WoW was shut down on 2026-05-15 after Blizzard won an injunction;
+  - the court order forbids passing on Turtle **client software / source
+    code**, and reportedly also publishing source code or guides for emulated
+    servers;
+  - the order binds the Turtle parties, but it shows how the rights holder acts.
+
+  **Consequences for us:**
+  - The Turtle/Blizzard client, `patch-X.mpq` and the server DBCs go **only** to
+    the named friends over Radmin. Never a public URL, a GitHub release (public
+    or private), a torrent with DHT/public trackers, or a file hoster.
+  - **No search for or use of leaked Turtle sources.**
+  - Our patch contains **only our own changes** on top of the base. The built
+    files stay private.
+- **Both repos are public** (`Cilverkrow/twow-repo`, `Cilverkrow/twow-core`,
+  checked 2026-09-27). Therefore:
+  - Git holds only tool code, our change scripts and bindings, templates with
+    placeholders, and hashes (ADR-0024 invariant 5);
+  - the **real** launcher config and catalogues, which contain the patch host
+    name and the Radmin IP, stay on the host;
+  - whether the repos should become private in the current legal climate is an
+    owner decision (9.15);
+  - `twow-client-addons` would also be public, but it holds only our own addon
+    code (BotMenu is already public today in twow-core).
+- **No credentials** anywhere in configs, catalogues, the addon or the MPQ.
+  - Access control for files is Radmin membership plus the host binding.
+  - The DNS token for the certificate (section 5.3) stays in the host's `.env`.
+- **Integrity:**
+  - assets are pinned by **sha1 + size** over **verified TLS**;
+  - addons are pinned by **tag/commit** from GitHub over TLS;
+  - mods are pinned by URL + sha1 where the upstream ships a single file;
+  - sha1 is weak against a determined attacker, but here it guards against
+    corruption and mistakes, while TLS guards the transport. `releases.md`
+    additionally records sha256.
+- **Trust in the launcher itself:**
+  - it is open source (Apache-2.0) and runs only the config the friend accepted;
+  - the friend sees every host before accepting;
+  - it never binary-patches `WoW.exe` (`docs/developer-guide.md`).
+  - A PyInstaller onefile exe may trigger antivirus heuristics. Friends use only
+    the official release, whose hash is recorded in `releases.md`.
+- **No own DLLs** (section 4.1). Community DLLs are opt-in, pinned, and linked to
+  their source.
 
 ## 7. Graphics (#362)
 
-An honest assessment of what the 1.12 engine allows without source access:
-
-| Item | Realistic? | Notes |
+| Item | Realistic? | Notes, and the Nostalgia channel |
 |---|---|---|
-| **View distance (`farclip`)** | yes, limited | A `Config.wtf` / console CVar. The 1.12 engine clamps it (commonly cited maximum 777). Going beyond that needs an exe patch (vanilla-tweaks style), and **we do not patch Turtle's `WoW.exe`**. Fog-pushback MPQ mods exist in the community (`patch-Y`). |
-| **ReShade** | yes | Post-processing: ambient occlusion, colour grading, sharpening, depth of field. Works on D3D9, or on Vulkan when combined with DXVK. Depth-based effects need depth-buffer access, which needs per-client tuning. Effort: days of preset tuning, not engineering. |
-| **DXVK** | yes | D3D9 → Vulkan. It often smooths frame times on modern GPUs. **The Turtle launcher already offers a DXVK toggle** [community], so we prefer that over shipping our own copy. Watch the reported conflict with the Mods tab (section 4.1). |
-| **FSR 1 upscaling** | yes, as post-processing | A ReShade shader (FSR1/CAS) or an external upscaler. Real **DLSS / FSR 2+ is not possible**: both need motion vectors from the engine. |
-| **"Ray tracing" via ReShade** | only in name | Screen-space GI shaders (for example RTGI-type shaders) trace rays **in screen space**. They look good in places, but nothing off-screen contributes and there are artefacts at the edges. This is **not** real ray tracing. |
-| **RTX Remix** | experiment, open outcome | It needs a D3D9 **fixed-function** style renderer, an RTX GPU, and substantial per-game asset/material work. Whether the 1.12 renderer (partly shader-based) is captured cleanly is unknown [speculation]. Not a package; at most an owner experiment on an RTX PC. |
+| **View distance (`farclip`)** | yes, limited | The 1.12 engine clamps it (Nostalgia seeds `farclip 777` into a fresh `Config.wtf`, `tweaks.py:174`). More needs an exe patch, and **we do not patch Turtle's `WoW.exe`**. Fog-pushback MPQ mods exist (`patch-Y`, community). |
+| **ReShade** | yes | Post-processing: AO, colour grading, sharpening, depth of field. The binary comes from the official installer. **Our presets** are optional **assets** (`ReShade.ini`, `*.ini`). |
+| **DXVK** | yes | D3D9 → Vulkan, often smoother frame times. An opt-in **mod** with the allowlisted `write_dxvk_conf` hook, pinned release. Turtle's launcher toggle is no longer relevant. |
+| **FSR 1** | yes, as post-processing | A ReShade shader, or an external upscaler. **DLSS / FSR 2+ are not possible**: both need engine motion vectors. |
+| **"Ray tracing" via ReShade** | only in name | Screen-space GI shaders trace rays **in screen space**. Off-screen geometry does not contribute, and there are edge artefacts. **Not real RT.** |
+| **RTX Remix** | experiment, open outcome | It needs a D3D9 fixed-function-style renderer, an RTX GPU and a lot of per-game asset work. Whether the 1.12 renderer is captured cleanly is unknown [speculation]. Not a package; at most a private owner experiment. |
 | Own renderer | no | person-years |
-
-**Fit into the same channel:**
-
-- Graphics become **optional groups** in the manifest (`gfx-low`,
-  `gfx-medium`, `gfx-high`).
-- Our own content is only **presets**: `ReShade.ini`, preset `.ini` files and a
-  `Config.wtf` snippet for `farclip` and similar.
-- The ReShade / DXVK binaries themselves are either left to the friend's own
-  install (ReShade installer, launcher DXVK toggle) or fetched by the updater
-  from the **official release** with a pinned sha256. They are never re-hosted
-  as modified binaries.
-- Uninstall uses the same `installed.json` list.
 
 ## 8. Staged plan with acceptance checks
 
 Every stage is its own PR (tool code in `twow-repo`, server data in `twow-core`
-where needed). Each stage needs the owner's approval before its deploy. **Train
-8** is the planning train; the stages below are the implementation afterwards.
+where needed). Every deploy needs the owner's approval. **Train 8** is planning;
+the stages below are the implementation afterwards.
 
-### Stage 1: tooling + empty test patch to one friend
+### Stage 1: tooling, host, Nostalgia, empty test patch to one friend
 
 **Scope:**
 
-- `ops/client-patch/`: the Docker image, `dbc.py` (read/write/diff), `build.py`
-  (steps 1, 2, 6, 8 of section 3.4), the updater, and the TWPatch addon with a
-  version and a sentinel texture.
-- `patch-X.mpq` v1 contains **no DBC**, only the sentinel texture.
-- A static-file container bound to the Radmin IP.
+- `ops/client-patch/`: the Dockerfile (mpqcli + Python), `dbcdiff.py`,
+  `catalog-gen.py`, and the templates.
+- The patch host: an HTTPS container bound to the Radmin IP, with the
+  certificate path per decision 9.2.
+- `twow-client-addons` with `TWPatch` (version, MOTD parsing, sentinel texture
+  display).
+- `patch-X-v1.mpq` containing **no DBC**, only the sentinel texture.
+- The MOTD line `[TWPatch] 1`.
 
-**Launcher tests first (on the owner's PC, before any friend).** Take a file
-listing with sha256 of `Data\` + `dlls.txt` + `realmlist.wtf` before and after
-each step, and record the results in the stage-1 PR.
+**Go/no-go tests on the owner's PC.** Record a file listing with hashes of
+`Data\`, `dlls.txt`, `realmlist.wtf` and `WTF\Config.wtf` before and after each
+test, and put the results in the stage-1 PR.
 
 | Test | Action | Question answered |
 |---|---|---|
-| T1 | put `patch-X.mpq` in `Data\`, open `turtle-wow.exe`, let it check for updates | does the launcher delete, rename or ignore an unknown MPQ? |
-| T2 | enable it in the Mods tab + Apply | what does "Apply" change on disk (a list file, a rename, a config)? |
-| T3 | launcher "verify / repair" | does an **enabled** `patch-X` survive? |
-| T4 | start `WoW.exe` directly (no launcher) | does the game run, and does `twloader.dll` still read `dlls.txt`? Is the sentinel visible? Is `realmlist.wtf` respected? |
-| T5 | start through the launcher | is the sentinel visible? Is `realmlist.wtf` changed? |
-| T6 | rename to `patch-x.mpq` (lower case) | does case matter? |
+| **T4** | start **Turtle's `WoW.exe` directly** (no Turtle launcher) | Does the game run? Does `twloader.dll` still read `dlls.txt`? Is `patch-X` loaded (sentinel visible)? Is `realmlist.wtf` respected? **No-go for Nostalgia's Play button if this fails**; then an external-launcher mod (for example VanillaFixes) or the Turtle launcher is the fallback. |
+| T1 | open `turtle-wow.exe` with `patch-X.mpq` present (offline, Turtle is down) | Does it start at all? Does it delete, rename or ignore unknown MPQs? |
+| T2/T3 | Mods tab + Apply; "verify / repair" | Needed only if T4 fails: what changes on disk; does `patch-X` survive? |
+| T6 | `patch-x.mpq` in lower case | Does case matter? |
+| N1 | Nostalgia imports the config, installs the essential asset, starts via Play | Is the asset sha1 checked, is `dest` right, is the realm written with consent? |
+| N2 | HTTPS path per decision 9.2 on a friend's PC | Is the certificate accepted by the frozen exe? |
+| N3 | a fresh folder with no `WoW.exe`, `download.update: false` | Does the zip fallback work, or is a hand-over needed? |
+| N4 | bump the catalogue to v2, then reload and update; publish v1 again (rollback) | Badge, update and rollback behave as in section 5.5. |
+| N5 | TWPatch addon versus the MOTD line, and the sentinel | Warning on mismatch, silence on match; sentinel visible. |
 
 **Acceptance:**
 
-- `dbc.py` round trip is byte-identical on every DBC of the server's `data/dbc`
-  (run locally, results as hashes only).
-- Step 2 (consistency) reports **zero** differences between the client base and
-  the server `data/dbc`, or the differences are listed and explained.
-- T1–T6 are answered and decision 9.3 is taken.
-- One friend runs `twpatch.cmd`:
-  - it installs v1;
-  - `-Status` shows v1;
-  - the MOTD line matches, and the addon shows "up to date";
-  - the sentinel is visible;
-  - `-Rollback` and `-Uninstall` leave `Data\` byte-identical to before
-    (listing + hashes).
-- A second run downloads nothing (idempotent).
+- T4 and N1–N5 pass, or their fallbacks are decided and recorded.
+- `dbcdiff` round trip: the Spell Editor's import + export of **unchanged**
+  base DBCs is field-identical.
+- Step 2 (consistency) reports zero differences between the client base and the
+  server `data/dbc`, or lists and explains them.
+- One friend completes onboarding (section 5.6) and sees "up to date" in game.
+- A second Update run downloads nothing.
 
 ### Stage 2: tooltips and talents, shaman + rogue
 
 **Scope:**
 
-- Step 3 (spell report, a read-only DB query) and step 4 (row patches).
-- `spell-tooltips.csv` for the changed spells (Earthen Bulwark, Ghost Wolf,
-  imbues …).
-- `talent.csv` for the phase-2 slots of #357 / #367, which reuse existing icon
-  IDs.
-- The ID range reservation.
-- The coupled server release: `out-server/dbc/Talent.dbc` (+ `TalentTab` if
-  touched) deployed to `data/dbc` with a restart, the talent spells present in
-  `spell_template`, and **the same `patch_version`** on the MOTD line.
+- our 1.12 bindings for `Talent`/`TalentTab` (+ `SpellItemEnchantment` if
+  needed);
+- change scripts for tooltips, where numbers are joined from `spell_template`
+  (Earthen Bulwark, Ghost Wolf, imbues …), and for the phase-2 talent slots of
+  #357 / #367, which reuse existing icon IDs;
+- the ID range reservation;
+- the coupled server release (`Talent.dbc` and friends to `data/dbc` plus a
+  restart) under the same `N`.
 
 **Acceptance:**
 
-- `review.csv` in the PR lists exactly the intended field changes and nothing
-  else.
-- In game, with the patch:
-  - the tooltip numbers of every changed spell equal the server's values;
-  - Ghost Wolf rank 3 shows instant and can be cast while moving;
-  - the new talent slots show in the right row/column with the right rank
-    count;
-  - learning each new talent on a test character yields the right spell
-    server-side (`.learn`-free check via the spellbook and the server log);
-  - inspecting that character from a second patched client shows the right
-    points.
-- Without the patch: the talent UI shows the old tree, and nothing crashes. A
-  known limitation: clicking an old slot whose position moved is documented,
-  which is why talent releases are coupled.
-- `-Rollback` of the client **together with** a rollback of the server DBCs
-  restores the previous state.
+- `review.csv` lists exactly the intended field changes.
+- In game with the patch:
+  - every changed tooltip shows the server's numbers;
+  - Ghost Wolf rank 3 shows as instant and can be cast while moving;
+  - the new slots sit in the right row and column with the right rank count;
+  - learning each new talent on a test character gives the right spell
+    server-side (spellbook + server log);
+  - inspect from a second patched client shows the right points.
+- Without the patch: the old tree, and no crash.
+- Rolling back client and server together (section 5.5) restores the previous
+  state.
 
 ### Stage 3: race/class for players (#379)
 
-**Prerequisite:** the server side of #379 (`playercreateinfo*` rows, trainers)
-has been done by OB-20 and approved by the owner.
+**Prerequisite:** the server side of #379 (`playercreateinfo*`, trainers) is done
+by OB-20 and approved by the owner.
 
 **Scope:**
 
-- `charbaseinfo.csv`: add (3, 7) dwarf shaman and (5, 2) undead paladin.
-- If needed: `SkillRaceClassInfo` race masks (coupled, both sides) and a
-  `SkillLineAbility` content check against `skill_line_ability`.
-- Optionally `CharStartOutfit` for a proper preview.
-- **If Turtle's `GlueXML` hard-codes the class lists:** a glue override, with a
-  note that it must be re-based on every Turtle update.
+- the `CharBaseInfo` binding and a change script adding (3, 7) dwarf shaman and
+  (5, 2) undead paladin;
+- if needed: `SkillRaceClassInfo` race masks (coupled) and a check of
+  `SkillLineAbility` content against `skill_line_ability`;
+- optionally `CharStartOutfit`;
+- if Turtle's `GlueXML` hard-codes class lists: a glue override. Note that
+  Turtle glue will not change any more after the shutdown, so the override does
+  not need re-basing.
 
 **Acceptance:**
 
-- With the patch, both combinations can be selected and created. The new
-  character logs in, has the class skills, sees a trainer in its own faction,
-  and gets the class-quest rewards at the levels #379 defines.
-- Without the patch the options are absent, and nothing else changes.
-- Other players' clients (patched or not) show the new characters correctly.
+- With the patch, both combinations can be created. The characters log in, have
+  their class skills, find a trainer in their own faction, and get the #379
+  rewards.
+- Without the patch the options are absent and nothing else changes.
 
 ### Stage 4: graphics package (#362)
 
 **Scope:**
 
-- Optional groups `gfx-low` / `gfx-medium` / `gfx-high` in the manifest: presets
-  and a `Config.wtf` snippet.
-- A README with performance notes.
-- DXVK via the launcher toggle, or a pinned official release.
-- ReShade via its official installer, or a pinned release.
+- optional assets `gfx-low` / `gfx-medium` / `gfx-high` (presets);
+- the DXVK mod (pinned);
+- a README with performance notes.
 
 **Acceptance:**
 
-- Each preset installs and uninstalls cleanly through the updater: `-Uninstall`
-  restores the listing.
-- FPS is measured in one city and one open-world spot per preset on the
+- Each preset installs and uninstalls cleanly through Nostalgia.
+- FPS is measured per preset in one city and one open-world spot, on the
   owner's PC and one friend's PC. Measured values only.
-- The README states plainly what is post-processing and what is not (section 7).
+- The README states plainly what is post-processing (section 7).
 
 ## 9. Open owner decisions
 
 Each decision comes with a recommendation.
 
-1. **Distribution model.** Recommendation: **(c) once for the base + (b) script
-   updater for every change**; the Turtle launcher is not a channel.
-2. **Our patch file name.** Recommendation: **`Data\patch-X.mpq`**. It loads
-   after Turtle's `2`–`9`, avoids the common community letters, and leaves
-   Turtle's `Z` alone.
-3. **How friends start the game.** Recommendation: **our `twpatch.cmd` starts
-   `WoW.exe` directly** if T4 passes, which freezes the client at 1.18.1.
-   Otherwise start the Turtle launcher with `patch-X` enabled in its Mods tab,
-   and accept the drift risk plus the updater's base check as the safety net.
-4. **Freeze the client version at 1.18.1 (build 7272) for all players.**
-   Recommendation: **yes**. Background: realmd accepts every newer build too
-   (`RealmList.cpp:37-47`), so drift would not be noticed at login. A later move
-   to a newer Turtle base is a planned server + client migration, not an
-   accident.
-5. **Hosting of the patch files.** Recommendation: a **static HTTP container on
-   the owner's host, bound to the Radmin IP only**. The fallback is an SMB
-   share. A GitHub release is out.
-6. **Strictness of the version check.** Recommendation: **warn** (updater +
-   MOTD line + addon). Revisit a hard login block only for coupled talent
-   releases, after stage 2.
-7. **Where the build runs.** Recommendation: **in a Docker container on the
-   owner's machine**, with tool code in `twow-repo/ops/client-patch/`. CI tests
-   the tools with synthetic DBCs only.
-8. **Client language.** Recommendation: **all players run the English client**
-   (no Turtle `patch-Z` localisation archive), because `Z` would override our
-   texts.
-9. **The `dlls.txt` channel.** Recommendation: **never ship our own DLL**.
-   Community DLLs stay optional, pinned to the official release hash; the
-   updater keeps its hands off lines it did not add.
-10. **Should the updater manage `realmlist.wtf`** (LAN/Radmin switch)?
-    Recommendation: **yes, but only with an explicit flag** and a backup, never
-    by default.
-11. **Coupled releases.** Recommendation: any change to a DBC the server loads
-    (`Talent`, `TalentTab`, `SkillRaceClassInfo`, `SpellIcon`, the
-    `Spell*`/`SpellItemEnchantment` index tables) ships **together with** the
-    server DBC deploy and restart, under one `patch_version`. Client-only
-    changes (`Spell.dbc` text/numbers, `CharBaseInfo`, `CharStartOutfit`) may
-    ship alone.
-12. **Addons (BotMenu, VoiceOver).** Recommendation:
-    - **BotMenu** goes through the same channel as an optional group, built from
-      its source in `twow-core/modules/mod-playerbots/addon/BotMenu-1.12`.
-    - **VoiceOver** (third-party, 1.2 GB data pack) stays a manual install. At
-      most, the updater checks for the known 1.12 release hash from #360 and
-      gives a link; it never re-hosts it.
-13. **Graphics scope.** Recommendation: **presets for ReShade + farclip + the
-    launcher's DXVK**. RTX Remix is not a package; at most the owner can try it
-    as a private experiment.
+1. **Distribution route.** Recommendation:
+   - **Nostalgia Launcher** for every change;
+   - the base client once, via zip or hand-over, for friends without one;
+   - the Turtle launcher only if T4 fails;
+   - an own script updater only if Nostalgia fails stage 1.
+2. **HTTPS for the patch host.** Recommendation: **an own domain with
+   Let's Encrypt DNS-01**, the name pointing to the Radmin IP. Fallback: an own
+   name-constrained CA imported by each friend.
+3. **Our patch file name.** Recommendation: **`Data\patch-X.mpq`**.
+4. **Start path.** Recommendation: **Nostalgia Play → Turtle's `WoW.exe`**,
+   provided T4 passes. Otherwise an external-launcher mod (VanillaFixes), and
+   only then the Turtle launcher with `patch-X` enabled in its Mods tab.
+5. **Freeze the client at 1.18.1 (build 7272).** Recommendation: **yes**. It is
+   de facto frozen since the shutdown. The base check stays in onboarding
+   because realmd accepts any newer build.
+6. **Strictness of the version check.** Recommendation: **warn**: the Nostalgia
+   badge, the MOTD line and the TWPatch addon. Revisit a login block only for
+   coupled talent releases.
+7. **Spell Editor on the owner's Windows host.** Recommendation: **approve it
+   explicitly**, as required by `AGENTS.md`'s host rule:
+   - a portable copy in a task directory, no installer, no PATH change;
+   - database `twow_clientdbc` in the compose MariaDB or in a throwaway
+     container;
+   - never the upstream schemas.
+8. **Missing 1.12 bindings.** Recommendation: **we write `Talent`, `TalentTab`
+   and `CharBaseInfo` (+ `CharStartOutfit`, `SpellItemEnchantment` when needed)**
+   as our own binding files, verified by the `dbcdiff` round trip.
+9. **Client language.** Recommendation: **English for everyone** (Turtle's
+   `patch-Z` would override our texts).
+10. **`dlls.txt`.** Recommendation: **never ship our own DLL**. Community DLLs are
+    opt-in Nostalgia mods, pinned by URL + sha1.
+11. **Realm handling.** Recommendation: **let Nostalgia manage it** (`realm` = the
+    realmd Radmin IP, written with consent at Play). The owner uses a second
+    profile for LAN.
+12. **Coupled releases.** Recommendation: any change to a DBC the server loads
+    ships **together with** the server DBC deploy and a restart, under one
+    version `N`. Client-only DBCs may ship alone.
+13. **Addons repo.** Recommendation: **create public `Cilverkrow/twow-client-addons`**
+    with only our own addon code (TWPatch, a BotMenu copy synced from twow-core,
+    later our VoiceOver adjustments), pinned by tag. VoiceOver itself stays a
+    manual install unless its tree fits.
+14. **Graphics scope.** Recommendation: **ReShade presets as assets and DXVK as
+    an opt-in mod**; farclip within the engine limit. RTX Remix is not a
+    package.
+15. **Public repos in the current legal climate.** Recommendation: **owner to
+    decide** whether `twow-repo`/`twow-core` stay public. Either way: no host
+    names, IPs, real configs or client-derived files in Git.
+16. **Upstream contribution to Nostalgia** (for example teaching its MPQ scanner
+    about Turtle 1.18.1's `patch-3` … `patch-9`). Recommendation: **not now**. It
+    is a cosmetic issue; the onboarding instructions cover it.
 
 ## 10. Sources
 
-Public sources used for the **[community]** markers. The cloud session saw them
-only as search-engine excerpts, because direct access was blocked by the
-session's network policy. They should be re-read by the owner or OB-15 before
-stage 1.
+**Code read for this revision** (cloned read-only into the session scratchpad,
+nothing vendored):
+
+- Nostalgia Launcher, `Ourouk/nostalgia-launcher` @ `a3b04f2`:
+  <https://github.com/Ourouk/nostalgia-launcher>. In particular:
+  - `docs/developer-guide.md` and `examples/README.md`;
+  - `src/nostalgia_launcher/services/{assets,mods,addons,mpq,tweaks,catalog}.py`;
+  - `services/sources/{direct_file,git_archive,deploy}.py`;
+  - `core/{security_http,filesystem}.py`;
+  - `controllers/{assets,update}.py`.
+- WoW-Spell-Editor, `stoneharry/WoW-Spell-Editor` @ `e69ae90`:
+  <https://github.com/stoneharry/WoW-Spell-Editor>. In particular: `README.md`,
+  `Documentation/Bindings_112_vanilla/`, `HeadlessExport/Program.cs`, and the
+  `*.csproj` target frameworks.
+
+**Public sources** (**[community]**; search excerpts only, direct access
+blocked):
 
 - Turtle WoW Wiki, *Client Mods*: <https://turtle-wow.fandom.com/wiki/Client_Mods>
-  (load order patch-1 … patch-Z, "avoid using numbers and early letters", Mods
-  tab + Apply)
 - Turtle WoW Wiki, *Client Fixes and Tweaks*:
   <https://turtle-wow.fandom.com/wiki/Client_Fixes_and_Tweaks>
 - Turtle forum, *How do I add a custom MPQ / patch without Twow overwriting or
-  deleting it?*: <https://forum.turtle-wow.org/viewtopic.php?t=19849> (installer
-  wipes unknown MPQs; patch-Z is localisation; enable once in the Mods tab)
+  deleting it?*: <https://forum.turtle-wow.org/viewtopic.php?t=19849>
 - Turtle forum, *No custom mods (mpq) on the 1.18 launcher*:
   <https://forum.turtle-wow.org/viewtopic.php?t=21764>
 - Turtle forum, *My turtle wow client don't detect custom patches MPQ for HD*:
-  <https://forum.turtlecraft.gg/viewtopic.php?t=19732> (DXVK toggle conflict)
-- Turtle forum, *Reorder Patch*: <https://forum.turtle-wow.org/viewtopic.php?t=17740>
-- Turtle WoW team on X, integrated DLL sideloader and `dlls.txt`:
+  <https://forum.turtlecraft.gg/viewtopic.php?t=19732>
+- Turtle WoW team on X, the integrated DLL sideloader:
   <https://x.com/turtlewowteam/status/1906923026471338371>
-- RetroCro/TurtleWoW-Mods README (letters used by community mods, `dlls.txt`):
+- RetroCro/TurtleWoW-Mods README:
   <https://github.com/RetroCro/TurtleWoW-Mods/blob/main/README.md>
+- TurtleHD patch repo (an example of a public MPQ project):
+  <https://github.com/redmagejoe/TurtleHD>
+- brndd/vanilla-tweaks: <https://github.com/brndd/vanilla-tweaks>
 - wowdev wiki, *MPQ*: <https://wowdev.wiki/MPQ>
-- brndd/vanilla-tweaks (exe patch for farclip etc., not proposed for Turtle's
-  exe): <https://github.com/brndd/vanilla-tweaks>
 
-Tools named in section 3: StormLib (Ladislav Zezula), mpqcli, Ladik's MPQ
-Editor, WoWDBDefs, WDBX Editor. Versions are pinned in stage 1, not here.
+**Legal context** (from the research comment in #409):
+
+- PC Gamer:
+  <https://www.pcgamer.com/games/world-of-warcraft/turtle-wow-classic-server-announces-shutdown-after-blizzard-wins-injunction/>
+- PCGamesN: <https://www.pcgamesn.com/world-of-warcraft/turtle-wow-cease-and-desist>
+
+Tools named in section 3: WoW-Spell-Editor (+ HeadlessExport), mpqcli, StormLib,
+Ladik's MPQ Editor, WoWDBDefs. Versions are pinned in stage 1.
