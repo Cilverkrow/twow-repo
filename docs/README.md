@@ -28,7 +28,7 @@ This repository is a source-controlled project view, not a self-contained server
 - [Rogue as a tank variant](design/rogue-tank.md) — Turtle data analysis and bot design for #367; needs owner decisions before any implementation.
 - [Shaman tank: Enhancement rework](design/shaman-tank.md) — phase 1 (bots first) design for #357 based on the owner talent line of 2026-09-27: per-row IDs, route (spell change vs. bot aura), Elemental Weapons values, bot design; owner decisions in section 11.
 - [Client patch pipeline](design/client-patch-pipeline.md) — design for #409 (rev. 2): Nostalgia Launcher as the distribution route (assets/mods/addons catalogues over HTTPS on the Radmin host), WoW-Spell-Editor DBC ↔ SQL build with an independent diff check, `patch-X.mpq`, client vs. server DBCs, version check, graphics, staged plan; owner decisions in section 9.
-- [Bot-bot groups with a group quest log](design/bot-groups.md) — #365: formation rules, overlay quest log, restore on leaving, config keys, acceptance.
+- [Bot-bot groups](design/bot-groups.md) — #365: ad-hoc quest groups (step 2, owner contract), optional leader-driven group quest log (step 3), config keys, diagnostics, acceptance.
 
 ## Authority warning
 
