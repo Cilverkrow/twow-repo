@@ -25,7 +25,7 @@ This repository is a source-controlled project view, not a self-contained server
 
 ## Designs (proposals, not decisions)
 
-- [Enhancement shaman as a tank variant](design/shaman-tank.md) — phase 1 (bots first): Turtle data analysis, spell list and bot design for #357; needs owner decisions before any implementation.
+- [Shaman tank: Enhancement rework](design/shaman-tank.md) — phase 1 (bots first) design for #357 based on the owner talent line of 2026-09-27: per-row IDs, route (spell change vs. bot aura), Elemental Weapons values, bot design; needs owner decisions before any implementation.
 
 ## Authority warning
 
