@@ -78,4 +78,11 @@ and avoid repeated killers; zone escape reads corrected zone levels
 (`AiPlayerbot.AreaLevelOverrides`) and retries; far follow to a real player is
 capped at 400 yards.
 
-All ninety-three deviations are classified in `semantic-profile.tsv`.
+Release train 7 (wave 1, 180 bots) adds login waves after an L1 reset (24 bots
+per 15 min), class quest tools, death-loop evacuation, vendor gear up to level 30,
+ammunition stock by count (hunter tiers 400/800/1200, 200 thrown weapons), ad-hoc
+quest groups of up to 5 bots, skipping quest objectives that keep timing out, and
+talent auras for the shaman and rogue tank paths. Zone escape retries after 600 s.
+The `[AutoLearn]`, `[VendorGear]` and `[BotGroup]` traces are for the first 24 hours.
+
+All one hundred and ten deviations are classified in `semantic-profile.tsv`.
