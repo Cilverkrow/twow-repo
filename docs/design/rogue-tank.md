@@ -123,10 +123,12 @@ background.)
 
 ## 3. Owner design (decided 2026-09-27)
 
-The owner reviewed the first draft and decided the kit below. It replaces the
-earlier variants (percentage threat poison, Rockbiter-style parry imbue). The
-owner still has to approve it as a rule change (single approval, OB-20)
-before anything is implemented.
+The owner reviewed the first draft and decided the kit below in two rounds
+on 2026-09-27. It replaces the earlier variants (percentage threat poison,
+Rockbiter-style parry imbue). The owner still has to approve it as a rule
+change (single approval, OB-20) before anything is implemented.
+
+**Scope: bots only first, for release train 7.** Players come later (3.4).
 
 The rogue tank kit has three parts: the **threat poison**, the **Spit** taunt,
 and a **tank stance**. There is **no** extra Rockbiter-style weapon imbue. The
@@ -139,21 +141,22 @@ The existing mechanic stays: a flat threat amount per proc, as in `45613`
 every 10 levels**, starting at +150 and reaching today's +395 at level 60.
 The intermediate values are linear. The owner may round them.
 
-| Rank | Level | Threat per proc | Proc spell | Status |
-|---|---|---|---|---|
-| I | 20 | +150 | new | new |
-| II | 30 | +211 | new | new |
-| III | 40 | +273 | new | new |
-| IV | 50 | +334 | new | new |
-| V | 60 | +395 | `45613` | exists (item `65032`, trainer `47312`) |
+The proc's Nature damage **scales in the same ratio** as the threat (owner
+decision). Values are rounded from rank V's 67–85:
 
-Open detail (O-3a): the proc's Nature damage (67–85 at level 60) should
-presumably scale down in the same ratio (about 38 % at rank I).
+| Rank | Level | Threat per proc | Nature damage | Proc spell | Status |
+|---|---|---|---|---|---|
+| I | 20 | +150 | 25–32 | new | new |
+| II | 30 | +211 | 36–45 | new | new |
+| III | 40 | +273 | 46–59 | new | new |
+| IV | 50 | +334 | 57–72 | new | new |
+| V | 60 | +395 | 67–85 | `45613` | exists (item `65032`, trainer `47312`) |
 
 Level 20 fits the Poisons skill, which rogues get from the level-20 class
-quests (2.2). Every rank is therefore crafted normally.
+quests (2.2).
 
-Change set per new rank (I–IV), cloned from rank V:
+Full change set per new rank (I–IV), cloned from rank V. This is what the
+**player** version needs; the bots-only version for train 7 needs less (3.4):
 
 - world DB:
   - proc spell (effect 2 + effect 63)
@@ -183,15 +186,16 @@ A new rogue ability, **Spit**: the rogue spits at the enemy.
 | Range | 15 yards | new or existing range index for 15 yd |
 | Targets | main target plus **two more around it** | target area around the main target, `maxAffectedTargets = 3`, main target always included |
 | Emote | the rogue plays a spit emote on the target | `TEXTEMOTE_SPIT` (89) exists in `src/game/SharedDefines.h`; triggered by a spell script or an emote effect |
-| Level | open (10–15 in the original idea) | recommendation: 12 |
-| Cost / cooldown | open | recommendation: energy cost, 10–15 s cooldown (it hits three targets, so it is stronger than Taunt `355`) |
+| Level | **12** | |
+| Cost | **30 energy** | `powerType` energy, `manaCost 30` |
+| Cooldown | **10 s** | `recoveryTime 10000` |
 
-The world-DB part (spell, trainer rows) is data. The emote and the
+The spell itself is world-DB data. The emote and the
 "main target plus two around it" selection need a small spell script
 (`src/scripts/spells/spell_rogue.cpp` in twow-core already exists) if no
 existing target type fits. That is core code, so it goes to a twow-core PR.
 
-### 3.3 Tank stance (working name "Shadow Dance")
+### 3.3 Tank stance: Shadow Dance (Schattentanz)
 
 A stance or toggle buff that makes the rogue alternate between dodge and
 parry. It also makes each avoided hit generate threat.
@@ -200,7 +204,19 @@ parry. It also makes each avoided hit generate threat.
 |---|---|
 | the rogue **parries** | +5 % dodge for 3 s |
 | the rogue **dodges** | +5 % parry for 3 s |
-| every dodge **and** every parry | a fixed amount of threat on the attacker |
+| every dodge **and** every parry | a fixed amount of threat on the attacker, rising with rank |
+
+Ranks (owner decision): learned at **level 20**, threat raised at **level 40**
+and again at **level 60**.
+
+| Rank | Level | Threat per dodge/parry |
+|---|---|---|
+| I | 20 | open (proposal: 50) |
+| II | 40 | open (proposal: 90) |
+| III | 60 | open (proposal: 130) |
+
+Each rank is a new set of three spells (stance aura, parry proc, dodge proc).
+The +5 % buffs themselves stay the same for all ranks.
 
 Implementation (data only, no core code):
 
@@ -219,19 +235,46 @@ Implementation (data only, no core code):
   one `spell_proc_event` row.
 - The buffs refresh rather than stack.
 
-Open points:
-- the threat per dodge/parry (O-4a; recommendation: scale by level like the
-  poison, for example 50 → 130);
-- the learn level (O-4b);
-- the name. "Shadow Dance" is the name of a rogue ability in later
-  expansions and may confuse players (O-4c).
+The name stays **Shadow Dance** (Schattentanz), by owner decision, although
+a rogue ability in later expansions has the same name. Only the threat values
+per rank are still open (O-4a).
 
-### 3.4 Players versus bots only
+### 3.4 Bots only (release train 7), players later
 
-Server-side data (world DB) is enough for bots, since they never read
-tooltips. For **players**, new spells and the new enchantments need a
-**client patch** (`Spell.dbc`, `SpellItemEnchantment.dbc`, icons, tooltips);
-otherwise players see unknown spells. See O-2.
+For train 7 the kit is **bots only**. Players cannot learn, buy or see any of
+it. That changes the change set:
+
+- **No `npc_trainer` rows, recipes or vendor rows.** A trainer row would teach
+  Spit and Shadow Dance to players too. Bots learn the spells directly
+  instead, the way `PlayerbotFactory::InitAvailableSpells` already grants
+  Bear Form and other spells that are on no trainer (`bot->learnSpell(...)`).
+  The grant is by level, for rogues on the tank path (4.1):
+  - Spit at 12
+  - Shadow Dance I/II/III at 20/40/60 (a higher rank replaces the lower one)
+- **Poison items without recipes.** Bots get the poison items from
+  `PlayerbotFactory` (`StoreItem`, 4.3). The items exist in `item_template`,
+  but no vendor, trainer or loot table hands them out, so players never get
+  them.
+- **No client patch.** Bots do not need tooltips or icons.
+- **Server-side enchantments (O-9).** The server reads
+  `SpellItemEnchantment.dbc` from client data, not from SQL, so new
+  enchantments for poison ranks I–IV would still need a server-side DBC edit
+  (outside Git). Two ways to avoid that for train 7:
+  - **(a, recommended)** Ranks I–IV use the existing enchantment `3006`, so
+    every coating fires `45613`. A small spell script on `45613` in twow-core
+    (`src/scripts/spells/spell_rogue.cpp`) sets threat and Nature damage from
+    the table in 3.1 by the caster's level band (20–29 → rank I, …, 60 →
+    rank V). For bots this is the same thing, because they always use the
+    highest poison their level allows.
+  - **(b)** Server-side DBC entries for ranks I–IV, as described in 3.1.
+    That needs client-data handling outside Git, and the same entries again
+    later for the player client.
+
+**Later, for players:** trainer rows and recipes, a vendor or recipe source
+for the poisons, and a client patch (`Spell.dbc`, `SpellItemEnchantment.dbc`,
+icons, tooltips). With option (a), players would also need proper per-rank
+enchantments (option b); otherwise a level-60 player would get rank V from a
+rank I poison.
 
 ### 3.5 Talents
 
@@ -348,32 +391,32 @@ approval, OB-20):
 | # | Decision |
 |---|---|
 | D-1 | Threat poison: keep the flat-threat mechanic of Agitating Poison, in ranks from level 20 (+150) to level 60 (+395), one rank every 10 levels (3.1). |
-| D-2 | Taunt: **Spit**, 15 yd range, main target plus two targets around it, plays a spit emote on the target (3.2). |
+| D-2 | Taunt: **Spit**, level 12, 30 energy, 10 s cooldown, 15 yd range, main target plus two targets around it, plays a spit emote on the target (3.2). |
 | D-3 | No Rockbiter-style weapon imbue for the rogue; the poison covers that slot. |
-| D-4 | Tank stance: parry → +5 % dodge for 3 s, dodge → +5 % parry for 3 s, fixed threat per dodge and parry (3.3). |
+| D-4 | Tank stance **Shadow Dance** (the name stays): parry → +5 % dodge for 3 s, dodge → +5 % parry for 3 s, fixed threat per dodge and parry; learned at 20, threat raised at 40 and 60 (3.3). |
 | D-5 | No new talent tree. The owner provides a template that extends the existing trees; the bot's tank path is built from it (3.5, 4.1). |
+| D-6 | Bots only first, for release train 7; players later (3.4). |
+| D-7 | The poison's Nature damage scales with the rank, in the same ratio as the threat (3.1). |
 
 Still open:
 
 | # | Decision | Recommendation |
 |---|---|---|
-| O-1 | When | **after #357** (shaman tank, same pattern) |
-| O-2 | Scope: bots only (server data) or also players (client patch for `Spell.dbc`, `SpellItemEnchantment.dbc`) | **bots only first** |
-| O-3a | Proc damage of the lower poison ranks | scale by the same ratio as the threat |
-| O-3b | Round the intermediate threat values (211/273/334)? | owner's choice |
-| O-4a | Threat per dodge/parry of the stance | scaled by level, e.g. 50 → 130 |
-| O-4b | Learn level of the stance | together with Spit or at 20 |
-| O-4c | Name of the stance ("Shadow Dance" clashes with a later-expansion rogue ability) | a new name |
-| O-5 | Spit: level, energy cost, cooldown | level 12, energy cost, 10–15 s |
-| O-6 | Mitigation beyond the stance | none at first; measure in 5-man runs |
+| O-3b | Round the intermediate poison threat values (211/273/334)? | owner's choice |
+| O-4a | Shadow Dance threat per dodge/parry for ranks I/II/III | 50 / 90 / 130 |
+| O-6 | Mitigation beyond Shadow Dance | none at first; measure in 5-man runs |
 | O-7 | Stat reference: #141 as written in the issue, or #308 | confirm **#308** |
 | O-8 | How many rogues get path 4.3 (#366: 22 new rogues in 137–272) | decide together with D-A in #366 |
+| O-9 | Poison ranks for bots: spell script on `45613` with level bands, or server-side DBC entries (3.4) | **spell script** (no client-data work for train 7) |
 
 ## 6. What this document does not do
 
 No spell, item, trainer, DBC or core change; no config change; no build
-(`BUILD_REQUIRED=NO`, docs only). Implementation needs the rule-change
-approval, O-1, O-2, O-4a and O-5, and the owner's talent template. Then it
-goes as separate PRs in `Cilverkrow/twow-core`: world data (OB-20),
-spell script for Spit (core), `SpellItemEnchantment.dbc` entries (client
-data, outside Git), and mod-playerbots (OB-10). The pin bump comes here.
+(`BUILD_REQUIRED=NO`, docs only). For train 7, implementation needs the
+rule-change approval, O-4a, O-9 and the owner's talent template. It then goes
+as separate PRs in `Cilverkrow/twow-core`:
+- world data: spells and poison items, no trainer or vendor rows (OB-20);
+- spell scripts for Spit and, with O-9 (a), for the poison proc (core);
+- mod-playerbots: spell grants, tank path, strategy and poison upkeep (OB-10).
+
+The pin bump comes here.
