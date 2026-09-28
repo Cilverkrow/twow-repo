@@ -109,3 +109,4 @@ aiplayerbot	AiPlayerbot.BotGroups.MaxBots	INTENTIONAL_CHANGE	aiplayerbot.overlay
 aiplayerbot	AiPlayerbot.BotGroups.Diagnostics	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-365-train7-botgroup-diagnostics-24h
 aiplayerbot	AiPlayerbot.QuestWorkTimeouts.Max	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-405-train7-quest-work-timeouts-3
 aiplayerbot	AiPlayerbot.SpecAura.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-357-367-train7-spec-aura
+mangosd	WhoList.RequestCooldownSeconds	INTENTIONAL_CHANGE	mangosd.overlay.conf	train7-2-who-list-cooldown-5

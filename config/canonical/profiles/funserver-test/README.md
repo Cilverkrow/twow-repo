@@ -85,4 +85,4 @@ quest groups of up to 5 bots, skipping quest objectives that keep timing out, an
 talent auras for the shaman and rogue tank paths. Zone escape retries after 600 s.
 The `[AutoLearn]`, `[VendorGear]` and `[BotGroup]` traces are for the first 24 hours.
 
-All one hundred and ten deviations are classified in `semantic-profile.tsv`.
+All one hundred and eleven deviations are classified in `semantic-profile.tsv`.
