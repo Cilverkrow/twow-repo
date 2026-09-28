@@ -8,6 +8,15 @@
 - Date: 2026-09-27; revised 2026-09-27 for the owner gameplay decision "ad-hoc quest
   groups" (#365 comment 5854776547) and the OB-10 review on #387
 - Step 1 (config keys + diagnostics, no behaviour change): Cilverkrow/twow-core#168
+- **Live state (2026-09-28):** step 2 (ad-hoc quest groups) is live since train 7
+  (twow-core#168 and #193; keys `BotGroups.AdHoc.ScanIntervalSeconds` 10, `Radius` 50,
+  `PairCooldownSeconds` 600). The train 7.1c acceptance (twow-repo#319, 2026-09-28) shows
+  that ad-hoc groups still mostly end with `idle` (104×) rather than `objective_done` (6×).
+  Cause: nearly all registered groups work on item objectives from quest objects, and each
+  visit yields one item on shared, reserved spawns (twow-repo#405). The fix comes with
+  train 8: quest-object respawn time halved (owner decision, OB-20 migration), and the GO
+  work time tied to spawn rotation and respawn, with several items per visit (OB-10).
+  Step 3 (group quest log) is not started.
 
 ## 1. Goal
 
