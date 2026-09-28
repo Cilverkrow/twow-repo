@@ -422,3 +422,120 @@ as separate PRs in `Cilverkrow/twow-core`:
 - mod-playerbots: spell grants, tank path, strategy and poison upkeep (OB-10).
 
 The pin bump comes here.
+
+## 7. Phase 2: real talents for players (client patch stage 2)
+
+Status (2026-09-28): source data, server counterpart and tests are written.
+Nothing is built or deployed yet. This section follows the cloud brief in
+#409 [issuecomment-5874183685](https://github.com/Cilverkrow/twow-repo/issues/409#issuecomment-5874183685),
+part B, on the stage 1 toolchain `ops/clientpatch/` (#431).
+
+Phase 1 (train 7) runs the owner's rogue talent line as bot auras
+90150-90190 (core#194/#195) and the kit Spit/Shadow Dance as bot spells
+(core#188). Phase 2 turns the talent line into real `Talent.dbc` talents for
+every player and bot, **with the same spell IDs**.
+
+### 7.1 What the client patch carries
+
+| Delta (`ops/clientpatch/changes/`) | Content |
+|---|---|
+| `Talent/0367_rogue_talents.csv` | 16 talents in free slots of the three rogue trees, rank spells 90150-90190, talent ID = first rank spell − 81000 (9150 … 9188) |
+| `Spell/0367_rogue_spells.csv` | client rows for 90140-90146 (kit), 90150-90193 (talents and helpers) and 90200-90207 (poison ranks I-IV), **generated** by `tools/gen_spell_mirror.py`: every column is `sql:spell_template.<column>`, texts and icon included |
+| `SpellItemEnchantment/0367_agitating_poison_ranks.csv` | enchantments 90141-90144 for poison ranks I-IV (copies of 3006, each firing its own proc 90200-90203) |
+
+- **Icons:** only existing `SpellIcon` IDs are used, so `SpellIcon.dbc` is
+  unchanged.
+- **Code-side values:** tooltip texts that show values living in code cite
+  `changes/code-values.md` CV-4 … CV-10 (Spit targets, Flowing Blades 1 s,
+  Riposte Flow ICD and double threat, the Arcane Evasion formula, the 35 %
+  execute threshold, Hemorrhage stacks). CV-2 now says the level-band script
+  applies to the bot item 90140 only.
+- **New consistency rule** `enchant-procs-on-server`: a changed enchantment's
+  proc spell must exist in `spell_template`.
+
+### 7.2 Server counterpart (twow-core)
+
+The twow-core branch `claude/github-issue-367-cloud-bdbtsm` carries it:
+
+- **Migration `20260928170000_world.sql`:**
+  - tooltip texts (`$s1`, `$h`, `$d` tokens) and icons for 90140-90193, with
+    no mechanic change;
+  - poison ranks I-IV: procs 90200-90203 with the owner values (#386 D-1, D-7,
+    D-8), coatings 90204-90207 on enchantments 90141-90144, items 90141-90144.
+    No trainer, recipe, vendor or loot rows yet (P-2).
+- **`AiPlayerbot.SpecAura.TalentClasses`** (empty = phase 1). For a listed
+  class, SpecAura:
+  - neither grants nor removes the talent auras (a removal would unlearn a
+    bought talent, because the IDs are the same);
+  - makes the premade budget reserve nothing.
+
+  The kit is not a talent and stays granted.
+- **`build_premade_specs.py --talent-classes 4`:** finds the aura talents in
+  the patched `Talent.dbc` by their first rank spell and reads the hand-built
+  links without them. It then adds each path's talents at full rank: exactly
+  the points the path reserved in phase 1 (4.0 = 9, 4.1 = 9, 4.2 = 8,
+  4.3 = 20). A missing talent fails the run.
+
+### 7.3 Switch plan (one release, train 8)
+
+The server `Talent.dbc`, the config key and the regenerated links **must
+change in the same window**. Otherwise the phase-1 grant fights the talent
+system over the same spell IDs.
+
+1. **Before the window:**
+   - #431 and the core PR are merged, and the core is pinned.
+   - OB-20 has done V-1 to V-3 (7.4).
+2. **Build (owner/OB-15):**
+   - `export-sql` from a throwaway copy that already has migration `20260928170000`;
+   - `clientpatch build --server-dbc …`.
+
+   `review.csv` must list only the intended rows, and `consistency.csv` must
+   have no blocking finding. The output is `patch-X-v<N>.mpq` plus
+   `server-dbc/` (`Talent.dbc`, `SpellItemEnchantment.dbc`).
+3. **Links (OB-10):** run
+   `build_premade_specs.py --dbc <server-dbc> --rate <Rate.Talent> --talent-classes 4`.
+   The class 4 block of `aiplayerbot.conf.dist.in` changes; nothing else
+   may. That goes as a core PR in the same pin.
+4. **Maintenance window (world stopped):**
+   - copy `server-dbc/*.dbc` into `data/dbc`;
+   - bump the pin;
+   - set `AiPlayerbot.SpecAura.TalentClasses = 4` in the server profile;
+   - run the talent reset for all roster rogues: `deploy/roster/talent-reset`,
+     `--class 4 --spec-nos <all four rogue paths>`, first `--dry-run`, then
+     `--apply`.
+
+   The reset is required. The bots learned 90150-90190 as plain spells; with
+   the new `Talent.dbc` they count as talents. `Player::ResetTalents` removes
+   exactly those rank spells, and the bots then relearn them on the new links.
+5. **Publish** `patch-X-v<N>` in the Nostalgia catalogue at the same time,
+   with the MOTD version line (#409).
+6. **Acceptance:**
+   - a roster rogue on each path has its talents as talents, and none twice;
+   - `[SpecAura]` logs no grant or remove for class 4, only the kit;
+   - tooltips show the server numbers;
+   - a test character learns every new talent in the right slot;
+   - inspect shows the right points.
+7. **Rollback:**
+   - empty `TalentClasses`;
+   - put back the previous server DBCs, pin and patch version;
+   - run the talent reset again.
+
+   The bots then get their phase-1 auras back.
+
+Player rogues had no 901xx spells in phase 1, so they need no migration.
+
+### 7.4 Checks for OB-20 before the first build
+
+| # | Check | Why |
+|---|---|---|
+| V-1 | Rogue `TalentTab` IDs 182 (Assassination), 181 (Combat), 183 (Subtlety) | only 183 is confirmed in code; the build does not check tab IDs |
+| V-2 | Three arrows to existing Turtle talents: `PrereqTalent`/`PrereqRank` for 9154 (from Assassination R2/C4), 9156 (from Cold Blood R5/C3), 9172 (from Setup, Combat R3/C4) | their talent IDs are only in the live `Talent.dbc`; the one arrow between new talents (9175 → 9178) is set |
+| V-3 | Talent IDs 9150-9188 and enchantment IDs 90141-90144 are free | a collision stops the build (an `insert` of an existing key fails), so this only saves a failed run |
+
+### 7.5 Open owner decisions
+
+| # | Decision | Recommendation |
+|---|---|---|
+| P-1 | Do players get Spit and Shadow Dance from the rogue trainer (Spit 12, Shadow Dance 20/40/60)? Their client rows are in the patch either way (bots show them as buffs) | yes, for every rogue, like Taunt for every warrior |
+| P-2 | Source of the player poison ranks I-IV: recipe per rank from the trainer at 20/30/40/50, reagents from the poison vendor (owner note, #367 issuecomment-5858886535) | **the ingredients of Agitating Poison 45611** (2 × Maiden's Anguish 2931 + 1 Leaded Vial 3372), in fewer and cheaper steps per rank; this needs 4 recipe spells, 4 trainer-teach spells and `skill_line_ability` rows in the same release |
+| P-3 | Talent and spell names and the chosen icons (7.1) | as in the migration; the owner may rename (one `spell_template` edit, and the mirror follows) |
