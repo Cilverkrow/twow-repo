@@ -103,7 +103,7 @@ Constitution.
 | S2-1 | Slot of W | **decided (owner, 2026-09-28): R7/C3, level 40+ is fine.** It is the only clean free cell: R3/C2 and R6/C2 lie on the Flurry and Bloodlust arrows (`talentdelta.py` rejects them). R7 needs 30 points in the tree |
 | S2-2 | Prerequisite of Shield Ward | **decided (owner, 2026-09-28): Shield Constitution 3/3.** The original arrow from Charged Stormstrike (R5/C4 → R7/C4) would pass over Shield Constitution (R6/C4); the new arrow is clean and the tank column still builds up |
 | S2-3 | Chain Storm needs Storm Wisdom at which rank? | 5/5 (as in the delta) |
-| S2-4 | IDs: talents 9001–9010, SkillRaceClassInfo 90043/90055 | OB-20 checks once that they are free in the base DBCs |
+| S2-4 | IDs: talents 9001–9010, SkillRaceClassInfo 90043/90055 | **mostly verified (OB-20, #432 issuecomment-5878036789):** talent IDs 9001–9010 are free in `Talent.dbc` of both clients and of the server `data/dbc`; spell IDs 90100–90139 are free in every client `Spell.dbc`. **Still open:** 90043/90055 are record IDs of `SkillRaceClassInfo.dbc` (and `skill_race_class_info_mod`), not spell IDs. They still need the same check against `SkillRaceClassInfo.dbc` (client + server) |
 | S2-5 | Charged Stormstrike hangs sideways off Stormstrike (R5/C3 → R5/C4) | check in game that the talent frame draws the sideways arrow; otherwise drop the prerequisite |
 | S2-6 | Names (Attack Speed, Earthen Guard, Imbue Mastery, Retaliation, Charged Stormstrike, Storm Wisdom, Shield Constitution, Chain Storm, Shield Ward, Ancestral Arms) | the owner may rename; the names are in `spell_template` (core) |
 | S2-7 | Bot equipment for swords (`CanEquipWeapon`, `InitSkills`, `RandomItemMgr`) | OB-10 follow-up; without it bots take W but no swords |
