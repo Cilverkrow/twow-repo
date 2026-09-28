@@ -27,6 +27,7 @@ This repository is a source-controlled project view, not a self-contained server
 
 - [Rogue as a tank variant](design/rogue-tank.md) — Turtle data analysis and bot design for #367; needs owner decisions before any implementation.
 - [Shaman tank: Enhancement rework](design/shaman-tank.md) — phase 1 (bots first) design for #357 based on the owner talent line of 2026-09-27: per-row IDs, route (spell change vs. bot aura), Elemental Weapons values, bot design; owner decisions in section 11.
+- [Map, instance and dungeon tooling](design/map-tooling.md) — research and design for #412: map file formats 1.12 vs 3.3.5 and converters, editors (Noggit variants, WBS, WMVx, warcraft-rs), extractors and what a new map ID needs in the core and for bots, pilot path comparison (reuse WMO / map 45 / new terrain), generic tools on the #409/#410 toolchain, staged plan; owner decisions in section 8.
 
 ## Authority warning
 
