@@ -26,7 +26,7 @@ This repository is a source-controlled project view, not a self-contained server
 ## Designs (proposals, not decisions)
 
 - [Rogue as a tank variant](design/rogue-tank.md) — Turtle data analysis and bot design for #367; needs owner decisions before any implementation.
-- [Shaman tank: Enhancement rework](design/shaman-tank.md) — phase 1 (bots first) design for #357 based on the owner talent line of 2026-09-27: per-row IDs, route (spell change vs. bot aura), Elemental Weapons values, bot design; owner decisions in section 11.
+- [Shaman tank: Enhancement rework](design/shaman-tank.md) — phase 1 (bots first) design for #357 based on the owner talent line of 2026-09-27: per-row IDs, route (spell change vs. bot aura), Elemental Weapons values, bot design; owner decisions in section 11; stage 2 (real client talents) in section 12 and `ops/clientpatch/changes/0357-shaman-talents/`.
 
 ## Authority warning
 

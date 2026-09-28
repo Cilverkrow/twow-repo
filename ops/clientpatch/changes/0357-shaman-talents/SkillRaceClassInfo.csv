@@ -1,0 +1,3 @@
+op,ID,SkillID,RaceMask,ClassMask,Flags,MinLevel,SkillTierID,SkillCostIndex,comment
+insert,90043,43,2047,64,384,0,0,@701,"One-Handed Swords, shaman, talent only (like base row 701)"
+insert,90055,55,2047,64,384,0,0,@701,"Two-Handed Swords, shaman, talent only (like base row 701)"

@@ -520,3 +520,27 @@ from the proposals above, this section applies.
 | O-12 | Variant A: bots pay for their auras; premade trims **7.1 = 14, 7.3 = 21 points** (Ghost Wolf no longer counts). | OB-10 |
 | O-14 | Bot aura IDs 90100–90199: shaman 90100–90139, rogue 90140–90199. | #357, #367 |
 | O-15 | Shaman tanks = 20 % of a faction's tanks. | OB-40 |
+
+## 12. Stage 2: real client talents for all players (2026-09-28)
+
+The owner wants the rework as **real talents in the client for every player**
+(#409 issuecomment-5874183685 part B). The phase-1 bot auras become the rank
+spells of new `Talent.dbc` rows, with the same spell IDs 90100–90129. The weapon
+talent W "Ancestral Arms" (O-16…O-20) gets its server spells in the same step.
+
+- **Client delta, switch plan, acceptance and open points S2-1…S2-7:**
+  [`ops/clientpatch/changes/0357-shaman-talents/`](../../ops/clientpatch/changes/0357-shaman-talents/README.md).
+- **Server counterpart:** Cilverkrow/twow-core#217. It contains:
+  - W 90130–90139;
+  - shaman sword skills via `skill_race_class_info_mod` (flags 0x180, like the
+    talent-gated rows 701/702);
+  - talent icons;
+  - the Elemental Weapons tooltip cap 13/27/40 %;
+  - the bot switch `AiPlayerbot.SpecAura.TalentClasses`;
+  - `build_premade_specs.py --talent-classes 7`.
+- **Layout:** the new talents fill R1/C1, R1/C4, R4/C1, R4/C4, R5/C4, R6/C1, R6/C4,
+  R7/C1 and R7/C4 as in the owner line, and W takes R7/C3. That is the only free
+  cell that no existing arrow runs through, so it is S2-1.
+- **Premade links:** they are position-encoded, so the new rows shift every
+  Enhancement link. All shaman links are regenerated from the patched
+  `Talent.dbc`, and every roster shaman gets a talent reset in the release window.
