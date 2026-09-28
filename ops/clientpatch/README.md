@@ -67,6 +67,9 @@ no PATH change:
 3. Run `python -m clientpatch ...` from `ops\clientpatch`.
 
 The version check refuses any other mpqcli build, with a clear message.
+If you build mpqcli yourself, run cmake **from inside its source directory**:
+its CMakeLists embeds the commit via `git rev-parse` in the current directory,
+and a build started elsewhere reports `0.9.9-` and is refused.
 
 **Extracting the base DBCs** (once per client, by the owner or OB-15, locally,
 with the client mounted read-only):
