@@ -2,6 +2,8 @@
 
 This directory separates project-owned helper scripts from the upstream server source without moving or modifying the live copies.
 
+- `clientpatch`: client patch toolchain (#409): versioned DBC deltas -> DBC -> MPQ with review,
+  server consistency check and hashes. See [its README](clientpatch/README.md).
 - `windows/build`: build launcher and prerequisite notes.
 - `windows/source-sync`: source retrieval and transfer helpers.
 - `windows/server`: historical Windows lifecycle copies. The former graceful-shutdown

@@ -1,0 +1,40 @@
+# clientpatch tool configuration. Pinned versions and command lines live here,
+# not in code (tooling principle 5, docs/design/client-patch-pipeline.md 3.0).
+
+[patch]
+# Our archive in the client's Data\ folder. Turtle owns patch-2..9 and uses
+# patch-Z for localisation; X loads after all Turtle numbers (design 2.2).
+name = "patch-X.mpq"
+# Versioned file name on the patch host; {version} is the release number N.
+release_name = "patch-X-v{version}.mpq"
+# Version marker inside the archive (read by the TWPatch addon / humans).
+version_file = "TWPatch/version.txt"
+
+[paths]
+# Relative to this file.
+bindings = "bindings"
+bases = "bases"
+changes = "changes"
+consistency = "consistency"
+sql_sources = "sql/sources.toml"
+
+[mpq]
+tool = "mpqcli"
+# Pinned: https://github.com/TheGrayDot/mpqcli v0.9.9 (commit 7b458f54, MIT),
+# StormLib 570734e0 as its submodule. 'mpqcli version' prints "0.9.9-<commit>".
+version_args = ["version"]
+version_prefix = "0.9.9-7b458f54b2ec4904941c04a5a25860d7bb200ca3"
+# wow-vanilla = MPQ format 1, zlib, sector size 4096. --attr-flags 5 keeps
+# CRC32 + MD5 in (attributes) but drops FILETIME, which makes the archive
+# byte-reproducible (tests/test_build.py checks this).
+create_args = ["create", "--game", "wow-vanilla", "--attr-flags", "5", "-o", "{output}", "{input}"]
+list_args = ["list", "{archive}"]
+extract_args = ["extract", "-f", "{file}", "-o", "{output}", "{archive}"]
+
+[base]
+# Archives that make up the pristine client base, in load order (later wins).
+# Our own patch (patch-X) and community mods are deliberately NOT part of the
+# base; extract-base reports any other patch-*.mpq it finds and ignores it.
+archives = ["dbc.MPQ", "patch.MPQ", "patch-2.MPQ", "patch-3.mpq", "patch-4.mpq",
+            "patch-5.mpq", "patch-6.mpq", "patch-7.mpq", "patch-8.mpq", "patch-9.mpq"]
+member_prefix = "DBFilesClient\\"

@@ -248,6 +248,28 @@ jobs:
           not read a production configuration and does not build the server.
           EOF
 
+  # Client patch toolchain (ops/clientpatch, #409). Pure Python standard
+  # library on synthetic mini DBCs: no client file, no database, no Docker.
+  # The MPQ packing tests need the pinned mpqcli and are skipped here; they run
+  # in the tool's container (ops/clientpatch/Dockerfile) and locally.
+  clientpatch:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    name: clientpatch tools
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Unit and pipeline tests, repository configuration check
+        shell: bash
+        working-directory: ops/clientpatch
+        run: |
+          set -euo pipefail
+          python3 -c 'import sys; assert sys.version_info >= (3, 11), f"clientpatch needs Python 3.11+ (tomllib), runner has {sys.version}"'
+          python3 -m unittest discover -s tests -v
+          python3 -m clientpatch check
+
   # A normal job's service containers start before its first step. Capacity
   # therefore has to be its own dependency if a full disk is to stop MariaDB,
   # BuildKit and the compiler before any of them allocate more space.
@@ -269,6 +291,10 @@ jobs:
   #                          Its own coverage is the `go` and `bot-brain live
   #                          integration` jobs, neither of which is gated here.
   #   docs/**, runbooks/**   prose.
+  #   ops/clientpatch/**     the client patch toolchain (#409): Python and TOML
+  #                          that only the `clientpatch` job reads. Nothing in
+  #                          the C++ build, the compose stack or the config
+  #                          provenance test (ops/config/**) references it.
   #
   # Deliberately NOT on it, with reasons, because each is a mistake someone will
   # be tempted to make:
@@ -321,7 +347,7 @@ jobs:
           while IFS= read -r f; do
             [ -z "$f" ] && continue
             case "$f" in
-              services/bot-brain/*|docs/*|runbooks/*) ;;
+              services/bot-brain/*|docs/*|runbooks/*|ops/clientpatch/*) ;;
               *) echo "  needs the C++ build: $f"; needed=true ;;
             esac
           done <<< "$files"

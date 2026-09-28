@@ -1,0 +1,13 @@
+[
+  {
+    "id": "twow-patch",
+    "name": "TWOW client patch",
+    "description": "TWOW client patch v<N>: <label>",
+    "url": "https://<patch-host>/files/patch-X-v<N>.mpq",
+    "dest": "Data/patch-X.mpq",
+    "version": "<N>",
+    "sha1": "<40-hex sha1 from build-info.json>",
+    "size": 0,
+    "essential": true
+  }
+]

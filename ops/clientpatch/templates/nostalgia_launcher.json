@@ -1,0 +1,17 @@
+{
+  "server": {
+    "name": "TWOW (private)",
+    "url": "https://<patch-host>",
+    "realm": "<radmin-ip-of-realmd>",
+    "client_version": "1.12.1",
+    "news_url": "https://<patch-host>/news.json",
+    "assets_registry_url": "https://<patch-host>/catalog/assets.json",
+    "mods_registry_url": "https://<patch-host>/catalog/mods.json",
+    "addons_registry_url": "https://<patch-host>/catalog/addons.json",
+    "download": {
+      "update": false,
+      "http": { "fallback": "https://<patch-host>/client/base-1.18.1.zip" },
+      "content": { "type": "zip" }
+    }
+  }
+}

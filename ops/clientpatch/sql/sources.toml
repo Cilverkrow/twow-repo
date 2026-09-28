@@ -1,0 +1,21 @@
+# Server SQL sources for the consistency check and for sql:<source>.<column>
+# delta values. Every query must be a single read-only SELECT; the tool
+# refuses anything else. 'clientpatch export-sql' runs them through the
+# operator's MariaDB client command and writes <source>.tsv files.
+# Column names: twow-core sql/base/tw_world_<table>.sql.
+
+[source.spell_template]
+query = "SELECT * FROM spell_template"
+key = "entry"
+
+[source.map_template]
+query = "SELECT entry, map_type, map_name FROM map_template"
+key = "entry"
+
+[source.areatrigger_template]
+query = "SELECT id, map_id, x, y, z, radius FROM areatrigger_template"
+key = "id"
+
+[source.skill_race_class_info_mod]
+query = "SELECT Id, SkillLineDbcRecord, RaceMask, ClassMask, Flags, MinLevel, SkillTierId, SkillCostIndex FROM skill_race_class_info_mod"
+key = "Id"
