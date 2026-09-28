@@ -193,7 +193,45 @@ the fail-closed state.
 
 ## 3. Tools and build process
 
+### 3.0 Tooling principles (owner, 2026-09-28, binding)
+
+The owner's rule ([#409 issuecomment-5874344129](https://github.com/Cilverkrow/twow-repo/issues/409#issuecomment-5874344129))
+applies to every tool here and to later tool work (#412, #419 and follow-ups).
+Tools must work **now and in the future** for the project, not only for one
+task. The table shows how this design meets each rule; any later stage that
+cannot meet one says so in its PR.
+
+| # | Principle | How the client patch tooling meets it |
+|---|---|---|
+| 1 | **General, not one case.** Every DBC, class, map or data source through configuration/bindings; nothing hard-coded like "only shaman" or "only Spell.dbc". | One generic WDBC reader/writer driven by **binding files** (`bindings/<build>/<Dbc>.yaml`: field names, types, localised-string blocks). Deltas, `dbcdiff`, the build and the consistency check are all binding-driven. Adding a DBC means adding a binding file, with no code change. Consistency rules are declarative too (`consistency/*.yaml`: DBC field ↔ SQL column). |
+| 2 | **Data-driven and repeatable.** Versioned source files in Git; build and check by script or container; output with version and hash. | Our changes are **row/field deltas** per DBC (`changes/<Dbc>/NNNN_<desc>.csv`, only our own values), applied in order. The build runs by script (container on Linux, the same Python on Windows) and writes `patch-<letter>-v<N>.mpq`, `SHA256SUMS` and a `build-info.json` (git commit, binding set, base fingerprint, tool versions). |
+| 3 | **Tested.** Synthetic test data; round trip (unchanged in → unchanged out); consistency against server SQL as a fixed step. | Tests use **self-made synthetic mini DBCs** only. The round trip read → write of an unchanged file is **byte-identical**. Delta application is tested field by field. Consistency (step 2 in 3.4) is a **mandatory** build step, not an option. |
+| 4 | **Documented.** README with purpose, installation, examples, limits, extension. | `README.md` with "add a new DBC binding", "add a new consistency rule", "add a delta", "support a new client build", plus limits (for example: no new DBC columns, only layouts present in the base). |
+| 5 | **Maintainable across versions.** Base fingerprint, pinned tool versions, release list. A new Turtle client or a new wave must give a clear error, not break silently. | `bases/<id>.yaml` lists the known client bases (build, sha256 per DBC). The build computes the fingerprint of the given base and **stops with a clear error** when it matches no known base, or when a DBC's record size or field count disagrees with its binding. Tool versions (mpqcli/StormLib, Python) are pinned; `releases.md` is the ledger. |
+| 6 | **Usable locally and in the cloud.** Container where possible; Windows-only parts clearly separated and portable, without host install. | Everything except the optional Spell Editor runs in a container **and** as plain Python on Windows. The MPQ step uses a StormLib-based CLI (mpqcli ships Windows binaries). The Spell Editor is an **optional editing aid** only (3.1): the build never depends on it. |
+
+**Bindings from the start.** Stage 1 ships 1.12 bindings, not only the tables
+stage 2 needs first:
+
+- `Talent`, `TalentTab`, `SpellItemEnchantment`, `ChrRaces`, `ChrClasses`;
+- `CharBaseInfo`, `CharStartOutfit`, `SkillRaceClassInfo`, `SkillLineAbility`;
+- `Spell`, `SpellIcon`, `SpellCastTimes`, `SpellDuration`, `SpellRange`;
+- `Map`, `AreaTrigger`.
+
+Each binding is **cross-checked against the core's format string** where the
+server loads the table (`src/game/Database/DBCfmt.h`, for example
+`TalentEntryfmt`, `TalentTabEntryfmt`, `ChrRacesEntryfmt`, `Spellfmt` with its
+173 fields). Tables the server does not load are checked against WoWDBDefs for
+build 1.12.1. A binding that disagrees with the real file's header (record
+size, field count) is a hard error.
+
 ### 3.1 DBC editing: WoW-Spell-Editor (owner direction)
+
+> **Update 2026-09-28 (part A of the stage-1 task):** the **source of truth
+> is the row/field deltas** (3.0 row 2), not Spell-Editor SQL scripts. The
+> Spell Editor stays an **optional** GUI for looking at data and drafting
+> values. A value drafted there is written back as a delta; the build never
+> reads its database.
 
 **Facts [spell-editor]:**
 
@@ -216,18 +254,19 @@ the fail-closed state.
   published binaries locally. We **do not vendor or fork its code** into our
   repos. Our binding files are ours.
 
-**Consequence for the pipeline:**
+**How it is used (optional aid, not part of the build; see the update note
+above):**
 
-- Base DBCs are imported **once per client base** into a **dedicated database**
+- For drafting, base DBCs can be imported **once per client base** into a
+  **dedicated database**
   (for example `twow_clientdbc`).
   - It must never be one of the upstream schemas (ADR-0024 invariant 2).
   - It lives in the compose MariaDB or in a throwaway MariaDB container whose
     port is published to the Windows host.
-- **Our changes are ordered, idempotent SQL scripts** in Git: `UPDATE`/`INSERT …
-  ON DUPLICATE KEY` against `twow_clientdbc`, containing only values we authored.
-  - Tooltip numbers are **copied from `tw_world.spell_template` by a join**,
-    which only reads the upstream schema. The server stays the single source of
-    truth.
+- Values drafted there are written back as **deltas** in `changes/<Dbc>/`
+  (3.0 row 2). Tooltip numbers are taken from `tw_world.spell_template` by the
+  delta's `from spell_template.<column>` reference, which only reads the
+  upstream schema. The server stays the single source of truth.
 - **Host rule:** the Spell Editor runs on the owner's Windows host. `AGENTS.md`
   forbids host installs and says "if a step genuinely requires something on the
   host, stop and ask". Since the tool is Windows-only, this needs the owner's
@@ -257,11 +296,16 @@ The repos are **public** (section 6). Git holds **only our own work, templates
 with placeholders, and hashes**:
 
 ```text
-ops/client-patch/                      (twow-repo, stage 1)
-  README.md                            how to build and publish
-  bindings/112/Talent.txt …            our Spell-Editor bindings for missing 1.12 tables
-  changes/0001_<desc>.sql …            ordered, idempotent change scripts (own values only)
-  tools/dbcdiff.py, Dockerfile         diff/verify + mpqcli, pinned versions
+ops/client-patch/                      (twow-repo, stage 1; path pending owner answer, #409)
+  README.md                            purpose, install, examples, limits, how to extend
+  bindings/1.12.1/<Dbc>.yaml           generic field layouts (3.0), cross-checked with DBCfmt.h
+  bases/<id>.yaml                      known client bases: build + sha256 per DBC (fingerprint)
+  changes/<Dbc>/NNNN_<desc>.csv        ordered row/field deltas (own values only)
+  changes/code-values.md               code-side values the SQL join cannot see (3.4)
+  consistency/*.yaml                   declarative rules: DBC field <-> server SQL column
+  clientpatch/ (Python package)        wdbc read/write, apply deltas, dbcdiff, build, consistency
+  tests/                               synthetic mini DBCs generated in the test itself
+  Dockerfile                           pinned Python + mpqcli/StormLib
   catalog-gen.py                       writes assets/mods/addons catalogues from a release record
   templates/nostalgia_launcher.json    placeholders only (<patch-host>, <realm-ip>)
   releases.md                          ledger: version, date, sha1/sha256, size, base fingerprint
@@ -276,12 +320,14 @@ ops/client-patch/                      (twow-repo, stage 1)
 
 ### 3.4 Build pipeline
 
-The steps run on the owner's machine: Windows for the Spell Editor, containers
-for everything else.
+The steps run on the owner's machine, in a container or as plain Python on
+Windows (3.0 row 6). The Spell Editor is not part of the build.
 
 ```text
  (1) BASE     extract DBFilesClient\*.dbc from the client's MPQs in load order
-              (mpqcli, highest-priority copy wins) -> base/ + sha256 list
+              (mpqcli, highest-priority copy wins) -> base/ + sha256 list;
+              match the fingerprint against bases/*.yaml and pick its binding set;
+              unknown base, or header/binding mismatch -> STOP with a clear error
  (2) CONSIST. a) for every DBC the server loads: base/X.dbc == server data/dbc/X.dbc ?
                  mismatch -> STOP (client and server were extracted differently)
               b) server SQL content vs client-only DBCs (read-only queries):
@@ -292,12 +338,12 @@ for everything else.
                  mismatch -> REPORT, owner/OB-20 decide (lessons of #408: map 45
                  exists only on the server and the client hangs; trigger 5340 has
                  map 0 in the DB while its entrance is on map 532)
- (3) IMPORT   once per base: Spell Editor imports base/ into twow_clientdbc
-              (GUI; our 1.12 bindings for Talent/TalentTab/CharBaseInfo …)
- (4) CHANGE   run changes/*.sql in order against a fresh copy of twow_clientdbc;
-              tooltip numbers joined from tw_world.spell_template (read-only);
-              code-side values come from changes/code-values.md (see below)
- (5) EXPORT   HeadlessExport (or GUI) -> out/DBFilesClient/*.dbc
+ (3) LOAD     read every DBC that has deltas through its binding (generic reader)
+ (4) CHANGE   apply changes/<Dbc>/*.csv in order (row insert/update, field set);
+              a delta may say "from spell_template.<column>" for a numeric field,
+              which is resolved by a read-only query; code-side values come from
+              changes/code-values.md (see below)
+ (5) WRITE    generic writer -> out/DBFilesClient/*.dbc (string block rebuilt)
  (6) VERIFY   dbcdiff base/ vs out/ -> review.csv; undeclared difference -> STOP
  (7) PACK     mpqcli: out/ (+ sentinel texture) -> patch-X-v<N>.mpq (v1, zlib, listfile)
  (8) SERVER   changed server-loaded DBCs -> out-server/dbc/ (deploy only with owner
@@ -1085,15 +1131,22 @@ Each decision comes with a recommendation.
 6. **Strictness of the version check.** Recommendation: **warn**: the Nostalgia
    badge, the MOTD line and the TWPatch addon. Revisit a login block only for
    coupled talent releases.
-7. **Spell Editor on the owner's Windows host.** Recommendation: **approve it
-   explicitly**, as required by `AGENTS.md`'s host rule:
+7. **Spell Editor on the owner's Windows host (optional aid only, 3.1).**
+   Recommendation: if it is used, **approve it explicitly**, as required by
+   `AGENTS.md`'s host rule:
    - a portable copy in a task directory, no installer, no PATH change;
    - database `twow_clientdbc` in the compose MariaDB or in a throwaway
      container;
    - never the upstream schemas.
-8. **Missing 1.12 bindings.** Recommendation: **we write `Talent`, `TalentTab`
-   and `CharBaseInfo` (+ `CharStartOutfit`, `SpellItemEnchantment` when needed)**
-   as our own binding files, verified by the `dbcdiff` round trip.
+8. **1.12 bindings.** Recommendation: **we write our own generic binding
+   files from stage 1 on** (3.0):
+   - `Talent`, `TalentTab`, `SpellItemEnchantment`, `ChrRaces`, `ChrClasses`;
+   - `CharBaseInfo`, `CharStartOutfit`, `SkillRaceClassInfo`, `SkillLineAbility`;
+   - `Spell` and its index tables;
+   - `Map`, `AreaTrigger`.
+
+   Each is cross-checked against `DBCfmt.h` or WoWDBDefs and verified by the
+   round trip.
 9. **Client language.** Recommendation: **English for everyone** (Turtle's
    `patch-Z` would override our texts).
 10. **`dlls.txt`.** Recommendation: **never ship our own DLL**. Community DLLs are
