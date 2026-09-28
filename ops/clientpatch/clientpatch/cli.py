@@ -27,7 +27,8 @@ def _bindings(cfg, build_id):
 
 
 def cmd_build(a, cfg):
-    info = build(cfg, Path(a.base), Path(a.sql), a.version, a.label, Path(a.out), a.mpqcli)
+    info = build(cfg, Path(a.base), Path(a.sql), a.version, a.label, Path(a.out), a.mpqcli,
+                 server_dbc_dir=Path(a.server_dbc))
     print(json.dumps({k: info[k] for k in ("version", "base", "files")}, indent=2))
 
 
@@ -134,6 +135,8 @@ def main(argv=None) -> int:
     p = sub.add_parser("build", help="deltas -> DBC -> MPQ (full pipeline)")
     p.add_argument("--base", required=True, help="directory with the pristine client DBCs")
     p.add_argument("--sql", required=True, help="directory with the export-sql TSV files")
+    p.add_argument("--server-dbc", required=True,
+                   help="the server's data/dbc directory (read only; must equal the base)")
     p.add_argument("--version", required=True, type=int)
     p.add_argument("--label", default="")
     p.add_argument("--out", required=True)

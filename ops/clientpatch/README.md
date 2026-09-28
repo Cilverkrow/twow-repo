@@ -116,11 +116,18 @@ for the bindings on the real client files, which the cloud session cannot see.
     python -m clientpatch export-sql --out <work>/sql
 
 The command is yours: credentials stay outside Git and outside the tool.
-Every query in `sql/sources.toml` must be a single `SELECT`.
+Every query in `sql/sources.toml` must be a single read-only `SELECT`.
+
+**Do not run the export against the live database under load.** The owner
+has ~180 bots running (#319). Point `CLIENTPATCH_MYSQL` at a dump restored
+into a throwaway container; at the very least use a read-only session
+(`mariadb --init-command="SET SESSION TRANSACTION READ ONLY" …`). Stay
+outside the measurement window 23:30–00:30 UTC.
 
 ### Build a release
 
     python -m clientpatch build --base <work>/base --sql <work>/sql \
+        --server-dbc <server data/dbc, read-only> \
         --version 3 --label "shaman talents" --out <work>/release-3
 
 The output directory contains:
@@ -135,6 +142,8 @@ The output directory contains:
 
 The build **stops** in these cases:
 
+- the server's `data/dbc` is not byte-identical to the client base (design
+  3.4 step 2 a: client and server were extracted from different clients);
 - the base matches no registered fingerprint (a new or localised client, or a
   modified file);
 - a DBC header disagrees with its binding;

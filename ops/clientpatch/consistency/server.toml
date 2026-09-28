@@ -3,14 +3,16 @@
 # only with a reason and an issue reference; stale accepts are reported.
 # Add a pairing by adding a rule - no code change (tooling principle 1).
 
-# Every server map needs a client Map.dbc row, or the client hangs on the
-# loading screen (#408).
+# Every reachable server map needs a client Map.dbc row, or the client hangs
+# on the loading screen (#408). "Reachable" = spawns, a teleport target or a
+# .tele entry (source map_in_use); empty test/dev maps in map_template are
+# ignored (OB-20 review: 13, 25, 29, 31, 37, 42, 44, 49, 50, 150, 804, 806, 809).
 [[rule]]
 id = "map-in-client"
 kind = "keys_in_dbc"
-source = "map_template"
+source = "map_in_use"
 dbc = "Map"
-why = "#408: a server-only map hangs the client"
+why = "#408: a reachable server-only map hangs the client"
 
 [[rule.accept]]
 key = "45"
@@ -30,7 +32,7 @@ kind = "fields_equal"
 source = "areatrigger_template"
 dbc = "AreaTrigger"
 scope = "all"
-why = "#408: trigger 5340 had map 0 in the DB while its entrance is on map 532"
+why = "a trigger on a different map in client and server never fires where the server expects it"
 
 [[rule.pair]]
 sql = "map_id"
@@ -51,9 +53,9 @@ sql = "z"
 dbc = "Pos[2]"
 tolerance = 1.0
 
-[[rule.accept]]
-key = "5340"
-reason = "#408: DB row has map 0, entrance is on map 532 (reported; remove this accept once fixed)"
+# No accept for 5340: OB-20 checked all 517 rows against the client (#431
+# review) - client and server agree (5340 is on map 0 in both). The open
+# #408 question about 5340 is content, not client/server drift.
 
 # skill_race_class_info_mod overrides SkillRaceClassInfo.dbc on the server
 # (SpellMgr.cpp:2676-2733, -1 = keep the DBC value). The client DBC must match
@@ -337,3 +339,96 @@ dbc = "EffectTriggerSpell[2]"
 sql = "effectPointsPerComboPoint3"
 dbc = "EffectPointsPerCombo[2]"
 tolerance = 0.001
+
+
+# OB-20 review of #431: fields for $t (period), target prediction, passive /
+# cast-while-moving attributes, school, and the spell-mod mask (EffectItemType)
+# that decides which tooltips a talent adjusts. Naming trap: the DB's
+# effectAmplitudeN is the aura period (DBC EffectAuraPeriod); the DB's
+# effectMultipleValueN is the DBC float EffectAmplitude.
+[[rule.pair]]
+sql = "effectAmplitude1"
+dbc = "EffectAuraPeriod[0]"
+
+[[rule.pair]]
+sql = "effectMultipleValue1"
+dbc = "EffectAmplitude[0]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectImplicitTargetA1"
+dbc = "ImplicitTargetA[0]"
+
+[[rule.pair]]
+sql = "effectImplicitTargetB1"
+dbc = "ImplicitTargetB[0]"
+
+[[rule.pair]]
+sql = "effectItemType1"
+dbc = "EffectItemType[0]"
+
+[[rule.pair]]
+sql = "effectAmplitude2"
+dbc = "EffectAuraPeriod[1]"
+
+[[rule.pair]]
+sql = "effectMultipleValue2"
+dbc = "EffectAmplitude[1]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectImplicitTargetA2"
+dbc = "ImplicitTargetA[1]"
+
+[[rule.pair]]
+sql = "effectImplicitTargetB2"
+dbc = "ImplicitTargetB[1]"
+
+[[rule.pair]]
+sql = "effectItemType2"
+dbc = "EffectItemType[1]"
+
+[[rule.pair]]
+sql = "effectAmplitude3"
+dbc = "EffectAuraPeriod[2]"
+
+[[rule.pair]]
+sql = "effectMultipleValue3"
+dbc = "EffectAmplitude[2]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectImplicitTargetA3"
+dbc = "ImplicitTargetA[2]"
+
+[[rule.pair]]
+sql = "effectImplicitTargetB3"
+dbc = "ImplicitTargetB[2]"
+
+[[rule.pair]]
+sql = "effectItemType3"
+dbc = "EffectItemType[2]"
+
+[[rule.pair]]
+sql = "school"
+dbc = "School"
+
+[[rule.pair]]
+sql = "attributes"
+dbc = "Attributes"
+
+[[rule.pair]]
+sql = "attributesEx"
+dbc = "AttributesEx"
+
+[[rule.pair]]
+sql = "attributesEx2"
+dbc = "AttributesExB"
+
+[[rule.pair]]
+sql = "attributesEx3"
+dbc = "AttributesExC"
+
+[[rule.pair]]
+sql = "attributesEx4"
+dbc = "AttributesExD"

@@ -334,13 +334,15 @@ Windows (3.0 row 6). The Spell Editor is not part of the build.
  (2) CONSIST. a) for every DBC the server loads: base/X.dbc == server data/dbc/X.dbc ?
                  mismatch -> STOP (client and server were extracted differently)
               b) server SQL content vs client-only DBCs (read-only queries):
-                 map_template        vs Map.dbc          (every server map must exist
-                                                          in the client)
+                 map_template (reachable maps) vs Map.dbc (every map with spawns,
+                                                          a teleport target or a .tele
+                                                          entry must exist in the client)
                  areatrigger_template vs AreaTrigger.dbc (id, map, position)
                  skill_race_class_info_mod vs the patched SkillRaceClassInfo.dbc
-                 mismatch -> REPORT, owner/OB-20 decide (lessons of #408: map 45
-                 exists only on the server and the client hangs; trigger 5340 has
-                 map 0 in the DB while its entrance is on map 532)
+                 mismatch -> REPORT, owner/OB-20 decide (lesson of #408: map 45
+                 exists only on the server and the client hangs. Trigger 5340
+                 was checked by OB-20 on #431: client and server agree on map 0;
+                 the open #408 question about it is content, not drift)
  (3) LOAD     read every DBC that has deltas through its binding (generic reader)
  (4) CHANGE   apply changes/<Dbc>/*.csv in order (row insert/update, field set);
               a delta may say "from spell_template.<column>" for a numeric field,

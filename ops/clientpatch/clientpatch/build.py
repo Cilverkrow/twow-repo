@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import __version__, consistency, mpq
-from .base import identify, locate, sha256_file
+from .base import dbc_files, identify, locate, sha256_file
 from .binding import Binding, load_bindings
 from .delta import Touched, apply_all, changed_dbcs
 from .diff import dbcdiff, undeclared, write_review
@@ -200,7 +200,8 @@ def load_tables(names: list[str], bindings: dict[str, Binding], base_dir: Path) 
 
 
 def build(cfg: Config, base_dir: Path, sql_dir: Path, version: int, label: str,
-          out_dir: Path, mpqcli: str | None = None, log=print) -> dict:
+          out_dir: Path, mpqcli: str | None = None, log=print,
+          server_dbc_dir: Path | None = None) -> dict:
     changes = cfg.dir("changes")
     changed = changed_dbcs(changes)
     rules = consistency.load_rules(cfg.dir("consistency"))
@@ -208,6 +209,9 @@ def build(cfg: Config, base_dir: Path, sql_dir: Path, version: int, label: str,
 
     base = identify(base_dir, cfg.dir("bases"), needed)
     log(f"base: {base.id} (build {base.build})")
+    if server_dbc_dir is None:
+        raise ClientPatchError("the server's data/dbc directory is required (--server-dbc)")
+    log(f"server DBCs: {check_server_dbcs(base_dir, server_dbc_dir)} identical to the base")
     foreign_warnings = check_foreign(base_dir, changed, cfg.patch["name"], log)
     bindings = load_bindings(cfg.dir("bindings") / base.build)
 
@@ -327,6 +331,24 @@ def check_foreign(base_dir: Path, changed: list[str], ours: str, log=print) -> l
     for w in warnings:
         log(f"warning: {w}")
     return warnings
+
+
+def check_server_dbcs(base_dir: Path, server_dir: Path) -> int:
+    """Design 3.4 step 2 a: every DBC the server loads must be byte-identical to
+    the client base, or client and server were extracted from different
+    clients. Compares every *.dbc of the server's data/dbc directory."""
+    server = dbc_files(server_dir)
+    if not server:
+        raise ClientPatchError(f"no .dbc files in the server directory {server_dir}")
+    base = dbc_files(base_dir)
+    missing = sorted(server[k].name for k in server if k not in base)
+    differ = sorted(server[k].name for k in server
+                    if k in base and sha256_file(server[k]) != sha256_file(base[k]))
+    if missing or differ:
+        raise ClientPatchError(
+            "server DBCs and client base disagree - they were extracted from different "
+            f"clients. Missing in the base: {missing or 'none'}; different: {differ or 'none'}")
+    return len(server)
 
 
 def extract_base(cfg: Config, client_dir: Path, out_dir: Path, mpqcli: str | None = None,

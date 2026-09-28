@@ -47,6 +47,8 @@ class Pipeline(unittest.TestCase):
         # extract-base records archives outside the base; none in this client.
         (base / "foreign-archives.tsv").write_text("archive\tload_order\tdbc_count\tdbcs\n")
         self.base = base
+        self.server_dbc = self.tmp / "server-dbc"
+        shutil.copytree(base, self.server_dbc, ignore=shutil.ignore_patterns("*.tsv"))
         self.sql = self.tmp / "sql"
         self.sql.mkdir()
         (self.sql / "spell_template.tsv").write_text(
@@ -85,7 +87,8 @@ class Pipeline(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def run_build(self, out="out"):
-        return build(self.cfg, self.base, self.sql, 3, "test", self.tmp / out, log=lambda *_: None)
+        return build(self.cfg, self.base, self.sql, 3, "test", self.tmp / out,
+                     log=lambda *_: None, server_dbc_dir=self.server_dbc)
 
     def test_full_release(self):
         if not have_mpqcli():
@@ -158,6 +161,16 @@ class Pipeline(unittest.TestCase):
     def test_base_without_foreign_record_is_refused(self):
         (self.base / "foreign-archives.tsv").unlink()
         with self.assertRaisesRegex(Exception, "extract-base"):
+            self.run_build()
+
+    def test_server_dbcs_must_equal_the_base(self):
+        write(self.server_dbc, "Talent", pack(binding("Talent"), [{"ID": 100, "TabID": 1}]))
+        with self.assertRaisesRegex(Exception, "different: .'Talent.dbc'."):
+            self.run_build()
+        write(self.server_dbc, "SkillLine", pack(binding("SkillLine"), [{"ID": 1}]))
+        (self.server_dbc / "Talent.dbc").unlink()
+        shutil.copy(self.base / "Talent.dbc", self.server_dbc / "Talent.dbc")
+        with self.assertRaisesRegex(Exception, "Missing in the base: .'SkillLine.dbc'."):
             self.run_build()
 
     def test_bad_delta_blocks(self):

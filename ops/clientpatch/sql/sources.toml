@@ -12,6 +12,13 @@ key = "entry"
 query = "SELECT entry, map_type, map_name FROM map_template"
 key = "entry"
 
+# Maps that are actually reachable: spawns, a teleport target or a .tele
+# entry. Test/dev maps without any of these are not a client concern
+# (OB-20 review of #431: 13 such maps today; owner #408: discard them).
+[source.map_in_use]
+query = "SELECT entry, map_name FROM map_template WHERE entry IN (SELECT map FROM creature UNION SELECT map FROM gameobject UNION SELECT map FROM game_tele UNION SELECT target_map FROM areatrigger_teleport)"
+key = "entry"
+
 [source.areatrigger_template]
 query = "SELECT id, map_id, x, y, z, radius FROM areatrigger_template"
 key = "id"
