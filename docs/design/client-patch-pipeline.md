@@ -603,27 +603,57 @@ a file.
 - Optional graphics presets (`ReShade.ini`, preset files) are further assets
   with `essential: false` (section 7).
 
-**`catalog/addons.json`:** our own addons, from a public addons repo pinned by
-tag.
+**`catalog/addons.json`:** our own addons, from a public addons repo, **pinned
+by full commit SHA** (OB-15 review). Each addon has its **own tag** for humans
+and the release ledger; the catalogue carries the SHA the tag points to.
 
 ```json
 [
   { "name": "TWPatch",  "git": "https://github.com/Cilverkrow/twow-client-addons",
-    "ref": "v3", "description": "Client patch version check", "recommended": true,
+    "ref": "<40-hex commit of tag TWPatch-v3>",
+    "description": "Client patch version check (TWPatch-v3)", "recommended": true,
     "toc": { "Title": "TWPatch", "Interface": "11200" } },
   { "name": "BotMenu",  "git": "https://github.com/Cilverkrow/twow-client-addons",
-    "ref": "v3", "description": "Bot command menu", "recommended": true }
+    "ref": "<40-hex commit of tag BotMenu-v1.3>",
+    "description": "Bot command menu (BotMenu-v1.3, core pin <sha>)", "recommended": true }
 ]
 ```
+
+- **Why a SHA and not only a tag:**
+  - a tag can be moved or re-pushed; a commit SHA cannot;
+  - Nostalgia resolves a `ref` through the host API
+    (`GET /repos/{owner}/{repo}/commits/{ref}`, `sources/git_archive.py:206-226`),
+    which accepts a full SHA.
+  - Its `git ls-remote` fallback matches only branch and tag names
+    (`git_archive.py:91-119`). So if the API is rate-limited, a SHA pin cannot
+    be resolved through the fallback; test N7 checks how that fails.
+  - `catalog-gen.py` writes the SHA from the tag and refuses a tag that does not
+    exist or moved since the ledger entry.
+- **Own tags per addon** (`TWPatch-v<N>`, `BotMenu-v<x.y>`, later
+  `VoiceOverVolume-v<x.y>`), never one shared tag. The addons release
+  independently: TWPatch follows the patch version `N`, BotMenu follows its
+  own `## Version` and the core pin.
 
 - **New repo `Cilverkrow/twow-client-addons`** (decision 9.13):
   - layout `<Name>/<Name>.toc` per addon, so Nostalgia's discovery installs each
     addon folder separately;
   - it contains **only our own Lua/XML**, no Blizzard art;
-  - releases are tags;
+  - releases are per-addon tags (see above);
   - BotMenu's canonical source stays in `twow-core/modules/mod-playerbots/addon/BotMenu-1.12`.
-    A small sync script copies it into `BotMenu/` at release time, and the copy
-    is checked against the source by hash.
+    The sync script (OB-15 review):
+    - copies the **whole folder**, not a fixed file list. On `main` = `6a5ad6d`
+      it holds `BotMenu.toc`, `BotMenu.xml`, `BotMenu.lua` and `README.md`
+      (version 1.2); from 1.3 on, `BotList.lua` is loaded through the XML, and
+      later files arrive the same way;
+    - writes a **sha256 per file** into the release ledger and verifies the copy
+      against the source at the pinned twow-core commit; any difference or
+      missing file stops the sync;
+    - takes the source from the **twow-core commit that is deployed** (the core
+      pin in twow-repo), never from an unmerged branch.
+  - **BotMenu is coupled to the core pin.** Its commands must match the server's
+    bot command set. The `BotMenu-v<x.y>` tag and its `addons.json` entry are
+    therefore published **only after** the server with that core pin is
+    deployed, never before. The description records the core pin.
 - **VoiceOver (#360):** the third-party addon and its 1.2 GB data pack stay a
   **manual install**, unless stage 1 shows that its repository tree has a
   Nostalgia-compatible 1.12 layout at a pinned tag. Our own adjustments (a
@@ -705,7 +735,10 @@ Optional later (a twow-core PR, not stage 1):
 - a login hook that sends `TWP\tEXPECT\t<n>` on the addon channel, following the
   `mod-dungeon-clear` pattern (`DungeonClearAddonHook.cpp:40-50`);
 - a `[ClientPatch]` log line built from the addon list the server already
-  receives at login (`AddonHandler.cpp:51-120`).
+  receives at login (`AddonHandler.cpp:51-120`);
+- a **BotMenu version check through the MOTD**: a line like `[BotMenu] 1.3`,
+  compared by BotMenu against its own `## Version`. OB-15 takes this on as a
+  follow-up (OB-15 review, point 6); it is optional and not part of stage 1.
 
 **Strictness:** warn, never block by default (decision 9.6).
 
@@ -720,6 +753,11 @@ Optional later (a twow-core PR, not stage 1):
   `SpellIcon` or the index tables change): the same steps **plus** the server
   DBCs from step 8 deployed to `data/dbc` and a server restart, all under the
   same `N`. Owner approval is required, as for any deploy.
+- **Addon releases:**
+  - TWPatch is tagged with the patch version `N`;
+  - a BotMenu tag goes out only **after** the deploy of the core pin it was
+    synced from (see 5.2);
+  - `catalog-gen.py` writes the commit SHAs into `addons.json`.
 - **SQL-side companions** ship under the same `N` as a normal twow-core
   migration, not as a server DBC:
   - `skill_race_class_info_mod` rows;
@@ -802,6 +840,36 @@ cheapest to most thorough:
 3. **Upstream fix (later, optional).** A small contribution to Nostalgia: a
    config key that declares extra "stock" archive names, so `patch-3` …
    `patch-9` stop showing as foreign at all (decision 9.16).
+
+### 5.8 Manual path for friends without Nostalgia (kept as fallback)
+
+A friend who does not want Nostalgia, or whose PC blocks it, keeps a **manual
+path** (OB-15 review, point 7). It uses the same files and the same version
+`N`, so nothing is built twice:
+
+1. For every release, `catalog-gen.py` also writes a **manual bundle**
+   `twow-client-<N>.zip` on the patch host. It contains:
+   - `Data/patch-X.mpq`;
+   - the addon folders (`Interface/AddOns/TWPatch/`, `Interface/AddOns/BotMenu/`)
+     at exactly the commits in `addons.json`;
+   - `SHA256SUMS`;
+   - a short `README.txt`.
+
+   It is fetched in the browser over HTTPS inside Radmin, or handed over
+   directly.
+2. The friend closes the game, deletes the **old addon folders** of these
+   addons (never `WTF\`), unzips the bundle into the client root, and runs
+   `base-guard.ps1 -Check`. The check also verifies the bundle files against
+   `SHA256SUMS`.
+3. The friend sets the realm by hand in `realmlist.wtf`, as today.
+4. The version check is the same as for everyone else: the MOTD line and the
+   TWPatch addon (section 5.4) tell a manual player when a new bundle is due.
+
+**Limits:**
+- no update badge and no one-click rollback; rollback means unzipping the
+  previous bundle, which the host keeps for the last three versions;
+- opt-in mods and graphics presets are not in the bundle; they stay
+  Nostalgia-only, or are installed by hand following their README.
 
 ## 6. Security and legal
 
@@ -893,12 +961,13 @@ test, and put the results in the stage-1 PR.
 | N2 | HTTPS path per decision 9.2 on a friend's PC | Is the certificate accepted by the frozen exe? |
 | N3 | a fresh folder with no `WoW.exe`, `download.update: false` | Does the zip fallback work, or is a hand-over needed? |
 | N4 | bump the catalogue to v2, then reload and update; publish v1 again (rollback) | Badge, update and rollback behave as in section 5.5. |
-| N5 | TWPatch addon versus the MOTD line, and the sentinel | Warning on mismatch, silence on match; sentinel visible. |
+| N5 | TWPatch addon versus the MOTD line, and the sentinel; then an addon update and an asset update through Nostalgia | Warning on mismatch, silence on match; sentinel visible. **`WTF\` is untouched by the updates**: hash listing of `WTF\Account\…\SavedVariables\` (for example `BotMenuDB`) and `WTF\Config.wtf` before and after is identical. Nostalgia's addon code replaces only folders under `Interface\AddOns` (`services/addons.py:614-660`) and seeds `Config.wtf` only when it is missing (`update/workflow.py:104-107`), so this is expected, but it is verified. |
+| N7 | `addons.json` pinned by commit SHA; one run normally, one with the GitHub API unreachable | The pinned commit installs. The failure mode without the API is recorded (no silent fallback to another commit). |
 | N6 | run `base-guard.ps1`, start the game, then press Remove on `patch-3.mpq` in Nostalgia's scan and on `WoWTranslate.dll` under "Detected"; then `base-guard.ps1 -Check` | The game loads read-only MPQs. Both removals fail and the files stay. The check reports the dropped `dlls.txt` line and restores it. |
 
 **Acceptance:**
 
-- T4 and N1–N6 pass, or their fallbacks are decided and recorded.
+- T4 and N1–N7 pass, or their fallbacks are decided and recorded.
 - `dbcdiff` round trip: the Spell Editor's import + export of **unchanged**
   base DBCs is field-identical.
 - Step 2 (consistency) reports zero differences between the client base and the
@@ -1000,7 +1069,9 @@ Each decision comes with a recommendation.
    - **Nostalgia Launcher** for every change;
    - the base client once, via zip or hand-over, for friends without one;
    - the Turtle launcher only if T4 fails;
-   - an own script updater only if Nostalgia fails stage 1.
+   - an own script updater only if Nostalgia fails stage 1;
+   - the **manual bundle** (section 5.8) always available for a friend without
+     Nostalgia.
 2. **HTTPS for the patch host.** Recommendation: **an own domain with
    Let's Encrypt DNS-01**, the name pointing to the Radmin IP. Fallback: an own
    name-constrained CA imported by each friend.
@@ -1039,9 +1110,15 @@ Each decision comes with a recommendation.
 
     Client-only DBCs may ship alone.
 13. **Addons repo.** Recommendation: **create public `Cilverkrow/twow-client-addons`**
-    with only our own addon code (TWPatch, a BotMenu copy synced from twow-core,
-    later our VoiceOver adjustments), pinned by tag. VoiceOver itself stays a
-    manual install unless its tree fits.
+    with only our own addon code:
+    - TWPatch;
+    - a BotMenu copy, synced as a whole folder with per-file sha256 from the
+      deployed core pin;
+    - later our VoiceOver adjustments.
+
+    Each addon gets its **own tags**, and `addons.json` pins **commit SHAs**. A
+    BotMenu tag goes out only after the deploy of its core pin. VoiceOver
+    itself stays a manual install unless its tree fits.
 14. **Graphics scope.** Recommendation: **ReShade presets as assets and DXVK as
     an opt-in mod**; farclip within the engine limit. RTX Remix is not a
     package.
