@@ -9,6 +9,9 @@ name = "patch-X.mpq"
 release_name = "patch-X-v{version}.mpq"
 # Version marker inside the archive (read by the TWPatch addon / humans).
 version_file = "TWPatch/version.txt"
+# Probe addon in the test patch (testpatch only): prints a chat line at login
+# when the client loads addons from patch-X.mpq.
+probe_addon = "TWPatchProbe"
 
 [paths]
 # Relative to this file.
@@ -38,3 +41,9 @@ extract_args = ["extract", "-f", "{file}", "-o", "{output}", "{archive}"]
 archives = ["dbc.MPQ", "patch.MPQ", "patch-2.MPQ", "patch-3.mpq", "patch-4.mpq",
             "patch-5.mpq", "patch-6.mpq", "patch-7.mpq", "patch-8.mpq", "patch-9.mpq"]
 member_prefix = "DBFilesClient\\"
+# The other archives of a stock 1.12 client. extract-base reports every other
+# *.mpq (for example Turtle's backup.MPQ or a community patch-Y) with its load
+# position relative to our patch and the DBCs it carries; build stops when
+# one that loads after us (or in an unknown order) carries a DBC we change.
+known_other = ["base.MPQ", "fonts.MPQ", "interface.MPQ", "misc.MPQ", "model.MPQ",
+               "sound.MPQ", "speech.MPQ", "terrain.MPQ", "texture.MPQ", "wmo.MPQ"]

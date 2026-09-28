@@ -44,6 +44,8 @@ class Pipeline(unittest.TestCase):
             {"ID": 90100, "EffectBasePoints[0]": 4, "Name_lang_enUS": "Earthen Bulwark",
              "Description_lang_enUS": "Reduces damage taken by $s1%."}]))
         write(base, "Map", pack(binding("Map"), [{"ID": 0}, {"ID": 1}]))
+        # extract-base records archives outside the base; none in this client.
+        (base / "foreign-archives.tsv").write_text("archive\tload_order\tdbc_count\tdbcs\n")
         self.base = base
         self.sql = self.tmp / "sql"
         self.sql.mkdir()
@@ -130,6 +132,34 @@ class Pipeline(unittest.TestCase):
         with self.assertRaisesRegex(BaseError, "no registered client base"):
             identify(self.base, self.tmp / "bases", ["Map"])
 
+    def test_later_letter_patch_carrying_our_dbc_blocks(self):
+        (self.base / "foreign-archives.tsv").write_text(
+            "archive\tload_order\tdbc_count\tdbcs\n"
+            "patch-Z.MPQ\tafter\t1\tTalent.dbc\n"
+            "patch-A.MPQ\tbefore\t1\tSpell.dbc\n")
+        with self.assertRaisesRegex(Exception, "patch-Z.MPQ .after. also carries talent"):
+            self.run_build()
+
+    def test_unknown_order_archive_blocks_and_earlier_one_warns(self):
+        from clientpatch.build import check_foreign
+        (self.base / "foreign-archives.tsv").write_text(
+            "archive\tload_order\tdbc_count\tdbcs\n"
+            "backup.MPQ\tunknown\t1\tSpell.dbc\n")
+        with self.assertRaisesRegex(Exception, "backup.MPQ .unknown."):
+            check_foreign(self.base, ["Spell"], "patch-X.mpq", log=lambda *_: None)
+        (self.base / "foreign-archives.tsv").write_text(
+            "archive\tload_order\tdbc_count\tdbcs\n"
+            "patch-A.MPQ\tbefore\t1\tSpell.dbc\n"
+            "patch-Y.MPQ\tafter\t2\tMap.dbc,Lock.dbc\n")
+        warnings = check_foreign(self.base, ["Spell", "Talent"], "patch-X.mpq", log=lambda *_: None)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("patch-A.MPQ", warnings[0])
+
+    def test_base_without_foreign_record_is_refused(self):
+        (self.base / "foreign-archives.tsv").unlink()
+        with self.assertRaisesRegex(Exception, "extract-base"):
+            self.run_build()
+
     def test_bad_delta_blocks(self):
         (self.tmp / "changes" / "Talent" / "0002_bad.csv").write_text(
             HEADER + "set,100,SpellRank[1],notanumber,\n")
@@ -170,9 +200,18 @@ class ExtractBase(unittest.TestCase):
                                 "Map": pack(binding("Map"), [{"ID": 0}])})
             archive("patch-3.mpq", {"SpellIcon": pack(b, [{"ID": 1, "TextureFilename": "new"}])})
             archive("patch-X.mpq", {"SpellIcon": pack(b, [{"ID": 1, "TextureFilename": "ours"}])})
+            archive("patch-Z.mpq", {"SpellIcon": pack(b, [{"ID": 1, "TextureFilename": "loc"}])})
+            archive("backup.MPQ", {"Map": pack(binding("Map"), [{"ID": 9}])})
+            archive("interface.MPQ", {"Ignored": b"x"})  # stock 1.12 archive: not reported
             out = tmp / "base"
             src = extract_base(cfg, tmp / "client", out, log=lambda *_: None)
             self.assertEqual(src, {"SpellIcon.dbc": "patch-3.mpq", "Map.dbc": "dbc.MPQ"})
+            foreign = (out / "foreign-archives.tsv").read_text().splitlines()[2:]
+            self.assertEqual(sorted(foreign), [
+                "backup.MPQ\tunknown\t1\tMap.dbc",
+                "patch-X.mpq\tours\t1\tSpellIcon.dbc",
+                "patch-Z.mpq\tafter\t1\tSpellIcon.dbc",
+            ])
             from clientpatch.wdbc import Table
             self.assertEqual(Table.read(out / "SpellIcon.dbc", b).get((1,), "TextureFilename"), "new")
         finally:
@@ -189,10 +228,26 @@ class TestPatch(unittest.TestCase):
             b = build_testpatch(cfg, 1, "transport test", tmp / "b")
             self.assertEqual(a["files"], b["files"])
             tool = mpq.resolve_tool(cfg.mpq, None)
-            self.assertEqual(mpq.list_files(tool, cfg.mpq, tmp / "a" / "patch-X-v1.mpq"),
-                             ["TWPatch/version.txt"])
+            self.assertEqual(sorted(mpq.list_files(tool, cfg.mpq, tmp / "a" / "patch-X-v1.mpq")),
+                             ["Interface/AddOns/TWPatchProbe/TWPatchProbe.lua",
+                              "Interface/AddOns/TWPatchProbe/TWPatchProbe.toc",
+                              "TWPatch/version.txt"])
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+
+class LoadOrder(unittest.TestCase):
+    def test_patch_letters_and_numbers(self):
+        from clientpatch.build import load_relation
+        ours = "patch-X.mpq"
+        self.assertEqual(load_relation("patch-Z.MPQ", ours), "after")
+        self.assertEqual(load_relation("patch-y.mpq", ours), "after")
+        self.assertEqual(load_relation("patch-9.mpq", ours), "before")
+        self.assertEqual(load_relation("patch-A.MPQ", ours), "before")
+        self.assertEqual(load_relation("patch.MPQ", ours), "before")
+        self.assertEqual(load_relation("patch-x.MPQ", ours), "ours")
+        self.assertEqual(load_relation("backup.MPQ", ours), "unknown")
+        self.assertEqual(load_relation("patch-enUS.MPQ", ours), "unknown")
 
 
 if __name__ == "__main__":

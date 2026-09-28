@@ -68,33 +68,43 @@ no PATH change:
 
 The version check refuses any other mpqcli build, with a clear message.
 
-**Extracting the base DBCs** (once per client, by the owner or OB-15, locally):
+**Extracting the base DBCs** (once per client, by the owner or OB-15, locally,
+with the client mounted read-only):
 
-    mpqcli extract -k -o <work>/mpq <client>/Data/dbc.MPQ
-    ... then patch.MPQ, patch-2.MPQ, patch-3.mpq ... patch-9.mpq in load order,
-    each overwriting the previous, so the highest-priority copy of every
-    DBFilesClient\*.dbc wins (design 2.2).
+    python -m clientpatch extract-base --client <client folder> --out <work>/base
 
-The result, `<work>/mpq/DBFilesClient/`, is the **base directory**.
+This reads `DBFilesClient\*.dbc` from the base archives in load order
+(`[base] archives` in `clientpatch.toml`: `dbc.MPQ`, `patch.MPQ`, `patch-2` …
+`patch-9`). A later archive's copy replaces an earlier one (design 2.2). It
+writes nothing to the client. The result, `<work>/base/`, is the **base
+directory**. It contains:
+
+- `extract-report.txt`: which archive every DBC came from;
+- `foreign-archives.tsv`: every other `*.mpq` in `Data\` that is not a stock
+  1.12 archive (for example Turtle's `backup.MPQ`, a community `patch-Y`, or
+  an old copy of our own `patch-X`). Each entry records whether the archive
+  loads **before** or **after** our patch, or in an **unknown** order, and
+  which DBCs it carries. The build reads this file (see "Limits").
 
 ## Workflow
 
 ```text
 check        ->  validate bindings, rules, sources, deltas (CI runs this; no client needed)
+extract-base ->  pristine DBCs from the client archives + report of foreign archives
 fingerprint  ->  register the pristine base once (hashes only, bases/<id>.toml)
 roundtrip    ->  prove every bound DBC reads and writes back byte-identical
 export-sql   ->  read-only TSV exports of the declared server tables
 build        ->  deltas -> DBC -> review -> consistency -> MPQ + hashes
 catalog      ->  Nostalgia assets.json entry for the built release
-testpatch    ->  archive with only the version file (transport test, no client data)
+testpatch    ->  version file + probe addon only (transport test, no client data)
 ```
 
 ### Register the client base (once)
 
-    python -m clientpatch fingerprint --base <work>/mpq/DBFilesClient \
+    python -m clientpatch fingerprint --base <work>/base \
         --id turtle-1.18.1-enUS --client "Turtle WoW 1.18.1 (build 7272), English" \
         --registered "2026-10-01, OB-15" --write
-    python -m clientpatch roundtrip --base <work>/mpq/DBFilesClient
+    python -m clientpatch roundtrip --base <work>/base
 
 Commit `bases/turtle-1.18.1-enUS.toml`; it holds hashes, not files. `roundtrip`
 must report every bound DBC as byte-identical. That is the acceptance check
@@ -110,7 +120,7 @@ Every query in `sql/sources.toml` must be a single `SELECT`.
 
 ### Build a release
 
-    python -m clientpatch build --base <work>/mpq/DBFilesClient --sql <work>/sql \
+    python -m clientpatch build --base <work>/base --sql <work>/sql \
         --version 3 --label "shaman talents" --out <work>/release-3
 
 The output directory contains:
@@ -128,6 +138,9 @@ The build **stops** in these cases:
 - the base matches no registered fingerprint (a new or localised client, or a
   modified file);
 - a DBC header disagrees with its binding;
+- an archive outside the base that loads **after** our patch, or in an
+  unknown order, carries a DBC we change. On that client it would silently
+  override us (`foreign-archives.tsv`; an earlier one only warns);
 - a delta is invalid, or a DBC differs in a way no delta declared
   (`undeclared.csv`);
 - a consistency rule has a finding that is not accepted;
@@ -140,9 +153,22 @@ file times from `(attributes)`, and `tests/test_build.py` checks this.
 
     python -m clientpatch testpatch --version 1 --out <work>/testpatch-1
 
-This builds an archive that contains only `TWPatch/version.txt`. It contains
-no client data, so it needs no base and no SQL. Use it for launcher tests
-T4/N1 (design section 8).
+This builds an archive with only two things in it:
+
+- `TWPatch/version.txt`, for humans;
+- a tiny probe addon, `Interface\AddOns\TWPatchProbe\`. It is our own
+  `.toc`/`.lua` and prints `TWPatchProbe: TWPatch v<N> loaded from
+  patch-X.mpq` in chat at login.
+
+The 1.12 client cannot read `version.txt` from Lua. Whether it loads addons
+from a patch MPQ at all is exactly what this test shows; the fallback is the
+sentinel texture of design 5.4. The archive contains no client data, so it
+needs no base and no SQL. Use it for launcher tests T4/N1/N5 (design
+section 8).
+
+**A new or changed `patch-X.mpq` needs a full game restart.** `/reload` is
+not enough, because the client opens its archives only at start-up. The same
+applies to removing the file after a test.
 
 ### Nostalgia catalogue entry
 
@@ -243,6 +269,12 @@ test must still pass.
   layouts that have a binding.
 - New DBC **columns** cannot be added; the client reads a fixed layout.
 - Deleting rows is not supported.
+- **No archive that loads after `patch-X` may carry DBCs.** That means
+  `patch-Y`, `patch-Z` (Turtle's localisation slot) or any archive whose load
+  order is unknown. The build stops when such an archive carries a DBC we
+  change. Every friend's client must satisfy this: an English client with no
+  late letter patches (design 2.2). `extract-base` reports it for the client
+  it reads.
 - `sql:` references need a single-column key.
 - Values that live in server code are not visible to the SQL check. Keep
   them in `changes/code-values.md`.
