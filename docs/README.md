@@ -27,7 +27,7 @@ This repository is a source-controlled project view, not a self-contained server
 
 - [Rogue as a tank variant](design/rogue-tank.md) — Turtle data analysis and bot design for #367; needs owner decisions before any implementation.
 - [Shaman tank: Enhancement rework](design/shaman-tank.md) — phase 1 (bots first) design for #357 based on the owner talent line of 2026-09-27: per-row IDs, route (spell change vs. bot aura), Elemental Weapons values, bot design; owner decisions in section 11.
-- [Map and dungeon tooling](design/map-tooling.md) — research and design for #412: 1.12 vs 3.3.5 map formats, editors/converters (no 1.12 Noggit), extractor limits in our core, pilot path (reuse geometry + Scarlet Citadel content), own tools W1–W9, staged plan; owner decisions in section 8.
+- [Map and dungeon tooling](design/map-tooling.md) — research and design for #412/#427: 1.12 vs 3.3.5 map formats, editors/converters (no 1.12 Noggit), extractor limits and silent failure in our core, login guard, pilot path for the Scarlet Citadel on map 45 (reuse vs new terrain, decided at train 10), tools M1–M9 inside the #409 toolchain; decisions in section 8.
 
 ## Authority warning
 
