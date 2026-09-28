@@ -62,7 +62,7 @@ graphics package (#362) and addons (#360, BotMenu).
 
 | Marker | Meaning |
 |---|---|
-| **[code]** | Read from `Cilverkrow/twow-core` `main` = `33210d8` or `twow-repo` `main` = `9616bf7`, with file and line. |
+| **[code]** | Read from `Cilverkrow/twow-core` `main` = `33210d8` (the OB-20 review additions: `6a5ad6d`) or `twow-repo` `main` = `9616bf7`, with file and line. |
 | **[nostalgia]** | Read from `Ourouk/nostalgia-launcher` at `a3b04f2` (2026-09-21), with file and line under `src/nostalgia_launcher/`. |
 | **[spell-editor]** | Read from `stoneharry/WoW-Spell-Editor` at `e69ae90` (2026-08-20). |
 | **[owner]** | From the owner's client listing and the research comment in #409. |
@@ -130,6 +130,17 @@ server must hold **the same file**, and a change is a coupled release.
   so the server reads `tw_world.spell_template`
   (`src/game/Spells/SpellMgr.cpp:3614-3624`).
 - **`SkillLineAbility` comes from SQL** (`sql/base/tw_world_skill_line_ability.sql`).
+- **`SkillRaceClassInfo` has a server-side SQL override** (OB-20 review, verified
+  at twow-core `6a5ad6d`). `skill_race_class_info_mod` overrides `RaceMask`,
+  `ClassMask`, `Flags`, `MinLevel` and `SkillTierId` per DBC row; `-1` keeps the
+  DBC value (`src/game/Spells/SpellMgr.cpp:2676-2733`). New race/class skill
+  access (#379, the weapon talent W of #392) is therefore server-side **SQL**,
+  not a server DBC change.
+- **Maps and area triggers come from SQL:** `map_template` and
+  `areatrigger_template` (`sql/base/tw_world_map_template.sql`,
+  `sql/base/tw_world_areatrigger_template.sql`, `ObjectMgr.cpp:5200-5202`). The
+  server does not load `Map.dbc` or `AreaTrigger.dbc`, so the client's copies
+  can drift from the server's content unnoticed (step 2 in 3.4).
 - A DBC with a wrong field count is rejected ("Wrong client version DBC
   file?", `DBCStores.cpp:175`). The Turtle 1.18.1 DBCs the server loads
   therefore have the 1.12 layout. `Spellfmt` has 173 fields
@@ -143,12 +154,12 @@ server must hold **the same file**, and a change is a coupled release.
 | `TalentTab.dbc` | Tab names, icons, class mask | **yes** (`:340`) | exactly | 2 (probably unchanged: no 4th tree, #357) |
 | `Spell.dbc` | Names, **tooltip text and its numbers** (`$s1`, `$d`, `$o1` are computed from the client's DBC), icon, **client-side prediction** (cast bar, range, cast-while-moving) | **no** (SQL) | the **numbers must mirror `spell_template`**, or tooltips lie and the client may refuse or mis-time casts | 2 |
 | `SpellIcon.dbc` | Icon path per icon ID | yes (`:324`) | exactly; **reuse existing icon IDs** | 2 (ideally unchanged) |
-| `SpellItemEnchantment.dbc` | Imbue names/values on items | yes (`:319`) | exactly, only if an imbue text changes | 2 (optional) |
+| `SpellItemEnchantment.dbc` | Imbue and poison names/values on items | yes (`:319`) | exactly. **Rogue poison ranks I–IV for players need one enchantment per rank**; today one script (45613) serves every level band (#386 section 3.4 b). That makes it a coupled release | 2/3 |
 | `SpellCastTimes`, `SpellDuration`, `SpellRange` | Index tables | yes (`:315-321`) | exactly; **reuse existing indices** | 2 (ideally unchanged) |
 | `CharBaseInfo.dbc` | **Which classes a race may pick on the creation screen** | **no** | client-only | 3 |
 | `CharStartOutfit.dbc` | Outfit in the creation preview | no (server: `playercreateinfo_item`) | client-only, cosmetic | 3 (optional) |
 | `ChrRaces.dbc`, `ChrClasses.dbc` | Race/class definitions | yes (`:217-218`) | exactly; **no change needed** | – |
-| `SkillRaceClassInfo.dbc` | Which race/class gets which skill line | yes (`:280`) | exactly; shaman/paladin race masks may need dwarf/undead (OB-20) | 3 |
+| `SkillRaceClassInfo.dbc` | Which race/class gets which skill line | yes (`:280`), **but overridable by SQL** `skill_race_class_info_mod` | server side is changed by **SQL override**, not by the server DBC. The client DBC only has to match **functionally** (same race/class masks) for skill display | 3 |
 | `SkillLineAbility.dbc` | Spellbook/trainer race and class masks | no (server: SQL) | **content** must agree with `skill_line_ability` | 3 (verify) |
 
 **Where character creation checks race/class:**
@@ -271,12 +282,21 @@ for everything else.
 ```text
  (1) BASE     extract DBFilesClient\*.dbc from the client's MPQs in load order
               (mpqcli, highest-priority copy wins) -> base/ + sha256 list
- (2) CONSIST. for every DBC the server loads: base/X.dbc == server data/dbc/X.dbc ?
-              mismatch -> STOP (client and server were extracted differently)
+ (2) CONSIST. a) for every DBC the server loads: base/X.dbc == server data/dbc/X.dbc ?
+                 mismatch -> STOP (client and server were extracted differently)
+              b) server SQL content vs client-only DBCs (read-only queries):
+                 map_template        vs Map.dbc          (every server map must exist
+                                                          in the client)
+                 areatrigger_template vs AreaTrigger.dbc (id, map, position)
+                 skill_race_class_info_mod vs the patched SkillRaceClassInfo.dbc
+                 mismatch -> REPORT, owner/OB-20 decide (lessons of #408: map 45
+                 exists only on the server and the client hangs; trigger 5340 has
+                 map 0 in the DB while its entrance is on map 532)
  (3) IMPORT   once per base: Spell Editor imports base/ into twow_clientdbc
               (GUI; our 1.12 bindings for Talent/TalentTab/CharBaseInfo …)
  (4) CHANGE   run changes/*.sql in order against a fresh copy of twow_clientdbc;
-              tooltip numbers joined from tw_world.spell_template (read-only)
+              tooltip numbers joined from tw_world.spell_template (read-only);
+              code-side values come from changes/code-values.md (see below)
  (5) EXPORT   HeadlessExport (or GUI) -> out/DBFilesClient/*.dbc
  (6) VERIFY   dbcdiff base/ vs out/ -> review.csv; undeclared difference -> STOP
  (7) PACK     mpqcli: out/ (+ sentinel texture) -> patch-X-v<N>.mpq (v1, zlib, listfile)
@@ -294,11 +314,32 @@ for everything else.
   inner files (sha256 per DBC). Whether the MPQ container is byte-identical
   depends on `(attributes)` timestamps; stage 1 decides and records it.
 - **Spell report:** step 4 can also list every tooltip-relevant field where
-  `spell_template` differs from the base `Spell.dbc`. That is the list of
-  "server values already changed" (Earthen Bulwark, Ghost Wolf, imbues …). The
-  change scripts stay an explicit allowlist.
-- **New IDs** (new talent spells) must be free in both `spell_template` and the
-  base `Spell.dbc`. Stage 2 measures both maxima and reserves a range.
+  `spell_template` differs from the base `Spell.dbc`. The change scripts stay
+  an explicit allowlist.
+- **Not every changed value is in `spell_template`** (OB-20 review). The spell
+  report cannot find these:
+  - the **Earthen Bulwark cap** 13/27/40 % is in code
+    (`src/scripts/spells/spell_shaman.cpp`, spells 58128–58130), and its tooltip
+    says literally "cannot exceed 20%": a text, not a `$s` number;
+  - the **rogue poison ranks** scale by caster level in the script
+    (#367 O-9 a);
+  - **Stormstrike +10 % per charge** is bot-only and must **not** appear in a
+    player tooltip.
+
+  Therefore `changes/code-values.md` is a **mandatory, hand-kept list** of
+  values that live in code or config. Each entry has the spell ID, value,
+  source (file and line at a pinned core commit) and whether it is
+  player-visible. Every tooltip change script cites its entry. When a pinned
+  source line changes, stage review re-checks the entry.
+- **Talent rank spells reuse the phase-1 IDs** (OB-20 review). The bot auras
+  **90100–90199** (shaman #357 route B, rogue #367;
+  `src/game/FunserverRogueTalents.h` holds 90150–90193) exist only in
+  `spell_template`, not in the client `Spell.dbc`.
+  - Stage 2 makes them the `Talent.dbc` rank spells and adds `Spell.dbc` rows
+    with the **same IDs** (tooltip, icon), so the server data stays unchanged.
+  - **90110 is intentionally unused.**
+  - Only genuinely new spells need new IDs, free in both `spell_template` and
+    the base `Spell.dbc`; stage 2 measures both maxima.
 
 ## 4. Distribution options
 
@@ -675,10 +716,15 @@ Optional later (a twow-core PR, not stage 1):
   2. `assets.json` version `N`;
   3. MOTD line `[TWPatch] N`;
   4. a news item.
-- **Coupled release** (`Talent`, `TalentTab`, `SkillRaceClassInfo`, `SpellIcon`
-  or the index tables change): the same steps **plus** the server DBCs from step
-  8 deployed to `data/dbc` and a server restart, all under the same `N`. Owner
-  approval is required, as for any deploy.
+- **Coupled release** (`Talent`, `TalentTab`, `SpellItemEnchantment`,
+  `SpellIcon` or the index tables change): the same steps **plus** the server
+  DBCs from step 8 deployed to `data/dbc` and a server restart, all under the
+  same `N`. Owner approval is required, as for any deploy.
+- **SQL-side companions** ship under the same `N` as a normal twow-core
+  migration, not as a server DBC:
+  - `skill_race_class_info_mod` rows;
+  - `spell_template` rows;
+  - switching off the phase-1 aura grants (stage 2).
 - **Rollback:**
   1. `catalog-gen.py --release <N-1>` points `assets.json` back to the previous
      file and version string;
@@ -866,18 +912,36 @@ test, and put the results in the stage-1 PR.
 
 - our 1.12 bindings for `Talent`/`TalentTab` (+ `SpellItemEnchantment` if
   needed);
-- change scripts for tooltips, where numbers are joined from `spell_template`
-  (Earthen Bulwark, Ghost Wolf, imbues …), and for the phase-2 talent slots of
-  #357 / #367, which reuse existing icon IDs;
-- the ID range reservation;
-- the coupled server release (`Talent.dbc` and friends to `data/dbc` plus a
-  restart) under the same `N`.
+- change scripts for tooltips:
+  - numbers are joined from `spell_template` (Ghost Wolf, imbues …);
+  - **code-side values** come from `changes/code-values.md` (Earthen Bulwark
+    cap, poison scaling), including rewriting literal tooltip texts such as
+    "cannot exceed 20%";
+- change scripts for the phase-2 talent slots of #357 / #367:
+  - **the rank spells are the existing bot-aura IDs 90100–90199** (90110
+    unused), with new `Spell.dbc` rows for tooltip and icon (reusing existing
+    icon IDs);
+- **in the same release** (OB-10, O-12): switch off the SpecAura/ClassGrant
+  grants of those auras for the affected talents, and adjust the premade trims.
+  Otherwise bots that learn the talent **also** keep the aura and get the
+  effect twice;
+- **rogue poisons for players:** one `SpellItemEnchantment` per poison rank
+  I–IV (coupled server + client DBC, #386 section 3.4 b). This can move to its
+  own release if #386 decides so;
+- the ID reservation for genuinely new spells only;
+- the coupled server release (`Talent.dbc`, `SpellItemEnchantment.dbc` … to
+  `data/dbc` plus a restart) and the SQL companions (grant switch-off) under
+  the same `N`.
 
 **Acceptance:**
 
 - `review.csv` lists exactly the intended field changes.
 - In game with the patch:
-  - every changed tooltip shows the server's numbers;
+  - every changed tooltip shows the server's numbers, including the
+    code-side values from `code-values.md`;
+  - a bot with the new talent has **either** the talent spell **or** the
+    phase-1 aura, never both (check the aura list on a bot before and after
+    the release);
   - Ghost Wolf rank 3 shows as instant and can be cast while moving;
   - the new slots sit in the right row and column with the right rank count;
   - learning each new talent on a test character gives the right spell
@@ -896,8 +960,11 @@ by OB-20 and approved by the owner.
 
 - the `CharBaseInfo` binding and a change script adding (3, 7) dwarf shaman and
   (5, 2) undead paladin;
-- if needed: `SkillRaceClassInfo` race masks (coupled) and a check of
-  `SkillLineAbility` content against `skill_line_ability`;
+- server skill access through **`skill_race_class_info_mod` SQL rows**
+  (OB-20, twow-core migration), not through a server DBC;
+- client side: patch `SkillRaceClassInfo.dbc` so its race/class masks match
+  the override **functionally** (step 2 b reports any difference), plus a check
+  of `SkillLineAbility` content against `skill_line_ability`;
 - optionally `CharStartOutfit`;
 - if Turtle's `GlueXML` hard-codes class lists: a glue override. Note that
   Turtle glue will not change any more after the shutdown, so the override does
@@ -965,7 +1032,12 @@ Each decision comes with a recommendation.
     profile for LAN.
 12. **Coupled releases.** Recommendation: any change to a DBC the server loads
     ships **together with** the server DBC deploy and a restart, under one
-    version `N`. Client-only DBCs may ship alone.
+    version `N`. The server-side SQL companions ship under the same `N`:
+    - `skill_race_class_info_mod`;
+    - `spell_template`;
+    - the switch-off of the phase-1 aura grants.
+
+    Client-only DBCs may ship alone.
 13. **Addons repo.** Recommendation: **create public `Cilverkrow/twow-client-addons`**
     with only our own addon code (TWPatch, a BotMenu copy synced from twow-core,
     later our VoiceOver adjustments), pinned by tag. VoiceOver itself stays a
