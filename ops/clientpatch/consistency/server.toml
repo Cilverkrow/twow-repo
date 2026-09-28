@@ -432,3 +432,17 @@ dbc = "AttributesExC"
 [[rule.pair]]
 sql = "attributesEx4"
 dbc = "AttributesExD"
+
+# A spell-type enchantment (poisons, imbues) fires its EffectArg spell on the
+# server; a changed row whose proc spell the server lacks would do nothing
+# (#367 poison ranks I-IV, 90141-90144). EffectArg[0] only: for spell-type
+# enchantments that is the spell. A non-spell enchantment we change (stat,
+# resistance) needs an accept with its reason here.
+[[rule]]
+id = "enchant-procs-on-server"
+kind = "refs_in_sql"
+source = "spell_template"
+dbc = "SpellItemEnchantment"
+scope = "changed"
+columns = ["EffectArg[0]"]
+why = "an enchantment whose proc spell the server does not know never fires"
