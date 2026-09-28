@@ -89,8 +89,9 @@ class RogueTalentContract(unittest.TestCase):
         mirrored = {int(r["id"]) for r in csv.DictReader(INPUT.read_text(encoding="utf-8").splitlines())}
         for t in talents().values():
             self.assertTrue(set(t["ranks"]) <= mirrored)
-        # kit 90140-90146, talent line and helpers 90150-90193, poison ranks 90200-90207
-        expected = set(range(90140, 90147)) | set(range(90150, 90194)) | set(range(90200, 90208))
+        # kit 90140-90146, talent line and helpers 90150-90193, poison ranks 90200-90207,
+        # recipes and trainer spells of P-1/P-2 90208-90219
+        expected = set(range(90140, 90147)) | set(range(90150, 90194)) | set(range(90200, 90220))
         self.assertEqual(mirrored, expected)
 
     def test_enchantments_fire_the_mirrored_poison_procs(self):
@@ -102,7 +103,8 @@ class RogueTalentContract(unittest.TestCase):
 class RogueDeltasEndToEnd(unittest.TestCase):
     """Apply the committed deltas to synthetic base tables and run the server rules."""
 
-    RULES = ("spell-matches-server", "talent-ranks-on-server", "enchant-procs-on-server")
+    RULES = ("spell-matches-server", "talent-ranks-on-server", "enchant-procs-on-server",
+             "skill-line-ability-matches-server")
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -115,7 +117,17 @@ class RogueDeltasEndToEnd(unittest.TestCase):
             "SpellItemEnchantment": Table.from_bytes(
                 pack(binding("SpellItemEnchantment"), [{"ID": 3006, "Effect[0]": 1, "EffectArg[0]": 45613}]),
                 binding("SpellItemEnchantment")),
+            "SkillLineAbility": Table.from_bytes(pack(binding("SkillLineAbility"), [{"ID": 1, "SkillLine": 38}]),
+                                                 binding("SkillLineAbility")),
         }
+        # P-1/P-2 skill_line_ability rows as the core migration writes them.
+        sla = ["id\tskill_id\tspell_id\trace_mask\tclass_mask\treq_skill_value\tsuperseded_by_spell\t"
+               "learn_on_get_skill\tmax_value\tmin_value"]
+        for spell, skill, sup, hi, lo in ((90140, 38, 0, 0, 0), (90142, 38, 90143, 0, 0), (90143, 38, 90144, 0, 0),
+                                          (90144, 38, 0, 0, 0), (90208, 40, 0, 175, 125), (90209, 40, 0, 225, 175),
+                                          (90210, 40, 0, 275, 225), (90211, 40, 0, 325, 275)):
+            sla.append("\t".join(str(v) for v in (spell, skill, spell, 0, 8, 1, sup, 0, hi, lo)))
+        (self.tmp / "skill_line_ability.tsv").write_text("\n".join(sla) + "\n", encoding="utf-8")
         # A server export with a distinct value in every mirrored column.
         kinds = {c.name: c.kind for c in spell_b.columns}
         pairs = GEN.pairs(ROOT)
@@ -147,6 +159,8 @@ class RogueDeltasEndToEnd(unittest.TestCase):
         self.assertEqual(consistency.blocking(findings), [])
         self.assertEqual(self.tables["Spell"].get((90150,), "Description_lang_enUS"), "description of 90150")
         self.assertEqual(self.tables["Talent"].get((9178,), "PrereqTalent[0]"), 9175)
+        self.assertEqual(self.tables["SkillLineAbility"].get((90142,), "SupercededBySpell"), 90143)
+        self.assertEqual(self.tables["SkillLineAbility"].get((90208,), "SkillLine"), 40)
 
     def test_a_missing_server_spell_is_caught(self):
         # Drop one rank spell from the export: the talent and spell rules must fail.

@@ -440,8 +440,9 @@ every player and bot, **with the same spell IDs**.
 | Delta (`ops/clientpatch/changes/`) | Content |
 |---|---|
 | `Talent/0367_rogue_talents.csv` | 16 talents in free slots of the three rogue trees, rank spells 90150-90190, talent ID = first rank spell − 81000 (9150 … 9188) |
-| `Spell/0367_rogue_spells.csv` | client rows for 90140-90146 (kit), 90150-90193 (talents and helpers) and 90200-90207 (poison ranks I-IV), **generated** by `tools/gen_spell_mirror.py`: every column is `sql:spell_template.<column>`, texts and icon included |
+| `Spell/0367_rogue_spells.csv` | client rows for 90140-90146 (kit), 90150-90193 (talents and helpers), 90200-90207 (poison ranks I-IV) and 90208-90219 (recipes and trainer spells, P-1/P-2), **generated** by `tools/gen_spell_mirror.py`: every column is `sql:spell_template.<column>`, texts and icon included |
 | `SpellItemEnchantment/0367_agitating_poison_ranks.csv` | enchantments 90141-90144 for poison ranks I-IV (copies of 3006, each firing its own proc 90200-90203) |
+| `SkillLineAbility/0367_rogue_trainer_and_recipes.csv` | spellbook rows for Spit and Shadow Dance I-III (Combat 38, ranks chained) and trade skill rows for the recipes I-IV (Poisons 40); new rule `skill-line-ability-matches-server` |
 
 - **Icons:** only existing `SpellIcon` IDs are used, so `SpellIcon.dbc` is
   unchanged.
@@ -461,15 +462,22 @@ The twow-core branch `claude/github-issue-367-cloud-bdbtsm` carries it:
   - tooltip texts (`$s1`, `$h`, `$d` tokens) and icons for 90140-90193, with
     no mechanic change;
   - poison ranks I-IV: procs 90200-90203 with the owner values (#386 D-1, D-7,
-    D-8), coatings 90204-90207 on enchantments 90141-90144, items 90141-90144.
-    No trainer, recipe, vendor or loot rows yet (P-2).
+    D-8), coatings 90204-90207 on enchantments 90141-90144, items 90141-90144;
+  - P-1/P-2: trainer spells 90216-90219 for Spit (12) and Shadow Dance I-III
+    (20/40/60), recipes 90208-90211 with their trainer spells 90212-90215
+    (Poisons 1/130/180/230 at 20/30/40/50; Maiden's Anguish 2931 ×1/1/2/2 +
+    Leaded Vial 3372, both already sold by the poison vendors),
+    `skill_line_ability` rows and trainer rows at every trainer that teaches
+    Agitating Poison. **This migration belongs to the coupled release**: pinned
+    earlier, players could learn spells their client does not know.
 - **`AiPlayerbot.SpecAura.TalentClasses`** (empty = phase 1). For a listed
   class, SpecAura:
   - neither grants nor removes the talent auras (a removal would unlearn a
     bought talent, because the IDs are the same);
   - makes the premade budget reserve nothing.
 
-  The kit is not a talent and stays granted.
+  The kit is not a talent: it stays granted to 4.3 but is taken from no one,
+  since every rogue may now learn it at the trainer (P-1).
 - **`build_premade_specs.py --talent-classes 4`:** finds the aura talents in
   the patched `Talent.dbc` by their first rank spell and reads the hand-built
   links without them. It then adds each path's talents at full rank: exactly
@@ -498,7 +506,7 @@ system over the same spell IDs.
    may. That goes as a core PR in the same pin.
 4. **Maintenance window (world stopped):**
    - copy `server-dbc/*.dbc` into `data/dbc`;
-   - bump the pin;
+   - bump the pin (this brings migration `20260928170000` with the trainer rows);
    - set `AiPlayerbot.SpecAura.TalentClasses = 4` in the server profile;
    - run the talent reset for all roster rogues: `deploy/roster/talent-reset`,
      `--class 4 --spec-nos <all four rogue paths>`, first `--dry-run`, then
@@ -532,10 +540,10 @@ Player rogues had no 901xx spells in phase 1, so they need no migration.
 | V-2 | Three arrows to existing Turtle talents: `PrereqTalent`/`PrereqRank` for 9154 (from Assassination R2/C4), 9156 (from Cold Blood R5/C3), 9172 (from Setup, Combat R3/C4) | their talent IDs are only in the live `Talent.dbc`; the one arrow between new talents (9175 → 9178) is set |
 | V-3 | Talent IDs 9150-9188 and enchantment IDs 90141-90144 are free | a collision stops the build (an `insert` of an existing key fails), so this only saves a failed run |
 
-### 7.5 Open owner decisions
+### 7.5 Owner decisions (2026-09-28: "genau so")
 
-| # | Decision | Recommendation |
-|---|---|---|
-| P-1 | Do players get Spit and Shadow Dance from the rogue trainer (Spit 12, Shadow Dance 20/40/60)? Their client rows are in the patch either way (bots show them as buffs) | yes, for every rogue, like Taunt for every warrior |
-| P-2 | Source of the player poison ranks I-IV: recipe per rank from the trainer at 20/30/40/50, reagents from the poison vendor (owner note, #367 issuecomment-5858886535) | **the ingredients of Agitating Poison 45611** (2 × Maiden's Anguish 2931 + 1 Leaded Vial 3372), in fewer and cheaper steps per rank; this needs 4 recipe spells, 4 trainer-teach spells and `skill_line_ability` rows in the same release |
-| P-3 | Talent and spell names and the chosen icons (7.1) | as in the migration; the owner may rename (one `spell_template` edit, and the mirror follows) |
+| # | Decision |
+|---|---|
+| P-1 | Every rogue learns Spit (12) and Shadow Dance I/II/III (20/40/60) at the rogue trainer. |
+| P-2 | Poison ranks I-IV are crafted: recipes from the rogue trainer at 20/30/40/50 with the ingredients of Agitating Poison 45611 (Maiden's Anguish 2931 ×1/1/2/2, Leaded Vial 3372). |
+| P-3 | Talent and spell names and icons as in the migration. |

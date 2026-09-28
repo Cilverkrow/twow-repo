@@ -58,3 +58,15 @@ id,copy_from,class_mask,note
 90205,45612,copy,"#367 player poison rank (own values, no CV)"
 90206,45612,copy,"#367 player poison rank (own values, no CV)"
 90207,45612,copy,"#367 player poison rank (own values, no CV)"
+90208,45611,copy,#367 P-2 poison recipe rank 1
+90209,45611,copy,#367 P-2 poison recipe rank 2
+90210,45611,copy,#367 P-2 poison recipe rank 3
+90211,45611,copy,#367 P-2 poison recipe rank 4
+90212,47312,copy,#367 P-2 trainer spell for recipe rank 1
+90213,47312,copy,#367 P-2 trainer spell for recipe rank 2
+90214,47312,copy,#367 P-2 trainer spell for recipe rank 3
+90215,47312,copy,#367 P-2 trainer spell for recipe rank 4
+90216,47312,copy,#367 P-1 trainer spell Spit
+90217,47312,copy,#367 P-1 trainer spell Shadow Dance rank 1
+90218,47312,copy,#367 P-1 trainer spell Shadow Dance rank 2
+90219,47312,copy,#367 P-1 trainer spell Shadow Dance rank 3

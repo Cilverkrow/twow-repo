@@ -446,3 +446,50 @@ dbc = "SpellItemEnchantment"
 scope = "changed"
 columns = ["EffectArg[0]"]
 why = "an enchantment whose proc spell the server does not know never fires"
+
+# The server places spells in skill lines from skill_line_ability (SQL); the
+# client uses SkillLineAbility.dbc for the spellbook tab, rank chains and the
+# trade skill window (recipe colours). A changed client row must agree.
+[[rule]]
+id = "skill-line-ability-matches-server"
+kind = "fields_equal"
+source = "skill_line_ability"
+dbc = "SkillLineAbility"
+scope = "changed"
+why = "spellbook tab, rank chain and recipe colours come from the client DBC"
+
+[[rule.pair]]
+sql = "skill_id"
+dbc = "SkillLine"
+
+[[rule.pair]]
+sql = "spell_id"
+dbc = "Spell"
+
+[[rule.pair]]
+sql = "race_mask"
+dbc = "RaceMask"
+
+[[rule.pair]]
+sql = "class_mask"
+dbc = "ClassMask"
+
+[[rule.pair]]
+sql = "req_skill_value"
+dbc = "MinSkillLineRank"
+
+[[rule.pair]]
+sql = "superseded_by_spell"
+dbc = "SupercededBySpell"
+
+[[rule.pair]]
+sql = "learn_on_get_skill"
+dbc = "AcquireMethod"
+
+[[rule.pair]]
+sql = "max_value"
+dbc = "TrivialSkillLineRankHigh"
+
+[[rule.pair]]
+sql = "min_value"
+dbc = "TrivialSkillLineRankLow"
