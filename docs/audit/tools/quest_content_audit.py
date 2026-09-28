@@ -31,7 +31,8 @@ def rows(sql):
     cmd = ['mariadb']
     if ARGS.defaults_file:
         cmd.append('--defaults-file=' + ARGS.defaults_file)
-    cmd += ['-B', '-N', ARGS.db, '-e', sql]
+    # read-only session: a run against a real world DB by mistake cannot change anything
+    cmd += ['--init-command=SET SESSION TRANSACTION READ ONLY', '-B', '-N', ARGS.db, '-e', sql]
     out = subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
     res = []
     for line in out.split('\n'):
@@ -129,6 +130,10 @@ SCRIPT_TABLES = ['quest_start_scripts', 'quest_end_scripts', 'event_scripts', 'g
                  'spell_scripts', 'creature_spells_scripts']
 # numbers that the weak C++ match hits by coincidence (verified by hand): a quest-status check and gossip text ids
 FALSE_CPP_MATCH = {60070, 70001, 70002, 70003}
+# maps whose missing entrance is an owner decision, not a gap
+DECIDED_MAPS = {45: 'map 45 exists in no Turtle client (no Map.dbc entry, no WDT/ADT; OB-30 in twow-repo#408); owner decision '
+                    '"Ruhen lassen + absichern" (#408 issuecomment-5859592538), implemented in twow-core#198: portal GO 112920 '
+                    'non-interactive, game_tele 500/819 removed, content kept for a later client patch (twow-repo#409)'}
 # where an unspawned boss belongs, when the data alone does not say (inferred from quest text / loot / C++ folder)
 BOSS_HINT = {93333: 'Tower of Karazhan (inferred)', 65148: 'Blackwing Lair (inferred)', 59812: 'Tower of Karazhan (inferred)'}
 DEPRECATED_RE = re.compile(r'deprecated|unused|\bOLD\b|zzOLD|\[PH\]|<NYI>|NYI|<TXT>|<TEST>|\btest\b|DND|\[DNT\]',
@@ -883,7 +888,10 @@ def main():
         ncre = sum(1 for lst in cre_spawn.values() for x in lst if x[1] == m)
         if ncre == 0:
             continue
-        if not at_tp.get(m):
+        if not at_tp.get(m) and m in DECIDED_MAPS:
+            addc(mname, f'map {m} {mname}', 'OK_SUSPICIOUS', 'no areatrigger_teleport into the map: decided, not a gap',
+                 DECIDED_MAPS[m], '-', 'DECIDED')
+        elif not at_tp.get(m):
             portals = [str(g) for g, gg in gt.items() if gg['script'] == 'custom_dungeon_portal' and any(x[1] != m for x in go_spawn.get(g, ())) and mname.split()[0].lower() in gg['name'].lower()]
             addc(mname, f'map {m} {mname}', 'BROKEN',
                  f'{"raid" if mtype == 2 else "dungeon"} with {ncre} creature spawns has no areatrigger_teleport into it',

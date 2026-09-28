@@ -12,8 +12,8 @@ marked **verify live** are for the OB-20 read-only pass.
   made (marked **REGRESSION**).
 - C++: `src/scripts`, `src/game`, `modules` (registered script names, entry/quest literals).
 - Findings: [`quest-content-audit.csv`](quest-content-audit.csv), 908 rows.
-- Reproduce: [`tools/quest_content_audit.py`](tools/quest_content_audit.py) (read-only
-  SELECTs; the header says how to call it).
+- Reproduce: [`tools/quest_content_audit.py`](tools/quest_content_audit.py) (SELECTs only, in a
+  `READ ONLY` session; the header says how to call it).
 
 ## Summary
 
@@ -40,9 +40,9 @@ Findings per category (a quest can have several):
 | SPAWN_GAP (creature/GO missing) | 465 | 43 | 23 |
 | ITEM_GAP (no item source) | 86 | 59 | - |
 | SCRIPT_GAP (script missing) | 28 | 23 | 43 |
-| BROKEN (no ender, missing spell) | 8 | 7 | 2 |
+| BROKEN (no ender, missing spell) | 8 | 7 | 1 |
 | CHAIN_GAP | 8 | 1 | - |
-| OK_SUSPICIOUS | 236 | 4 | 9 |
+| OK_SUSPICIOUS | 236 | 4 | 10 |
 
 BROKEN / PARTIAL / UNOFFERED quests per zone (zones with at least one BROKEN or PARTIAL):
 
@@ -185,10 +185,13 @@ the raid. Effort: brazier/door M, Ursol L, the raid's AI L.
    tables and does not bring entry 1 back. 16 AV quests (7361-7366, 7401-7402, 7421-7428) are
    BROKEN. Fix: re-insert the 16 rows from `sql/base` (S). The same rebuild left 72 items that had
    a loot source in `sql/base` with none; only these 8 are quest items.
-2. **Scarlet Citadel (map 45, raid) has no entrance.** No `areatrigger_teleport` targets map 45.
-   The only entrance is the portal GO 112920, whose `script_name = custom_dungeon_portal` is not
-   registered by any C++ script (13 portal GOs use it; the other maps also have an areatrigger,
-   Scarlet Citadel does not). S to M.
+2. **Scarlet Citadel (map 45): decided, not a gap.** No `areatrigger_teleport` targets map 45,
+   and its portal GO 112920 uses the unregistered `custom_dungeon_portal`. But map 45 exists in no
+   Turtle client (no Map.dbc entry, no WDT/ADT; OB-30 in #408), and an entrance would hang the
+   client on the loading screen. Owner decision "Ruhen lassen + absichern" (let it rest and
+   secure it, #408 issuecomment-5859592538), implemented in twow-core#198: portal 112920
+   non-interactive, `game_tele` 500/819 removed, and the content stays in the DB for a later client
+   patch (#409). The CSV row has verdict `DECIDED`.
 3. **Boss spawn gaps outside the three cases:** Echo of Sargeras (60063) and Corrupted Ashbringer
    (60064) for 41637 (Northwind); Spirit of Eskhandar (62112) for 41547; Grand Crusader Dathrohan
    (2000092) for 20002; Rholgast (62065) for 41393. Never-spawned bosses without a quest (loot
@@ -234,8 +237,7 @@ the raid. Effort: brazier/door M, Ursol L, the raid's AI L.
       the instance script (M) and Mephistroth (L). Unblocks 11+ quests and the tier turn-ins.
    3. Timbermaw Hold: brazier → barrier logic (M), Ursol, Nemasra, Grammon, Jam'wahli spawns
       and encounters (L). Unblocks the Narkogg chain (41932-41934, 42022, 42025) and 41960+.
-   4. Scarlet Citadel entrance (S-M).
-   5. BWL: Ezzel Darkbrewer (L).
+   4. BWL: Ezzel Darkbrewer (L).
 2. **Chains with many follow-ups** (column `blocked_follow_ups`): 41087 Scythe of the Goddess
    (12), 80201 Stocking Up on Wood (12), 41956 Not Alone (9), 41694 To The Darkest Places (8),
    41803 The Skardyn (6), 42073 Facing the Elder (6), 42030 rogue chain (6), 41960 (5), 41932 (4).
@@ -279,6 +281,7 @@ Limits:
 One row per finding; a quest can have several rows. Content findings have an empty `quest_id`
 and name the object in `title`. `evidence` is the query or data that shows the gap.
 `effort` is a rough S/M/L. `verdict` is the verdict of the quest the row belongs to (see
-Summary); `VERIFY_LIVE` and `MISSING_CONTENT` appear on content rows only.
+Summary); `VERIFY_LIVE`, `MISSING_CONTENT` and `DECIDED` (an owner decision, not a gap) appear
+on content rows only.
 `blocked_follow_ups` counts the quests after this one in its chain (via `PrevQuestId`,
 `NextQuestId`, `NextQuestInChain`).
