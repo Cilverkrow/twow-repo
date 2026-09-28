@@ -7,5 +7,5 @@ insert,9005,263,4,3,90117,0,0,0,0,0,0,0,0,264,0,0,0,0,0,0,0,R5/C4 Charged Storms
 insert,9006,263,5,0,90118,90119,90120,90121,90122,0,0,0,0,0,0,0,0,0,0,0,0,R6/C1 Storm Wisdom (20..100 % on melee crit)
 insert,9007,263,5,3,90126,90127,90128,0,0,0,0,0,0,0,0,0,0,0,0,0,0,R6/C4 Shield Constitution (+1/2/3 % stamina per charge)
 insert,9008,263,6,0,90124,0,0,0,0,0,0,0,0,9006,0,0,4,0,0,0,0,R7/C1 Chain Storm (needs Storm Wisdom 5/5)
-insert,9009,263,6,3,90129,0,0,0,0,0,0,0,0,9005,0,0,0,0,0,0,0,"R7/C4 Shield Ward (owner arrow from R5/C4, crosses R6/C4: decision S2-2)"
-insert,9010,263,6,2,90130,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"R7/C3 Ancestral Arms, weapon talent W (slot: decision S2-1)"
+insert,9009,263,6,3,90129,0,0,0,0,0,0,0,0,9007,0,0,2,0,0,0,0,R7/C4 Shield Ward (needs Shield Constitution 3/3; owner 2026-09-28 S2-2)
+insert,9010,263,6,2,90130,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"R7/C3 Ancestral Arms, weapon talent W (slot decided by the owner 2026-09-28, S2-1)"

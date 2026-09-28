@@ -163,14 +163,16 @@ class ServerTests(unittest.TestCase):
 class ShamanChangeTests(unittest.TestCase):
     """The committed #357 delta itself (layout only; the server check needs --core)."""
 
-    def test_layout_passes_with_the_known_arrow_warning(self):
+    def test_layout_passes_without_warnings(self):
         delta = talentdelta.load_talents(SHAMAN / 'Talent.csv')
         base = talentdelta.load_base(SHAMAN / 'base-cells.csv')
         errors, warnings = talentdelta.check_layout(delta, base)
         self.assertEqual([], errors)
-        # Decision S2-2: the owner's arrow R5/C4 -> R7/C4 passes Shield Constitution.
-        self.assertEqual(['talent 9009: arrow from talent 9005 crosses talent 9007 at tier 5 column 3'],
-                         warnings)
+        # S2-2 (owner 2026-09-28): Shield Ward needs Shield Constitution 3/3, a clean
+        # arrow in the same column instead of one over Shield Constitution.
+        self.assertEqual([], warnings)
+        shield_ward = next(talent for talent in delta if talent['id'] == 9009)
+        self.assertEqual([(9007, 2)], shield_ward['prereqs'])
         self.assertEqual(set(range(9001, 9011)), {talent['id'] for talent in delta})
         self.assertEqual({263}, {talent['tab'] for talent in delta})
 
@@ -179,7 +181,7 @@ class ShamanChangeTests(unittest.TestCase):
         with contextlib.redirect_stdout(output):
             code = talentdelta.main(['--change', str(SHAMAN)])
         self.assertEqual(0, code)
-        self.assertIn('TALENTDELTA=PASS talents=10 errors=0 warnings=1 server=skipped', output.getvalue())
+        self.assertIn('TALENTDELTA=PASS talents=10 errors=0 warnings=0 server=skipped', output.getvalue())
 
 
 if __name__ == '__main__':

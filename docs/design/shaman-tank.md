@@ -540,7 +540,8 @@ talent W "Ancestral Arms" (O-16…O-20) gets its server spells in the same step.
   - `build_premade_specs.py --talent-classes 7`.
 - **Layout:** the new talents fill R1/C1, R1/C4, R4/C1, R4/C4, R5/C4, R6/C1, R6/C4,
   R7/C1 and R7/C4 as in the owner line, and W takes R7/C3. That is the only free
-  cell that no existing arrow runs through, so it is S2-1.
+  cell that no existing arrow runs through. **The owner confirmed R7/C3 and level
+  40+ on 2026-09-28 (S2-1).**
 - **Premade links:** they are position-encoded, so the new rows shift every
   Enhancement link. All shaman links are regenerated from the patched
   `Talent.dbc`, and every roster shaman gets a talent reset in the release window.

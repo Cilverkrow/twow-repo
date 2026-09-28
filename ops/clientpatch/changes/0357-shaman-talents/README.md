@@ -36,10 +36,12 @@ all icons and indices are existing ones.
 | R4 | **Imbue Mastery 3** (9003) | Flurry 5 | Spirit Armor 2 | **Retaliation 3** (9004) |
 | R5 | Enhancing Totems 2 | Elemental Weapons 3 | Stormstrike 1 | **Charged Stormstrike 1** (9005, ← Stormstrike) |
 | R6 | **Storm Wisdom 5** (9006) | *(arrow Elemental Weapons → Bloodlust)* | Element's Grace 5 | **Shield Constitution 3** (9007) |
-| R7 | **Chain Storm 1** (9008, ↑ Storm Wisdom 5/5) | Bloodlust 1 | **Ancestral Arms 1** (9010, W) | **Shield Ward 1** (9009, ↑ Charged Stormstrike) |
+| R7 | **Chain Storm 1** (9008, ↑ Storm Wisdom 5/5) | Bloodlust 1 | **Ancestral Arms 1** (9010, W) | **Shield Ward 1** (9009, ↑ Shield Constitution 3/3) |
 
-`talentdelta.py`: layout PASS, one warning. The owner's arrow R5/C4 → R7/C4
-passes over Shield Constitution (decision S2-2).
+`talentdelta.py`: layout PASS, no warnings. Shield Ward requires Shield
+Constitution 3/3 (S2-2), so its arrow runs from R6/C4 to R7/C4 in the same
+column. The owner's original arrow R5/C4 → R7/C4 would have passed over Shield
+Constitution.
 
 ## Switch plan (one coupled release, world stopped)
 
@@ -98,8 +100,8 @@ passes over Shield Constitution (decision S2-2).
 
 | # | Question | Recommendation |
 |---|---|---|
-| S2-1 | Slot of W. Of the free cells only **R7/C3** is clean: R3/C2 and R6/C2 lie on the Flurry and Bloodlust arrows (`talentdelta.py` rejects them). R7 needs 30 points in the tree (level 40+) | R7/C3 |
-| S2-2 | Shield Ward's arrow from Charged Stormstrike (R5/C4 → R7/C4) passes over Shield Constitution (R6/C4) | require **Shield Constitution 3/3** instead: a clean arrow in the same column; the owner's intent "tank column builds up" stays |
+| S2-1 | Slot of W | **decided (owner, 2026-09-28): R7/C3, level 40+ is fine.** It is the only clean free cell: R3/C2 and R6/C2 lie on the Flurry and Bloodlust arrows (`talentdelta.py` rejects them). R7 needs 30 points in the tree |
+| S2-2 | Prerequisite of Shield Ward | **decided (owner, 2026-09-28): Shield Constitution 3/3.** The original arrow from Charged Stormstrike (R5/C4 → R7/C4) would pass over Shield Constitution (R6/C4); the new arrow is clean and the tank column still builds up |
 | S2-3 | Chain Storm needs Storm Wisdom at which rank? | 5/5 (as in the delta) |
 | S2-4 | IDs: talents 9001–9010, SkillRaceClassInfo 90043/90055 | OB-20 checks once that they are free in the base DBCs |
 | S2-5 | Charged Stormstrike hangs sideways off Stormstrike (R5/C3 → R5/C4) | check in game that the talent frame draws the sideways arrow; otherwise drop the prerequisite |
