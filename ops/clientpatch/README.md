@@ -238,6 +238,18 @@ server loads these files daily). It also sets `server_loaded` from the core's
 `LoadDBCStores()`. Nothing else changes: deltas, diff, build and consistency
 work on any bound DBC.
 
+**Mirror server spells into Spell.dbc.** For spells that exist in
+`spell_template` and need a client row (talent ranks, new player spells),
+list them as `id,copy_from,class_mask,note` in `tools/inputs/<name>.csv` and run
+
+    python3 tools/gen_spell_mirror.py --spells tools/inputs/<name>.csv \
+        --out changes/Spell/NNNN_<name>.csv
+
+Every column the `spell-matches-server` rule compares, plus texts, icon and
+the remaining mapped columns (`EXTRA_PAIRS`), is written as a `sql:` value.
+`copy_from` supplies locale flags and the other locales; `class_mask` is the
+64-bit `spellFamilyFlags` split into `SpellClassMask[0..1]`, or `copy`.
+
 **Add a consistency rule.** Add a `[[rule]]` to `consistency/*.toml`. There
 are three kinds:
 

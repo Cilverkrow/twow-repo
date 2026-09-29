@@ -1,0 +1,121 @@
+op,key,field,value,note
+# #367 owner rogue talent line (issuecomment-5858564596, IDs issuecomment-5858585355):
+# 16 talents in the free slots of the three rogue trees. Rank spells are the phase-1 bot
+# auras 90150-90190 (same IDs, twow-core spell_template). Talent ID = first rank spell - 81000.
+# TierID/ColumnIndex are 0-based (owner R1/C1 = 0/0). TabID: 182 Assassination, 181 Combat,
+# 183 Subtlety (verified against the client TalentTab.dbc, base turtle-1.18.1-enUS: ClassMask 8, OrderIndex 0/1/2).
+# Three owner arrows point at existing Turtle talents (IDs from OB-20, V-2, checked by OB-15 against the
+# client Talent.dbc of base turtle-1.18.1-enUS): 9154 <- 133, 9156 <- 142, 9172 <- 117, each at full rank.
+insert,9150,,,Assassination R1C4 Blindside (#367)
+set,9150,TabID,182,Assassination
+set,9150,TierID,0,
+set,9150,ColumnIndex,3,
+set,9150,SpellRank[0],90150,rank 1
+set,9150,SpellRank[1],90151,rank 2
+set,9150,SpellRank[2],90152,rank 3
+set,9150,SpellRank[3],90153,rank 4
+insert,9154,,,Assassination R3C4 Flowing Blades (#367)
+set,9154,TabID,182,Assassination
+set,9154,TierID,2,
+set,9154,ColumnIndex,3,
+set,9154,SpellRank[0],90154,rank 1
+set,9154,SpellRank[1],90155,rank 2
+set,9154,PrereqTalent[0],133,arrow from R2/C4 Improved Blade Tactics (Turtle talent 133; OB-20 V-2)
+set,9154,PrereqRank[0],2,0-based: all 3 ranks
+insert,9156,,,Assassination R5C4 Frozen Blood (#367)
+set,9156,TabID,182,Assassination
+set,9156,TierID,4,
+set,9156,ColumnIndex,3,
+set,9156,SpellRank[0],90156,rank 1
+set,9156,PrereqTalent[0],142,arrow from R5/C3 Cold Blood (Turtle talent 142; OB-20 V-2)
+set,9156,PrereqRank[0],0,0-based: 1 rank
+insert,9157,,,Assassination R7C1 Vigorous Fury (#367)
+set,9157,TabID,182,Assassination
+set,9157,TierID,6,
+set,9157,ColumnIndex,0,
+set,9157,SpellRank[0],90157,rank 1
+insert,9158,,,Assassination R7C3 Fated Echo (#367)
+set,9158,TabID,182,Assassination
+set,9158,TierID,6,
+set,9158,ColumnIndex,2,
+set,9158,SpellRank[0],90158,rank 1
+insert,9159,,,Combat R1C1 Nimble Body (#367)
+set,9159,TabID,181,Combat
+set,9159,TierID,0,
+set,9159,ColumnIndex,0,
+set,9159,SpellRank[0],90159,rank 1
+set,9159,SpellRank[1],90160,rank 2
+set,9159,SpellRank[2],90161,rank 3
+set,9159,SpellRank[3],90162,rank 4
+set,9159,SpellRank[4],90163,rank 5
+insert,9164,,,Combat R1C4 Guarded Stance (#367)
+set,9164,TabID,181,Combat
+set,9164,TierID,0,
+set,9164,ColumnIndex,3,
+set,9164,SpellRank[0],90164,rank 1
+set,9164,SpellRank[1],90165,rank 2
+set,9164,SpellRank[2],90166,rank 3
+set,9164,SpellRank[3],90167,rank 4
+set,9164,SpellRank[4],90168,rank 5
+insert,9169,,,Combat R2C4 Riposte Flow (#367)
+set,9169,TabID,181,Combat
+set,9169,TierID,1,
+set,9169,ColumnIndex,3,
+set,9169,SpellRank[0],90169,rank 1
+set,9169,SpellRank[1],90170,rank 2
+set,9169,SpellRank[2],90171,rank 3
+insert,9172,,,Combat R4C4 Arcane Evasion (#367)
+set,9172,TabID,181,Combat
+set,9172,TierID,3,
+set,9172,ColumnIndex,3,
+set,9172,SpellRank[0],90172,rank 1
+set,9172,SpellRank[1],90173,rank 2
+set,9172,SpellRank[2],90174,rank 3
+set,9172,PrereqTalent[0],117,arrow from R3/C4 Setup (Turtle talent 117; OB-20 V-2)
+set,9172,PrereqRank[0],2,0-based: all 3 ranks
+insert,9175,,,Combat R6C1 Coup de Grace (#367)
+set,9175,TabID,181,Combat
+set,9175,TierID,5,
+set,9175,ColumnIndex,0,
+set,9175,SpellRank[0],90175,rank 1
+set,9175,SpellRank[1],90176,rank 2
+set,9175,SpellRank[2],90177,rank 3
+insert,9178,,,Combat R7C1 Brazen Strike (#367)
+set,9178,TabID,181,Combat
+set,9178,TierID,6,
+set,9178,ColumnIndex,0,
+set,9178,SpellRank[0],90178,rank 1
+set,9178,PrereqTalent[0],9175,arrow from R6/C1
+set,9178,PrereqRank[0],2,0-based: all 3 ranks
+insert,9179,,,Combat R6C4 Hardened Shadows (#367)
+set,9179,TabID,181,Combat
+set,9179,TierID,5,
+set,9179,ColumnIndex,3,
+set,9179,SpellRank[0],90179,rank 1
+set,9179,SpellRank[1],90180,rank 2
+set,9179,SpellRank[2],90181,rank 3
+insert,9182,,,Combat R7C4 Ghostly Evasion (#367)
+set,9182,TabID,181,Combat
+set,9182,TierID,6,
+set,9182,ColumnIndex,3,
+set,9182,SpellRank[0],90182,rank 1
+insert,9183,,,Subtlety R1C1 Shadow Strikes (#367)
+set,9183,TabID,183,Subtlety
+set,9183,TierID,0,
+set,9183,ColumnIndex,0,
+set,9183,SpellRank[0],90183,rank 1
+set,9183,SpellRank[1],90184,rank 2
+set,9183,SpellRank[2],90185,rank 3
+set,9183,SpellRank[3],90186,rank 4
+insert,9187,,,Subtlety R6C4 Deep Wounds (#367)
+set,9187,TabID,183,Subtlety
+set,9187,TierID,5,
+set,9187,ColumnIndex,3,
+set,9187,SpellRank[0],90187,rank 1
+insert,9188,,,Subtlety R7C3 Shadow Edge (#367)
+set,9188,TabID,183,Subtlety
+set,9188,TierID,6,
+set,9188,ColumnIndex,2,
+set,9188,SpellRank[0],90188,rank 1
+set,9188,SpellRank[1],90189,rank 2
+set,9188,SpellRank[2],90190,rank 3

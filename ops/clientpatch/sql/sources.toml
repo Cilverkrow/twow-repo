@@ -32,3 +32,10 @@ key = "Id"
 [source.custom_spell_icons]
 query = "SELECT DISTINCT spellIconId FROM spell_template WHERE entry BETWEEN 90000 AND 90999 AND spellIconId <> 0"
 key = "spellIconId"
+
+# Spellbook, trainer and trade skill placement (#367 P-1/P-2). The server reads
+# SkillLineAbility from SQL; the client reads its own DBC for the spellbook tab
+# and the trade skill window, so changed client rows must match this table.
+[source.skill_line_ability]
+query = "SELECT id, skill_id, spell_id, race_mask, class_mask, req_skill_value, superseded_by_spell, learn_on_get_skill, max_value, min_value FROM skill_line_ability"
+key = "id"
