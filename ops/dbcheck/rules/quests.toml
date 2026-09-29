@@ -148,7 +148,7 @@ WHERE q.{quest.entry} = {@entry}
 scope = "global"
 severity = "error"
 title = "Quest objective is a helper NPC that nothing can credit"
-description = "The quest asks for a kill or cast credit on a helper NPC (name matches quest_helper_name_like, for example quest_41956_Not_Alone_1) that has no spawn, no script that grants the kill credit (script command 8, in any script table or EventAI action), is not summoned by a script, has no EventAI events and no script_name/ai_name. The objective can never complete. Limit: script command 83 (QUEST_CREDIT) has no creature id, it credits the script's target object; a helper credited only that way, or by C++, appears here and needs a look."
+description = "The quest asks for a kill or cast credit on a helper NPC (name matches quest_helper_name_like, for example quest_41956_Not_Alone_1) that has no spawn, no script that grants the kill credit (script command 8, in any script table or EventAI action), is not summoned by a script, has no EventAI events, no script_name, and is not named as [[credited_npc]] in an expected file (C++ credit: expected/cpp-credit-helpers.toml). The objective can never complete. A name is a helper when it matches quest_helper_name_like (underscore literal). Limit: script command 83 (QUEST_CREDIT) has no creature id, it credits the script's target object; a helper credited only that way appears here and needs a look."
 sql = """
 SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, ct.{creature_template.entry} AS helper, ct.{creature_template.name} AS helper_name
 FROM {quest} q
@@ -159,8 +159,8 @@ LEFT JOIN ({%kill_credit_ids}) kc ON kc.sid = ct.{creature_template.entry}
 LEFT JOIN ({%script_summons}) sm ON sm.sid = ct.{creature_template.entry}
 LEFT JOIN (SELECT DISTINCT e.{creature_ai_event.creature_id} AS sid FROM {creature_ai_event} e) ev ON ev.sid = ct.{creature_template.entry}
 WHERE {%quest_not_ignored}
-  AND ct.{creature_template.name} LIKE {const.quest_helper_name_like}
+  AND ct.{creature_template.name} LIKE {const.quest_helper_name_like} ESCAPE '!'
   AND sp.sid IS NULL AND kc.sid IS NULL AND sm.sid IS NULL AND ev.sid IS NULL
   AND COALESCE(ct.{creature_template.script_name}, '') = ''
-  AND COALESCE(ct.{creature_template.ai_name}, '') = ''
+  AND ct.{creature_template.entry} NOT IN ({@credited_entries})
 """

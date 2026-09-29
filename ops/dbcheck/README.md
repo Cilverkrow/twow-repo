@@ -106,7 +106,7 @@ commit it (`out/` and `work/` are ignored).
 | `boss_no_spawn_any` | global | warn | boss-rank creature with loot, never spawned, not summoned by a database script or listed as `[[summoned_boss]]` |
 | `item_no_source` | global | info | rare+ item no loot, vendor, quest reward or start item provides (crafted items appear: a lead, not a defect) |
 | `reference_loot_nested` | global | info | reference loot groups that point at other groups (followed at any depth) |
-| `quest_helper_no_credit` | global | error | a quest objective is a helper NPC `quest_<id>_...` that nothing can credit: no spawn, no kill-credit script (command 8, any script table or EventAI action), no summon, no EventAI events, no `script_name`/`ai_name`. Limit: command 83 has no creature id, a helper credited only by it, or by C++, appears here and needs a look |
+| `quest_helper_no_credit` | global | error | a quest objective is a helper NPC `quest_<id>_...` that nothing can credit: no spawn, no kill-credit script (command 8, any script table or EventAI action), no summon, no EventAI events, no `script_name`, and not listed as `[[credited_npc]]` (C++ credit, see `expected/cpp-credit-helpers.toml`). The name must match `quest_helper_name_like`; the underscore is literal (escaped with `!`, `LIKE ... ESCAPE '!'`). Limit: command 83 has no creature id, a helper credited only by it appears here and needs a look |
 | `quest_expected_missing` | quest | error | expected quest is not in the database |
 | `quest_giver_mismatch`, `quest_ender_mismatch` | quest | error | expected giver or turn-in creature does not match |
 | `boss_unknown` | boss | error | expected boss has no `creature_template` |
@@ -166,6 +166,11 @@ What counts, and what does not:
     [[summoned_boss]]          # a script summons it: no spawn row on purpose
     entry = 11502
     via = "cpp"                # cpp | eluna | eventai | ...  (required)
+
+    [[credited_npc]]           # a helper NPC that C++ or Eluna credits (kill credit)
+    entry = 60301
+    via = "cpp"                # cpp | eluna | ...  (required)
+    note = "file:line"         # optional
 
 Rules of the road: ids, names and numbers only; the source and date on every
 file; a list that only exists in someone's memory does not go in. A list built

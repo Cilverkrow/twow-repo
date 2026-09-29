@@ -5,7 +5,7 @@ import unittest
 from synth import BINDING, MACROS, RULES, world
 
 from dbcheck import engine
-from dbcheck.expected import Boss, Expected, Quest, Scripted, Summoned
+from dbcheck.expected import Boss, Credited, Expected, Quest, Scripted, Summoned
 from dbcheck.runner import SqliteRunner
 
 
@@ -29,6 +29,7 @@ def expected():
         quests=[Quest(10, "Quest Ten", 300, 300), Quest(12, "Quest Twelve", 301, None), Quest(99, "Quest Ninety-nine", None, None)],
         scripted=[Scripted(17, "eluna", True, False), Scripted(18, "script", False, True), Scripted(22, "retired", True, True)],
         summoned=[Summoned(104, "cpp")],
+        credited=[Credited(407, "cpp", "example.cpp:1")],
         sha256="0" * 64, path="synthetic.toml",
     )
 
@@ -138,6 +139,15 @@ class Rules(unittest.TestCase):
         # 400 has no source at all. 401 is spawned, 402 and 403 get a kill-credit script (database script and
         # EventAI action), 404 has EventAI events, 406 is summoned by a script; 405 is no helper (name).
         self.assertEqual([(r[0], r[2]) for r in self.rows("quest_helper_no_credit")], [("10", "400")])
+
+    def test_cpp_credit_list_and_literal_underscore(self):
+        # 407 is named as credited by C++ in the list; 408 "questlike_12" is no helper because the underscore in
+        # "quest_" is literal (a plain LIKE "quest_%" would have matched it).
+        flagged = [r[2] for r in self.rows("quest_helper_no_credit")]
+        self.assertNotIn("407", flagged)
+        self.assertNotIn("408", flagged)
+        run = engine.run(SqliteRunner.from_connection(world()), BINDING, RULES, MACROS, [], {"quest_helper_no_credit"})
+        self.assertIn("407", sorted(str(r[2]) for res in run.results for r in res.rows))  # without the list it is a finding
 
     # items
 

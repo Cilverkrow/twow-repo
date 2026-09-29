@@ -42,7 +42,7 @@ def insert(con, table, **row):
 
 
 # Kill-credit objectives per quest: helper NPCs 400-406 (see the creature rows below).
-OBJECTIVES = {10: [400, 401, 402, 405], 11: [403, 404, 406]}
+OBJECTIVES = {10: [400, 401, 402, 405], 11: [403, 404, 406], 12: [407, 408]}
 
 
 def world() -> sqlite3.Connection:
@@ -58,6 +58,7 @@ def world() -> sqlite3.Connection:
         (400, "quest_10_no_source", 0, 0), (401, "quest_10_spawned", 0, 0), (402, "quest_10_script_credit", 0, 0),
         (403, "quest_10_ai_credit", 0, 0), (404, "quest_10_eventai", 0, 0), (405, "Plain Objective", 0, 0),
         (406, "quest_10_summoned", 0, 0),
+        (407, "quest_12_cpp", 0, 0), (408, "questlike_12", 0, 0),
     ]:
         insert(con, "creature_template", entry=entry, name=name, loot_id=loot, rank=rank)
     insert(con, "creature", guid=1, id=100, map=1)

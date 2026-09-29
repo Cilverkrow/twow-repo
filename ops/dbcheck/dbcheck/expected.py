@@ -26,7 +26,12 @@ only** (no quotes or lore from the source)::
 
     [[scripted_quest]]                # started or completed by a script, not by a giver row
     entry = 12345
-    via = "eluna"                     # script | event | eluna | ...  (required)
+    via = "eluna"                     # script | event | eluna 
+    [[credited_npc]]                  # a helper NPC that C++ or Eluna credits (kill credit)
+    entry = 60301
+    via = "cpp"                       # cpp | eluna | ...  (required)
+    note = "file:line"                # optional
+| ...  (required)
     starts = true                     # skip the starter check (default true)
     ends = true                       # skip the turn-in check (default true)
     note = "why"                      # optional
@@ -84,6 +89,15 @@ class Summoned:
 
 
 @dataclass
+class Credited:
+    """A helper NPC that C++ (or Eluna) credits: the database cannot show it."""
+
+    entry: int
+    via: str
+    note: str = ""
+
+
+@dataclass
 class Expected:
     id: str
     name: str
@@ -95,6 +109,7 @@ class Expected:
     quests: list[Quest]
     scripted: list[Scripted]
     summoned: list[Summoned]
+    credited: list[Credited]
     sha256: str
     path: str
 
@@ -148,8 +163,13 @@ def load_expected(path: Path) -> Expected:
         if not s.get("via"):
             raise ConfigError(f"{path}: summoned_boss {s.get('entry')}: 'via' is required (cpp, eluna, eventai, ...)")
         summoned.append(Summoned(_int(path, "summoned_boss.entry", s.get("entry")), str(s["via"])))
-    if not bosses and not quests and not scripted and not summoned:
-        raise ConfigError(f"{path}: no [[boss]], [[quest]], [[scripted_quest]] or [[summoned_boss]] entries")
+    credited = []
+    for s in data.get("credited_npc", []):
+        if not s.get("via"):
+            raise ConfigError(f"{path}: credited_npc {s.get('entry')}: 'via' is required (cpp, eluna, ...)")
+        credited.append(Credited(_int(path, "credited_npc.entry", s.get("entry")), str(s["via"]), str(s.get("note", ""))))
+    if not bosses and not quests and not scripted and not summoned and not credited:
+        raise ConfigError(f"{path}: no [[boss]], [[quest]], [[scripted_quest]], [[summoned_boss]] or [[credited_npc]] entries")
     return Expected(
         id=str(inst["id"]),
         name=str(inst["name"]),
@@ -161,6 +181,7 @@ def load_expected(path: Path) -> Expected:
         quests=quests,
         scripted=scripted,
         summoned=summoned,
+        credited=credited,
         sha256=hashlib.sha256(raw).hexdigest(),
         path=str(path),
     )
