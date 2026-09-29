@@ -41,6 +41,10 @@ def insert(con, table, **row):
     )
 
 
+# Kill-credit objectives per quest: helper NPCs 400-406 (see the creature rows below).
+OBJECTIVES = {10: [400, 401, 402, 405], 11: [403, 404, 406]}
+
+
 def world() -> sqlite3.Connection:
     con = empty_db()
     # Creatures: 100 boss spawned, 101 boss never spawned, 102 boss without loot,
@@ -49,14 +53,19 @@ def world() -> sqlite3.Connection:
     # (through id3), 301 giver never spawned, 302 turn-in NPC never spawned.
     for entry, name, loot, rank in [
         (100, "Boss Alpha", 100, 3), (101, "Boss Beta", 101, 3), (102, "Boss Gamma", 0, 3), (103, "Boss Delta", 103, 3),
-        (104, "Boss Epsilon", 104, 3), (105, "Boss Zeta", 105, 3), (200, "Trash Mob", 200, 0), (201, "Trash Two", 201, 0),
+        (104, "Boss Epsilon", 104, 3), (105, "Boss Zeta", 105, 3), (106, "Boss Eta", 0, 3), (200, "Trash Mob", 200, 0), (201, "Trash Two", 201, 0),
         (300, "Giver", 0, 0), (301, "Ghost Giver", 0, 0), (302, "Ghost Ender", 0, 0),
+        (400, "quest_10_no_source", 0, 0), (401, "quest_10_spawned", 0, 0), (402, "quest_10_script_credit", 0, 0),
+        (403, "quest_10_ai_credit", 0, 0), (404, "quest_10_eventai", 0, 0), (405, "Plain Objective", 0, 0),
+        (406, "quest_10_summoned", 0, 0),
     ]:
         insert(con, "creature_template", entry=entry, name=name, loot_id=loot, rank=rank)
     insert(con, "creature", guid=1, id=100, map=1)
     insert(con, "creature", guid=2, id=200, map=1)
     insert(con, "creature", guid=3, id=0, id3=300, map=1)
     insert(con, "creature", guid=4, id=0, id2=105, map=1)
+    insert(con, "creature", guid=5, id=106, map=9)  # spawned, but not on the instance map
+    insert(con, "creature", guid=6, id=401, map=1)
     # Loot. 100: direct rows, a reference group 5 that itself points at group 6, and one unnamed extra.
     # 200: trash drops an item Alpha should have; 201: trash drops one only through a reference group.
     for loot, item, ref in [
@@ -88,7 +97,8 @@ def world() -> sqlite3.Connection:
     ]
     for entry, title, method, prev, nxt, chain in quests:
         insert(con, "quest_template", entry=entry, Title=title, Method=method, PrevQuestId=prev, NextQuestId=nxt,
-               NextQuestInChain=chain, RewItemId1=1003 if entry == 14 else 0, SrcItemId=1013 if entry == 10 else 0)
+               NextQuestInChain=chain, RewItemId1=1003 if entry == 14 else 0, SrcItemId=1013 if entry == 10 else 0,
+               **{f"ReqCreatureOrGOId{i + 1}": v for i, v in enumerate(OBJECTIVES.get(entry, []))})
     for quest, giver, ender in [(10, 300, 300), (12, 300, None), (13, 300, 300), (14, 300, 300)]:
         insert(con, "creature_questrelation", id=giver, quest=quest)
         if ender is not None:
@@ -101,5 +111,9 @@ def world() -> sqlite3.Connection:
     insert(con, "creature_involvedrelation", id=302, quest=14)  # a turn-in NPC that is never spawned
     # A database script summons boss 103 (command 10, datalong = entry).
     insert(con, "generic_scripts", command=10, datalong=103)
+    insert(con, "generic_scripts", command=8, datalong=402)  # kill credit for helper 402
+    insert(con, "creature_ai_scripts", command=8, datalong=403)  # EventAI action grants credit for 403
+    insert(con, "creature_ai_events", creature_id=404)
+    insert(con, "gossip_scripts", command=10, datalong=406)  # a script summons helper 406
     con.commit()
     return con

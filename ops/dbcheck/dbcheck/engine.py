@@ -41,6 +41,7 @@ def _boss_params(exp: Expected, boss) -> dict[str, str]:
         "names": sql_string_list(boss.loot) if boss.loot else "",
         "names_table": sql_string_table(boss.loot) if boss.loot else "",
         "instance_entries": sql_int_list([b.entry for b in exp.bosses]),
+        "instance_maps": sql_int_list(exp.maps) if exp.maps else "",
         "allow_elsewhere": sql_string_list(exp.allow_elsewhere),
         "spawn_optional": "1" if boss.spawn_optional else "0",
         "rank": "" if boss.rank is None else str(boss.rank),

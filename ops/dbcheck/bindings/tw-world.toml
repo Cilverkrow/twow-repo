@@ -9,6 +9,7 @@ description = "twow-core tw_world (VMaNGOS lineage, Turtle 1.18.1)"
 boss_rank = 3               # creature_template.rank of a world boss
 item_source_min_quality = 3 # rule item_no_source: rare and above
 # Quests the team retired on purpose; SQL LIKE patterns on the quest title.
+quest_helper_name_like = "quest_%"  # helper NPCs named quest_<id>_...
 quest_ignore_title_like = [
   "[CANCELLED]%", "[DEPRECATED]%", "%[Deprecated]", "%<NYI>%", "%<TXT>%", "DND %", "%Dummy%", "Disabled %",
 ]
@@ -19,6 +20,8 @@ entry = "entry"
 name = "name"
 loot_id = "loot_id"
 rank = "rank"
+ai_name = "ai_name"
+script_name = "script_name"
 
 [table.creature]
 [table.creature.columns]
@@ -108,6 +111,10 @@ prev = "PrevQuestId"
 next = "NextQuestId"
 chain = "NextQuestInChain"
 src_item = "SrcItemId"
+req_npc_1 = "ReqCreatureOrGOId1"     # kill or cast credit targets (creature entry when positive)
+req_npc_2 = "ReqCreatureOrGOId2"
+req_npc_3 = "ReqCreatureOrGOId3"
+req_npc_4 = "ReqCreatureOrGOId4"
 rew_item_1 = "RewItemId1"
 rew_item_2 = "RewItemId2"
 rew_item_3 = "RewItemId3"
@@ -195,4 +202,15 @@ datalong = "datalong"
 name = "creature_movement_scripts"
 [table.script_creature_movement_scripts.columns]
 command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.creature_ai_event]
+name = "creature_ai_events"
+[table.creature_ai_event.columns]
+creature_id = "creature_id"
+
+[table.script_creature_ai_scripts]
+name = "creature_ai_scripts"   # EventAI action scripts
+[table.script_creature_ai_scripts.columns]
+command = "command"      # 8: kill credit (datalong = creature entry); 10: summon
 datalong = "datalong"

@@ -143,3 +143,24 @@ FROM {quest} q
 WHERE q.{quest.entry} = {@entry}
   AND NOT EXISTS (SELECT 1 FROM {creature_end} e WHERE e.{creature_end.quest} = {@entry} AND e.{creature_end.id} = {@ender})
 """
+
+[rule.quest_helper_no_credit]
+scope = "global"
+severity = "error"
+title = "Quest objective is a helper NPC that nothing can credit"
+description = "The quest asks for a kill or cast credit on a helper NPC (name matches quest_helper_name_like, for example quest_41956_Not_Alone_1) that has no spawn, no script that grants the kill credit (script command 8, in any script table or EventAI action), is not summoned by a script, has no EventAI events and no script_name/ai_name. The objective can never complete. Limit: script command 83 (QUEST_CREDIT) has no creature id, it credits the script's target object; a helper credited only that way, or by C++, appears here and needs a look."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, ct.{creature_template.entry} AS helper, ct.{creature_template.name} AS helper_name
+FROM {quest} q
+JOIN {creature_template} ct
+  ON ct.{creature_template.entry} IN (q.{quest.req_npc_1}, q.{quest.req_npc_2}, q.{quest.req_npc_3}, q.{quest.req_npc_4})
+LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
+LEFT JOIN ({%kill_credit_ids}) kc ON kc.sid = ct.{creature_template.entry}
+LEFT JOIN ({%script_summons}) sm ON sm.sid = ct.{creature_template.entry}
+LEFT JOIN (SELECT DISTINCT e.{creature_ai_event.creature_id} AS sid FROM {creature_ai_event} e) ev ON ev.sid = ct.{creature_template.entry}
+WHERE {%quest_not_ignored}
+  AND ct.{creature_template.name} LIKE {const.quest_helper_name_like}
+  AND sp.sid IS NULL AND kc.sid IS NULL AND sm.sid IS NULL AND ev.sid IS NULL
+  AND COALESCE(ct.{creature_template.script_name}, '') = ''
+  AND COALESCE(ct.{creature_template.ai_name}, '') = ''
+"""

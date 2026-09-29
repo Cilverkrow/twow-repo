@@ -13,6 +13,7 @@ def expected():
     return Expected(
         id="synthetic", name="Synthetic", source="synthetic", source_date="2026-09-29",
         allow_elsewhere=[],
+        maps=[1],
         bosses=[
             Boss(100, "Boss Alpha", False, [
                 "Sword of Tests", "Helm of O'Brien", "Ring via Ref", "Nested Ring", "Cloak Elsewhere", "Call of the Wild",
@@ -22,6 +23,7 @@ def expected():
             Boss(103, "Boss Delta", True, []),
             Boss(104, "Boss Epsilon", True, []),
             Boss(105, "Boss Zeta", False, []),  # spawned only through creature.id2
+            Boss(106, "Boss Eta", False, []),  # spawned on map 9 only
             Boss(999, "Boss Missing", False, []),
         ],
         quests=[Quest(10, "Quest Ten", 300, 300), Quest(12, "Quest Twelve", 301, None), Quest(99, "Quest Ninety-nine", None, None)],
@@ -94,6 +96,10 @@ class Rules(unittest.TestCase):
         self.assertEqual(self.names("boss_unknown"), ["999"])
         self.assertEqual(self.names("boss_no_spawn"), ["101"])  # 105 spawns only through id2; 103 and 104 are spawn_optional
 
+    def test_boss_spawned_on_the_wrong_map(self):
+        # 100 and 105 spawn on map 1; 101, 103 and 104 have no spawn at all (other rules report those).
+        self.assertEqual([(r[0], r[2]) for r in self.rows("boss_wrong_map")], [("106", "9")])
+
     def test_boss_rank(self):
         self.assertEqual([(r[0], r[2], r[3]) for r in self.rows("boss_rank_mismatch")], [("101", "3", "0")])
 
@@ -127,6 +133,11 @@ class Rules(unittest.TestCase):
 
     def test_nested_reference_groups_are_listed(self):
         self.assertEqual([(r[0], r[1]) for r in self.rows("reference_loot_nested")], [("5", "6")])
+
+    def test_helper_npc_objectives_nothing_can_credit(self):
+        # 400 has no source at all. 401 is spawned, 402 and 403 get a kill-credit script (database script and
+        # EventAI action), 404 has EventAI events, 406 is summoned by a script; 405 is no helper (name).
+        self.assertEqual([(r[0], r[2]) for r in self.rows("quest_helper_no_credit")], [("10", "400")])
 
     # items
 

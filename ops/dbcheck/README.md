@@ -106,11 +106,13 @@ commit it (`out/` and `work/` are ignored).
 | `boss_no_spawn_any` | global | warn | boss-rank creature with loot, never spawned, not summoned by a database script or listed as `[[summoned_boss]]` |
 | `item_no_source` | global | info | rare+ item no loot, vendor, quest reward or start item provides (crafted items appear: a lead, not a defect) |
 | `reference_loot_nested` | global | info | reference loot groups that point at other groups (followed at any depth) |
+| `quest_helper_no_credit` | global | error | a quest objective is a helper NPC `quest_<id>_...` that nothing can credit: no spawn, no kill-credit script (command 8, any script table or EventAI action), no summon, no EventAI events, no `script_name`/`ai_name`. Limit: command 83 has no creature id, a helper credited only by it, or by C++, appears here and needs a look |
 | `quest_expected_missing` | quest | error | expected quest is not in the database |
 | `quest_giver_mismatch`, `quest_ender_mismatch` | quest | error | expected giver or turn-in creature does not match |
 | `boss_unknown` | boss | error | expected boss has no `creature_template` |
 | `boss_no_spawn` | boss | error | expected boss is never spawned (`spawn_optional = true` skips this) |
 | `boss_rank_mismatch` | boss | warn | `creature_template.rank` differs from the list |
+| `boss_wrong_map` | boss | warn | the boss is spawned, but on no map named in the list (`maps = [...]`), for example only on the Development Land test map 451 |
 | `boss_loot_missing` | boss | error | expected item exists but the boss does not drop it (direct rows and reference groups at any depth) |
 | `boss_loot_item_unknown` | boss | error | no item has the expected name |
 | `loot_foreign` | boss | warn | expected item is attached, directly or through a reference group, to an NPC outside the instance: the wrong-loot-id case |
@@ -138,6 +140,7 @@ What counts, and what does not:
     name = "Tower of Karazhan"
     source = "<URL or a description of the snapshot>"   # required
     source_date = "2026-09-29"                          # required
+    maps = [814]               # optional: the instance map ids; spawns elsewhere are reported
     allow_elsewhere = []       # items that may drop from other NPCs (badges, shared crafting items)
 
     [[boss]]
