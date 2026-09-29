@@ -1,0 +1,6 @@
+# Build output and local working copies. Client-derived files (DBC, MPQ,
+# SQL exports) must never be committed; the build refuses output paths
+# inside the repository that are not ignored.
+/dist/
+/work/
+__pycache__/

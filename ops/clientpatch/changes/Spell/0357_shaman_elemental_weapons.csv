@@ -1,0 +1,7 @@
+op,key,field,value,note
+# #357: Elemental Weapons ranks 1-3 state the Earthen Bulwark cap that lives
+# in code (CV-1: build % x 4/3 = 13/27/40 %). The text is written once, in
+# the twow-core migration (core#217); the client takes it from spell_template.
+set,16266,Description_lang_enUS,sql:spell_template.description,CV-1 cap 13%
+set,29079,Description_lang_enUS,sql:spell_template.description,CV-1 cap 27%
+set,29080,Description_lang_enUS,sql:spell_template.description,CV-1 cap 40%

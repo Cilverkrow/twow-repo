@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Unit tests for talentdelta.py: synthetic data only, no client files.
+"""Unit tests for tools/talentdelta.py: synthetic data only, no client files.
 
-Run: python3 -m unittest ops/clientpatch/test_talentdelta.py
+Run from ops/clientpatch: python3 -m unittest discover -s tests
 """
 import contextlib
 import importlib.util
@@ -10,17 +10,21 @@ import pathlib
 import tempfile
 import unittest
 
-HERE = pathlib.Path(__file__).resolve().parent
-SPEC = importlib.util.spec_from_file_location('talentdelta', HERE / 'talentdelta.py')
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location('talentdelta', ROOT / 'tools' / 'talentdelta.py')
 talentdelta = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(talentdelta)
 
-SHAMAN = HERE / 'changes' / '0357-shaman-talents'
+INPUTS = ROOT / 'tools' / 'inputs'
+SHAMAN_TALENTS = INPUTS / '357-shaman-talents.csv'
+SHAMAN_CELLS = INPUTS / '357-shaman-base-cells.csv'
+SHAMAN_DELTA = ROOT / 'changes' / 'Talent' / '0357_shaman_talents.csv'
+SHAMAN_SKILLS = ROOT / 'changes' / 'SkillRaceClassInfo' / '0357_shaman_swords.csv'
 
 
 def talent(talent_id, tier, col, ranks=(1,), prereqs=(), tab=1):
     return {'id': talent_id, 'tab': tab, 'tier': tier, 'col': col,
-            'ranks': list(ranks), 'prereqs': list(prereqs)}
+            'ranks': list(ranks), 'prereqs': list(prereqs), 'flags': 0, 'required': 0, 'note': ''}
 
 
 def base_cell(talent_id, tier, col, prereqs=(), tab=1):
@@ -104,40 +108,29 @@ class ServerTests(unittest.TestCase):
         tools.mkdir(parents=True)
         (tools / 'build_premade_specs.py').write_text('STAGE2_TALENTS = %r\n' % stage2)
 
-    def change(self, root, talents, spell_inserts, skill_rows):
-        change = root / 'change'
-        change.mkdir()
-        header = (['op', 'ID', 'TabID', 'TierID', 'ColumnIndex'] +
-                  ['SpellRank_%d' % k for k in range(9)] +
-                  ['PrereqTalent_%d' % k for k in range(3)] +
-                  ['PrereqRank_%d' % k for k in range(3)] + ['Flags', 'RequiredSpellID', 'comment'])
-        lines = [','.join(header)]
-        for talent_id, tier, col, ranks in talents:
-            cells = ['insert', talent_id, 1, tier, col] + list(ranks) + [0] * (9 - len(ranks)) + [0] * 8 + ['']
-            lines.append(','.join(map(str, cells)))
-        (change / 'Talent.csv').write_text('\n'.join(lines) + '\n')
-        (change / 'base-cells.csv').write_text('TabID,ID,TierID,ColumnIndex,PrereqTalent_0,PrereqRank_0\n')
-        (change / 'Spell.csv').write_text('op,ID,source,fields,comment\n' + ''.join(
-            'insert,%d,spell_template,all,\n' % spell for spell in spell_inserts))
-        (change / 'SkillRaceClassInfo.csv').write_text(
-            'op,ID,SkillID,RaceMask,ClassMask,Flags,MinLevel,SkillTierID,SkillCostIndex,comment\n' + ''.join(
-                'insert,%d,%d,%d,%d,%d,%d,%d,@1,\n' % row for row in skill_rows))
-        return change
+    def skills_delta(self, root, skill_rows):
+        path = root / 'skills.csv'
+        lines = ['op,key,field,value,note']
+        for row in skill_rows:
+            lines.append('insert,%d,,copy:701,' % row[0])
+            for field, value in zip(('SkillID', 'RaceMask', 'ClassMask', 'Flags', 'MinLevel', 'SkillTierID'), row[1:]):
+                lines.append('set,%d,%s,%d,' % (row[0], field, value))
+        path.write_text('\n'.join(lines) + '\n')
+        return path
 
-    def run_check(self, *, core_spells, core_auras, stage2, core_skills, talents, inserts, skills):
+    def run_check(self, *, core_spells, core_auras, stage2, core_skills, talents, skills):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
             core = root / 'core'
             self.core(core, spells=core_spells, aura_ranks=core_auras, stage2=stage2, skill_rows=core_skills)
-            change = self.change(root, talents, inserts, skills)
-            delta = talentdelta.load_talents(change / 'Talent.csv')
-            return talentdelta.check_server(change, delta, core, 7)
+            delta = [talent(talent_id, tier, col, ranks) for talent_id, tier, col, ranks in talents]
+            return talentdelta.check_server(delta, core, 7, self.skills_delta(root, skills))
 
     def test_consistent_delta_passes(self):
         errors = self.run_check(
             core_spells=[100, 101, 102], core_auras=[[100, 101]], stage2={7: {1, 2}},
             core_skills=[(9, 43, 2047, 64, 384, 0, 0)],
-            talents=[(1, 0, 0, (100, 101)), (2, 0, 1, (102,))], inserts=[100, 101, 102],
+            talents=[(1, 0, 0, (100, 101)), (2, 0, 1, (102,))],
             skills=[(9, 43, 2047, 64, 384, 0, 0)])
         self.assertEqual([], errors)
 
@@ -145,11 +138,10 @@ class ServerTests(unittest.TestCase):
         errors = self.run_check(
             core_spells=[100, 101], core_auras=[[100, 101, 103]], stage2={7: {1, 5}},
             core_skills=[(9, 43, 2047, 64, 128, 0, 0)],
-            talents=[(1, 0, 0, (100, 101)), (2, 0, 1, (102,))], inserts=[100, 104],
+            talents=[(1, 0, 0, (100, 101)), (2, 0, 1, (102,))],
             skills=[(9, 43, 2047, 64, 384, 0, 0)])
         joined = '\n'.join(errors)
         self.assertIn('rank spell 102 of talent 2 has no spell_template migration', joined)
-        self.assertIn('Spell.csv inserts 104', joined)
         self.assertIn('differ from the SpecAura ranks', joined)
         self.assertIn('STAGE2_TALENTS[7]', joined)
         self.assertIn('SkillRaceClassInfo 9', joined)
@@ -160,12 +152,51 @@ class ServerTests(unittest.TestCase):
                 talentdelta.migration_texts(pathlib.Path(tmp))
 
 
+class GeneratorTests(unittest.TestCase):
+    def test_delta_has_an_insert_and_the_non_zero_fields(self):
+        text = talentdelta.to_delta([talent(10, 2, 1, (100, 101), [(9, 4)], tab=263)], 'line one')
+        self.assertEqual([
+            'op,key,field,value,note', '# line one', 'insert,10,,,',
+            'set,10,TabID,263,', 'set,10,TierID,2,', 'set,10,ColumnIndex,1,',
+            'set,10,SpellRank[0],100,rank 1', 'set,10,SpellRank[1],101,rank 2',
+            'set,10,PrereqTalent[0],9,', 'set,10,PrereqRank[0],4,needs rank 5',
+        ], text.splitlines())
+
+    def test_layout_errors_write_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / 't.csv').write_text(SHAMAN_TALENTS.read_text().replace('9010,263,6,2,', '9010,263,6,1,'))
+            out = root / 'out.csv'
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = talentdelta.main(['--talents', str(root / 't.csv'),
+                                         '--base-cells', str(SHAMAN_CELLS), '--out', str(out)])
+            self.assertEqual(1, code)
+            self.assertFalse(out.exists())
+
+
+class BaseDbcTests(unittest.TestCase):
+    def test_base_cells_and_ranks_come_from_a_talent_dbc(self):
+        import synth
+        rows = [{'ID': 251, 'TabID': 263, 'TierID': 0, 'ColumnIndex': 1, 'SpellRank[0]': 1, 'SpellRank[1]': 2},
+                {'ID': 260, 'TabID': 263, 'TierID': 3, 'ColumnIndex': 1, 'SpellRank[0]': 3,
+                 'PrereqTalent[0]': 251, 'PrereqRank[0]': 1},
+                {'ID': 300, 'TabID': 264, 'TierID': 0, 'ColumnIndex': 0, 'SpellRank[0]': 4}]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = synth.write(pathlib.Path(tmp), 'Talent', synth.pack(synth.binding('Talent'), rows))
+            cells = talentdelta.load_base_dbc(path, {263})
+        self.assertEqual([251, 260], sorted(cell['id'] for cell in cells))
+        errors, _ = talentdelta.check_layout(
+            [talent(10, 2, 1, (100,), tab=263), talent(11, 5, 1, (101,), [(251, 2)], tab=263)], cells)
+        self.assertTrue(any('sits on the arrow from talent 251 to talent 260' in e for e in errors))
+        self.assertTrue(any('rank 3 of talent 251, which has 2 ranks' in e for e in errors))
+
+
 class ShamanChangeTests(unittest.TestCase):
-    """The committed #357 delta itself (layout only; the server check needs --core)."""
+    """The committed #357 talents (layout only; the server check needs --core)."""
 
     def test_layout_passes_without_warnings(self):
-        delta = talentdelta.load_talents(SHAMAN / 'Talent.csv')
-        base = talentdelta.load_base(SHAMAN / 'base-cells.csv')
+        delta = talentdelta.load_talents(SHAMAN_TALENTS)
+        base = talentdelta.load_base(SHAMAN_CELLS)
         errors, warnings = talentdelta.check_layout(delta, base)
         self.assertEqual([], errors)
         # S2-2 (owner 2026-09-28): Shield Ward needs Shield Constitution 3/3, a clean
@@ -176,12 +207,20 @@ class ShamanChangeTests(unittest.TestCase):
         self.assertEqual(set(range(9001, 9011)), {talent['id'] for talent in delta})
         self.assertEqual({263}, {talent['tab'] for talent in delta})
 
-    def test_cli_reports_pass(self):
+    def test_committed_delta_is_current(self):
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
-            code = talentdelta.main(['--change', str(SHAMAN)])
-        self.assertEqual(0, code)
+            code = talentdelta.main(['--talents', str(SHAMAN_TALENTS), '--base-cells', str(SHAMAN_CELLS),
+                                     '--check', str(SHAMAN_DELTA)])
+        self.assertEqual(0, code, output.getvalue())
         self.assertIn('TALENTDELTA=PASS talents=10 errors=0 warnings=0 server=skipped', output.getvalue())
+
+    def test_skill_rows_match_the_server_rows_of_core_217(self):
+        rows = talentdelta.delta_rows(SHAMAN_SKILLS)
+        self.assertEqual({90043, 90055}, set(rows))
+        for key, skill in ((90043, '43'), (90055, '55')):
+            self.assertEqual({'SkillID': skill, 'RaceMask': '2047', 'ClassMask': '64', 'Flags': '384',
+                              'MinLevel': '0', 'SkillTierID': '0'}, rows[key])
 
 
 if __name__ == '__main__':
