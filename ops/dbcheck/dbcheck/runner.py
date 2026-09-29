@@ -55,6 +55,10 @@ def parse_tsv(text: str) -> tuple[list[str], list[tuple]]:
 class Runner:
     kind = "abstract"
 
+    def check_grants(self) -> list[str]:
+        """Privileges beyond SELECT/SHOW VIEW that the database user holds (none for SQLite)."""
+        return []
+
     def query(self, sql: str) -> tuple[list[str], list[tuple]]:
         raise NotImplementedError
 
@@ -65,19 +69,22 @@ class Runner:
 class MysqlRunner(Runner):
     kind = "mysql"
 
-    def __init__(self, cmd: str, timeout: int = 600):
+    def __init__(self, cmd: str, timeout: int = 600, statement_seconds: int = 120):
         self.argv = shlex.split(cmd)
         if not self.argv:
             raise RunnerError("empty --mysql-cmd")
         if "-B" not in self.argv and "--batch" not in self.argv:
             self.argv.append("-B")
         self.timeout = timeout
+        # MariaDB aborts any single statement that runs longer: a heavy rule cannot
+        # hold the server for minutes. 0 disables the limit.
+        self.prefix = f"SET SESSION max_statement_time={int(statement_seconds)};\n" if statement_seconds else ""
 
     def query(self, sql):
         check_readonly(sql, "runner")
         try:
             p = subprocess.run(
-                self.argv, input=sql.strip().rstrip(";") + ";\n", capture_output=True, text=True,
+                self.argv, input=self.prefix + sql.strip().rstrip(";") + ";\n", capture_output=True, text=True,
                 encoding="utf-8", timeout=self.timeout,
             )
         except (OSError, subprocess.TimeoutExpired) as e:
@@ -85,6 +92,15 @@ class MysqlRunner(Runner):
         if p.returncode != 0:
             raise RunnerError(f"database client exited {p.returncode}: {p.stderr.strip()[:300]}")
         return parse_tsv(p.stdout)
+
+    def check_grants(self):
+        me = "CONCAT('''', REPLACE(CURRENT_USER(), '@', '''@'''), '''')"
+        parts = [
+            f"SELECT privilege_type FROM information_schema.{t} WHERE grantee = {me}"
+            for t in ("user_privileges", "schema_privileges", "table_privileges", "column_privileges")
+        ]
+        _, rows = self.query(" UNION ".join(parts))
+        return sorted({r[0] for r in rows} - {"SELECT", "SHOW VIEW", "USAGE"})
 
     def schema(self):
         _, rows = self.query(

@@ -1,0 +1,36 @@
+# Quests that dbcheck must not report as "no starter" or "no turn-in", each with
+# the reason. IDs only. Extend it when a review confirms that a quest is a
+# leftover or is handled by code. Do not add a quest here to silence a real gap.
+
+[instance]
+id = "quest-exceptions"
+name = "Quest exceptions"
+source = "OB-20 review of twow-repo#438 (sample of quest_no_giver, 2026-09-29)"
+source_date = "2026-09-29"
+
+# Old Vanilla quests that newer ids replace (7521: the real quest is 7786 at NPC 14347).
+[[scripted_quest]]
+entry = 7521
+via = "retired-vanilla"
+note = "replaced by 7786"
+
+[[scripted_quest]]
+entry = 2985
+via = "retired-vanilla"
+
+[[scripted_quest]]
+entry = 2986
+via = "retired-vanilla"
+
+[[scripted_quest]]
+entry = 5517
+via = "retired-vanilla"
+
+[[scripted_quest]]
+entry = 5521
+via = "retired-vanilla"
+
+[[scripted_quest]]
+entry = 6131
+via = "retired-vanilla"
+note = "Timbermaw Ally, the current one is 8460"

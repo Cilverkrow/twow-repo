@@ -2,7 +2,7 @@
 scope = "global"
 severity = "info"
 title = "Item without any source"
-description = "Rare and better items that no creature, object, container, vendor or quest reward provides. Crafted items and items created by spells have no row in these tables and appear here; treat the list as a lead, not a defect."
+description = "Rare and better items that no source provides. Counted as sources: creature, reference, object, item, pickpocketing, skinning, disenchanting, fishing and mail loot; vendor lists (npc_vendor and npc_vendor_template); quest rewards and reward choices; a quest's starting item (SrcItemId). Crafted items and items created by spells have no row in these tables and appear here; treat the list as a lead, not a defect."
 sql = """
 SELECT i.{item.entry} AS item_entry, i.{item.name} AS item_name, i.{item.quality} AS quality
 FROM {item} i
@@ -11,11 +11,29 @@ WHERE i.{item.quality} >= {const.item_source_min_quality}
   AND NOT EXISTS (SELECT 1 FROM {reference_loot} x WHERE x.{reference_loot.item} = i.{item.entry})
   AND NOT EXISTS (SELECT 1 FROM {gameobject_loot} x WHERE x.{gameobject_loot.item} = i.{item.entry})
   AND NOT EXISTS (SELECT 1 FROM {item_loot} x WHERE x.{item_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {pickpocket_loot} x WHERE x.{pickpocket_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {skinning_loot} x WHERE x.{skinning_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {disenchant_loot} x WHERE x.{disenchant_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {fishing_loot} x WHERE x.{fishing_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {mail_loot} x WHERE x.{mail_loot.item} = i.{item.entry})
   AND NOT EXISTS (SELECT 1 FROM {vendor} x WHERE x.{vendor.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {vendor_template} x WHERE x.{vendor_template.item} = i.{item.entry})
   AND NOT EXISTS (
     SELECT 1 FROM {quest} q
     WHERE i.{item.entry} IN (q.{quest.rew_item_1}, q.{quest.rew_item_2}, q.{quest.rew_item_3}, q.{quest.rew_item_4},
                              q.{quest.rew_choice_1}, q.{quest.rew_choice_2}, q.{quest.rew_choice_3},
-                             q.{quest.rew_choice_4}, q.{quest.rew_choice_5}, q.{quest.rew_choice_6})
+                             q.{quest.rew_choice_4}, q.{quest.rew_choice_5}, q.{quest.rew_choice_6},
+                             q.{quest.src_item})
   )
+"""
+
+[rule.reference_loot_nested]
+scope = "global"
+severity = "info"
+title = "Reference loot groups that point at other reference groups"
+description = "The loot rules follow nested references at any depth; this lists them so a reviewer knows the case exists."
+sql = """
+SELECT r.{reference_loot.entry} AS reference_group, -r.{reference_loot.ref} AS points_at
+FROM {reference_loot} r
+WHERE r.{reference_loot.ref} < 0
 """

@@ -29,7 +29,7 @@ def _validate(binding, rules, macros, expected):
     """Expand every rule with dummy parameters: catches typos before a run."""
     dummy = {
         "entry": "1", "giver": "1", "ender": "1", "names": "'x'", "names_table": "SELECT 'x' AS expected",
-        "instance_entries": "1", "allow_elsewhere": "NULL", "spawn_optional": "0",
+        "instance_entries": "1", "allow_elsewhere": "NULL", "spawn_optional": "0", "scripted_starts": "-1", "scripted_ends": "-1", "summoned_entries": "-1", "rank": "3",
     }
     for r in rules.values():
         sql = expand(r.sql, binding, macros, dummy)
@@ -63,13 +63,24 @@ def cmd_run(a):
     if a.sqlite:
         runner = SqliteRunner(a.sqlite)
     elif cmd:
-        runner = MysqlRunner(cmd)
+        if not a.disposable:
+            raise ConfigError(
+                "refusing to run against a database without --disposable: the rules join large tables and "
+                "must never run against the live database. Pass --disposable to confirm the target is a copy."
+            )
+        runner = MysqlRunner(cmd, statement_seconds=a.statement_seconds)
+        extra = runner.check_grants()
+        if extra and not a.skip_grant_check:
+            raise ConfigError(
+                "the database user holds more than SELECT/SHOW VIEW (" + ", ".join(extra) + "); "
+                "use a read-only user, or --skip-grant-check if you accept that"
+            )
     else:
         raise ConfigError("no database: pass --mysql-cmd (or DBCHECK_MYSQL) or --sqlite")
     only = set(a.only.split(",")) if a.only else None
     if only and not only <= set(rules):
         raise ConfigError("unknown rule(s): " + ", ".join(sorted(only - set(rules))))
-    run = engine.run(runner, binding, rules, macros, expected, only)
+    run = engine.run(runner, binding, rules, macros, expected, only, progress=lambda m: print(m, file=sys.stderr, flush=True))
     text, data = report.build(run, expected, a.max_rows)
     digest = report.sha256_of(text)
     print(text, end="")
@@ -98,6 +109,9 @@ def main(argv=None) -> int:
     _common(p)
     p.add_argument("--mysql-cmd", help="client command reading SQL from stdin (or env DBCHECK_MYSQL)")
     p.add_argument("--sqlite", help="SQLite file (test fixtures only)")
+    p.add_argument("--disposable", action="store_true", help="required with --mysql-cmd: confirms the target is a disposable copy, not live")
+    p.add_argument("--skip-grant-check", action="store_true", help="do not refuse a database user that can write")
+    p.add_argument("--statement-seconds", type=int, default=120, help="MariaDB max_statement_time per query; 0 = off (default 120)")
     p.add_argument("--only", help="comma-separated rule names")
     p.add_argument("--max-rows", type=int, default=50, help="rows per finding in report.md (JSON has all)")
     p.add_argument("--out", type=Path, help="write report.md, report.json, SHA256SUMS here")

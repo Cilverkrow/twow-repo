@@ -1,32 +1,94 @@
 # Quest rules. Global rules need no expected list; quest-scope rules check the
 # [[quest]] entries of an expected file.
+#
+# What counts as a starter: a creature or object giver row, or a start item.
+# NextQuestInChain does NOT: the follow-up offer only works when the turn-in NPC
+# also has the quest in its own creature_questrelation (OB-20 review of #438).
+# What counts as a turn-in: a creature or object turn-in row. An area trigger
+# is only the exploration goal, not a turn-in.
+# Quests retired on purpose (title patterns in the binding, quest_ignore_title_like)
+# and quests an expected file names as [[scripted_quest]] are skipped.
+
+[macro]
+quest_not_ignored = """
+NOT EXISTS (SELECT 1 FROM ({list.quest_ignore_title_like}) ig WHERE q.{quest.title} LIKE ig.pattern)
+"""
+quest_has_starter = """
+(EXISTS (SELECT 1 FROM {creature_start} s WHERE s.{creature_start.quest} = q.{quest.entry})
+ OR EXISTS (SELECT 1 FROM {object_start} s WHERE s.{object_start.quest} = q.{quest.entry})
+ OR EXISTS (SELECT 1 FROM {item} i WHERE i.{item.start_quest} = q.{quest.entry}))
+"""
 
 [rule.quest_no_giver]
 scope = "global"
 severity = "error"
 title = "Quest without a starter"
-description = "No creature, object or item starts the quest: players cannot get it. Titles matching quest_ignore_title_like are skipped."
+description = "No creature or object gives the quest and no item starts it. Not counted: quests with Method 0 (see quest_script_started), retired titles, and quests the expected list names as scripted (starts = true)."
 sql = """
 SELECT q.{quest.entry} AS quest, q.{quest.title} AS title
 FROM {quest} q
-WHERE q.{quest.title} NOT LIKE {const.quest_ignore_title_like}
-  AND NOT EXISTS (SELECT 1 FROM {creature_start} s WHERE s.{creature_start.quest} = q.{quest.entry})
-  AND NOT EXISTS (SELECT 1 FROM {object_start} s WHERE s.{object_start.quest} = q.{quest.entry})
-  AND NOT EXISTS (SELECT 1 FROM {item} i WHERE i.{item.start_quest} = q.{quest.entry})
+WHERE {%quest_not_ignored}
+  AND q.{quest.method} <> 0
+  AND NOT {%quest_has_starter}
+  AND q.{quest.entry} NOT IN ({@scripted_starts})
+"""
+
+[rule.quest_script_started]
+scope = "global"
+severity = "warn"
+title = "Quest with Method 0 and no starter row (started by a script?)"
+description = "Method 0 quests are normally added by a script or a game object. Verify in the code, then list the quest as [[scripted_quest]] in an expected file."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title
+FROM {quest} q
+WHERE {%quest_not_ignored}
+  AND q.{quest.method} = 0
+  AND NOT {%quest_has_starter}
+  AND q.{quest.entry} NOT IN ({@scripted_starts})
 """
 
 [rule.quest_no_ender]
 scope = "global"
 severity = "error"
 title = "Quest without a turn-in"
-description = "No creature, object or area trigger completes the quest. Titles matching quest_ignore_title_like are skipped."
+description = "No creature or object completes the quest. An area trigger does not count (it is the exploration goal). Not counted: retired titles and quests the expected list names as scripted (ends = true)."
 sql = """
 SELECT q.{quest.entry} AS quest, q.{quest.title} AS title
 FROM {quest} q
-WHERE q.{quest.title} NOT LIKE {const.quest_ignore_title_like}
+WHERE {%quest_not_ignored}
   AND NOT EXISTS (SELECT 1 FROM {creature_end} e WHERE e.{creature_end.quest} = q.{quest.entry})
   AND NOT EXISTS (SELECT 1 FROM {object_end} e WHERE e.{object_end.quest} = q.{quest.entry})
-  AND NOT EXISTS (SELECT 1 FROM {trigger_end} e WHERE e.{trigger_end.quest} = q.{quest.entry})
+  AND q.{quest.entry} NOT IN ({@scripted_ends})
+"""
+
+[rule.quest_giver_unspawned]
+scope = "global"
+severity = "warn"
+title = "Quest giver exists as a template but is never spawned"
+description = "The creature gives quests but no creature row places it (id, id2, id3 or id4). Givers that a script or event summons appear here too: a lead."
+sql = """
+SELECT ct.{creature_template.entry} AS giver, ct.{creature_template.name} AS name, COUNT(DISTINCT q.{quest.entry}) AS quests
+FROM {creature_start} s
+JOIN {creature_template} ct ON ct.{creature_template.entry} = s.{creature_start.id}
+LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
+JOIN {quest} q ON q.{quest.entry} = s.{creature_start.quest}
+WHERE {%quest_not_ignored} AND sp.sid IS NULL
+GROUP BY ct.{creature_template.entry}, ct.{creature_template.name}
+"""
+
+[rule.quest_ender_unspawned]
+scope = "global"
+severity = "warn"
+title = "Quest turn-in NPC exists as a template but is never spawned"
+description = "The creature completes quests but no creature row places it (id, id2, id3 or id4)."
+sql = """
+SELECT ct.{creature_template.entry} AS ender, ct.{creature_template.name} AS name, COUNT(DISTINCT q.{quest.entry}) AS quests
+FROM {creature_end} e
+JOIN {creature_template} ct ON ct.{creature_template.entry} = e.{creature_end.id}
+LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
+JOIN {quest} q ON q.{quest.entry} = e.{creature_end.quest}
+WHERE {%quest_not_ignored} AND sp.sid IS NULL
+GROUP BY ct.{creature_template.entry}, ct.{creature_template.name}
 """
 
 [rule.quest_chain_broken]

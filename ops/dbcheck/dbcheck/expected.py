@@ -14,6 +14,7 @@ only** (no quotes or lore from the source)::
     entry = 61939                     # creature_template.entry
     name = "Keeper Gnarlmoon"
     spawn_optional = false            # true for bosses that are summoned
+    rank = 3                          # optional: expected creature_template.rank
     loot = ["Item name", "Other item"]
 
     [[quest]]
@@ -21,6 +22,17 @@ only** (no quotes or lore from the source)::
     title = "Guile of Nature"
     giver = 62631                     # optional creature entry
     ender = 62631                     # optional creature entry
+
+    [[scripted_quest]]                # started or completed by a script, not by a giver row
+    entry = 12345
+    via = "eluna"                     # script | event | eluna | ...  (required)
+    starts = true                     # skip the starter check (default true)
+    ends = true                       # skip the turn-in check (default true)
+    note = "why"                      # optional
+
+    [[summoned_boss]]                 # a script summons it: no spawn row on purpose
+    entry = 11502
+    via = "cpp"                       # cpp | eluna | eventai | ...  (required)
 """
 
 from __future__ import annotations
@@ -39,6 +51,7 @@ class Boss:
     name: str
     spawn_optional: bool = False
     loot: list[str] = field(default_factory=list)
+    rank: int | None = None
 
 
 @dataclass
@@ -50,6 +63,26 @@ class Quest:
 
 
 @dataclass
+class Scripted:
+    """A quest the database cannot show a starter or turn-in for: a script,
+    an event or Eluna handles it. Named here so the global rules skip it."""
+
+    entry: int
+    via: str
+    starts: bool = True
+    ends: bool = True
+    note: str = ""
+
+
+@dataclass
+class Summoned:
+    """A boss a script summons (C++, Eluna, EventAI): it has no spawn row on purpose."""
+
+    entry: int
+    via: str
+
+
+@dataclass
 class Expected:
     id: str
     name: str
@@ -58,6 +91,8 @@ class Expected:
     allow_elsewhere: list[str]
     bosses: list[Boss]
     quests: list[Quest]
+    scripted: list[Scripted]
+    summoned: list[Summoned]
     sha256: str
     path: str
 
@@ -84,7 +119,10 @@ def load_expected(path: Path) -> Expected:
         if any(not x.strip() for x in loot):
             raise ConfigError(f"{path}: boss {b.get('entry')}: empty loot name")
         bosses.append(
-            Boss(_int(path, "boss.entry", b.get("entry")), str(b.get("name", "")), bool(b.get("spawn_optional", False)), loot)
+            Boss(
+                _int(path, "boss.entry", b.get("entry")), str(b.get("name", "")), bool(b.get("spawn_optional", False)), loot,
+                None if b.get("rank") is None else _int(path, "boss.rank", b.get("rank")),
+            )
         )
     quests = []
     for q in data.get("quest", []):
@@ -98,8 +136,18 @@ def load_expected(path: Path) -> Expected:
                 None if ender is None else _int(path, "quest.ender", ender),
             )
         )
-    if not bosses and not quests:
-        raise ConfigError(f"{path}: no [[boss]] and no [[quest]] entries")
+    scripted = []
+    for s in data.get("scripted_quest", []):
+        if not s.get("via"):
+            raise ConfigError(f"{path}: scripted_quest {s.get('entry')}: 'via' is required (script, event, eluna, ...)")
+        scripted.append(Scripted(_int(path, "scripted_quest.entry", s.get("entry")), str(s["via"]), bool(s.get("starts", True)), bool(s.get("ends", True)), str(s.get("note", ""))))
+    summoned = []
+    for s in data.get("summoned_boss", []):
+        if not s.get("via"):
+            raise ConfigError(f"{path}: summoned_boss {s.get('entry')}: 'via' is required (cpp, eluna, eventai, ...)")
+        summoned.append(Summoned(_int(path, "summoned_boss.entry", s.get("entry")), str(s["via"])))
+    if not bosses and not quests and not scripted and not summoned:
+        raise ConfigError(f"{path}: no [[boss]], [[quest]], [[scripted_quest]] or [[summoned_boss]] entries")
     return Expected(
         id=str(inst["id"]),
         name=str(inst["name"]),
@@ -108,6 +156,8 @@ def load_expected(path: Path) -> Expected:
         allow_elsewhere=[str(x) for x in inst.get("allow_elsewhere", [])],
         bosses=bosses,
         quests=quests,
+        scripted=scripted,
+        summoned=summoned,
         sha256=hashlib.sha256(raw).hexdigest(),
         path=str(path),
     )

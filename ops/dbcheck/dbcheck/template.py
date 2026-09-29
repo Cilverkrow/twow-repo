@@ -21,9 +21,9 @@ from .binding import Binding
 from .errors import ConfigError
 
 _PLACEHOLDER = re.compile(r"\{([%@]?)([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?\}")
-_SELECT = re.compile(r"^\s*SELECT\b", re.IGNORECASE)
+_SELECT = re.compile(r"^\s*(?:SELECT|WITH)\b", re.IGNORECASE)  # WITH: recursive loot references
 _FORBIDDEN = re.compile(
-    r"\b(INSERT|UPDATE|DELETE|REPLACE|DROP|ALTER|CREATE|TRUNCATE|GRANT|CALL|INTO\s+OUTFILE|INTO\s+DUMPFILE|LOAD_FILE|SLEEP|BENCHMARK)\b",
+    r"\b(INSERT|UPDATE|DELETE|REPLACE\s+INTO|DROP|ALTER|CREATE|TRUNCATE|GRANT|CALL|INTO\s+OUTFILE|INTO\s+DUMPFILE|LOAD_FILE|SLEEP|BENCHMARK)\b",
     re.IGNORECASE,
 )
 
@@ -82,6 +82,8 @@ def expand(sql: str, binding: Binding, macros: dict[str, str], params: dict[str,
             return params[a]
         if a == "const" and b:
             return binding.const(b)
+        if a == "list" and b:
+            return binding.list_table(b)
         if b:
             return binding.column(a, b)
         return binding.table(a)

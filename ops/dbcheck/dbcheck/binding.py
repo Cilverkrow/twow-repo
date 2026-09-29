@@ -67,6 +67,16 @@ class Binding:
             return str(v)
         return "'" + str(v).replace("'", "''") + "'"
 
+    def list_table(self, name: str) -> str:
+        """A binding constant that is a list of strings, as a one-column derived
+        table ``pattern``, e.g. for ``NOT EXISTS (SELECT 1 FROM ({list.x}) p WHERE t LIKE p.pattern)``."""
+        v = self.consts.get(name)
+        if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
+            raise ConfigError(f"binding {self.id}: constant '{name}' is not a list of strings")
+        if not v:
+            return "SELECT NULL AS pattern FROM (SELECT 1 AS one) d WHERE 1=0"
+        return " UNION ALL ".join("SELECT '" + x.replace("'", "''") + "' AS pattern" for x in v)
+
     def physical_columns(self) -> list[tuple[str, str]]:
         """Sorted ``(physical table, physical column)`` pairs the binding needs."""
         return sorted({(t.physical, c) for t in self.tables.values() for c in t.columns.values()})

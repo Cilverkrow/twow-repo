@@ -7,6 +7,8 @@ id = "tower-of-karazhan"
 name = "Tower of Karazhan"
 source = "https://turtle-wow.fandom.com/wiki/Tower_of_Karazhan (boss pages Keeper_Gnarlmoon, Mephistroth; CC-BY-SA, used as a reference only)"
 source_date = "2026-09-29"
+# Ephemeral Pendant also drops from other Karazhan bosses and event NPCs that this list does not cover yet.
+allow_elsewhere = ["Ephemeral Pendant"]
 
 [[boss]]
 entry = 61939

@@ -43,33 +43,63 @@ def insert(con, table, **row):
 
 def world() -> sqlite3.Connection:
     con = empty_db()
-    # Bosses: 100 spawned, 101 never spawned, 102 is a boss-rank NPC without loot.
-    for entry, name, loot, rank in [(100, "Boss Alpha", 100, 3), (101, "Boss Beta", 101, 3), (102, "Boss Gamma", 0, 3),
-                                    (200, "Trash Mob", 200, 0)]:
+    # Creatures: 100 boss spawned, 101 boss never spawned, 102 boss without loot,
+    # 103 boss summoned by a database script, 104 boss summoned by C++ (named in the
+    # expected list), 105 boss spawned only through id2, 200/201 trash, 300 spawned giver
+    # (through id3), 301 giver never spawned, 302 turn-in NPC never spawned.
+    for entry, name, loot, rank in [
+        (100, "Boss Alpha", 100, 3), (101, "Boss Beta", 101, 3), (102, "Boss Gamma", 0, 3), (103, "Boss Delta", 103, 3),
+        (104, "Boss Epsilon", 104, 3), (105, "Boss Zeta", 105, 3), (200, "Trash Mob", 200, 0), (201, "Trash Two", 201, 0),
+        (300, "Giver", 0, 0), (301, "Ghost Giver", 0, 0), (302, "Ghost Ender", 0, 0),
+    ]:
         insert(con, "creature_template", entry=entry, name=name, loot_id=loot, rank=rank)
     insert(con, "creature", guid=1, id=100, map=1)
     insert(con, "creature", guid=2, id=200, map=1)
-    # Loot: 100 = two direct rows + one reference group + one unnamed extra; 200 = trash drops an item Alpha should have.
-    for loot, item, ref in [(100, 1001, 1), (100, 1002, 1), (100, 1008, 1), (100, 0, -5), (101, 1001, 1), (200, 1004, 1)]:
+    insert(con, "creature", guid=3, id=0, id3=300, map=1)
+    insert(con, "creature", guid=4, id=0, id2=105, map=1)
+    # Loot. 100: direct rows, a reference group 5 that itself points at group 6, and one unnamed extra.
+    # 200: trash drops an item Alpha should have; 201: trash drops one only through a reference group.
+    for loot, item, ref in [
+        (100, 1001, 1), (100, 1002, 1), (100, 1008, 1), (100, 0, -5), (101, 1001, 1), (200, 1004, 1), (201, 0, -7),
+        (103, 1001, 1), (104, 1001, 1), (105, 1001, 1),
+    ]:
         insert(con, "creature_loot_template", entry=loot, item=item, mincountOrRef=ref)
-    insert(con, "reference_loot_template", entry=5, item=1003)
+    for entry, item, ref in [(5, 1003, 1), (5, 0, -6), (6, 1009, 1), (7, 1010, 1)]:
+        insert(con, "reference_loot_template", entry=entry, item=item, mincountOrRef=ref)
     items = [
         (1001, "Sword of Tests", 4), (1002, "Helm of O'Brien", 4), (1003, "Ring via Ref", 4), (1004, "Cloak Elsewhere", 4),
         (1005, "Call of the Wild", 4), (1006, "Orphan Epic", 4), (1007, "Sold Epic", 4), (1008, "Unnamed Extra", 3),
+        (1009, "Nested Ring", 4), (1010, "Hidden Ref Item", 4), (1011, "Template Vendor Epic", 4), (1012, "Mailed Epic", 4),
+        (1013, "Quest Start Epic", 4), (1014, "Skinned Epic", 4),
     ]
     for entry, name, q in items:
         insert(con, "item_template", entry=entry, name=name, quality=q, start_quest=0)
     insert(con, "npc_vendor", item=1007)
-    # Quests: 10 fine, 11 no starter, 12 no ender, 13 broken chain, 14 fine (negative prev = must be active).
-    for entry, title, prev, nxt, chain in [(10, "Quest Ten", 0, 14, 0), (11, "Quest Eleven", 0, 0, 0), (12, "Quest Twelve", 0, 0, 0),
-                                            (13, "Quest Thirteen", 999, 998, 997), (14, "Quest Fourteen", -10, 0, 0),
-                                            (15, "[DEPRECATED] Retired", 0, 0, 0)]:
-        insert(con, "quest_template", entry=entry, Title=title, PrevQuestId=prev, NextQuestId=nxt, NextQuestInChain=chain,
-               RewItemId1=1003 if entry == 14 else 0)
+    insert(con, "npc_vendor_template", item=1011)
+    insert(con, "mail_loot_template", item=1012)
+    insert(con, "skinning_loot_template", item=1014)
+    # Quests. Method 2 is the normal case, 0 means "started by a script".
+    quests = [
+        (10, "Quest Ten", 2, 0, 14, 16), (11, "Quest Eleven", 2, 0, 0, 0), (12, "Quest Twelve", 2, 0, 0, 0),
+        (13, "Quest Thirteen", 2, 999, 998, 997), (14, "Quest Fourteen", 2, -10, 0, 0),
+        (15, "[DEPRECATED] Retired", 2, 0, 0, 0), (16, "Chain Follower", 2, 0, 0, 0), (17, "Scripted Start", 2, 0, 0, 0),
+        (18, "Scripted End", 2, 0, 0, 0), (19, "Method Zero", 0, 0, 0, 0), (20, "Dummy Quest", 2, 0, 0, 0),
+        (21, "Old Quest [Deprecated]", 2, 0, 0, 0), (22, "Vanilla Corpse", 2, 0, 0, 0),
+    ]
+    for entry, title, method, prev, nxt, chain in quests:
+        insert(con, "quest_template", entry=entry, Title=title, Method=method, PrevQuestId=prev, NextQuestId=nxt,
+               NextQuestInChain=chain, RewItemId1=1003 if entry == 14 else 0, SrcItemId=1013 if entry == 10 else 0)
     for quest, giver, ender in [(10, 300, 300), (12, 300, None), (13, 300, 300), (14, 300, 300)]:
         insert(con, "creature_questrelation", id=giver, quest=quest)
         if ender is not None:
             insert(con, "creature_involvedrelation", id=ender, quest=quest)
     insert(con, "creature_involvedrelation", id=300, quest=11)
+    for quest in (16, 17):
+        insert(con, "creature_involvedrelation", id=300, quest=quest)  # 16: no starter; 17: a script starts it
+    insert(con, "creature_questrelation", id=300, quest=18)  # 18: a script turns it in
+    insert(con, "creature_questrelation", id=301, quest=10)  # a giver that is never spawned
+    insert(con, "creature_involvedrelation", id=302, quest=14)  # a turn-in NPC that is never spawned
+    # A database script summons boss 103 (command 10, datalong = entry).
+    insert(con, "generic_scripts", command=10, datalong=103)
     con.commit()
     return con

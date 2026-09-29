@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 
 from .binding import Binding, check_schema
@@ -42,6 +43,16 @@ def _boss_params(exp: Expected, boss) -> dict[str, str]:
         "instance_entries": sql_int_list([b.entry for b in exp.bosses]),
         "allow_elsewhere": sql_string_list(exp.allow_elsewhere),
         "spawn_optional": "1" if boss.spawn_optional else "0",
+        "rank": "" if boss.rank is None else str(boss.rank),
+    }
+
+
+def _global_params(expected: list[Expected]) -> dict[str, str]:
+    """Quests named as script/event/Eluna-handled in any expected file."""
+    return {
+        "scripted_starts": sql_int_list([s.entry for e in expected for s in e.scripted if s.starts]),
+        "scripted_ends": sql_int_list([s.entry for e in expected for s in e.scripted if s.ends]),
+        "summoned_entries": sql_int_list([s.entry for e in expected for s in e.summoned]),
     }
 
 
@@ -53,9 +64,12 @@ def _quest_params(exp: Expected, q) -> dict[str, str]:
     }
 
 
-def _execute(runner: Runner, rule: Rule, sql: str, subject: str) -> Result:
+def _execute(runner: Runner, rule: Rule, sql: str, subject: str, progress=None) -> Result:
     check_readonly(sql, f"rule {rule.name}")
+    started = time.monotonic()
     cols, rows = runner.query(sql)
+    if progress:
+        progress(f"{rule.name}{' ' + subject if subject else ''}: {len(rows)} row(s), {time.monotonic() - started:.1f}s")
     return Result(rule, subject, cols, _sorted_rows(rows))
 
 
@@ -66,6 +80,7 @@ def run(
     macros: dict[str, str],
     expected: list[Expected],
     only: set[str] | None = None,
+    progress=None,
 ) -> Run:
     fp = check_schema(binding, runner.schema())
     out = Run(binding, fp)
@@ -74,8 +89,8 @@ def run(
         if only and name not in only:
             continue
         if rule.scope == "global":
-            sql = expand(rule.sql, binding, macros, {})
-            out.results.append(_execute(runner, rule, sql, ""))
+            sql = expand(rule.sql, binding, macros, _global_params(expected))
+            out.results.append(_execute(runner, rule, sql, "", progress))
             continue
         for exp in expected:
             items = exp.bosses if rule.scope == "boss" else exp.quests
@@ -88,5 +103,5 @@ def run(
                     out.results.append(Result(rule, subject, [], [], skipped=f"no {', '.join(empty)} in the expected list"))
                     continue
                 sql = expand(rule.sql, binding, macros, params)
-                out.results.append(_execute(runner, rule, sql, subject))
+                out.results.append(_execute(runner, rule, sql, subject, progress))
     return out
