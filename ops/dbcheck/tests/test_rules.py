@@ -24,11 +24,12 @@ def expected():
             Boss(104, "Boss Epsilon", True, []),
             Boss(105, "Boss Zeta", False, []),  # spawned only through creature.id2
             Boss(106, "Boss Eta", False, []),  # spawned on map 9 only
+            Boss(107, "Boss Theta", False, []),  # summoned by C++, named in the summoned list
             Boss(999, "Boss Missing", False, []),
         ],
         quests=[Quest(10, "Quest Ten", 300, 300), Quest(12, "Quest Twelve", 301, None), Quest(99, "Quest Ninety-nine", None, None)],
         scripted=[Scripted(17, "eluna", True, False), Scripted(18, "script", False, True), Scripted(22, "retired", True, True)],
-        summoned=[Summoned(104, "cpp")],
+        summoned=[Summoned(104, "cpp"), Summoned(107, "cpp", "example.cpp:9")],
         credited=[Credited(407, "cpp", "example.cpp:1")],
         sha256="0" * 64, path="synthetic.toml",
     )
@@ -95,7 +96,7 @@ class Rules(unittest.TestCase):
 
     def test_boss_unknown_and_no_spawn(self):
         self.assertEqual(self.names("boss_unknown"), ["999"])
-        self.assertEqual(self.names("boss_no_spawn"), ["101"])  # 105 spawns only through id2; 103 and 104 are spawn_optional
+        self.assertEqual(self.names("boss_no_spawn"), ["101"])  # 107: no spawn, but a C++ script summons it; 105 spawns via id2; 103 and 104 are spawn_optional
 
     def test_boss_spawned_on_the_wrong_map(self):
         # 100 and 105 spawn on map 1; 101, 103 and 104 have no spawn at all (other rules report those).

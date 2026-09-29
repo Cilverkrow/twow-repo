@@ -103,14 +103,14 @@ commit it (`out/` and `work/` are ignored).
 | `quest_no_ender` | global | error | no creature or object completes the quest (an area trigger is only the exploration goal) |
 | `quest_giver_unspawned`, `quest_ender_unspawned` | global | warn | the giver or turn-in NPC has a template but no spawn (id, id2-4) |
 | `quest_chain_broken` | global | warn | prev, next or chain id names a missing quest |
-| `boss_no_spawn_any` | global | warn | boss-rank creature with loot, never spawned, not summoned by a database script or listed as `[[summoned_boss]]` |
+| `boss_no_spawn_any` | global | warn | boss-rank creature with loot, never spawned, not summoned by a database script or listed as `[[summoned_boss]]` (C++ summons: `expected/cpp-summoned-bosses.toml`, found by scanning `SummonCreature` calls in twow-core) |
 | `item_no_source` | global | info | rare+ item no loot, vendor, quest reward or start item provides (crafted items appear: a lead, not a defect) |
 | `reference_loot_nested` | global | info | reference loot groups that point at other groups (followed at any depth) |
 | `quest_helper_no_credit` | global | error | a quest objective is a helper NPC `quest_<id>_...` that nothing can credit: no spawn, no kill-credit script (command 8, any script table or EventAI action), no summon, no EventAI events, no `script_name`, and not listed as `[[credited_npc]]` (C++ credit, see `expected/cpp-credit-helpers.toml`). The name must match `quest_helper_name_like`; the underscore is literal (escaped with `!`, `LIKE ... ESCAPE '!'`). Limit: command 83 has no creature id, a helper credited only by it appears here and needs a look |
 | `quest_expected_missing` | quest | error | expected quest is not in the database |
 | `quest_giver_mismatch`, `quest_ender_mismatch` | quest | error | expected giver or turn-in creature does not match |
 | `boss_unknown` | boss | error | expected boss has no `creature_template` |
-| `boss_no_spawn` | boss | error | expected boss is never spawned (`spawn_optional = true` skips this) |
+| `boss_no_spawn` | boss | error | expected boss is never spawned (`spawn_optional = true` or a `[[summoned_boss]]` entry skips this) |
 | `boss_rank_mismatch` | boss | warn | `creature_template.rank` differs from the list |
 | `boss_wrong_map` | boss | warn | the boss is spawned, but on no map named in the list (`maps = [...]`), for example only on the Development Land test map 451 |
 | `boss_loot_missing` | boss | error | expected item exists but the boss does not drop it (direct rows and reference groups at any depth) |

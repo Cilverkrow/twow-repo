@@ -97,7 +97,7 @@ def run(
         for exp in expected:
             items = exp.bosses if rule.scope == "boss" else exp.quests
             for it in items:
-                params = _boss_params(exp, it) if rule.scope == "boss" else _quest_params(exp, it)
+                params = {**_global_params(expected), **(_boss_params(exp, it) if rule.scope == "boss" else _quest_params(exp, it))}
                 label = getattr(it, "name", None) or getattr(it, "title", "")
                 subject = f"{exp.name}: {label} ({it.entry})"
                 empty = [p for p in rule.requires if not params.get(p)]

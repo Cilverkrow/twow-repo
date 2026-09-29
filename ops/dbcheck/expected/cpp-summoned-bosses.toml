@@ -1,0 +1,58 @@
+# Bosses and NPCs that C++ scripts summon: they have no spawn row on purpose.
+# Found by scanning twow-core main @ acc8dec0, src/scripts and src/game, for
+# SummonCreature/SpawnCreature calls whose first argument (a number, or a
+# constant resolved to a number) is a creature entry that dbcheck would
+# otherwise report as never spawned. The note gives file, line and the
+# argument as written. Regenerate when the scripts change.
+
+[instance]
+id = "cpp-summoned-bosses"
+name = "Bosses that C++ scripts summon"
+source = "twow-core main acc8dec0, src/scripts and src/game (SummonCreature and SpawnCreature calls)"
+source_date = "2026-09-29"
+
+[[summoned_boss]]
+entry = 10339
+via = "cpp"
+note = "Gyth: src/scripts/dungeons/blackrock_spire/instance_blackrock_spire.cpp:668 (NPC_GYTH)"
+
+[[summoned_boss]]
+entry = 11502
+via = "cpp"
+note = "Ragnaros: src/scripts/dungeons/molten_core/boss_majordomo_executus.cpp:300 (NPC_RAGNAROS)"
+
+[[summoned_boss]]
+entry = 11583
+via = "cpp"
+note = "Nefarian: src/scripts/dungeons/blackwing_lair/boss_victor_nefarius.cpp:443 (NPC_NEFARIAN)"
+
+[[summoned_boss]]
+entry = 15625
+via = "cpp"
+note = "Twilight Corrupter: src/scripts/world/duskwood.cpp:41 (NPC_TWILIGHT_CORRUPTER)"
+
+[[summoned_boss]]
+entry = 59963
+via = "cpp"
+note = "Cla'ckora: src/scripts/miscellaneous/random_scripts_3.cpp:8144 (59963)"
+
+[[summoned_boss]]
+entry = 60669
+via = "cpp"
+note = "Tyrande Whisperwind: src/scripts/world/alahthalas.cpp:538 (60669)"
+
+[[summoned_boss]]
+entry = 61222
+via = "cpp"
+note = "Lord Blackwald II: src/scripts/dungeons/lower_karazhan_halls/instance_lower_karazhan_halls.cpp:119 (NPC_LORD_BLACKWALD_II)"
+
+[[summoned_boss]]
+entry = 91928
+via = "cpp"
+note = "Alarus: src/scripts/dungeons/karazhan_crypt/instance_karazhan_crypt.cpp:272 (91928)"
+
+[[summoned_boss]]
+entry = 2000092
+via = "cpp"
+note = "Grand Crusader Dathrohan: src/scripts/dungeons/stratholme/boss_dathrohan_balnazzar.cpp:184 (2000092)"
+

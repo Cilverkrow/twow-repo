@@ -53,7 +53,7 @@ def world() -> sqlite3.Connection:
     # (through id3), 301 giver never spawned, 302 turn-in NPC never spawned.
     for entry, name, loot, rank in [
         (100, "Boss Alpha", 100, 3), (101, "Boss Beta", 101, 3), (102, "Boss Gamma", 0, 3), (103, "Boss Delta", 103, 3),
-        (104, "Boss Epsilon", 104, 3), (105, "Boss Zeta", 105, 3), (106, "Boss Eta", 0, 3), (200, "Trash Mob", 200, 0), (201, "Trash Two", 201, 0),
+        (104, "Boss Epsilon", 104, 3), (105, "Boss Zeta", 105, 3), (106, "Boss Eta", 0, 3), (107, "Boss Theta", 0, 3), (200, "Trash Mob", 200, 0), (201, "Trash Two", 201, 0),
         (300, "Giver", 0, 0), (301, "Ghost Giver", 0, 0), (302, "Ghost Ender", 0, 0),
         (400, "quest_10_no_source", 0, 0), (401, "quest_10_spawned", 0, 0), (402, "quest_10_script_credit", 0, 0),
         (403, "quest_10_ai_credit", 0, 0), (404, "quest_10_eventai", 0, 0), (405, "Plain Objective", 0, 0),
