@@ -5,7 +5,7 @@ import unittest
 from synth import BINDING, MACROS, RULES, world
 
 from dbcheck import engine
-from dbcheck.expected import Boss, Credited, Expected, Quest, Scripted, Summoned
+from dbcheck.expected import Boss, Credited, Dead, Expected, Quest, Scripted, Summoned
 from dbcheck.runner import SqliteRunner
 
 
@@ -25,12 +25,14 @@ def expected():
             Boss(105, "Boss Zeta", False, []),  # spawned only through creature.id2
             Boss(106, "Boss Eta", False, []),  # spawned on map 9 only
             Boss(107, "Boss Theta", False, []),  # summoned by C++, named in the summoned list
+            Boss(108, "Boss Iota", False, []),  # dead content: no spawn, named in the dead list
             Boss(999, "Boss Missing", False, []),
         ],
         quests=[Quest(10, "Quest Ten", 300, 300), Quest(12, "Quest Twelve", 301, None), Quest(99, "Quest Ninety-nine", None, None)],
         scripted=[Scripted(17, "eluna", True, False), Scripted(18, "script", False, True), Scripted(22, "retired", True, True)],
         summoned=[Summoned(104, "cpp"), Summoned(107, "cpp", "example.cpp:9")],
         credited=[Credited(407, "cpp", "example.cpp:1")],
+        dead=[Dead(108, "boss", "needs a deprecated quest")],
         sha256="0" * 64, path="synthetic.toml",
     )
 
@@ -102,6 +104,12 @@ class Rules(unittest.TestCase):
         # 100 and 105 spawn on map 1; 101, 103 and 104 have no spawn at all (other rules report those).
         self.assertEqual([(r[0], r[2]) for r in self.rows("boss_wrong_map")], [("106", "9")])
 
+    def test_dead_content_is_neither_missing_nor_fine(self):
+        self.assertNotIn("108", self.names("boss_no_spawn"))
+        self.assertNotIn("108", self.names("boss_no_spawn_any"))
+        run = engine.run(SqliteRunner.from_connection(world()), BINDING, RULES, MACROS, [], {"boss_no_spawn_any"})
+        self.assertIn("108", sorted(str(r[0]) for res in run.results for r in res.rows))  # without the list it is a finding
+
     def test_boss_rank(self):
         self.assertEqual([(r[0], r[2], r[3]) for r in self.rows("boss_rank_mismatch")], [("101", "3", "0")])
 
@@ -109,7 +117,7 @@ class Rules(unittest.TestCase):
         # 103 is summoned by a database script, 104 by C++ (named in the list), 105 spawns via id2, 102 has no loot.
         self.assertEqual(self.names("boss_no_spawn_any"), ["101"])
         run = engine.run(SqliteRunner.from_connection(world()), BINDING, RULES, MACROS, [], {"boss_no_spawn_any"})
-        self.assertEqual(sorted(str(r[0]) for res in run.results for r in res.rows), ["101", "104"])
+        self.assertEqual(sorted(str(r[0]) for res in run.results for r in res.rows), ["101", "104", "108"])
 
     def test_missing_loot_follows_nested_references_and_ignores_case(self):
         missing = self.names("boss_loot_missing", "Boss Alpha")

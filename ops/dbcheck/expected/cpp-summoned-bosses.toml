@@ -37,11 +37,6 @@ via = "cpp"
 note = "Cla'ckora: src/scripts/miscellaneous/random_scripts_3.cpp:8144 (59963)"
 
 [[summoned_boss]]
-entry = 60669
-via = "cpp"
-note = "Tyrande Whisperwind: src/scripts/world/alahthalas.cpp:538 (60669)"
-
-[[summoned_boss]]
 entry = 61222
 via = "cpp"
 note = "Lord Blackwald II: src/scripts/dungeons/lower_karazhan_halls/instance_lower_karazhan_halls.cpp:119 (NPC_LORD_BLACKWALD_II)"
@@ -50,9 +45,4 @@ note = "Lord Blackwald II: src/scripts/dungeons/lower_karazhan_halls/instance_lo
 entry = 91928
 via = "cpp"
 note = "Alarus: src/scripts/dungeons/karazhan_crypt/instance_karazhan_crypt.cpp:272 (91928)"
-
-[[summoned_boss]]
-entry = 2000092
-via = "cpp"
-note = "Grand Crusader Dathrohan: src/scripts/dungeons/stratholme/boss_dathrohan_balnazzar.cpp:184 (2000092)"
 

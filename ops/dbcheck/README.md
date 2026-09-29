@@ -172,6 +172,16 @@ What counts, and what does not:
     via = "cpp"                # cpp | eluna | ...  (required)
     note = "file:line"         # optional
 
+    [[dead_content]]           # dead on purpose (needs something that does not exist)
+    entry = 2000092
+    kind = "boss"              # boss | npc  (required)
+    reason = "needs quests 20001 and 20002, both deprecated"   # required
+
+`[[dead_content]]` is its own category: the entry is excluded from `boss_no_spawn`
+and `boss_no_spawn_any`, so it counts neither as missing nor as fine, and the
+report lists it in a section "Dead content" with the reason. Add an entry only
+after a reviewer confirmed it (`expected/dead-content.toml`).
+
 Rules of the road: ids, names and numbers only; the source and date on every
 file; a list that only exists in someone's memory does not go in. A list built
 from our own database (`expected/timbermaw-hold.toml`) says so in its header:

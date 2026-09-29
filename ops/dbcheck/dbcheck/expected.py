@@ -40,6 +40,11 @@ only** (no quotes or lore from the source)::
     entry = 60301
     via = "cpp"                       # cpp | eluna | ...  (required)
     note = "file:line"                # optional
+
+    [[dead_content]]                  # dead on purpose; counted neither as missing nor as fine
+    entry = 2000092
+    kind = "boss"                     # boss | npc
+    reason = "needs quests 20001 and 20002, both deprecated"   # required
 """
 
 from __future__ import annotations
@@ -100,6 +105,16 @@ class Credited:
 
 
 @dataclass
+class Dead:
+    """Content that is dead on purpose: it needs something that does not exist (for example a
+    deprecated quest). Counted neither as missing nor as fine."""
+
+    entry: int
+    kind: str
+    reason: str
+
+
+@dataclass
 class Expected:
     id: str
     name: str
@@ -112,6 +127,7 @@ class Expected:
     scripted: list[Scripted]
     summoned: list[Summoned]
     credited: list[Credited]
+    dead: list[Dead]
     sha256: str
     path: str
 
@@ -170,8 +186,13 @@ def load_expected(path: Path) -> Expected:
         if not s.get("via"):
             raise ConfigError(f"{path}: credited_npc {s.get('entry')}: 'via' is required (cpp, eluna, ...)")
         credited.append(Credited(_int(path, "credited_npc.entry", s.get("entry")), str(s["via"]), str(s.get("note", ""))))
-    if not bosses and not quests and not scripted and not summoned and not credited:
-        raise ConfigError(f"{path}: no [[boss]], [[quest]], [[scripted_quest]], [[summoned_boss]] or [[credited_npc]] entries")
+    dead = []
+    for s in data.get("dead_content", []):
+        if not s.get("reason") or not s.get("kind"):
+            raise ConfigError(f"{path}: dead_content {s.get('entry')}: 'kind' (boss, npc) and 'reason' are required")
+        dead.append(Dead(_int(path, "dead_content.entry", s.get("entry")), str(s["kind"]), str(s["reason"])))
+    if not bosses and not quests and not scripted and not summoned and not credited and not dead:
+        raise ConfigError(f"{path}: no [[boss]], [[quest]], [[scripted_quest]], [[summoned_boss]], [[credited_npc]] or [[dead_content]] entries")
     return Expected(
         id=str(inst["id"]),
         name=str(inst["name"]),
@@ -184,6 +205,7 @@ def load_expected(path: Path) -> Expected:
         scripted=scripted,
         summoned=summoned,
         credited=credited,
+        dead=dead,
         sha256=hashlib.sha256(raw).hexdigest(),
         path=str(path),
     )

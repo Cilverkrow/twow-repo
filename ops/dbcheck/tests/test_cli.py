@@ -95,6 +95,21 @@ class Cli(unittest.TestCase):
         self.assertGreater(data["counts"]["error"], 0)
         self.assertEqual(len(data["schema_fingerprint"]), 64)
 
+    def test_dead_content_gets_its_own_report_section(self):
+        dead = Path(self.tmp.name) / "dead"
+        dead.mkdir()
+        (dead / "d.toml").write_text(
+            '[instance]\nid = "d"\nname = "D"\nsource = "synthetic"\nsource_date = "2026-09-29"\n'
+            '[[dead_content]]\nentry = 108\nkind = "boss"\nreason = "needs a deprecated quest"\n',
+            encoding="utf-8",
+        )
+        o = Path(self.tmp.name) / "od"
+        run_cli("run", "--sqlite", str(self.db), "--expected", str(dead), "--only", "boss_no_spawn_any", "--out", str(o))
+        text = o.joinpath("report.md").read_text(encoding="utf-8")
+        self.assertIn("## Dead content", text)
+        self.assertIn("108 (boss): needs a deprecated quest", text)
+        self.assertNotIn("Boss Iota", text)  # excluded from the finding
+
     def test_max_rows_truncates_the_markdown_only(self):
         o = Path(self.tmp.name) / "o"
         run_cli("run", "--sqlite", str(self.db), "--expected", str(self.exp), "--out", str(o), "--max-rows", "1", "--only", "quest_chain_broken")
