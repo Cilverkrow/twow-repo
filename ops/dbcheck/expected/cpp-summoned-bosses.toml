@@ -1,9 +1,9 @@
 # Bosses and NPCs that C++ scripts summon: they have no spawn row on purpose.
-# Found by scanning twow-core main @ acc8dec0, src/scripts and src/game, for
-# SummonCreature/SpawnCreature calls whose first argument (a number, or a
-# constant resolved to a number) is a creature entry that dbcheck would
-# otherwise report as never spawned. The note gives file, line and the
-# argument as written. Regenerate when the scripts change.
+# Found by tools/scan_summons.py over twow-core main @ acc8dec0, src/scripts and src/game:
+# SummonCreature/SpawnCreature calls whose first argument (a number, or a constant
+# resolved to a number) is a candidate creature entry. The note gives file, line and
+# the argument as written. Cases the scan cannot see are in cpp-summoned-bosses-manual.toml.
+# Regenerate when the scripts change.
 
 [instance]
 id = "cpp-summoned-bosses"
@@ -40,6 +40,11 @@ note = "Cla'ckora: src/scripts/miscellaneous/random_scripts_3.cpp:8144 (59963)"
 entry = 61222
 via = "cpp"
 note = "Lord Blackwald II: src/scripts/dungeons/lower_karazhan_halls/instance_lower_karazhan_halls.cpp:119 (NPC_LORD_BLACKWALD_II)"
+
+[[summoned_boss]]
+entry = 80935
+via = "cpp"
+note = "Ostarius: src/scripts/events/boss_ostarius.cpp:990 (BOSS_OSTARIUS)"
 
 [[summoned_boss]]
 entry = 91928

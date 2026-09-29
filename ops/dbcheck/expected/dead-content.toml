@@ -19,3 +19,34 @@ reason = "Grand Crusader Dathrohan (boss_dathrohan_balnazzar.cpp) needs quests 2
 entry = 60669
 kind = "npc"
 reason = "Tyrande Whisperwind (alahthalas.cpp) needs the turn-in of quest 40384; it is DEPRECATED and has no relations"
+
+# Dead copies ("tote Kopie"): a second template of a world boss whose loot rows
+# are identical to the Vanilla original's (the dragons share the same loot ids
+# 2000146 to 2000149; Kazzak's copy has its own id with the same 126 rows). No
+# script, no spawn, no EventAI event and no code reference points at them
+# (OB-20, #408, 2026-09-29; checked against twow-core main @ acc8dec0).
+
+[[dead_content]]
+entry = 63108
+kind = "dead_copy"
+reason = "Lord Kazzak copy of 12397: loot 63108 has the same 126 rows as loot 12397; no script, spawn or code reference"
+
+[[dead_content]]
+entry = 63109
+kind = "dead_copy"
+reason = "Lethon copy of 14888: same loot id 2000147 and 502 rows; no script, spawn or code reference"
+
+[[dead_content]]
+entry = 63110
+kind = "dead_copy"
+reason = "Emeriss copy of 14889: same loot id 2000148 and 502 rows; no script, spawn or code reference"
+
+[[dead_content]]
+entry = 63111
+kind = "dead_copy"
+reason = "Taerar copy of 14890: same loot id 2000149 and 501 rows; no script, spawn or code reference"
+
+[[dead_content]]
+entry = 63112
+kind = "dead_copy"
+reason = "Ysondre copy of 14887: same loot id 2000146 and 503 rows; no script, spawn or code reference"

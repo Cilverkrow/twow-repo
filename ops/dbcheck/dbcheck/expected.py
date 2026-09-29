@@ -43,7 +43,7 @@ only** (no quotes or lore from the source)::
 
     [[dead_content]]                  # dead on purpose; counted neither as missing nor as fine
     entry = 2000092
-    kind = "boss"                     # boss | npc
+    kind = "boss"                     # boss | npc | dead_copy
     reason = "needs quests 20001 and 20002, both deprecated"   # required
 """
 

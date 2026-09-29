@@ -35,6 +35,7 @@ Python 3.11+ **standard library only**, like `ops/clientpatch`.
 | `bindings/<id>.toml` | logical names -> physical tables and columns of one schema, plus constants |
 | `rules/*.toml` | the SQL rules, written against the logical names |
 | `expected/*.toml` | expected lists (Soll-Listen), one per instance or topic |
+| `tools/scan_summons.py` | scans a twow-core checkout for `SummonCreature`/`SpawnCreature` calls and writes `expected/cpp-summoned-bosses.toml` |
 | `tests/` | unit and end-to-end tests on a **synthetic** mini database |
 | `Dockerfile` | Python + the MariaDB command-line client |
 
@@ -174,13 +175,15 @@ What counts, and what does not:
 
     [[dead_content]]           # dead on purpose (needs something that does not exist)
     entry = 2000092
-    kind = "boss"              # boss | npc  (required)
+    kind = "boss"              # boss | npc | dead_copy  (required)
     reason = "needs quests 20001 and 20002, both deprecated"   # required
 
 `[[dead_content]]` is its own category: the entry is excluded from `boss_no_spawn`
 and `boss_no_spawn_any`, so it counts neither as missing nor as fine, and the
 report lists it in a section "Dead content" with the reason. Add an entry only
-after a reviewer confirmed it (`expected/dead-content.toml`).
+after a reviewer confirmed it (`expected/dead-content.toml`). The kind `dead_copy`
+("tote Kopie") is a second template of a boss whose loot is identical to the
+original's and that nothing spawns, scripts or references.
 
 Rules of the road: ids, names and numbers only; the source and date on every
 file; a list that only exists in someone's memory does not go in. A list built
@@ -203,6 +206,13 @@ it protects against regressions, it does not prove the data right.
 - **Another schema or a renamed column.** Copy `bindings/tw-world.toml`,
   change the physical names, pass `--binding`. The rules stay.
 - **Another topic.** Add an `expected/<topic>.toml`.
+- **Refresh the C++ summon list.** Extract `src/scripts` and `src/game` of a
+  twow-core commit, put the creature entries dbcheck reports as never spawned into
+  a text file (`<entry> <name>` per line, without the dead content), and run
+  `python tools/scan_summons.py --core-src <dir> --candidates ids.txt --core-commit <sha> --date <day>`.
+  The scan finds direct calls with a number or a constant (enum, `constexpr`,
+  `#define`). Forms it cannot see (a form change, a spell that carries the entry,
+  a table) go into `expected/cpp-summoned-bosses-manual.toml`, each with file and line.
 
 ## Limits
 
