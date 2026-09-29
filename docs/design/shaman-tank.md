@@ -557,7 +557,7 @@ fingerprint, `dbcdiff`, consistency rules and hashes.
 | `changes/Talent/0357_shaman_talents.csv` | 10 talents in tab 263, IDs 9001–9010. **Generated** by `tools/talentdelta.py` from `tools/inputs/357-shaman-talents.csv`; a test fails when it is stale |
 | `changes/SkillRaceClassInfo/0357_shaman_swords.csv` | swords for shamans, talent only: records 90043/90055, copies of Turtle's row 701 (flags 0x180); rule `skillraceclass-mod-values` compares them with core#217's `skill_race_class_info_mod` |
 | `changes/Spell/0357_shaman_elemental_weapons.csv` | Elemental Weapons 16266/29079/29080: description from `sql:spell_template.description` (cap 13/27/40 %, CV-1) |
-| `changes/Spell/0357_shaman_spells.csv` | **after #433:** client rows for 90100–90139 (without 90110), generated with `tools/gen_spell_mirror.py` from `tools/inputs/357-shaman-spells.csv` (every mapped column `sql:spell_template.*`) |
+| `changes/Spell/0357_shaman_spells.csv` | client rows for 90100–90139 (without 90110; 39 spells, all 28 talent rank spells covered), generated with `tools/gen_spell_mirror.py` from `tools/inputs/357-shaman-spells.csv` (every mapped column `sql:spell_template.*`) |
 | `changes/code-values.md` | CV-1 and CV-3 updated, CV-11 … CV-13 added (CV-4 … CV-10 belong to the rogue, #433) |
 
 Rules: `talent-ranks-on-server` (rank spells exist on the server) and the new
