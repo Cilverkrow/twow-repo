@@ -29,7 +29,7 @@ def _validate(binding, rules, macros, expected):
     """Expand every rule with dummy parameters: catches typos before a run."""
     dummy = {
         "entry": "1", "giver": "1", "ender": "1", "names": "'x'", "names_table": "SELECT 'x' AS expected",
-        "instance_entries": "1", "allow_elsewhere": "NULL", "spawn_optional": "0", "instance_maps": "1", "scripted_starts": "-1", "scripted_ends": "-1", "summoned_entries": "-1", "credited_entries": "-1", "rank": "3",
+        "instance_entries": "1", "allow_elsewhere": "NULL", "spawn_optional": "0", "instance_maps": "1", "scripted_starts": "-1", "scripted_ends": "-1", "summoned_entries": "-1", "credited_entries": "-1", "dead_entries": "-1", "rank": "3",
     }
     for r in rules.values():
         sql = expand(r.sql, binding, macros, dummy)

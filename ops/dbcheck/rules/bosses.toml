@@ -124,13 +124,15 @@ WHERE NOT EXISTS (SELECT 1 FROM {creature_template} ct WHERE ct.{creature_templa
 scope = "boss"
 severity = "error"
 title = "Expected boss is never spawned"
-description = "The boss exists as a template but no creature row places it in the world, in any of its id, id2, id3 or id4 columns (skipped when the list marks it spawn_optional)."
+description = "The boss exists as a template but no creature row places it in the world, in any of its id, id2, id3 or id4 columns. Skipped when the list marks it spawn_optional or names it as [[summoned_boss]] (a C++ script summons it; see expected/cpp-summoned-bosses.toml)."
 sql = """
 SELECT ct.{creature_template.entry} AS boss, ct.{creature_template.name} AS name
 FROM {creature_template} ct
 LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
 WHERE ct.{creature_template.entry} = {@entry} AND {@spawn_optional} = 0
   AND sp.sid IS NULL
+  AND ct.{creature_template.entry} NOT IN ({@summoned_entries})
+  AND ct.{creature_template.entry} NOT IN ({@dead_entries})
 """
 
 [rule.boss_rank_mismatch]
@@ -219,6 +221,7 @@ WHERE ct.{creature_template.rank} = {const.boss_rank}
   AND EXISTS (SELECT 1 FROM {creature_loot} l WHERE l.{creature_loot.entry} = ct.{creature_template.loot_id})
   AND sp.sid IS NULL AND sm.sid IS NULL
   AND ct.{creature_template.entry} NOT IN ({@summoned_entries})
+  AND ct.{creature_template.entry} NOT IN ({@dead_entries})
 """
 
 

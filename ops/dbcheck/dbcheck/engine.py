@@ -55,6 +55,7 @@ def _global_params(expected: list[Expected]) -> dict[str, str]:
         "scripted_ends": sql_int_list([s.entry for e in expected for s in e.scripted if s.ends]),
         "summoned_entries": sql_int_list([s.entry for e in expected for s in e.summoned]),
         "credited_entries": sql_int_list([s.entry for e in expected for s in e.credited]),
+        "dead_entries": sql_int_list([s.entry for e in expected for s in e.dead]),
     }
 
 
@@ -97,7 +98,7 @@ def run(
         for exp in expected:
             items = exp.bosses if rule.scope == "boss" else exp.quests
             for it in items:
-                params = _boss_params(exp, it) if rule.scope == "boss" else _quest_params(exp, it)
+                params = {**_global_params(expected), **(_boss_params(exp, it) if rule.scope == "boss" else _quest_params(exp, it))}
                 label = getattr(it, "name", None) or getattr(it, "title", "")
                 subject = f"{exp.name}: {label} ({it.entry})"
                 empty = [p for p in rule.requires if not params.get(p)]

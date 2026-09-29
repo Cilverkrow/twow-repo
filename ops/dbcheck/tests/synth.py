@@ -53,7 +53,7 @@ def world() -> sqlite3.Connection:
     # (through id3), 301 giver never spawned, 302 turn-in NPC never spawned.
     for entry, name, loot, rank in [
         (100, "Boss Alpha", 100, 3), (101, "Boss Beta", 101, 3), (102, "Boss Gamma", 0, 3), (103, "Boss Delta", 103, 3),
-        (104, "Boss Epsilon", 104, 3), (105, "Boss Zeta", 105, 3), (106, "Boss Eta", 0, 3), (200, "Trash Mob", 200, 0), (201, "Trash Two", 201, 0),
+        (104, "Boss Epsilon", 104, 3), (105, "Boss Zeta", 105, 3), (106, "Boss Eta", 0, 3), (107, "Boss Theta", 0, 3), (108, "Boss Iota", 108, 3), (200, "Trash Mob", 200, 0), (201, "Trash Two", 201, 0),
         (300, "Giver", 0, 0), (301, "Ghost Giver", 0, 0), (302, "Ghost Ender", 0, 0),
         (400, "quest_10_no_source", 0, 0), (401, "quest_10_spawned", 0, 0), (402, "quest_10_script_credit", 0, 0),
         (403, "quest_10_ai_credit", 0, 0), (404, "quest_10_eventai", 0, 0), (405, "Plain Objective", 0, 0),
@@ -71,7 +71,7 @@ def world() -> sqlite3.Connection:
     # 200: trash drops an item Alpha should have; 201: trash drops one only through a reference group.
     for loot, item, ref in [
         (100, 1001, 1), (100, 1002, 1), (100, 1008, 1), (100, 0, -5), (101, 1001, 1), (200, 1004, 1), (201, 0, -7),
-        (103, 1001, 1), (104, 1001, 1), (105, 1001, 1),
+        (103, 1001, 1), (104, 1001, 1), (105, 1001, 1), (108, 1001, 1),
     ]:
         insert(con, "creature_loot_template", entry=loot, item=item, mincountOrRef=ref)
     for entry, item, ref in [(5, 1003, 1), (5, 0, -6), (6, 1009, 1), (7, 1010, 1)]:

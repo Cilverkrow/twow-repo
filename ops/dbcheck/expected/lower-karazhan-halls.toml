@@ -1,5 +1,5 @@
 # Lower Karazhan Halls (raid, 10 players, map 532): the five bosses the wiki names,
-# in its order. The wiki has no boss pages with loot for this instance, so the
+# in its order (Lord Blackwald II is summoned by C++, see cpp-summoned-bosses.toml). The wiki has no boss pages with loot for this instance, so the
 # list checks existence, spawn, map and rank only. Moroes is the end boss.
 
 [instance]

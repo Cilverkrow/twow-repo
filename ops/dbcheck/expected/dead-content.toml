@@ -1,0 +1,21 @@
+# Dead content: NPCs that need something that does not exist, so they can never
+# appear (for example they depend on a deprecated quest with no giver). They are
+# counted neither as missing nor as fine, and dbcheck reports them in their own
+# section. Each entry names the reason. Add a line only after a reviewer has
+# confirmed it; do not use this list to silence a real gap.
+
+[instance]
+id = "dead-content"
+name = "Dead content"
+source = "OB-20 review of twow-repo#447 (2026-09-29)"
+source_date = "2026-09-29"
+
+[[dead_content]]
+entry = 2000092
+kind = "boss"
+reason = "Grand Crusader Dathrohan (boss_dathrohan_balnazzar.cpp) needs quests 20001 and 20002; both are DEPRECATED and have no giver"
+
+[[dead_content]]
+entry = 60669
+kind = "npc"
+reason = "Tyrande Whisperwind (alahthalas.cpp) needs the turn-in of quest 40384; it is DEPRECATED and has no relations"

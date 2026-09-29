@@ -26,12 +26,7 @@ only** (no quotes or lore from the source)::
 
     [[scripted_quest]]                # started or completed by a script, not by a giver row
     entry = 12345
-    via = "eluna"                     # script | event | eluna 
-    [[credited_npc]]                  # a helper NPC that C++ or Eluna credits (kill credit)
-    entry = 60301
-    via = "cpp"                       # cpp | eluna | ...  (required)
-    note = "file:line"                # optional
-| ...  (required)
+    via = "eluna"                     # script | event | eluna | ...  (required)
     starts = true                     # skip the starter check (default true)
     ends = true                       # skip the turn-in check (default true)
     note = "why"                      # optional
@@ -39,6 +34,17 @@ only** (no quotes or lore from the source)::
     [[summoned_boss]]                 # a script summons it: no spawn row on purpose
     entry = 11502
     via = "cpp"                       # cpp | eluna | eventai | ...  (required)
+    note = "file:line"                # optional
+
+    [[credited_npc]]                  # a helper NPC that C++ or Eluna credits (kill credit)
+    entry = 60301
+    via = "cpp"                       # cpp | eluna | ...  (required)
+    note = "file:line"                # optional
+
+    [[dead_content]]                  # dead on purpose; counted neither as missing nor as fine
+    entry = 2000092
+    kind = "boss"                     # boss | npc
+    reason = "needs quests 20001 and 20002, both deprecated"   # required
 """
 
 from __future__ import annotations
@@ -86,6 +92,7 @@ class Summoned:
 
     entry: int
     via: str
+    note: str = ""
 
 
 @dataclass
@@ -95,6 +102,16 @@ class Credited:
     entry: int
     via: str
     note: str = ""
+
+
+@dataclass
+class Dead:
+    """Content that is dead on purpose: it needs something that does not exist (for example a
+    deprecated quest). Counted neither as missing nor as fine."""
+
+    entry: int
+    kind: str
+    reason: str
 
 
 @dataclass
@@ -110,6 +127,7 @@ class Expected:
     scripted: list[Scripted]
     summoned: list[Summoned]
     credited: list[Credited]
+    dead: list[Dead]
     sha256: str
     path: str
 
@@ -162,14 +180,19 @@ def load_expected(path: Path) -> Expected:
     for s in data.get("summoned_boss", []):
         if not s.get("via"):
             raise ConfigError(f"{path}: summoned_boss {s.get('entry')}: 'via' is required (cpp, eluna, eventai, ...)")
-        summoned.append(Summoned(_int(path, "summoned_boss.entry", s.get("entry")), str(s["via"])))
+        summoned.append(Summoned(_int(path, "summoned_boss.entry", s.get("entry")), str(s["via"]), str(s.get("note", ""))))
     credited = []
     for s in data.get("credited_npc", []):
         if not s.get("via"):
             raise ConfigError(f"{path}: credited_npc {s.get('entry')}: 'via' is required (cpp, eluna, ...)")
         credited.append(Credited(_int(path, "credited_npc.entry", s.get("entry")), str(s["via"]), str(s.get("note", ""))))
-    if not bosses and not quests and not scripted and not summoned and not credited:
-        raise ConfigError(f"{path}: no [[boss]], [[quest]], [[scripted_quest]], [[summoned_boss]] or [[credited_npc]] entries")
+    dead = []
+    for s in data.get("dead_content", []):
+        if not s.get("reason") or not s.get("kind"):
+            raise ConfigError(f"{path}: dead_content {s.get('entry')}: 'kind' (boss, npc) and 'reason' are required")
+        dead.append(Dead(_int(path, "dead_content.entry", s.get("entry")), str(s["kind"]), str(s["reason"])))
+    if not bosses and not quests and not scripted and not summoned and not credited and not dead:
+        raise ConfigError(f"{path}: no [[boss]], [[quest]], [[scripted_quest]], [[summoned_boss]], [[credited_npc]] or [[dead_content]] entries")
     return Expected(
         id=str(inst["id"]),
         name=str(inst["name"]),
@@ -182,6 +205,7 @@ def load_expected(path: Path) -> Expected:
         scripted=scripted,
         summoned=summoned,
         credited=credited,
+        dead=dead,
         sha256=hashlib.sha256(raw).hexdigest(),
         path=str(path),
     )

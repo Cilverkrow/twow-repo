@@ -62,6 +62,10 @@ def build(run: Run, expected: list[Expected], max_rows: int = 50) -> tuple[str, 
     if skipped:
         lines += ["", "## Skipped", ""]
         lines += [f"- {n}{': ' + s if s else ''} ({why})" for n, s, why in skipped]
+    dead = sorted((d.entry, d.kind, d.reason) for e in expected for d in e.dead)
+    if dead:
+        lines += ["", "## Dead content (excluded from the boss-spawn rules, neither missing nor fine)", ""]
+        lines += [f"- {entry} ({kind}): {reason}" for entry, kind, reason in dead]
     text = "\n".join(lines) + "\n"
     data = {
         "tool": f"dbcheck {__version__}",
@@ -69,6 +73,7 @@ def build(run: Run, expected: list[Expected], max_rows: int = 50) -> tuple[str, 
         "schema_fingerprint": run.fingerprint,
         "expected": [{"id": e.id, "sha256": e.sha256, "source": e.source, "source_date": e.source_date} for e in expected],
         "counts": counts,
+        "dead_content": [{"entry": entry, "kind": kind, "reason": reason} for entry, kind, reason in dead],
         "findings": [
             {
                 "rule": r.rule.name,
