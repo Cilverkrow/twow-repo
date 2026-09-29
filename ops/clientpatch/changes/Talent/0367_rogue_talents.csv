@@ -3,9 +3,9 @@ op,key,field,value,note
 # 16 talents in the free slots of the three rogue trees. Rank spells are the phase-1 bot
 # auras 90150-90190 (same IDs, twow-core spell_template). Talent ID = first rank spell - 81000.
 # TierID/ColumnIndex are 0-based (owner R1/C1 = 0/0). TabID: 182 Assassination, 181 Combat,
-# 183 Subtlety (to verify against the live TalentTab.dbc; 183 is confirmed by the premade generator).
-# Three owner arrows point at existing Turtle talents whose IDs are only in the live Talent.dbc;
-# they are added by OB-20 before the first build (PrereqTalent/PrereqRank of 9154, 9156, 9172).
+# 183 Subtlety (verified against the client TalentTab.dbc, base turtle-1.18.1-enUS: ClassMask 8, OrderIndex 0/1/2).
+# Three owner arrows point at existing Turtle talents (IDs from OB-20, V-2, checked by OB-15 against the
+# client Talent.dbc of base turtle-1.18.1-enUS): 9154 <- 133, 9156 <- 142, 9172 <- 117, each at full rank.
 insert,9150,,,Assassination R1C4 Blindside (#367)
 set,9150,TabID,182,Assassination
 set,9150,TierID,0,
@@ -20,11 +20,15 @@ set,9154,TierID,2,
 set,9154,ColumnIndex,3,
 set,9154,SpellRank[0],90154,rank 1
 set,9154,SpellRank[1],90155,rank 2
+set,9154,PrereqTalent[0],133,arrow from R2/C4 Improved Blade Tactics (Turtle talent 133; OB-20 V-2)
+set,9154,PrereqRank[0],2,0-based: all 3 ranks
 insert,9156,,,Assassination R5C4 Frozen Blood (#367)
 set,9156,TabID,182,Assassination
 set,9156,TierID,4,
 set,9156,ColumnIndex,3,
 set,9156,SpellRank[0],90156,rank 1
+set,9156,PrereqTalent[0],142,arrow from R5/C3 Cold Blood (Turtle talent 142; OB-20 V-2)
+set,9156,PrereqRank[0],0,0-based: 1 rank
 insert,9157,,,Assassination R7C1 Vigorous Fury (#367)
 set,9157,TabID,182,Assassination
 set,9157,TierID,6,
@@ -67,6 +71,8 @@ set,9172,ColumnIndex,3,
 set,9172,SpellRank[0],90172,rank 1
 set,9172,SpellRank[1],90173,rank 2
 set,9172,SpellRank[2],90174,rank 3
+set,9172,PrereqTalent[0],117,arrow from R3/C4 Setup (Turtle talent 117; OB-20 V-2)
+set,9172,PrereqRank[0],2,0-based: all 3 ranks
 insert,9175,,,Combat R6C1 Coup de Grace (#367)
 set,9175,TabID,181,Combat
 set,9175,TierID,5,

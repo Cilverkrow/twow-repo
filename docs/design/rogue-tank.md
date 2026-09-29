@@ -537,7 +537,7 @@ Player rogues had no 901xx spells in phase 1, so they need no migration.
 | # | Check | Why |
 |---|---|---|
 | V-1 | Rogue `TalentTab` IDs 182 (Assassination), 181 (Combat), 183 (Subtlety) | only 183 is confirmed in code; the build does not check tab IDs |
-| V-2 | Three arrows to existing Turtle talents: `PrereqTalent`/`PrereqRank` for 9154 (from Assassination R2/C4), 9156 (from Cold Blood R5/C3), 9172 (from Setup, Combat R3/C4) | their talent IDs are only in the live `Talent.dbc`; the one arrow between new talents (9175 → 9178) is set |
+| V-2 | Three arrows to existing Turtle talents: `PrereqTalent`/`PrereqRank` for 9154 (from Assassination R2/C4), 9156 (from Cold Blood R5/C3), 9172 (from Setup, Combat R3/C4) | **done (2026-09-29):** 9154 ← 133 Improved Blade Tactics, 9156 ← 142 Cold Blood, 9172 ← 117 Setup, each at full rank; IDs from OB-20, checked by OB-15 against the client `Talent.dbc` (base turtle-1.18.1-enUS). The arrow between new talents (9175 → 9178) was already set |
 | V-3 | Talent IDs 9150-9188 and enchantment IDs 90141-90144 are free | a collision stops the build (an `insert` of an existing key fails), so this only saves a failed run |
 
 ### 7.5 Owner decisions (2026-09-28: "genau so")

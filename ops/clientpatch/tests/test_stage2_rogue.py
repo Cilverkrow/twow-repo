@@ -44,6 +44,14 @@ OWNER_LINE = {
 # Free slots in Turtle's Combat tree (OB-20 review of #386, live Talent.dbc), 1-based.
 FREE_COMBAT = {(1, 1), (1, 4), (2, 4), (3, 3), (4, 4), (6, 1), (6, 4), (7, 1), (7, 3), (7, 4)}
 
+# Existing Turtle talents the owner's arrows start from (V-2; IDs from OB-20,
+# checked by OB-15 against the client Talent.dbc of base turtle-1.18.1-enUS).
+EXISTING_PREREQS = {
+    133: {"TabID": 182, "TierID": 1, "ColumnIndex": 3, "ranks": [14165, 0, 0]},  # Improved Blade Tactics
+    142: {"TabID": 182, "TierID": 4, "ColumnIndex": 2, "ranks": [14177]},         # Cold Blood
+    117: {"TabID": 181, "TierID": 2, "ColumnIndex": 3, "ranks": [13983, 0, 0]},  # Setup
+}
+
 
 def rows_of(path: Path) -> list[dict]:
     return [row for _, row in read_ops(path)]
@@ -80,9 +88,13 @@ class RogueTalentContract(unittest.TestCase):
         all_talents = talents()
         for t in all_talents.values():
             if "PrereqTalent[0]" in t:
-                pre = all_talents[t["PrereqTalent[0]"]]
+                pre = all_talents.get(t["PrereqTalent[0]"]) or EXISTING_PREREQS[t["PrereqTalent[0]"]]
                 self.assertEqual(pre["TabID"], t["TabID"])
-                self.assertLess(pre["TierID"], t["TierID"])
+                # Down arrow from a higher tier, or a right/left arrow from the
+                # neighbouring column of the same tier (1.12 talent frame).
+                same_tier_neighbour = (pre["TierID"] == t["TierID"]
+                                       and abs(pre["ColumnIndex"] - t["ColumnIndex"]) == 1)
+                self.assertTrue(pre["TierID"] < t["TierID"] or same_tier_neighbour)
                 self.assertLess(t["PrereqRank[0]"], len(pre["ranks"]))
 
     def test_every_rank_spell_gets_a_client_row(self):
