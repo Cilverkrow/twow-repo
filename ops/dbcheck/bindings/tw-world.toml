@@ -9,7 +9,7 @@ description = "twow-core tw_world (VMaNGOS lineage, Turtle 1.18.1)"
 boss_rank = 3               # creature_template.rank of a world boss
 item_source_min_quality = 3 # rule item_no_source: rare and above
 # Quests the team retired on purpose; SQL LIKE patterns on the quest title.
-quest_helper_name_like = "quest_%"  # helper NPCs named quest_<id>_...
+quest_helper_name_like = "quest!_%"  # helper NPCs named quest_<id>_...; "!" escapes the underscore (LIKE ... ESCAPE "!")
 quest_ignore_title_like = [
   "[CANCELLED]%", "[DEPRECATED]%", "%[Deprecated]", "%<NYI>%", "%<TXT>%", "DND %", "%Dummy%", "Disabled %",
 ]
@@ -20,7 +20,6 @@ entry = "entry"
 name = "name"
 loot_id = "loot_id"
 rank = "rank"
-ai_name = "ai_name"
 script_name = "script_name"
 
 [table.creature]

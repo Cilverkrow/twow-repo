@@ -54,6 +54,7 @@ def _global_params(expected: list[Expected]) -> dict[str, str]:
         "scripted_starts": sql_int_list([s.entry for e in expected for s in e.scripted if s.starts]),
         "scripted_ends": sql_int_list([s.entry for e in expected for s in e.scripted if s.ends]),
         "summoned_entries": sql_int_list([s.entry for e in expected for s in e.summoned]),
+        "credited_entries": sql_int_list([s.entry for e in expected for s in e.credited]),
     }
 
 

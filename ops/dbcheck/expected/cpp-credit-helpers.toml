@@ -1,0 +1,562 @@
+# Helper NPCs that C++ scripts credit (KilledMonster on the creature template).
+# Found by searching twow-core main @ 1fc2876a, src/scripts, for
+# GetCreatureTemplate(<entry>) and for the custom_exploration_trigger table; a
+# match is a strong lead, not a per-call proof. Entries only, with the file and
+# line as the note. Regenerate when the scripts change.
+
+[instance]
+id = "cpp-credit-helpers"
+name = "Helper NPCs credited by C++ scripts"
+source = "twow-core main 1fc2876a, src/scripts (GetCreatureTemplate and custom_exploration_triggers)"
+source_date = "2026-09-29"
+
+[[credited_npc]]
+entry = 20120
+via = "cpp"
+note = "miscellaneous/custom_exploration_triggers.cpp:28"
+
+[[credited_npc]]
+entry = 50668
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:4358"
+
+[[credited_npc]]
+entry = 50670
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:4107"
+
+[[credited_npc]]
+entry = 50671
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:4180"
+
+[[credited_npc]]
+entry = 50675
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:4252"
+
+[[credited_npc]]
+entry = 60008
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4668"
+
+[[credited_npc]]
+entry = 60009
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4754"
+
+[[credited_npc]]
+entry = 60010
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4813"
+
+[[credited_npc]]
+entry = 60011
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4950"
+
+[[credited_npc]]
+entry = 60012
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5036"
+
+[[credited_npc]]
+entry = 60013
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5222"
+
+[[credited_npc]]
+entry = 60014
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5452"
+
+[[credited_npc]]
+entry = 60015
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5567"
+
+[[credited_npc]]
+entry = 60016
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5573"
+
+[[credited_npc]]
+entry = 60017
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5579"
+
+[[credited_npc]]
+entry = 60018
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5585"
+
+[[credited_npc]]
+entry = 60019
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5591"
+
+[[credited_npc]]
+entry = 60020
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5597"
+
+[[credited_npc]]
+entry = 60021
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5511"
+
+[[credited_npc]]
+entry = 60022
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5519"
+
+[[credited_npc]]
+entry = 60023
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5527"
+
+[[credited_npc]]
+entry = 60024
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5536"
+
+[[credited_npc]]
+entry = 60025
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5544"
+
+[[credited_npc]]
+entry = 60026
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5552"
+
+[[credited_npc]]
+entry = 60032
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5853"
+
+[[credited_npc]]
+entry = 60033
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5885"
+
+[[credited_npc]]
+entry = 60034
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6085"
+
+[[credited_npc]]
+entry = 60035
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6117"
+
+[[credited_npc]]
+entry = 60040
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6193"
+
+[[credited_npc]]
+entry = 60042
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6321"
+
+[[credited_npc]]
+entry = 60043
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6362"
+
+[[credited_npc]]
+entry = 60046
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6597"
+
+[[credited_npc]]
+entry = 60047
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6725"
+
+[[credited_npc]]
+entry = 60048
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6767"
+
+[[credited_npc]]
+entry = 60049
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6898"
+
+[[credited_npc]]
+entry = 60050
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:7013"
+
+[[credited_npc]]
+entry = 60052
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:7255"
+
+[[credited_npc]]
+entry = 60054
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:8121"
+
+[[credited_npc]]
+entry = 60055
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:8233"
+
+[[credited_npc]]
+entry = 60056
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:6951"
+
+[[credited_npc]]
+entry = 60057
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:8334"
+
+[[credited_npc]]
+entry = 60058
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:8365"
+
+[[credited_npc]]
+entry = 60059
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:8397"
+
+[[credited_npc]]
+entry = 60060
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:8423"
+
+[[credited_npc]]
+entry = 60301
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:3956"
+
+[[credited_npc]]
+entry = 60312
+via = "cpp"
+note = "spells/spells_turtle.cpp:620"
+
+[[credited_npc]]
+entry = 60313
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:5078"
+
+[[credited_npc]]
+entry = 60318
+via = "cpp"
+note = "world/alahthalas.cpp:118"
+
+[[credited_npc]]
+entry = 60319
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:297"
+
+[[credited_npc]]
+entry = 60323
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:322"
+
+[[credited_npc]]
+entry = 60324
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:474"
+
+[[credited_npc]]
+entry = 60325
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:770"
+
+[[credited_npc]]
+entry = 60326
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:727"
+
+[[credited_npc]]
+entry = 60327
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:4659"
+
+[[credited_npc]]
+entry = 60328
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:948"
+
+[[credited_npc]]
+entry = 60330
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:957"
+
+[[credited_npc]]
+entry = 60331
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1065"
+
+[[credited_npc]]
+entry = 60332
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1041"
+
+[[credited_npc]]
+entry = 60333
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:1545"
+
+[[credited_npc]]
+entry = 60334
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1259"
+
+[[credited_npc]]
+entry = 60336
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1707"
+
+[[credited_npc]]
+entry = 60337
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1745"
+
+[[credited_npc]]
+entry = 60338
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1808"
+
+[[credited_npc]]
+entry = 60339
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1769"
+
+[[credited_npc]]
+entry = 60340
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1636"
+
+[[credited_npc]]
+entry = 60341
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1892"
+
+[[credited_npc]]
+entry = 60342
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1983"
+
+[[credited_npc]]
+entry = 60343
+via = "cpp"
+note = "miscellaneous/custom_exploration_triggers.cpp:29"
+
+[[credited_npc]]
+entry = 60344
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2053"
+
+[[credited_npc]]
+entry = 60345
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2086"
+
+[[credited_npc]]
+entry = 60347
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2204"
+
+[[credited_npc]]
+entry = 60348
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2240"
+
+[[credited_npc]]
+entry = 60349
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2268"
+
+[[credited_npc]]
+entry = 60350
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2307"
+
+[[credited_npc]]
+entry = 60351
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2330"
+
+[[credited_npc]]
+entry = 60353
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2378"
+
+[[credited_npc]]
+entry = 60354
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:1079"
+
+[[credited_npc]]
+entry = 60355
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:2539"
+
+[[credited_npc]]
+entry = 60373
+via = "cpp"
+note = "world/hinterlands.cpp:668"
+
+[[credited_npc]]
+entry = 60374
+via = "cpp"
+note = "miscellaneous/custom_exploration_triggers.cpp:30"
+
+[[credited_npc]]
+entry = 60375
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3037"
+
+[[credited_npc]]
+entry = 60376
+via = "cpp"
+note = "miscellaneous/custom_exploration_triggers.cpp:31"
+
+[[credited_npc]]
+entry = 60377
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3474"
+
+[[credited_npc]]
+entry = 60378
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3536"
+
+[[credited_npc]]
+entry = 60379
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3553"
+
+[[credited_npc]]
+entry = 60380
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3598"
+
+[[credited_npc]]
+entry = 60381
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3199"
+
+[[credited_npc]]
+entry = 60382
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3668"
+
+[[credited_npc]]
+entry = 60383
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3716"
+
+[[credited_npc]]
+entry = 60384
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3722"
+
+[[credited_npc]]
+entry = 60385
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3766"
+
+[[credited_npc]]
+entry = 60386
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3774"
+
+[[credited_npc]]
+entry = 60387
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3782"
+
+[[credited_npc]]
+entry = 60388
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4449"
+
+[[credited_npc]]
+entry = 60389
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:5354"
+
+[[credited_npc]]
+entry = 60390
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4539"
+
+[[credited_npc]]
+entry = 60391
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3815"
+
+[[credited_npc]]
+entry = 60392
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3871"
+
+[[credited_npc]]
+entry = 60393
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:3977"
+
+[[credited_npc]]
+entry = 60394
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4027"
+
+[[credited_npc]]
+entry = 60395
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4092"
+
+[[credited_npc]]
+entry = 60396
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4100"
+
+[[credited_npc]]
+entry = 60398
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4156"
+
+[[credited_npc]]
+entry = 60399
+via = "cpp"
+note = "miscellaneous/random_scripts_3.cpp:4601"
+
+[[credited_npc]]
+entry = 80007
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:3861"
+
+[[credited_npc]]
+entry = 80606
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:3603"
+
+[[credited_npc]]
+entry = 81000
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:1526"
+
+[[credited_npc]]
+entry = 81001
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:1532"
+
+[[credited_npc]]
+entry = 81002
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:1479"
+
+[[credited_npc]]
+entry = 81252
+via = "cpp"
+note = "miscellaneous/random_scripts_1.cpp:3831"
+
