@@ -106,7 +106,8 @@ class ServerTests(unittest.TestCase):
             for index, ranks in enumerate(aura_ranks)))
         tools = root / 'modules' / 'mod-playerbots' / 'tools'
         tools.mkdir(parents=True)
-        (tools / 'build_premade_specs.py').write_text('STAGE2_TALENTS = %r\n' % stage2)
+        (tools / 'build_premade_specs.py').write_text(
+            'AURA_FIRST_SPELL = %r\nEXTRA_REAL_TALENTS = %r\n' % stage2)
 
     def skills_delta(self, root, skill_rows):
         path = root / 'skills.csv'
@@ -128,7 +129,7 @@ class ServerTests(unittest.TestCase):
 
     def test_consistent_delta_passes(self):
         errors = self.run_check(
-            core_spells=[100, 101, 102], core_auras=[[100, 101]], stage2={7: {1, 2}},
+            core_spells=[100, 101, 102], core_auras=[[100, 101]], stage2=({(7, 'a'): 100, (4, 'b'): 900}, {7: {102: {'enhancement': 1}}}),
             core_skills=[(9, 43, 2047, 64, 384, 0, 0)],
             talents=[(1, 0, 0, (100, 101)), (2, 0, 1, (102,))],
             skills=[(9, 43, 2047, 64, 384, 0, 0)])
@@ -136,14 +137,14 @@ class ServerTests(unittest.TestCase):
 
     def test_every_mismatch_is_reported(self):
         errors = self.run_check(
-            core_spells=[100, 101], core_auras=[[100, 101, 103]], stage2={7: {1, 5}},
+            core_spells=[100, 101], core_auras=[[100, 101, 103]], stage2=({(7, 'a'): 100, (7, 'c'): 105}, {}),
             core_skills=[(9, 43, 2047, 64, 128, 0, 0)],
             talents=[(1, 0, 0, (100, 101)), (2, 0, 1, (102,))],
             skills=[(9, 43, 2047, 64, 384, 0, 0)])
         joined = '\n'.join(errors)
         self.assertIn('rank spell 102 of talent 2 has no spell_template migration', joined)
         self.assertIn('differ from the SpecAura ranks', joined)
-        self.assertIn('STAGE2_TALENTS[7]', joined)
+        self.assertIn('generator talents of class 7 (first rank spells [100, 105]) != delta talents ([100, 102])', joined)
         self.assertIn('SkillRaceClassInfo 9', joined)
 
     def test_old_core_gives_a_clear_error(self):
