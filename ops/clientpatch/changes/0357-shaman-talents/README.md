@@ -58,15 +58,18 @@ Constitution.
    - `build_premade_specs.py --dbc <patched dbc> --talent-classes 7` → new `PremadeSpecLink.7.*` for **all** shaman paths.
    - Why all paths: the links are position-encoded, and the new rows shift every Enhancement digit.
    - 7.1 gets 14 points and 7.3 gets 21 points in the new talents (what they paid for the auras), plus 1 each for W.
+   - The generated links ship in the **same release** as the patched DBC (step 3). The old links would read the new rows 9001–9010 as other talents, and every Enhancement link would shift.
 3. **Server (OB-30, release):**
    - core pin with #217 (migration applies itself);
    - patched `data/dbc`;
    - profile `AiPlayerbot.SpecAura.TalentClasses = 7` (SpecAura then no longer grants or removes 90100–90129 for shamans, and the paths pay nothing extra);
    - the new links;
    - all in the same pin/profile.
-4. **Bots (OB-40):**
+4. **Bots (OB-40), only after step 3 is live:**
    - `deploy/roster/talent-reset/run-talent-reset.sh --class 7 --spec-nos 1,2,3,4 --dry-run`, then `--apply` with count and hash. This covers every roster shaman on every path, because every link changed.
+   - Why after step 3: the bots already know 90100–90129 from phase 1 (`character_spell`). With the patched server `Talent.dbc` the core counts them as bought talent ranks when it loads the bot (`GetTalentSpellCost`), so those points count as spent and the new links apply only partly.
    - At login `ResetTalents` removes all talent ranks of the patched tree, **including the granted 90100–90129** (now talent ranks). The bot then learns its new link.
+   - A reset **before** the DBC patch does not help: 90100–90129 are no talents yet, so it leaves them in place.
 5. **Players:**
    - **no reset**: the existing talent IDs and positions stay, and the new slots are free to learn;
    - without the patch the client shows the old tree (fail-closed) and cannot learn the new talents.
