@@ -1,0 +1,53 @@
+# Bosses that C++ or a spell summons in ways tools/scan_summons.py cannot see (a
+# form change, a spell that carries the entry, a table of guards). Entered by
+# hand, each with its source in twow-core main @ acc8dec0. Confirmed by OB-20
+# (#408, 2026-09-29). Add a line only with a file, a line and what happens there.
+
+[instance]
+id = "cpp-summoned-bosses-manual"
+name = "Bosses that C++ or a spell summons (by hand)"
+source = "twow-core main acc8dec0, src/scripts and src/game; spell_template 26061 in tw_world v16"
+source_date = "2026-09-29"
+
+# Thekal: the spawned High Priest Thekal (14599) changes into this entry in the
+# second phase.
+[[summoned_boss]]
+entry = 14509
+via = "cpp"
+note = "High Priest Thekal: src/scripts/dungeons/zulgurub/boss_thekal.cpp:358 (SetEntry)"
+
+# The four Silithus royals: one Summon Royal spell each, the entry is chosen in a
+# switch on the spell id.
+[[summoned_boss]]
+entry = 15203
+via = "spell"
+note = "Prince Skaldrenox: src/scripts/world/silithus.cpp:192 (case 24786, fire)"
+
+[[summoned_boss]]
+entry = 15204
+via = "spell"
+note = "High Marshal Whirlaxis: src/scripts/world/silithus.cpp:193 (case 24788, air)"
+
+[[summoned_boss]]
+entry = 15205
+via = "spell"
+note = "Baron Kazum: src/scripts/world/silithus.cpp:194 (case 24789, earth)"
+
+[[summoned_boss]]
+entry = 15305
+via = "spell"
+note = "Lord Skwol: src/scripts/world/silithus.cpp:195 (case 24790, water)"
+
+# Ouro: spell 26061 "Summon Ouro" has a summon effect with misc value 15517
+# (spell_template, tw_world v16). The Ouro Spawner (15957) casts it when a player
+# comes within 25 yards (npc_ouro_spawnerAI::MoveInLineOfSight).
+[[summoned_boss]]
+entry = 15517
+via = "spell"
+note = "Ouro: spell 26061 cast by spawner 15957: src/scripts/dungeons/temple_of_ahnqiraj/boss_ouro.cpp:48 and :462"
+
+# Sen'jin Guardian: area guards that the GuardMgr creates on demand.
+[[summoned_boss]]
+entry = 8017
+via = "cpp"
+note = "Sen'jin Guardian: src/game/GuardMgr.cpp:194 (AREA_SENJIN_VILLAGE)"
