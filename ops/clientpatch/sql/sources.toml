@@ -26,3 +26,10 @@ key = "id"
 [source.skill_race_class_info_mod]
 query = "SELECT Id, SkillLineDbcRecord, RaceMask, ClassMask, Flags, MinLevel, SkillTierId, SkillCostIndex FROM skill_race_class_info_mod"
 key = "Id"
+
+# Spellbook, trainer and trade skill placement (#367 P-1/P-2). The server reads
+# SkillLineAbility from SQL; the client reads its own DBC for the spellbook tab
+# and the trade skill window, so changed client rows must match this table.
+[source.skill_line_ability]
+query = "SELECT id, skill_id, spell_id, race_mask, class_mask, req_skill_value, superseded_by_spell, learn_on_get_skill, max_value, min_value FROM skill_line_ability"
+key = "id"

@@ -432,3 +432,64 @@ dbc = "AttributesExC"
 [[rule.pair]]
 sql = "attributesEx4"
 dbc = "AttributesExD"
+
+# A spell-type enchantment (poisons, imbues) fires its EffectArg spell on the
+# server; a changed row whose proc spell the server lacks would do nothing
+# (#367 poison ranks I-IV, 90141-90144). EffectArg[0] only: for spell-type
+# enchantments that is the spell. A non-spell enchantment we change (stat,
+# resistance) needs an accept with its reason here.
+[[rule]]
+id = "enchant-procs-on-server"
+kind = "refs_in_sql"
+source = "spell_template"
+dbc = "SpellItemEnchantment"
+scope = "changed"
+columns = ["EffectArg[0]"]
+why = "an enchantment whose proc spell the server does not know never fires"
+
+# The server places spells in skill lines from skill_line_ability (SQL); the
+# client uses SkillLineAbility.dbc for the spellbook tab, rank chains and the
+# trade skill window (recipe colours). A changed client row must agree.
+[[rule]]
+id = "skill-line-ability-matches-server"
+kind = "fields_equal"
+source = "skill_line_ability"
+dbc = "SkillLineAbility"
+scope = "changed"
+why = "spellbook tab, rank chain and recipe colours come from the client DBC"
+
+[[rule.pair]]
+sql = "skill_id"
+dbc = "SkillLine"
+
+[[rule.pair]]
+sql = "spell_id"
+dbc = "Spell"
+
+[[rule.pair]]
+sql = "race_mask"
+dbc = "RaceMask"
+
+[[rule.pair]]
+sql = "class_mask"
+dbc = "ClassMask"
+
+[[rule.pair]]
+sql = "req_skill_value"
+dbc = "MinSkillLineRank"
+
+[[rule.pair]]
+sql = "superseded_by_spell"
+dbc = "SupercededBySpell"
+
+[[rule.pair]]
+sql = "learn_on_get_skill"
+dbc = "AcquireMethod"
+
+[[rule.pair]]
+sql = "max_value"
+dbc = "TrivialSkillLineRankHigh"
+
+[[rule.pair]]
+sql = "min_value"
+dbc = "TrivialSkillLineRankLow"
