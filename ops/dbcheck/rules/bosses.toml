@@ -1,0 +1,200 @@
+# Boss and loot rules. Boss-scope rules run once per [[boss]] of every
+# expected file.
+#
+# Loot is followed through reference groups at any depth (recursive CTE; UNION,
+# not UNION ALL, so a cyclic reference cannot loop). To stay cheap on a big
+# world database the searches start narrow:
+#   {%boss_loot_cte}  starts at the loot entry of ONE boss and walks down;
+#                     it defines boss_items(item). Put it first in the rule.
+#   {%holders_cte}    starts at the expected ITEMS and walks up through the
+#                     reference groups to every creature loot entry that can
+#                     drop them; it defines hits(loot_entry, item).
+# {%spawned_ids} is every creature entry that has a spawn row, in any of its
+# id, id2, id3 or id4 columns, built once per query.
+
+[macro]
+spawned_ids = """
+SELECT COALESCE(c.{creature.id}, 0) AS sid FROM {creature} c
+UNION SELECT COALESCE(c.{creature.id2}, 0) FROM {creature} c
+UNION SELECT COALESCE(c.{creature.id3}, 0) FROM {creature} c
+UNION SELECT COALESCE(c.{creature.id4}, 0) FROM {creature} c
+"""
+script_summons = """
+SELECT s.{script_generic_scripts.datalong} AS sid FROM {script_generic_scripts} s WHERE s.{script_generic_scripts.command} = 10
+UNION
+SELECT s.{script_gossip_scripts.datalong} FROM {script_gossip_scripts} s WHERE s.{script_gossip_scripts.command} = 10
+UNION
+SELECT s.{script_event_scripts.datalong} FROM {script_event_scripts} s WHERE s.{script_event_scripts.command} = 10
+UNION
+SELECT s.{script_gameobject_scripts.datalong} FROM {script_gameobject_scripts} s WHERE s.{script_gameobject_scripts.command} = 10
+UNION
+SELECT s.{script_quest_start_scripts.datalong} FROM {script_quest_start_scripts} s WHERE s.{script_quest_start_scripts.command} = 10
+UNION
+SELECT s.{script_quest_end_scripts.datalong} FROM {script_quest_end_scripts} s WHERE s.{script_quest_end_scripts.command} = 10
+UNION
+SELECT s.{script_spell_scripts.datalong} FROM {script_spell_scripts} s WHERE s.{script_spell_scripts.command} = 10
+UNION
+SELECT s.{script_creature_spells_scripts.datalong} FROM {script_creature_spells_scripts} s WHERE s.{script_creature_spells_scripts.command} = 10
+UNION
+SELECT s.{script_creature_movement_scripts.datalong} FROM {script_creature_movement_scripts} s WHERE s.{script_creature_movement_scripts.command} = 10
+"""
+boss_loot_cte = """
+WITH RECURSIVE reach(ref_entry) AS (
+  SELECT -l.{creature_loot.ref}
+  FROM {creature_loot} l
+  WHERE l.{creature_loot.entry} = (SELECT ct.{creature_template.loot_id} FROM {creature_template} ct WHERE ct.{creature_template.entry} = {@entry})
+    AND l.{creature_loot.ref} < 0
+  UNION
+  SELECT -x.{reference_loot.ref}
+  FROM reach r
+  JOIN {reference_loot} x ON x.{reference_loot.entry} = r.ref_entry
+  WHERE x.{reference_loot.ref} < 0
+),
+boss_items(item) AS (
+  SELECT l.{creature_loot.item}
+  FROM {creature_loot} l
+  WHERE l.{creature_loot.entry} = (SELECT ct.{creature_template.loot_id} FROM {creature_template} ct WHERE ct.{creature_template.entry} = {@entry})
+    AND l.{creature_loot.ref} >= 0
+  UNION
+  SELECT x.{reference_loot.item}
+  FROM reach r
+  JOIN {reference_loot} x ON x.{reference_loot.entry} = r.ref_entry
+  WHERE x.{reference_loot.ref} >= 0
+)
+"""
+holders_cte = """
+WITH RECURSIVE wanted(item) AS (
+  SELECT i.{item.entry} FROM {item} i WHERE LOWER(i.{item.name}) IN ({@names})
+),
+holders(ref_entry, item) AS (
+  SELECT x.{reference_loot.entry}, x.{reference_loot.item}
+  FROM {reference_loot} x
+  WHERE x.{reference_loot.ref} >= 0 AND x.{reference_loot.item} IN (SELECT item FROM wanted)
+  UNION
+  SELECT x.{reference_loot.entry}, h.item
+  FROM holders h
+  JOIN {reference_loot} x ON -x.{reference_loot.ref} = h.ref_entry
+  WHERE x.{reference_loot.ref} < 0
+),
+hits(loot_entry, item) AS (
+  SELECT l.{creature_loot.entry}, l.{creature_loot.item}
+  FROM {creature_loot} l
+  WHERE l.{creature_loot.ref} >= 0 AND l.{creature_loot.item} IN (SELECT item FROM wanted)
+  UNION
+  SELECT l.{creature_loot.entry}, h.item
+  FROM {creature_loot} l
+  JOIN holders h ON -l.{creature_loot.ref} = h.ref_entry
+  WHERE l.{creature_loot.ref} < 0
+)
+"""
+
+[rule.boss_unknown]
+scope = "boss"
+severity = "error"
+title = "Expected boss has no creature_template"
+sql = """
+SELECT {@entry} AS boss FROM (SELECT 1 AS one) d
+WHERE NOT EXISTS (SELECT 1 FROM {creature_template} ct WHERE ct.{creature_template.entry} = {@entry})
+"""
+
+[rule.boss_no_spawn]
+scope = "boss"
+severity = "error"
+title = "Expected boss is never spawned"
+description = "The boss exists as a template but no creature row places it in the world, in any of its id, id2, id3 or id4 columns (skipped when the list marks it spawn_optional)."
+sql = """
+SELECT ct.{creature_template.entry} AS boss, ct.{creature_template.name} AS name
+FROM {creature_template} ct
+LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
+WHERE ct.{creature_template.entry} = {@entry} AND {@spawn_optional} = 0
+  AND sp.sid IS NULL
+"""
+
+[rule.boss_rank_mismatch]
+scope = "boss"
+severity = "warn"
+requires = ["rank"]
+title = "Boss has a different creature rank than expected"
+description = "creature_template.rank differs from the rank in the expected list (3 = boss). A world boss with rank 0 is treated as a normal mob by the client and by the loot rules."
+sql = """
+SELECT ct.{creature_template.entry} AS boss, ct.{creature_template.name} AS name, ct.{creature_template.rank} AS rank, {@rank} AS expected_rank
+FROM {creature_template} ct
+WHERE ct.{creature_template.entry} = {@entry} AND ct.{creature_template.rank} <> {@rank}
+"""
+
+[rule.boss_loot_missing]
+scope = "boss"
+severity = "error"
+requires = ["names"]
+title = "Expected loot item is not in the boss's loot"
+description = "The item exists in item_template but is not dropped by this boss (directly or through reference groups at any depth)."
+sql = """
+{%boss_loot_cte}
+SELECT e.expected AS item_name, MIN(i.{item.entry}) AS item_entry
+FROM ({@names_table}) e
+JOIN {item} i ON LOWER(i.{item.name}) = LOWER(e.expected)
+WHERE NOT EXISTS (
+  SELECT 1 FROM {item} i2
+  WHERE LOWER(i2.{item.name}) = LOWER(e.expected) AND i2.{item.entry} IN (SELECT item FROM boss_items)
+)
+GROUP BY e.expected
+"""
+
+[rule.boss_loot_item_unknown]
+scope = "boss"
+severity = "error"
+requires = ["names"]
+title = "Expected loot item does not exist"
+description = "No item_template row has this name."
+sql = """
+SELECT e.expected AS item_name
+FROM ({@names_table}) e
+WHERE NOT EXISTS (SELECT 1 FROM {item} i WHERE LOWER(i.{item.name}) = LOWER(e.expected))
+"""
+
+[rule.boss_loot_extra]
+scope = "boss"
+severity = "info"
+requires = ["names"]
+title = "Boss drops an item the expected list does not name"
+description = "Often legitimate (quest items, world drops); listed so nothing is overlooked."
+sql = """
+{%boss_loot_cte}
+SELECT i.{item.entry} AS item_entry, i.{item.name} AS item_name
+FROM {item} i
+WHERE i.{item.entry} IN (SELECT item FROM boss_items) AND LOWER(i.{item.name}) NOT IN ({@names})
+"""
+
+[rule.loot_foreign]
+scope = "boss"
+severity = "warn"
+requires = ["names"]
+title = "Expected item also drops from an NPC outside the instance"
+description = "A wrong loot id shows up here: the item is attached (directly or through reference groups at any depth) to an NPC that is not a boss of this instance. Add legitimate cases to allow_elsewhere."
+sql = """
+{%holders_cte}
+SELECT DISTINCT i.{item.entry} AS item_entry, i.{item.name} AS item_name,
+       ct.{creature_template.entry} AS npc_entry, ct.{creature_template.name} AS npc_name, h.loot_entry AS loot_id
+FROM hits h
+JOIN {item} i ON i.{item.entry} = h.item
+JOIN {creature_template} ct ON ct.{creature_template.loot_id} = h.loot_entry
+WHERE ct.{creature_template.entry} NOT IN ({@instance_entries})
+  AND LOWER(i.{item.name}) NOT IN ({@allow_elsewhere})
+"""
+
+[rule.boss_no_spawn_any]
+scope = "global"
+severity = "warn"
+title = "World boss with loot but no spawn (no expected list needed)"
+description = "creature_template with the boss rank and a loot table, never spawned (id, id2, id3 or id4). Bosses that a database script summons (script command 10) are left out. Bosses that C++, Eluna or EventAI summon appear here: list them as [[summoned_boss]] in an expected file."
+sql = """
+SELECT ct.{creature_template.entry} AS boss, ct.{creature_template.name} AS name
+FROM {creature_template} ct
+LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
+LEFT JOIN ({%script_summons}) sm ON sm.sid = ct.{creature_template.entry}
+WHERE ct.{creature_template.rank} = {const.boss_rank}
+  AND EXISTS (SELECT 1 FROM {creature_loot} l WHERE l.{creature_loot.entry} = ct.{creature_template.loot_id})
+  AND sp.sid IS NULL AND sm.sid IS NULL
+  AND ct.{creature_template.entry} NOT IN ({@summoned_entries})
+"""
+

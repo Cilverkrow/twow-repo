@@ -1,0 +1,50 @@
+# Expected loot of Tower of Karazhan bosses. Item names and NPC entries only
+# (no text from the source). Started with the two bosses checked by hand in
+# #437; extend with one [[boss]] per boss of the instance.
+
+[instance]
+id = "tower-of-karazhan"
+name = "Tower of Karazhan"
+source = "https://turtle-wow.fandom.com/wiki/Tower_of_Karazhan (boss pages Keeper_Gnarlmoon, Mephistroth; CC-BY-SA, used as a reference only)"
+source_date = "2026-09-29"
+# Ephemeral Pendant also drops from other Karazhan bosses and event NPCs that this list does not cover yet.
+allow_elsewhere = ["Ephemeral Pendant"]
+
+[[boss]]
+entry = 61939
+name = "Keeper Gnarlmoon"
+loot = [
+  "Ley-attuned Choker",
+  "Manadrenched Feather Slippers",
+  "Torn Wings of Midnight",
+  "Crite's Holy Hands",
+  "Ravenkeeper's Frenzied Embrace",
+  "Bloodmoon, Sickle of the Murderous Flight",
+  "Idol of Laceration",
+  "Crown of the Wildpack",
+]
+
+[[boss]]
+entry = 93333
+name = "Mephistroth"
+loot = [
+  "Nathrezim Armor of Treachery",
+  "Nathrezim Armor of Deceit",
+  "Heart of Mephistroth",
+  "Ephemeral Pendant",
+  "Turalyon's Hope",
+  "Cloak of Rapid Regeneration",
+  "Mephistroth's Cunning",
+  "Khadgar's Guidance",
+  "Memory of the Last Guardian",
+  "Netherwrought Bracers",
+  "Sash of the Grand Betrayal",
+  "Forgotten Hide Pauldrons",
+  "Tunic of Demonic Deception",
+  "Rain of Spiders",
+  "Thunderfall, Stormhammer of the Chief Thane",
+  "Kirel'narak, the Death Sentence",
+  "Nethraka, Wing of Oblivion",
+  "Censer of Soulwarding",
+  "Felforged Dreadhound",
+]

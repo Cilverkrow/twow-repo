@@ -1,0 +1,5 @@
+# Reports and local working copies. Reports name database content; keep them
+# out of Git and attach them to the issue instead.
+/out/
+/work/
+__pycache__/

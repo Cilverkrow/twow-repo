@@ -1,0 +1,278 @@
+# Timbermaw Hold (raid, map 819): a snapshot of OUR data, taken 2026-09-29 from
+# tw_world v16 and the OB-20 review of #438. It is NOT an external source: the
+# wiki page for the raid is a stub. Use it as regression protection (a change
+# that drops a boss, a token or a quest is caught), not as proof that the raid is
+# right. The three deviations below are known and decided (owner, variant A,
+# train 9); the tool reports them until they are fixed:
+#   Ursol (62947) and Peroth'arn (60686) have no spawn; Selenaxx (62940) has rank 0.
+# Loktanag the Vile uses the old low id 2139; the boots token belongs to him.
+# Karrsh the Sentinel (62934) is the first boss per the wiki; the database has him at rank 0.
+
+[instance]
+id = "timbermaw-hold"
+name = "Timbermaw Hold"
+source = "tw_world v16 snapshot 2026-09-29 (OB-40 disposable copy), boss table from OB-20 review of twow-repo#438"
+source_date = "2026-09-29"
+# Items that several unrelated bosses drop on purpose (badge and crafting items).
+allow_elsewhere = ["Crest of Heroism", "Pristine Chromatic Scale"]
+
+[[boss]]
+entry = 2139
+name = "Loktanag the Vile"
+rank = 3
+loot = [
+  "Asphyxiating Root",
+  "Corrosion",
+  "Crest of Heroism",
+  "Drape of Contagion",
+  "Hazardous Environment Stompers",
+  "Heart of Decay",
+  "Leggings of Pulsating Pustules",
+  "Pattern: Deeproot Sash",
+  "Pattern: Witherhide Gloves",
+  "Ritualistic Boots",
+  "Shield of Wailing Souls",
+  "Spore-laden Girdle",
+]
+
+[[boss]]
+entry = 60686
+name = "Peroth'arn"
+rank = 3
+loot = [
+  "Bindings of Relentless Wrath",
+  "Choker of Endless Insomnia",
+  "Cloak of Unwavering Will",
+  "Eyes of the Sightless",
+  "Girdle of Withered Spirits",
+  "Kilt of Futile Sacrifices",
+  "Mantle of the Usurper",
+  "Mass of Writhing Tentacles",
+  "Royal Highborne Guardbelt",
+  "Runed Elementium Key",
+  "The Herald of Nightmares",
+  "Var'adel, Twig of the Dreamfountain",
+  "Vestments of Purgatorial Flames",
+  "Whispering Fragment of Aln",
+]
+
+[[boss]]
+entry = 62935
+name = "Ormanos the Cracked"
+rank = 3
+loot = [
+  "Crest of Heroism",
+  "Crown of Draenic Corruption",
+  "Formula: Enchant 2H Weapon - Nature Damage",
+  "Ormanos' Hollow Finger",
+  "Plans: Crystalized Topaz Gemstone",
+  "Promised Salvation",
+  "Ritualistic Gloves",
+  "Sliver of Corrupted Draenethyst",
+  "Stonebound Wristguards",
+  "Totem of Ancient Rites",
+  "Visor of the Mending Cracks",
+  "Wall of Earthen Attunement",
+]
+
+[[boss]]
+entry = 62936
+name = "Rotgrowl"
+rank = 3
+loot = [
+  "Denrender, Hatchet of the Subterranean Hunter",
+  "Earth Warder's Visage",
+  "Fetish of the Endless Bond",
+  "Furbolg Medicine Wristwraps",
+  "Kodiak's Collar",
+  "Legguards of the Den Watcher",
+  "Moonblessed Bracers",
+  "Pendant of Relentless Assault",
+  "Recipe: Honeycomb Delight",
+  "Relentless Tracker's Wristguards",
+  "Tealeaf Waistwrap",
+  "Timbermaw Protectors",
+  "Treads of the Pathfinder",
+  "Twig of Untamed Magics",
+  "Ursa's Rampage",
+]
+
+[[boss]]
+entry = 62938
+name = "Archdruid Kronn"
+rank = 3
+loot = [
+  "Archdruid's Protection",
+  "Beacon of the Emerald Dream",
+  "Drape of Bestial Ferocity",
+  "Earth Warder's Visage",
+  "Formula: Enchant Cloak - Agility",
+  "Formula: Timberheart Dreamcatcher",
+  "Furbolg Medicine Footwraps",
+  "Furbolg Medicine Wristwraps",
+  "Legguards of the Den Watcher",
+  "Mantle of the Den Watcher",
+  "Moonblessed Bracers",
+  "Pendant of Relentless Assault",
+  "Pristine Chromatic Scale",
+  "Recipe: Mixologist Stone",
+  "Signet of Screaming Nightmares",
+  "Slumberweave Cloak",
+  "Timbermaw Protectors",
+  "Treads of the Pathfinder",
+  "Ursa's Rampage",
+]
+
+[[boss]]
+entry = 62940
+name = "Selenaxx Foulheart"
+rank = 3
+loot = [
+  "Claw of the Befouler",
+  "Crest of Heroism",
+  "Crystal Encrusted Girdle",
+  "Fang of the First Called",
+  "Fluctuating Rod",
+  "Formula: Enchant 2H Weapon - Shadow Damage",
+  "Formula: Enchant Cloak - Greater Shadow Resistance",
+  "Foulthorn Ring",
+  "Geode Shards",
+  "Pauldrons of Sinister Intent",
+  "Recurve of the Last Stand",
+  "Ritualistic Mantle",
+  "Treads of the Blighted Messenger",
+]
+
+[[boss]]
+entry = 62941
+name = "Chieftain Partath"
+rank = 3
+loot = [
+  "Crest of Heroism",
+  "Earth Warder's Grasp",
+  "Maw of Gluttony",
+  "Moonblessed Spaulders",
+  "Pendant of the Bountiful",
+  "Plans: Ceremonial Furbolg Pendant",
+  "Plans: Denwatcher",
+  "Ritualistic Headdress",
+  "Sash of the Pathfinder",
+  "Signet of Howling Nightmares",
+  "Unity of the Timbermaw",
+  "Will of the Chieftain",
+]
+
+[[boss]]
+entry = 62946
+name = "Trioch the Devourer"
+rank = 3
+loot = [
+  "Cloak of the Unfortunate",
+  "Crest of Heroism",
+  "Digested Slayer's Pauldrons",
+  "Elberetha's Scepter of Agitation",
+  "Hydrascale Seal",
+  "Igniter's Scorchcloth",
+  "Libram of the Exorciser",
+  "Pattern: Timberclaw Bracers",
+  "Pysan's New Greatsword",
+  "Ritualistic Leggings",
+  "Trifang Shredders",
+]
+
+[[boss]]
+entry = 62947
+name = "Ursol"
+rank = 3
+loot = [
+  "Breastcage of Ironbark",
+  "Cenarius' Teachings",
+  "Cuffs of the Enlightened",
+  "Dreamwind Threads",
+  "Droplet of Nordrassil",
+  "Forlorn Hope",
+  "Gloves of Sudden Betrayal",
+  "Glyph of the Tainted Wild God",
+  "Ironweave Chaincloak",
+  "Maw of Spewing Malignity",
+  "Pendant of Dreams",
+  "Ritualistic Tunic",
+  "Shard of Dreams",
+  "Spaulders of Unresolved Regrets",
+  "Vor’ethil, the Broken Shadow",
+]
+
+[[boss]]
+entry = 62934
+name = "Karrsh the Sentinel"
+rank = 3            # DB has rank 0; the wiki lists him as the first boss
+loot = [
+  "Bramblehide Breastplate",
+  "Claw of Reckless Abandon",
+  "Earth Warder's Visage",
+  "Furbolg Medicine Handwraps",
+  "Furbolg Medicine Wristwraps",
+  "Karrsh's Memento",
+  "Legguards of the Den Watcher",
+  "Moonblessed Bracers",
+  "Pendant of Relentless Assault",
+  "Pendant of the Sentinel",
+  "Timbermaw Defenders",
+  "Timbermaw Protectors",
+  "Treads of the Pathfinder",
+  "Ursa's Rampage",
+  "Weaponmaster's Gauntlets",
+]
+
+[[boss]]
+entry = 62937
+name = "Kodiak"
+spawn_optional = true      # companion without loot
+
+[[quest]]
+entry = 42023
+title = "Guile of Nature"
+giver = 62631
+ender = 62631
+
+[[quest]]
+entry = 42024
+title = "Burden of Nature"
+giver = 62631
+ender = 62631
+
+[[quest]]
+entry = 42025
+title = "Embrace of Nature"
+giver = 62631
+ender = 62631
+
+[[quest]]
+entry = 42026
+title = "Grasp of Nature"
+giver = 62631
+ender = 62631
+
+[[quest]]
+entry = 42027
+title = "Vigor of Nature"
+giver = 62631
+ender = 62631
+
+[[quest]]
+entry = 42028
+title = "Path of Nature"
+giver = 62631
+ender = 62631
+
+[[quest]]
+entry = 41930
+title = "Proof of Conviction"
+giver = 62740
+ender = 62740
+
+[[quest]]
+entry = 41931
+title = "The Corruption of Timbermaw Hold"
+giver = 62740
+ender = 62740
