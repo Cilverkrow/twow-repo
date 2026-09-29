@@ -110,3 +110,6 @@ aiplayerbot	AiPlayerbot.BotGroups.Diagnostics	INTENTIONAL_CHANGE	aiplayerbot.ove
 aiplayerbot	AiPlayerbot.QuestWorkTimeouts.Max	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-405-train7-quest-work-timeouts-3
 aiplayerbot	AiPlayerbot.SpecAura.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-357-367-train7-spec-aura
 mangosd	WhoList.RequestCooldownSeconds	INTENTIONAL_CHANGE	mangosd.overlay.conf	train7-2-who-list-cooldown-5
+aiplayerbot	AiPlayerbot.RosterList.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	train7-3-roster-list-209
+mangosd	Funserver.Loot.Units.Dungeon.Range	INTENTIONAL_CHANGE	mangosd.overlay.conf	train7-3-owner-dungeon-loot-2-4
+mangosd	Funserver.Loot.Units.Raid.Range	INTENTIONAL_CHANGE	mangosd.overlay.conf	train7-3-owner-raid-loot-ranges
