@@ -1,0 +1,215 @@
+# Binding for the twow-core world schema (tw_world). Column names: twow-core
+# sql/base/tw_world_<table>.sql, checked against the live schema on
+# 2026-09-29. To support another schema, copy this file and change the
+# physical names on the right; the rules stay as they are.
+id = "tw-world"
+description = "twow-core tw_world (VMaNGOS lineage, Turtle 1.18.1)"
+
+[const]
+boss_rank = 3               # creature_template.rank of a world boss
+item_source_min_quality = 3 # rule item_no_source: rare and above
+# Quests the team retired on purpose; SQL LIKE patterns on the quest title.
+quest_helper_name_like = "quest!_%"  # helper NPCs named quest_<id>_...; "!" escapes the underscore (LIKE ... ESCAPE "!")
+quest_ignore_title_like = [
+  "[CANCELLED]%", "[DEPRECATED]%", "%[Deprecated]", "%<NYI>%", "%<TXT>%", "DND %", "%Dummy%", "Disabled %",
+]
+
+[table.creature_template]
+[table.creature_template.columns]
+entry = "entry"
+name = "name"
+loot_id = "loot_id"
+rank = "rank"
+script_name = "script_name"
+
+[table.creature]
+[table.creature.columns]
+guid = "guid"
+id = "id"
+id2 = "id2"        # a spawn row can place up to four creature entries
+id3 = "id3"
+id4 = "id4"
+map = "map"
+
+[table.creature_loot]
+name = "creature_loot_template"
+[table.creature_loot.columns]
+entry = "entry"
+item = "item"
+ref = "mincountOrRef"      # negative: reference to reference_loot_template.entry
+
+[table.reference_loot]
+name = "reference_loot_template"
+[table.reference_loot.columns]
+entry = "entry"
+item = "item"
+ref = "mincountOrRef"      # negative: nested reference
+
+[table.gameobject_loot]
+name = "gameobject_loot_template"
+[table.gameobject_loot.columns]
+entry = "entry"
+item = "item"
+
+[table.item_loot]
+name = "item_loot_template"
+[table.item_loot.columns]
+entry = "entry"
+item = "item"
+
+[table.item]
+name = "item_template"
+[table.item.columns]
+entry = "entry"
+name = "name"
+quality = "quality"
+start_quest = "start_quest"
+
+[table.vendor]
+name = "npc_vendor"
+[table.vendor.columns]
+item = "item"
+
+[table.vendor_template]
+name = "npc_vendor_template"   # reached through creature_template.vendor_id
+[table.vendor_template.columns]
+item = "item"
+
+[table.pickpocket_loot]
+name = "pickpocketing_loot_template"
+[table.pickpocket_loot.columns]
+item = "item"
+
+[table.skinning_loot]
+name = "skinning_loot_template"
+[table.skinning_loot.columns]
+item = "item"
+
+[table.disenchant_loot]
+name = "disenchant_loot_template"
+[table.disenchant_loot.columns]
+item = "item"
+
+[table.fishing_loot]
+name = "fishing_loot_template"
+[table.fishing_loot.columns]
+item = "item"
+
+[table.mail_loot]
+name = "mail_loot_template"   # quest reward mails (RewMailTemplateId)
+[table.mail_loot.columns]
+item = "item"
+
+[table.quest]
+name = "quest_template"
+[table.quest.columns]
+entry = "entry"
+title = "Title"
+method = "Method"          # 0: started by a script, not by a giver row
+prev = "PrevQuestId"
+next = "NextQuestId"
+chain = "NextQuestInChain"
+src_item = "SrcItemId"
+req_npc_1 = "ReqCreatureOrGOId1"     # kill or cast credit targets (creature entry when positive)
+req_npc_2 = "ReqCreatureOrGOId2"
+req_npc_3 = "ReqCreatureOrGOId3"
+req_npc_4 = "ReqCreatureOrGOId4"
+rew_item_1 = "RewItemId1"
+rew_item_2 = "RewItemId2"
+rew_item_3 = "RewItemId3"
+rew_item_4 = "RewItemId4"
+rew_choice_1 = "RewChoiceItemId1"
+rew_choice_2 = "RewChoiceItemId2"
+rew_choice_3 = "RewChoiceItemId3"
+rew_choice_4 = "RewChoiceItemId4"
+rew_choice_5 = "RewChoiceItemId5"
+rew_choice_6 = "RewChoiceItemId6"
+
+[table.creature_start]
+name = "creature_questrelation"
+[table.creature_start.columns]
+id = "id"
+quest = "quest"
+
+[table.creature_end]
+name = "creature_involvedrelation"
+[table.creature_end.columns]
+id = "id"
+quest = "quest"
+
+[table.object_start]
+name = "gameobject_questrelation"
+[table.object_start.columns]
+id = "id"
+quest = "quest"
+
+[table.object_end]
+name = "gameobject_involvedrelation"
+[table.object_end.columns]
+id = "id"
+quest = "quest"
+
+[table.script_generic_scripts]
+name = "generic_scripts"
+[table.script_generic_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.script_gossip_scripts]
+name = "gossip_scripts"
+[table.script_gossip_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.script_event_scripts]
+name = "event_scripts"
+[table.script_event_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.script_gameobject_scripts]
+name = "gameobject_scripts"
+[table.script_gameobject_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.script_quest_start_scripts]
+name = "quest_start_scripts"
+[table.script_quest_start_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.script_quest_end_scripts]
+name = "quest_end_scripts"
+[table.script_quest_end_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.script_spell_scripts]
+name = "spell_scripts"
+[table.script_spell_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.script_creature_spells_scripts]
+name = "creature_spells_scripts"
+[table.script_creature_spells_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.script_creature_movement_scripts]
+name = "creature_movement_scripts"
+[table.script_creature_movement_scripts.columns]
+command = "command"      # 10: summon creature (datalong = entry)
+datalong = "datalong"
+
+[table.creature_ai_event]
+name = "creature_ai_events"
+[table.creature_ai_event.columns]
+creature_id = "creature_id"
+
+[table.script_creature_ai_scripts]
+name = "creature_ai_scripts"   # EventAI action scripts
+[table.script_creature_ai_scripts.columns]
+command = "command"      # 8: kill credit (datalong = creature entry); 10: summon
+datalong = "datalong"

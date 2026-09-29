@@ -1,0 +1,166 @@
+# Quest rules. Global rules need no expected list; quest-scope rules check the
+# [[quest]] entries of an expected file.
+#
+# What counts as a starter: a creature or object giver row, or a start item.
+# NextQuestInChain does NOT: the follow-up offer only works when the turn-in NPC
+# also has the quest in its own creature_questrelation (OB-20 review of #438).
+# What counts as a turn-in: a creature or object turn-in row. An area trigger
+# is only the exploration goal, not a turn-in.
+# Quests retired on purpose (title patterns in the binding, quest_ignore_title_like)
+# and quests an expected file names as [[scripted_quest]] are skipped.
+
+[macro]
+quest_not_ignored = """
+NOT EXISTS (SELECT 1 FROM ({list.quest_ignore_title_like}) ig WHERE q.{quest.title} LIKE ig.pattern)
+"""
+quest_has_starter = """
+(EXISTS (SELECT 1 FROM {creature_start} s WHERE s.{creature_start.quest} = q.{quest.entry})
+ OR EXISTS (SELECT 1 FROM {object_start} s WHERE s.{object_start.quest} = q.{quest.entry})
+ OR EXISTS (SELECT 1 FROM {item} i WHERE i.{item.start_quest} = q.{quest.entry}))
+"""
+
+[rule.quest_no_giver]
+scope = "global"
+severity = "error"
+title = "Quest without a starter"
+description = "No creature or object gives the quest and no item starts it. Not counted: quests with Method 0 (see quest_script_started), retired titles, and quests the expected list names as scripted (starts = true)."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title
+FROM {quest} q
+WHERE {%quest_not_ignored}
+  AND q.{quest.method} <> 0
+  AND NOT {%quest_has_starter}
+  AND q.{quest.entry} NOT IN ({@scripted_starts})
+"""
+
+[rule.quest_script_started]
+scope = "global"
+severity = "warn"
+title = "Quest with Method 0 and no starter row (started by a script?)"
+description = "Method 0 quests are normally added by a script or a game object. Verify in the code, then list the quest as [[scripted_quest]] in an expected file."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title
+FROM {quest} q
+WHERE {%quest_not_ignored}
+  AND q.{quest.method} = 0
+  AND NOT {%quest_has_starter}
+  AND q.{quest.entry} NOT IN ({@scripted_starts})
+"""
+
+[rule.quest_no_ender]
+scope = "global"
+severity = "error"
+title = "Quest without a turn-in"
+description = "No creature or object completes the quest. An area trigger does not count (it is the exploration goal). Not counted: retired titles and quests the expected list names as scripted (ends = true)."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title
+FROM {quest} q
+WHERE {%quest_not_ignored}
+  AND NOT EXISTS (SELECT 1 FROM {creature_end} e WHERE e.{creature_end.quest} = q.{quest.entry})
+  AND NOT EXISTS (SELECT 1 FROM {object_end} e WHERE e.{object_end.quest} = q.{quest.entry})
+  AND q.{quest.entry} NOT IN ({@scripted_ends})
+"""
+
+[rule.quest_giver_unspawned]
+scope = "global"
+severity = "warn"
+title = "Quest giver exists as a template but is never spawned"
+description = "The creature gives quests but no creature row places it (id, id2, id3 or id4). Givers that a script or event summons appear here too: a lead."
+sql = """
+SELECT ct.{creature_template.entry} AS giver, ct.{creature_template.name} AS name, COUNT(DISTINCT q.{quest.entry}) AS quests
+FROM {creature_start} s
+JOIN {creature_template} ct ON ct.{creature_template.entry} = s.{creature_start.id}
+LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
+JOIN {quest} q ON q.{quest.entry} = s.{creature_start.quest}
+WHERE {%quest_not_ignored} AND sp.sid IS NULL
+GROUP BY ct.{creature_template.entry}, ct.{creature_template.name}
+"""
+
+[rule.quest_ender_unspawned]
+scope = "global"
+severity = "warn"
+title = "Quest turn-in NPC exists as a template but is never spawned"
+description = "The creature completes quests but no creature row places it (id, id2, id3 or id4)."
+sql = """
+SELECT ct.{creature_template.entry} AS ender, ct.{creature_template.name} AS name, COUNT(DISTINCT q.{quest.entry}) AS quests
+FROM {creature_end} e
+JOIN {creature_template} ct ON ct.{creature_template.entry} = e.{creature_end.id}
+LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
+JOIN {quest} q ON q.{quest.entry} = e.{creature_end.quest}
+WHERE {%quest_not_ignored} AND sp.sid IS NULL
+GROUP BY ct.{creature_template.entry}, ct.{creature_template.name}
+"""
+
+[rule.quest_chain_broken]
+scope = "global"
+severity = "warn"
+title = "Quest chain points at a missing quest"
+description = "PrevQuestId (sign ignored), NextQuestId or NextQuestInChain names a quest that does not exist."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, 'prev' AS field, ABS(q.{quest.prev}) AS missing
+FROM {quest} q
+WHERE q.{quest.prev} <> 0 AND NOT EXISTS (SELECT 1 FROM {quest} t WHERE t.{quest.entry} = ABS(q.{quest.prev}))
+UNION ALL
+SELECT q.{quest.entry}, q.{quest.title}, 'next', ABS(q.{quest.next})
+FROM {quest} q
+WHERE q.{quest.next} <> 0 AND NOT EXISTS (SELECT 1 FROM {quest} t WHERE t.{quest.entry} = ABS(q.{quest.next}))
+UNION ALL
+SELECT q.{quest.entry}, q.{quest.title}, 'chain', q.{quest.chain}
+FROM {quest} q
+WHERE q.{quest.chain} <> 0 AND NOT EXISTS (SELECT 1 FROM {quest} t WHERE t.{quest.entry} = q.{quest.chain})
+"""
+
+[rule.quest_expected_missing]
+scope = "quest"
+severity = "error"
+title = "Expected quest is missing"
+description = "The expected list names a quest that quest_template does not have."
+sql = """
+SELECT {@entry} AS quest FROM (SELECT 1 AS one) d
+WHERE NOT EXISTS (SELECT 1 FROM {quest} q WHERE q.{quest.entry} = {@entry})
+"""
+
+[rule.quest_giver_mismatch]
+scope = "quest"
+severity = "error"
+title = "Quest is not started by the expected creature"
+requires = ["giver"]
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, {@giver} AS expected_giver
+FROM {quest} q
+WHERE q.{quest.entry} = {@entry}
+  AND NOT EXISTS (SELECT 1 FROM {creature_start} s WHERE s.{creature_start.quest} = {@entry} AND s.{creature_start.id} = {@giver})
+"""
+
+[rule.quest_ender_mismatch]
+scope = "quest"
+severity = "error"
+title = "Quest is not completed by the expected creature"
+requires = ["ender"]
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, {@ender} AS expected_ender
+FROM {quest} q
+WHERE q.{quest.entry} = {@entry}
+  AND NOT EXISTS (SELECT 1 FROM {creature_end} e WHERE e.{creature_end.quest} = {@entry} AND e.{creature_end.id} = {@ender})
+"""
+
+[rule.quest_helper_no_credit]
+scope = "global"
+severity = "error"
+title = "Quest objective is a helper NPC that nothing can credit"
+description = "The quest asks for a kill or cast credit on a helper NPC (name matches quest_helper_name_like, for example quest_41956_Not_Alone_1) that has no spawn, no script that grants the kill credit (script command 8, in any script table or EventAI action), is not summoned by a script, has no EventAI events, no script_name, and is not named as [[credited_npc]] in an expected file (C++ credit: expected/cpp-credit-helpers.toml). The objective can never complete. A name is a helper when it matches quest_helper_name_like (underscore literal). Limit: script command 83 (QUEST_CREDIT) has no creature id, it credits the script's target object; a helper credited only that way appears here and needs a look."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, ct.{creature_template.entry} AS helper, ct.{creature_template.name} AS helper_name
+FROM {quest} q
+JOIN {creature_template} ct
+  ON ct.{creature_template.entry} IN (q.{quest.req_npc_1}, q.{quest.req_npc_2}, q.{quest.req_npc_3}, q.{quest.req_npc_4})
+LEFT JOIN ({%spawned_ids}) sp ON sp.sid = ct.{creature_template.entry}
+LEFT JOIN ({%kill_credit_ids}) kc ON kc.sid = ct.{creature_template.entry}
+LEFT JOIN ({%script_summons}) sm ON sm.sid = ct.{creature_template.entry}
+LEFT JOIN (SELECT DISTINCT e.{creature_ai_event.creature_id} AS sid FROM {creature_ai_event} e) ev ON ev.sid = ct.{creature_template.entry}
+WHERE {%quest_not_ignored}
+  AND ct.{creature_template.name} LIKE {const.quest_helper_name_like} ESCAPE '!'
+  AND sp.sid IS NULL AND kc.sid IS NULL AND sm.sid IS NULL AND ev.sid IS NULL
+  AND COALESCE(ct.{creature_template.script_name}, '') = ''
+  AND ct.{creature_template.entry} NOT IN ({@credited_entries})
+"""

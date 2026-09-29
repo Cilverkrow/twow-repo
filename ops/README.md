@@ -4,6 +4,8 @@ This directory separates project-owned helper scripts from the upstream server s
 
 - `clientpatch`: client patch toolchain (#409): versioned DBC deltas -> DBC -> MPQ with review,
   server consistency check and hashes. See [its README](clientpatch/README.md).
+- `dbcheck`: expected-vs-actual checks of the world database (#437): SQL rules and expected
+  lists (bosses, loot, quest chains), read-only, report with hash. See [its README](dbcheck/README.md).
 - `windows/build`: build launcher and prerequisite notes.
 - `windows/source-sync`: source retrieval and transfer helpers.
 - `windows/server`: historical Windows lifecycle copies. The former graceful-shutdown
