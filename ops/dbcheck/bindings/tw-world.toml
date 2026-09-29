@@ -1,0 +1,111 @@
+# Binding for the twow-core world schema (tw_world). Column names: twow-core
+# sql/base/tw_world_<table>.sql, checked against the live schema on
+# 2026-09-29. To support another schema, copy this file and change the
+# physical names on the right; the rules stay as they are.
+id = "tw-world"
+description = "twow-core tw_world (VMaNGOS lineage, Turtle 1.18.1)"
+
+[const]
+boss_rank = 3               # creature_template.rank of a world boss
+item_source_min_quality = 3 # rule item_no_source: rare and above
+quest_ignore_title_like = "[DEPRECATED]%" # quests the team retired on purpose
+
+[table.creature_template]
+[table.creature_template.columns]
+entry = "entry"
+name = "name"
+loot_id = "loot_id"
+rank = "rank"
+
+[table.creature]
+[table.creature.columns]
+guid = "guid"
+id = "id"
+map = "map"
+
+[table.creature_loot]
+name = "creature_loot_template"
+[table.creature_loot.columns]
+entry = "entry"
+item = "item"
+ref = "mincountOrRef"      # negative: reference to reference_loot_template.entry
+
+[table.reference_loot]
+name = "reference_loot_template"
+[table.reference_loot.columns]
+entry = "entry"
+item = "item"
+
+[table.gameobject_loot]
+name = "gameobject_loot_template"
+[table.gameobject_loot.columns]
+entry = "entry"
+item = "item"
+
+[table.item_loot]
+name = "item_loot_template"
+[table.item_loot.columns]
+entry = "entry"
+item = "item"
+
+[table.item]
+name = "item_template"
+[table.item.columns]
+entry = "entry"
+name = "name"
+quality = "quality"
+start_quest = "start_quest"
+
+[table.vendor]
+name = "npc_vendor"
+[table.vendor.columns]
+item = "item"
+
+[table.quest]
+name = "quest_template"
+[table.quest.columns]
+entry = "entry"
+title = "Title"
+prev = "PrevQuestId"
+next = "NextQuestId"
+chain = "NextQuestInChain"
+rew_item_1 = "RewItemId1"
+rew_item_2 = "RewItemId2"
+rew_item_3 = "RewItemId3"
+rew_item_4 = "RewItemId4"
+rew_choice_1 = "RewChoiceItemId1"
+rew_choice_2 = "RewChoiceItemId2"
+rew_choice_3 = "RewChoiceItemId3"
+rew_choice_4 = "RewChoiceItemId4"
+rew_choice_5 = "RewChoiceItemId5"
+rew_choice_6 = "RewChoiceItemId6"
+
+[table.creature_start]
+name = "creature_questrelation"
+[table.creature_start.columns]
+id = "id"
+quest = "quest"
+
+[table.creature_end]
+name = "creature_involvedrelation"
+[table.creature_end.columns]
+id = "id"
+quest = "quest"
+
+[table.object_start]
+name = "gameobject_questrelation"
+[table.object_start.columns]
+id = "id"
+quest = "quest"
+
+[table.object_end]
+name = "gameobject_involvedrelation"
+[table.object_end.columns]
+id = "id"
+quest = "quest"
+
+[table.trigger_end]
+name = "areatrigger_involvedrelation"
+[table.trigger_end.columns]
+id = "id"
+quest = "quest"

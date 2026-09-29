@@ -1,0 +1,83 @@
+# Quest rules. Global rules need no expected list; quest-scope rules check the
+# [[quest]] entries of an expected file.
+
+[rule.quest_no_giver]
+scope = "global"
+severity = "error"
+title = "Quest without a starter"
+description = "No creature, object or item starts the quest: players cannot get it. Titles matching quest_ignore_title_like are skipped."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title
+FROM {quest} q
+WHERE q.{quest.title} NOT LIKE {const.quest_ignore_title_like}
+  AND NOT EXISTS (SELECT 1 FROM {creature_start} s WHERE s.{creature_start.quest} = q.{quest.entry})
+  AND NOT EXISTS (SELECT 1 FROM {object_start} s WHERE s.{object_start.quest} = q.{quest.entry})
+  AND NOT EXISTS (SELECT 1 FROM {item} i WHERE i.{item.start_quest} = q.{quest.entry})
+"""
+
+[rule.quest_no_ender]
+scope = "global"
+severity = "error"
+title = "Quest without a turn-in"
+description = "No creature, object or area trigger completes the quest. Titles matching quest_ignore_title_like are skipped."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title
+FROM {quest} q
+WHERE q.{quest.title} NOT LIKE {const.quest_ignore_title_like}
+  AND NOT EXISTS (SELECT 1 FROM {creature_end} e WHERE e.{creature_end.quest} = q.{quest.entry})
+  AND NOT EXISTS (SELECT 1 FROM {object_end} e WHERE e.{object_end.quest} = q.{quest.entry})
+  AND NOT EXISTS (SELECT 1 FROM {trigger_end} e WHERE e.{trigger_end.quest} = q.{quest.entry})
+"""
+
+[rule.quest_chain_broken]
+scope = "global"
+severity = "warn"
+title = "Quest chain points at a missing quest"
+description = "PrevQuestId (sign ignored), NextQuestId or NextQuestInChain names a quest that does not exist."
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, 'prev' AS field, ABS(q.{quest.prev}) AS missing
+FROM {quest} q
+WHERE q.{quest.prev} <> 0 AND NOT EXISTS (SELECT 1 FROM {quest} t WHERE t.{quest.entry} = ABS(q.{quest.prev}))
+UNION ALL
+SELECT q.{quest.entry}, q.{quest.title}, 'next', ABS(q.{quest.next})
+FROM {quest} q
+WHERE q.{quest.next} <> 0 AND NOT EXISTS (SELECT 1 FROM {quest} t WHERE t.{quest.entry} = ABS(q.{quest.next}))
+UNION ALL
+SELECT q.{quest.entry}, q.{quest.title}, 'chain', q.{quest.chain}
+FROM {quest} q
+WHERE q.{quest.chain} <> 0 AND NOT EXISTS (SELECT 1 FROM {quest} t WHERE t.{quest.entry} = q.{quest.chain})
+"""
+
+[rule.quest_expected_missing]
+scope = "quest"
+severity = "error"
+title = "Expected quest is missing"
+description = "The expected list names a quest that quest_template does not have."
+sql = """
+SELECT {@entry} AS quest FROM (SELECT 1 AS one) d
+WHERE NOT EXISTS (SELECT 1 FROM {quest} q WHERE q.{quest.entry} = {@entry})
+"""
+
+[rule.quest_giver_mismatch]
+scope = "quest"
+severity = "error"
+title = "Quest is not started by the expected creature"
+requires = ["giver"]
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, {@giver} AS expected_giver
+FROM {quest} q
+WHERE q.{quest.entry} = {@entry}
+  AND NOT EXISTS (SELECT 1 FROM {creature_start} s WHERE s.{creature_start.quest} = {@entry} AND s.{creature_start.id} = {@giver})
+"""
+
+[rule.quest_ender_mismatch]
+scope = "quest"
+severity = "error"
+title = "Quest is not completed by the expected creature"
+requires = ["ender"]
+sql = """
+SELECT q.{quest.entry} AS quest, q.{quest.title} AS title, {@ender} AS expected_ender
+FROM {quest} q
+WHERE q.{quest.entry} = {@entry}
+  AND NOT EXISTS (SELECT 1 FROM {creature_end} e WHERE e.{creature_end.quest} = {@entry} AND e.{creature_end.id} = {@ender})
+"""

@@ -1,0 +1,110 @@
+# Boss and loot rules. Boss-scope rules run once per [[boss]] of every
+# expected file. {%boss_loot_items} is every item the boss can drop: direct
+# rows plus rows reached through a reference group.
+
+[macro]
+boss_loot_items = """
+SELECT l.{creature_loot.item}
+FROM {creature_loot} l
+WHERE l.{creature_loot.entry} = (SELECT ct.{creature_template.loot_id} FROM {creature_template} ct WHERE ct.{creature_template.entry} = {@entry})
+  AND l.{creature_loot.ref} >= 0
+UNION
+SELECT rl.{reference_loot.item}
+FROM {creature_loot} l
+JOIN {reference_loot} rl ON rl.{reference_loot.entry} = -l.{creature_loot.ref}
+WHERE l.{creature_loot.entry} = (SELECT ct.{creature_template.loot_id} FROM {creature_template} ct WHERE ct.{creature_template.entry} = {@entry})
+  AND l.{creature_loot.ref} < 0
+"""
+
+[rule.boss_unknown]
+scope = "boss"
+severity = "error"
+title = "Expected boss has no creature_template"
+sql = """
+SELECT {@entry} AS boss FROM (SELECT 1 AS one) d
+WHERE NOT EXISTS (SELECT 1 FROM {creature_template} ct WHERE ct.{creature_template.entry} = {@entry})
+"""
+
+[rule.boss_no_spawn]
+scope = "boss"
+severity = "error"
+title = "Expected boss is never spawned"
+description = "The boss exists as a template but no creature row places it in the world (skipped when the list marks it spawn_optional)."
+sql = """
+SELECT ct.{creature_template.entry} AS boss, ct.{creature_template.name} AS name
+FROM {creature_template} ct
+WHERE ct.{creature_template.entry} = {@entry} AND {@spawn_optional} = 0
+  AND NOT EXISTS (SELECT 1 FROM {creature} c WHERE c.{creature.id} = {@entry})
+"""
+
+[rule.boss_loot_missing]
+scope = "boss"
+severity = "error"
+requires = ["names"]
+title = "Expected loot item is not in the boss's loot"
+description = "The item exists in item_template but is not dropped by this boss (directly or through a reference group)."
+sql = """
+SELECT e.expected AS item_name, MIN(i.{item.entry}) AS item_entry
+FROM ({@names_table}) e
+JOIN {item} i ON LOWER(i.{item.name}) = LOWER(e.expected)
+WHERE NOT EXISTS (
+  SELECT 1 FROM {item} i2
+  WHERE LOWER(i2.{item.name}) = LOWER(e.expected) AND i2.{item.entry} IN ({%boss_loot_items})
+)
+GROUP BY e.expected
+"""
+
+[rule.boss_loot_item_unknown]
+scope = "boss"
+severity = "error"
+requires = ["names"]
+title = "Expected loot item does not exist"
+description = "No item_template row has this name."
+sql = """
+SELECT e.expected AS item_name
+FROM ({@names_table}) e
+WHERE NOT EXISTS (SELECT 1 FROM {item} i WHERE LOWER(i.{item.name}) = LOWER(e.expected))
+"""
+
+[rule.boss_loot_extra]
+scope = "boss"
+severity = "info"
+requires = ["names"]
+title = "Boss drops an item the expected list does not name"
+description = "Often legitimate (quest items, world drops); listed so nothing is overlooked."
+sql = """
+SELECT i.{item.entry} AS item_entry, i.{item.name} AS item_name
+FROM {item} i
+WHERE i.{item.entry} IN ({%boss_loot_items}) AND LOWER(i.{item.name}) NOT IN ({@names})
+"""
+
+[rule.loot_foreign]
+scope = "boss"
+severity = "warn"
+requires = ["names"]
+title = "Expected item also drops from an NPC outside the instance"
+description = "A wrong loot id shows up here: the item is attached to an NPC that is not a boss of this instance. Add legitimate cases to allow_elsewhere."
+sql = """
+SELECT i.{item.entry} AS item_entry, i.{item.name} AS item_name,
+       ct.{creature_template.entry} AS npc_entry, ct.{creature_template.name} AS npc_name, l.{creature_loot.entry} AS loot_id
+FROM {item} i
+JOIN {creature_loot} l ON l.{creature_loot.item} = i.{item.entry}
+JOIN {creature_template} ct ON ct.{creature_template.loot_id} = l.{creature_loot.entry}
+WHERE LOWER(i.{item.name}) IN ({@names})
+  AND l.{creature_loot.ref} >= 0
+  AND ct.{creature_template.entry} NOT IN ({@instance_entries})
+  AND LOWER(i.{item.name}) NOT IN ({@allow_elsewhere})
+"""
+
+[rule.boss_no_spawn_any]
+scope = "global"
+severity = "warn"
+title = "World boss with loot but no spawn (no expected list needed)"
+description = "creature_template with the boss rank and a loot table, never spawned. Bosses that a script summons (Ragnaros, Nefarian) appear here too: a lead, not a defect."
+sql = """
+SELECT ct.{creature_template.entry} AS boss, ct.{creature_template.name} AS name
+FROM {creature_template} ct
+WHERE ct.{creature_template.rank} = {const.boss_rank}
+  AND EXISTS (SELECT 1 FROM {creature_loot} l WHERE l.{creature_loot.entry} = ct.{creature_template.loot_id})
+  AND NOT EXISTS (SELECT 1 FROM {creature} c WHERE c.{creature.id} = ct.{creature_template.entry})
+"""

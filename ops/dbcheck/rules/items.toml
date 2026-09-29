@@ -1,0 +1,21 @@
+[rule.item_no_source]
+scope = "global"
+severity = "info"
+title = "Item without any source"
+description = "Rare and better items that no creature, object, container, vendor or quest reward provides. Crafted items and items created by spells have no row in these tables and appear here; treat the list as a lead, not a defect."
+sql = """
+SELECT i.{item.entry} AS item_entry, i.{item.name} AS item_name, i.{item.quality} AS quality
+FROM {item} i
+WHERE i.{item.quality} >= {const.item_source_min_quality}
+  AND NOT EXISTS (SELECT 1 FROM {creature_loot} x WHERE x.{creature_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {reference_loot} x WHERE x.{reference_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {gameobject_loot} x WHERE x.{gameobject_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {item_loot} x WHERE x.{item_loot.item} = i.{item.entry})
+  AND NOT EXISTS (SELECT 1 FROM {vendor} x WHERE x.{vendor.item} = i.{item.entry})
+  AND NOT EXISTS (
+    SELECT 1 FROM {quest} q
+    WHERE i.{item.entry} IN (q.{quest.rew_item_1}, q.{quest.rew_item_2}, q.{quest.rew_item_3}, q.{quest.rew_item_4},
+                             q.{quest.rew_choice_1}, q.{quest.rew_choice_2}, q.{quest.rew_choice_3},
+                             q.{quest.rew_choice_4}, q.{quest.rew_choice_5}, q.{quest.rew_choice_6})
+  )
+"""
