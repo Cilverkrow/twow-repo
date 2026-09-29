@@ -1,0 +1,17 @@
+[
+  {
+    "name": "TWPatch",
+    "git": "https://github.com/Cilverkrow/twow-client-addons",
+    "ref": "<40-hex commit of tag TWPatch-v<N>>",
+    "description": "Client patch version check (TWPatch-v<N>)",
+    "recommended": true,
+    "toc": { "Title": "TWPatch", "Interface": "11200" }
+  },
+  {
+    "name": "BotMenu",
+    "git": "https://github.com/Cilverkrow/twow-client-addons",
+    "ref": "<40-hex commit of tag BotMenu-v<x.y>>",
+    "description": "Bot command menu (BotMenu-v<x.y>, core pin <sha>)",
+    "recommended": true
+  }
+]

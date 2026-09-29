@@ -1,0 +1,434 @@
+# Consistency rules: client DBC content vs server SQL (design 3.4 step 2 b).
+# A finding that is not accepted fails the build. Accept a known difference
+# only with a reason and an issue reference; stale accepts are reported.
+# Add a pairing by adding a rule - no code change (tooling principle 1).
+
+# Every reachable server map needs a client Map.dbc row, or the client hangs
+# on the loading screen (#408). "Reachable" = spawns, a teleport target or a
+# .tele entry (source map_in_use); empty test/dev maps in map_template are
+# ignored (OB-20 review: 13, 25, 29, 31, 37, 42, 44, 49, 50, 150, 804, 806, 809).
+[[rule]]
+id = "map-in-client"
+kind = "keys_in_dbc"
+source = "map_in_use"
+dbc = "Map"
+why = "#408: a reachable server-only map hangs the client"
+
+[[rule.accept]]
+key = "45"
+reason = "#408/#412/#425: Citadel map 45 is server-only until the client patch adds its Map.dbc row"
+
+# Area triggers only fire when the client knows them, and their map must agree.
+[[rule]]
+id = "areatrigger-in-client"
+kind = "keys_in_dbc"
+source = "areatrigger_template"
+dbc = "AreaTrigger"
+why = "a server trigger the client does not know never fires"
+
+[[rule]]
+id = "areatrigger-map-position"
+kind = "fields_equal"
+source = "areatrigger_template"
+dbc = "AreaTrigger"
+scope = "all"
+why = "a trigger on a different map in client and server never fires where the server expects it"
+
+[[rule.pair]]
+sql = "map_id"
+dbc = "ContinentID"
+
+[[rule.pair]]
+sql = "x"
+dbc = "Pos[0]"
+tolerance = 1.0
+
+[[rule.pair]]
+sql = "y"
+dbc = "Pos[1]"
+tolerance = 1.0
+
+[[rule.pair]]
+sql = "z"
+dbc = "Pos[2]"
+tolerance = 1.0
+
+# No accept for 5340: OB-20 checked all 517 rows against the client (#431
+# review) - client and server agree (5340 is on map 0 in both). The open
+# #408 question about 5340 is content, not client/server drift.
+
+# skill_race_class_info_mod overrides SkillRaceClassInfo.dbc on the server
+# (SpellMgr.cpp:2676-2733, -1 = keep the DBC value). The client DBC must match
+# functionally, and new rows need a client row (#379, #392 weapon talent W).
+[[rule]]
+id = "skillraceclass-mod-in-client"
+kind = "keys_in_dbc"
+source = "skill_race_class_info_mod"
+dbc = "SkillRaceClassInfo"
+why = "a server-only skill access row is invisible in the client"
+
+[[rule]]
+id = "skillraceclass-mod-values"
+kind = "fields_equal"
+source = "skill_race_class_info_mod"
+dbc = "SkillRaceClassInfo"
+scope = "all"
+skip_sql_value = "-1"
+why = "server override and client DBC must agree"
+
+[[rule.pair]]
+sql = "SkillLineDbcRecord"
+dbc = "SkillID"
+
+[[rule.pair]]
+sql = "RaceMask"
+dbc = "RaceMask"
+
+[[rule.pair]]
+sql = "ClassMask"
+dbc = "ClassMask"
+
+[[rule.pair]]
+sql = "Flags"
+dbc = "Flags"
+
+[[rule.pair]]
+sql = "MinLevel"
+dbc = "MinLevel"
+
+[[rule.pair]]
+sql = "SkillTierId"
+dbc = "SkillTierID"
+
+[[rule.pair]]
+sql = "SkillCostIndex"
+dbc = "SkillCostIndex"
+
+# Talent rank spells and prerequisites of rows we change must exist on the
+# server (stage 2: bot auras 90100-90199 become rank spells).
+[[rule]]
+id = "talent-ranks-on-server"
+kind = "refs_in_sql"
+source = "spell_template"
+dbc = "Talent"
+scope = "changed"
+columns = ["SpellRank[0]", "SpellRank[1]", "SpellRank[2]", "SpellRank[3]", "SpellRank[4]", "SpellRank[5]", "SpellRank[6]", "SpellRank[7]", "SpellRank[8]", "RequiredSpellID"]
+why = "a talent rank the server does not know cannot be learned"
+
+# Every Spell.dbc row we change must mirror the server's spell_template in
+# every field the client uses for tooltips and cast prediction (design 2.3).
+# Code-side values (changes/code-values.md) are not in spell_template.
+[[rule]]
+id = "spell-matches-server"
+kind = "fields_equal"
+source = "spell_template"
+dbc = "Spell"
+scope = "changed"
+why = "tooltip numbers and client cast prediction come from the client Spell.dbc"
+
+[[rule.pair]]
+sql = "castingTimeIndex"
+dbc = "CastingTimeIndex"
+
+[[rule.pair]]
+sql = "recoveryTime"
+dbc = "RecoveryTime"
+
+[[rule.pair]]
+sql = "categoryRecoveryTime"
+dbc = "CategoryRecoveryTime"
+
+[[rule.pair]]
+sql = "procChance"
+dbc = "ProcChance"
+
+[[rule.pair]]
+sql = "procCharges"
+dbc = "ProcCharges"
+
+[[rule.pair]]
+sql = "durationIndex"
+dbc = "DurationIndex"
+
+[[rule.pair]]
+sql = "powerType"
+dbc = "PowerType"
+
+[[rule.pair]]
+sql = "manaCost"
+dbc = "ManaCost"
+
+[[rule.pair]]
+sql = "rangeIndex"
+dbc = "RangeIndex"
+
+[[rule.pair]]
+sql = "speed"
+dbc = "Speed"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "stackAmount"
+dbc = "CumulativeAura"
+
+[[rule.pair]]
+sql = "spellIconId"
+dbc = "SpellIconID"
+
+[[rule.pair]]
+sql = "manaCostPercentage"
+dbc = "ManaCostPct"
+
+[[rule.pair]]
+sql = "startRecoveryCategory"
+dbc = "StartRecoveryCategory"
+
+[[rule.pair]]
+sql = "startRecoveryTime"
+dbc = "StartRecoveryTime"
+
+[[rule.pair]]
+sql = "effect1"
+dbc = "Effect[0]"
+
+[[rule.pair]]
+sql = "effectDieSides1"
+dbc = "EffectDieSides[0]"
+
+[[rule.pair]]
+sql = "effectBaseDice1"
+dbc = "EffectBaseDice[0]"
+
+[[rule.pair]]
+sql = "effectDicePerLevel1"
+dbc = "EffectDicePerLevel[0]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectRealPointsPerLevel1"
+dbc = "EffectRealPointsPerLevel[0]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectBasePoints1"
+dbc = "EffectBasePoints[0]"
+
+[[rule.pair]]
+sql = "effectApplyAuraName1"
+dbc = "EffectAura[0]"
+
+[[rule.pair]]
+sql = "effectRadiusIndex1"
+dbc = "EffectRadiusIndex[0]"
+
+[[rule.pair]]
+sql = "effectChainTarget1"
+dbc = "EffectChainTargets[0]"
+
+[[rule.pair]]
+sql = "effectMiscValue1"
+dbc = "EffectMiscValue[0]"
+
+[[rule.pair]]
+sql = "effectTriggerSpell1"
+dbc = "EffectTriggerSpell[0]"
+
+[[rule.pair]]
+sql = "effectPointsPerComboPoint1"
+dbc = "EffectPointsPerCombo[0]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effect2"
+dbc = "Effect[1]"
+
+[[rule.pair]]
+sql = "effectDieSides2"
+dbc = "EffectDieSides[1]"
+
+[[rule.pair]]
+sql = "effectBaseDice2"
+dbc = "EffectBaseDice[1]"
+
+[[rule.pair]]
+sql = "effectDicePerLevel2"
+dbc = "EffectDicePerLevel[1]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectRealPointsPerLevel2"
+dbc = "EffectRealPointsPerLevel[1]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectBasePoints2"
+dbc = "EffectBasePoints[1]"
+
+[[rule.pair]]
+sql = "effectApplyAuraName2"
+dbc = "EffectAura[1]"
+
+[[rule.pair]]
+sql = "effectRadiusIndex2"
+dbc = "EffectRadiusIndex[1]"
+
+[[rule.pair]]
+sql = "effectChainTarget2"
+dbc = "EffectChainTargets[1]"
+
+[[rule.pair]]
+sql = "effectMiscValue2"
+dbc = "EffectMiscValue[1]"
+
+[[rule.pair]]
+sql = "effectTriggerSpell2"
+dbc = "EffectTriggerSpell[1]"
+
+[[rule.pair]]
+sql = "effectPointsPerComboPoint2"
+dbc = "EffectPointsPerCombo[1]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effect3"
+dbc = "Effect[2]"
+
+[[rule.pair]]
+sql = "effectDieSides3"
+dbc = "EffectDieSides[2]"
+
+[[rule.pair]]
+sql = "effectBaseDice3"
+dbc = "EffectBaseDice[2]"
+
+[[rule.pair]]
+sql = "effectDicePerLevel3"
+dbc = "EffectDicePerLevel[2]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectRealPointsPerLevel3"
+dbc = "EffectRealPointsPerLevel[2]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectBasePoints3"
+dbc = "EffectBasePoints[2]"
+
+[[rule.pair]]
+sql = "effectApplyAuraName3"
+dbc = "EffectAura[2]"
+
+[[rule.pair]]
+sql = "effectRadiusIndex3"
+dbc = "EffectRadiusIndex[2]"
+
+[[rule.pair]]
+sql = "effectChainTarget3"
+dbc = "EffectChainTargets[2]"
+
+[[rule.pair]]
+sql = "effectMiscValue3"
+dbc = "EffectMiscValue[2]"
+
+[[rule.pair]]
+sql = "effectTriggerSpell3"
+dbc = "EffectTriggerSpell[2]"
+
+[[rule.pair]]
+sql = "effectPointsPerComboPoint3"
+dbc = "EffectPointsPerCombo[2]"
+tolerance = 0.001
+
+
+# OB-20 review of #431: fields for $t (period), target prediction, passive /
+# cast-while-moving attributes, school, and the spell-mod mask (EffectItemType)
+# that decides which tooltips a talent adjusts. Naming trap: the DB's
+# effectAmplitudeN is the aura period (DBC EffectAuraPeriod); the DB's
+# effectMultipleValueN is the DBC float EffectAmplitude.
+[[rule.pair]]
+sql = "effectAmplitude1"
+dbc = "EffectAuraPeriod[0]"
+
+[[rule.pair]]
+sql = "effectMultipleValue1"
+dbc = "EffectAmplitude[0]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectImplicitTargetA1"
+dbc = "ImplicitTargetA[0]"
+
+[[rule.pair]]
+sql = "effectImplicitTargetB1"
+dbc = "ImplicitTargetB[0]"
+
+[[rule.pair]]
+sql = "effectItemType1"
+dbc = "EffectItemType[0]"
+
+[[rule.pair]]
+sql = "effectAmplitude2"
+dbc = "EffectAuraPeriod[1]"
+
+[[rule.pair]]
+sql = "effectMultipleValue2"
+dbc = "EffectAmplitude[1]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectImplicitTargetA2"
+dbc = "ImplicitTargetA[1]"
+
+[[rule.pair]]
+sql = "effectImplicitTargetB2"
+dbc = "ImplicitTargetB[1]"
+
+[[rule.pair]]
+sql = "effectItemType2"
+dbc = "EffectItemType[1]"
+
+[[rule.pair]]
+sql = "effectAmplitude3"
+dbc = "EffectAuraPeriod[2]"
+
+[[rule.pair]]
+sql = "effectMultipleValue3"
+dbc = "EffectAmplitude[2]"
+tolerance = 0.001
+
+[[rule.pair]]
+sql = "effectImplicitTargetA3"
+dbc = "ImplicitTargetA[2]"
+
+[[rule.pair]]
+sql = "effectImplicitTargetB3"
+dbc = "ImplicitTargetB[2]"
+
+[[rule.pair]]
+sql = "effectItemType3"
+dbc = "EffectItemType[2]"
+
+[[rule.pair]]
+sql = "school"
+dbc = "School"
+
+[[rule.pair]]
+sql = "attributes"
+dbc = "Attributes"
+
+[[rule.pair]]
+sql = "attributesEx"
+dbc = "AttributesEx"
+
+[[rule.pair]]
+sql = "attributesEx2"
+dbc = "AttributesExB"
+
+[[rule.pair]]
+sql = "attributesEx3"
+dbc = "AttributesExC"
+
+[[rule.pair]]
+sql = "attributesEx4"
+dbc = "AttributesExD"
