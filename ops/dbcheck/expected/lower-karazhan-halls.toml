@@ -1,0 +1,35 @@
+# Lower Karazhan Halls (raid, 10 players, map 532): the five bosses the wiki names,
+# in its order. The wiki has no boss pages with loot for this instance, so the
+# list checks existence, spawn, map and rank only. Moroes is the end boss.
+
+[instance]
+id = "lower-karazhan-halls"
+name = "Lower Karazhan Halls"
+source = "https://turtle-wow.fandom.com/wiki/Lower_Karazhan_Halls (boss list; CC-BY-SA, used as a reference only)"
+source_date = "2026-09-29"
+maps = [532]
+
+[[boss]]
+entry = 61221
+name = "Brood Queen Araxxna"
+rank = 3
+
+[[boss]]
+entry = 61224
+name = "Grizikil"
+rank = 3
+
+[[boss]]
+entry = 61223
+name = "Clawlord Howlfang"
+rank = 3
+
+[[boss]]
+entry = 61222
+name = "Lord Blackwald II"
+rank = 3
+
+[[boss]]
+entry = 61225
+name = "Moroes"
+rank = 3

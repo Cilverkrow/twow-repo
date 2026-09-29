@@ -1,18 +1,22 @@
-# Expected loot of Tower of Karazhan bosses. Item names and NPC entries only
-# (no text from the source). Started with the two bosses checked by hand in
-# #437; extend with one [[boss]] per boss of the instance.
+# Tower of Karazhan (raid, 40 players, map 814): the nine bosses in the order the
+# wiki gives, with their loot. Item names and NPC entries only (no text from the
+# source). The chess pieces share the King's loot; the Knight, Rook and Bishop
+# have no loot of their own.
 
 [instance]
 id = "tower-of-karazhan"
 name = "Tower of Karazhan"
-source = "https://turtle-wow.fandom.com/wiki/Tower_of_Karazhan (boss pages Keeper_Gnarlmoon, Mephistroth; CC-BY-SA, used as a reference only)"
+source = "https://turtle-wow.fandom.com/wiki/Tower_of_Karazhan (boss pages of the nine bosses; CC-BY-SA, used as a reference only)"
 source_date = "2026-09-29"
-# Ephemeral Pendant also drops from other Karazhan bosses and event NPCs that this list does not cover yet.
+maps = [814]
+# Ephemeral Pendant is a shared drop of the later bosses and the chess event.
 allow_elsewhere = ["Ephemeral Pendant"]
 
+# 1
 [[boss]]
 entry = 61939
 name = "Keeper Gnarlmoon"
+rank = 3
 loot = [
   "Ley-attuned Choker",
   "Manadrenched Feather Slippers",
@@ -24,9 +28,152 @@ loot = [
   "Crown of the Wildpack",
 ]
 
+# 2
+[[boss]]
+entry = 61946
+name = "Ley-Watcher Incantagos"
+rank = 3
+loot = [
+  "Magispark Leggings",
+  "Jewel of Wild Magics",
+  "Scaleshield of Azure Flight",
+  "Loop of Infused Renewal",
+  "Magehunter Belt",
+  "Bands of the Surgebreaker",
+  "Leysteel Legplates",
+  "Choker of Terminal Arcanum",
+  "Enchanted Amethyst",
+]
+
+# 3
+[[boss]]
+entry = 61951
+name = "Anomalus"
+rank = 3
+loot = [
+  "Manahide Slippers",
+  "Cloak of the Bloody Ravager",
+  "Phase-shifting Crossbow",
+  "Branch of Resolute Defense",
+  "Remains of Overwhelming Power",
+  "Choker of Chromatic Power",
+  "Gloves of Nourishment",
+  "Bindings of Contained Magic",
+]
+
+# 4
+[[boss]]
+entry = 61958
+name = "Echo of Medivh"
+rank = 3
+loot = [
+  "Medivh's Hindsight",
+  "Gloves of Leyline Convergence",
+  "Eye of Dormant Corruption",
+  "Pendant of Forgiven Mistakes",
+  "Dreadslayer Shoulderblades",
+  "Legwraps of Meticulous Planning",
+  "Libram of the Eternal Tower",
+  "Forgotten Raven's Mallet",
+]
+
+# 5: the chess event. The King (59967) is the encounter's loot boss.
+[[boss]]
+entry = 59967
+name = "King"
+rank = 3
+loot = [
+  "Ethereal Boots of Conquest",
+  "Ethereal Boots of Ascendancy",
+  "Ephemeral Pendant",
+  "Dragonclaw Gauntlets",
+  "Checkmate",
+  "King's Edict",
+  "Insomnius' Retribution",
+  "Royal Seal of Greymane",
+  "Pawn's Advance",
+  "Bishop's Reverence",
+  "Chain-Cloak of the Rookguard",
+  "Mechanical Horse",
+]
+
+[[boss]]
+entry = 59968
+name = "Knight"
+rank = 3
+
+[[boss]]
+entry = 59970
+name = "Rook"
+rank = 3
+
+[[boss]]
+entry = 59971
+name = "Bishop"
+rank = 3
+
+# 6
+[[boss]]
+entry = 59981
+name = "Sanv Tas'dal"
+rank = 3
+loot = [
+  "Shifting Mantle of Conquest",
+  "Shifting Mantle of Ascendancy",
+  "Dreadslayer Horns",
+  "Riftcarver's Implement",
+  "Raka'shishi, Spear of the Adrift Hunt",
+  "Girdle of the Faded Primals",
+  "Kum'isha's Tattered Drape",
+  "Forgotten Hide Helm",
+  "Totem of Broken Earth",
+  "Ephemeral Pendant",
+  "Tiny Warp Stalker",
+]
+
+# 7
+[[boss]]
+entry = 59961
+name = "Rupturan the Broken"
+rank = 3
+loot = [
+  "Fractured Crown of Conquest",
+  "Fractured Crown of Ascendancy",
+  "Al'Kazeth, Claw of Ruptured Elements",
+  "Bulwark of Enduring Earth",
+  "Earthquake Leggings",
+  "Loop of Hardened Slate",
+  "Pure Jewel of Draenor",
+  "Handwraps of Dead Winds",
+  "Mantle of the Drifting Stars",
+  "Ephemeral Pendant",
+]
+
+# 8
+[[boss]]
+entry = 59991
+name = "Kruul"
+rank = 3
+loot = [
+  "Brutal Leggings of Conquest",
+  "Brutal Leggings of Ascendancy",
+  "Hellflame",
+  "Shieldrender Talisman",
+  "Pendant of Purified Demon's Blood",
+  "Worldbreaker Girdle",
+  "Fragments of Aldrach",
+  "Shar'tateth, the Shattered Edge",
+  "Comet Signaller",
+  "Desecration",
+  "Wristwraps of Exiled Radiance",
+  "Ephemeral Pendant",
+]
+
+# 9: the end boss
 [[boss]]
 entry = 93333
 name = "Mephistroth"
+rank = 3
 loot = [
   "Nathrezim Armor of Treachery",
   "Nathrezim Armor of Deceit",

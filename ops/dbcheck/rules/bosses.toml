@@ -37,6 +37,29 @@ UNION
 SELECT s.{script_creature_spells_scripts.datalong} FROM {script_creature_spells_scripts} s WHERE s.{script_creature_spells_scripts.command} = 10
 UNION
 SELECT s.{script_creature_movement_scripts.datalong} FROM {script_creature_movement_scripts} s WHERE s.{script_creature_movement_scripts.command} = 10
+UNION
+SELECT s.{script_creature_ai_scripts.datalong} FROM {script_creature_ai_scripts} s WHERE s.{script_creature_ai_scripts.command} = 10
+"""
+kill_credit_ids = """
+SELECT s.{script_generic_scripts.datalong} AS sid FROM {script_generic_scripts} s WHERE s.{script_generic_scripts.command} = 8
+UNION
+SELECT s.{script_gossip_scripts.datalong} FROM {script_gossip_scripts} s WHERE s.{script_gossip_scripts.command} = 8
+UNION
+SELECT s.{script_event_scripts.datalong} FROM {script_event_scripts} s WHERE s.{script_event_scripts.command} = 8
+UNION
+SELECT s.{script_gameobject_scripts.datalong} FROM {script_gameobject_scripts} s WHERE s.{script_gameobject_scripts.command} = 8
+UNION
+SELECT s.{script_quest_start_scripts.datalong} FROM {script_quest_start_scripts} s WHERE s.{script_quest_start_scripts.command} = 8
+UNION
+SELECT s.{script_quest_end_scripts.datalong} FROM {script_quest_end_scripts} s WHERE s.{script_quest_end_scripts.command} = 8
+UNION
+SELECT s.{script_spell_scripts.datalong} FROM {script_spell_scripts} s WHERE s.{script_spell_scripts.command} = 8
+UNION
+SELECT s.{script_creature_spells_scripts.datalong} FROM {script_creature_spells_scripts} s WHERE s.{script_creature_spells_scripts.command} = 8
+UNION
+SELECT s.{script_creature_movement_scripts.datalong} FROM {script_creature_movement_scripts} s WHERE s.{script_creature_movement_scripts.command} = 8
+UNION
+SELECT s.{script_creature_ai_scripts.datalong} FROM {script_creature_ai_scripts} s WHERE s.{script_creature_ai_scripts.command} = 8
 """
 boss_loot_cte = """
 WITH RECURSIVE reach(ref_entry) AS (
@@ -198,3 +221,22 @@ WHERE ct.{creature_template.rank} = {const.boss_rank}
   AND ct.{creature_template.entry} NOT IN ({@summoned_entries})
 """
 
+
+[rule.boss_wrong_map]
+scope = "boss"
+severity = "warn"
+requires = ["instance_maps"]
+title = "Boss is spawned, but not on the instance map"
+description = "The boss has spawn rows, none of them on a map named in the expected list's instance maps (for example only on the Development Land test map 451)."
+sql = """
+SELECT ct.{creature_template.entry} AS boss, ct.{creature_template.name} AS name,
+       (SELECT GROUP_CONCAT(DISTINCT c.{creature.map}) FROM {creature} c
+        WHERE {@entry} IN (c.{creature.id}, c.{creature.id2}, c.{creature.id3}, c.{creature.id4})) AS spawned_on_maps
+FROM {creature_template} ct
+WHERE ct.{creature_template.entry} = {@entry}
+  AND EXISTS (SELECT 1 FROM {creature} c
+              WHERE {@entry} IN (c.{creature.id}, c.{creature.id2}, c.{creature.id3}, c.{creature.id4}))
+  AND NOT EXISTS (SELECT 1 FROM {creature} c
+                  WHERE {@entry} IN (c.{creature.id}, c.{creature.id2}, c.{creature.id3}, c.{creature.id4})
+                    AND c.{creature.map} IN ({@instance_maps}))
+"""

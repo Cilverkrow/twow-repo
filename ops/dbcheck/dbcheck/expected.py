@@ -8,6 +8,7 @@ only** (no quotes or lore from the source)::
     name = "Tower of Karazhan"
     source = "https://turtle-wow.fandom.com/wiki/Tower_of_Karazhan"
     source_date = "2026-09-29"
+    maps = [814]                      # optional: the map ids of the instance (spawns elsewhere are reported)
     allow_elsewhere = ["Some Item"]   # optional: drops from other NPCs are fine
 
     [[boss]]
@@ -89,6 +90,7 @@ class Expected:
     source: str
     source_date: str
     allow_elsewhere: list[str]
+    maps: list[int]
     bosses: list[Boss]
     quests: list[Quest]
     scripted: list[Scripted]
@@ -154,6 +156,7 @@ def load_expected(path: Path) -> Expected:
         source=str(inst["source"]),
         source_date=str(inst["source_date"]),
         allow_elsewhere=[str(x) for x in inst.get("allow_elsewhere", [])],
+        maps=[_int(path, "instance.maps", m) for m in inst.get("maps", [])],
         bosses=bosses,
         quests=quests,
         scripted=scripted,
