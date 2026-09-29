@@ -10,7 +10,7 @@ from pathlib import Path
 from synth import ROOT, binding, pack
 
 from clientpatch import consistency
-from clientpatch.delta import apply_all, read_ops
+from clientpatch.delta import Touched, apply_file, list_files, read_ops
 from clientpatch.sqlsrc import SqlData, load_sources
 from clientpatch.wdbc import Table
 
@@ -20,6 +20,17 @@ SPEC.loader.exec_module(GEN)
 
 CHANGES = ROOT / "changes"
 INPUT = ROOT / "tools" / "inputs" / "367-rogue-spells.csv"
+
+
+def apply_rogue(table, sql):
+    """Apply only this change's deltas (0367_*). Other stage-2 changes (the
+    shaman's 0357_*) need rows the synthetic export does not carry; the full
+    set runs in the real build against the real server export."""
+    touched = Touched()
+    files = [p for p in list_files(CHANGES, table.binding.dbc) if p.name.startswith("0367_")]
+    for p in files:
+        apply_file(table, p, sql, touched)
+    return touched, files
 
 # OB-20 (#367 issuecomment-5858585355): aura IDs per talent, owner rows/columns 1-based.
 OWNER_LINE = {
@@ -163,7 +174,7 @@ class RogueDeltasEndToEnd(unittest.TestCase):
     def test_rules_pass_on_the_patched_tables(self):
         touched = {}
         for dbc, table in self.tables.items():
-            touched[dbc], files = apply_all(table, CHANGES, self.sql)
+            touched[dbc], files = apply_rogue(table, self.sql)
             self.assertTrue(files, dbc)
         rules = [r for r in consistency.load_rules(ROOT / "consistency") if r.id in self.RULES]
         self.assertEqual(len(rules), len(self.RULES))
@@ -182,7 +193,7 @@ class RogueDeltasEndToEnd(unittest.TestCase):
         self.sql = SqlData(load_sources(ROOT / "sql" / "sources.toml"), self.tmp)
         with self.assertRaises(Exception):
             for dbc, table in self.tables.items():
-                apply_all(table, CHANGES, self.sql)
+                apply_rogue(table, self.sql)
 
 
 if __name__ == "__main__":

@@ -433,6 +433,16 @@ dbc = "AttributesExC"
 sql = "attributesEx4"
 dbc = "AttributesExD"
 
+# Our own spells (90000-90999) may only use icons the client has: the Spell
+# rows mirror spell_template, so an unknown spellIconId would reach the client
+# as a blank icon (OB-15 review of #432/#433).
+[[rule]]
+id = "custom-spell-icons-in-client"
+kind = "keys_in_dbc"
+source = "custom_spell_icons"
+dbc = "SpellIcon"
+why = "a talent or spell icon the client does not have shows as a blank square"
+
 # A spell-type enchantment (poisons, imbues) fires its EffectArg spell on the
 # server; a changed row whose proc spell the server lacks would do nothing
 # (#367 poison ranks I-IV, 90141-90144). EffectArg[0] only: for spell-type

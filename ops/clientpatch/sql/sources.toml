@@ -27,6 +27,12 @@ key = "id"
 query = "SELECT Id, SkillLineDbcRecord, RaceMask, ClassMask, Flags, MinLevel, SkillTierId, SkillCostIndex FROM skill_race_class_info_mod"
 key = "Id"
 
+# Icons of our own spells (90000-90999, stage 2 talents and kits). A client
+# Spell row that points to an icon SpellIcon.dbc lacks shows a blank square.
+[source.custom_spell_icons]
+query = "SELECT DISTINCT spellIconId FROM spell_template WHERE entry BETWEEN 90000 AND 90999 AND spellIconId <> 0"
+key = "spellIconId"
+
 # Spellbook, trainer and trade skill placement (#367 P-1/P-2). The server reads
 # SkillLineAbility from SQL; the client reads its own DBC for the spellbook tab
 # and the trade skill window, so changed client rows must match this table.

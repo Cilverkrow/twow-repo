@@ -1,0 +1,11 @@
+ID,TabID,TierID,ColumnIndex,SpellRank_0,SpellRank_1,SpellRank_2,SpellRank_3,SpellRank_4,SpellRank_5,SpellRank_6,SpellRank_7,SpellRank_8,PrereqTalent_0,PrereqTalent_1,PrereqTalent_2,PrereqRank_0,PrereqRank_1,PrereqRank_2,Flags,RequiredSpellID,note
+9001,263,0,0,90100,90101,90102,90103,90104,0,0,0,0,0,0,0,0,0,0,0,0,R1/C1 Attack Speed (+2 % attack speed per rank)
+9002,263,0,3,90105,90106,90107,90108,90109,0,0,0,0,0,0,0,0,0,0,0,0,R1/C4 Earthen Guard (+6 defense per rank)
+9003,263,3,0,90111,90112,90113,0,0,0,0,0,0,0,0,0,0,0,0,0,0,R4/C1 Imbue Mastery (+3 % imbue effects per rank)
+9004,263,3,3,90114,90115,90116,0,0,0,0,0,0,0,0,0,0,0,0,0,0,R4/C4 Retaliation (30/60/90 % on dodge/parry/block)
+9005,263,4,3,90117,0,0,0,0,0,0,0,0,264,0,0,0,0,0,0,0,R5/C4 Charged Stormstrike (arrow from Stormstrike R5/C3)
+9006,263,5,0,90118,90119,90120,90121,90122,0,0,0,0,0,0,0,0,0,0,0,0,R6/C1 Storm Wisdom (20..100 % on melee crit)
+9007,263,5,3,90126,90127,90128,0,0,0,0,0,0,0,0,0,0,0,0,0,0,R6/C4 Shield Constitution (+1/2/3 % stamina per charge)
+9008,263,6,0,90124,0,0,0,0,0,0,0,0,9006,0,0,4,0,0,0,0,R7/C1 Chain Storm (needs Storm Wisdom 5/5)
+9009,263,6,3,90129,0,0,0,0,0,0,0,0,9007,0,0,2,0,0,0,0,R7/C4 Shield Ward (needs Shield Constitution 3/3; owner 2026-09-28 S2-2)
+9010,263,6,2,90130,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"R7/C3 Ancestral Arms, weapon talent W (slot decided by the owner 2026-09-28, S2-1)"

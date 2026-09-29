@@ -1,0 +1,19 @@
+op,key,field,value,note
+# #357 weapon talent W (Ancestral Arms): swords for shamans, talent only.
+# Mirrors twow-core skill_race_class_info_mod 90043/90055 (core#217); rule
+# skillraceclass-mod-values compares them. Base row 701 is Turtle's
+# talent-gated shaman row (flags 0x180); it supplies SkillCostIndex.
+insert,90043,,copy:701,One-Handed Swords for shamans (#357 W)
+set,90043,SkillID,43,
+set,90043,RaceMask,2047,
+set,90043,ClassMask,64,
+set,90043,Flags,384,0x180: talent only
+set,90043,MinLevel,0,
+set,90043,SkillTierID,0,
+insert,90055,,copy:701,Two-Handed Swords for shamans (#357 W)
+set,90055,SkillID,55,
+set,90055,RaceMask,2047,
+set,90055,ClassMask,64,
+set,90055,Flags,384,0x180: talent only
+set,90055,MinLevel,0,
+set,90055,SkillTierID,0,

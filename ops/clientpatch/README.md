@@ -39,6 +39,8 @@ the container and on Windows. The only external tool is the pinned `mpqcli`.
 | `sql/sources.toml` | the read-only server queries the rules and deltas use |
 | `templates/` | Nostalgia Launcher config and catalogue templates (placeholders only) |
 | `tools/gen_bindings.py` | regenerates bindings from WoWDBDefs, cross-checked with the core |
+| `tools/talentdelta.py` | writes a `Talent` delta from a talent list, after checking the tree layout (grid, collisions, arrows) and, with `--core`, the server sources |
+| `tools/inputs/` | inputs of the generators (talent lists, committed base cells) |
 | `tests/` | unit and end-to-end tests on **synthetic** mini DBCs |
 | `Dockerfile` | Python + mpqcli built from the pinned source |
 
