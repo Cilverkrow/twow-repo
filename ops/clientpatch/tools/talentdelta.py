@@ -231,10 +231,19 @@ def migration_texts(core):
     return [path.read_text(errors='replace') for path in sorted(root.rglob('*.sql'))]
 
 
+RENUMBER = re.compile(r'UPDATE `spell_template` SET `entry` = `entry` - (\d+) '
+                      r'WHERE `entry` BETWEEN (\d+) AND (\d+);')
+
+
 def server_spells(texts):
+    """Spells the migrations create, after any range renumbering in migration
+    order (train 8b moved 90001-90219 by -28999, #455)."""
     spells = set()
     for text in texts:
         spells.update(int(value) for value in re.findall(r'SET `entry` = (\d+),', text))
+        for shift, low, high in RENUMBER.findall(text):
+            shift, low, high = int(shift), int(low), int(high)
+            spells = {s - shift if low <= s <= high else s for s in spells}
     return spells
 
 
