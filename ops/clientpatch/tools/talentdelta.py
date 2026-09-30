@@ -27,7 +27,8 @@ looks wrong in the client.
 With --core it also checks the talents against the server sources of a
 twow-core checkout (read-only, no database): every rank spell is created by
 a migration, SpecAura talents carry the same ranks in the same order, with
---class the talent IDs equal STAGE2_TALENTS[class] of build_premade_specs.py,
+--class the talents' first rank spells equal what build_premade_specs.py
+looks up for the class (AURA_FIRST_SPELL plus EXTRA_REAL_TALENTS),
 and --skills rows (a SkillRaceClassInfo delta) match skill_race_class_info_mod.
 
 Nothing here is class-specific. Standard library only (plus the clientpatch
@@ -256,15 +257,20 @@ def spec_aura_ranks(core):
     return ranks
 
 
-def stage2_talents(core, cls):
+def real_talent_spells(core, cls):
+    """First rank spells of the class's real stage-2 talents, as the premade
+    generator finds them in the patched Talent.dbc: AURA_FIRST_SPELL (the SpecAura
+    talents, core#219) plus EXTRA_REAL_TALENTS (e.g. the shaman weapon talent W)."""
     generator = pathlib.Path(core) / 'modules' / 'mod-playerbots' / 'tools' / 'build_premade_specs.py'
     spec = importlib.util.spec_from_file_location('premade_specs_generator', generator)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    table = getattr(module, 'STAGE2_TALENTS', None)
-    if table is None:
-        raise ValueError('%s has no STAGE2_TALENTS table (core too old for this delta)' % generator)
-    return set(table.get(cls, ()))
+    first = getattr(module, 'AURA_FIRST_SPELL', None)
+    if first is None:
+        raise ValueError('%s has no AURA_FIRST_SPELL table (core too old for this delta)' % generator)
+    spells = {spell for (aura_cls, _), spell in first.items() if aura_cls == cls}
+    spells |= set(getattr(module, 'EXTRA_REAL_TALENTS', {}).get(cls, {}))
+    return spells
 
 
 def delta_rows(path):
@@ -299,10 +305,10 @@ def check_server(talents, core, cls=None, skills=None):
                               (talent['id'], talent['ranks'], ranks))
 
     if cls is not None:
-        expected = stage2_talents(core, cls)
-        actual = {talent['id'] for talent in talents}
+        expected = real_talent_spells(core, cls)
+        actual = {talent['ranks'][0] for talent in talents if talent['ranks']}
         if expected != actual:
-            errors.append('STAGE2_TALENTS[%d] %s != delta talents %s' %
+            errors.append('generator talents of class %d (first rank spells %s) != delta talents (%s)' %
                           (cls, sorted(expected), sorted(actual)))
 
     if skills:
@@ -328,7 +334,7 @@ def main(argv=None):
     parser.add_argument('--header', default='', help='comment lines for the top of the delta')
     parser.add_argument('--core', help='twow-core checkout for the server check')
     parser.add_argument('--class', dest='cls', type=int,
-                        help='class id whose STAGE2_TALENTS must equal the talents')
+                        help='class id whose premade-generator talents must equal the talents')
     parser.add_argument('--skills', help='SkillRaceClassInfo delta to compare with the server')
     args = parser.parse_args(argv)
 
