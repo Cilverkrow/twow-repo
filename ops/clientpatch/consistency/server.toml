@@ -5,8 +5,12 @@
 
 # Every reachable server map needs a client Map.dbc row, or the client hangs
 # on the loading screen (#408). "Reachable" = spawns, a teleport target or a
-# .tele entry (source map_in_use); empty test/dev maps in map_template are
-# ignored (OB-20 review: 13, 25, 29, 31, 37, 42, 44, 49, 50, 150, 804, 806, 809).
+# .tele entry (source map_in_use); maps without any of these are not listed.
+# The 13 server-only maps below do have spawns and/or game_tele rows but are
+# no areatrigger_teleport target, so players cannot enter them; only GM .tele
+# reaches them (OB-15 breakdown in #409 of 30.09.2026). Accepted by OB-20
+# (30.09.2026); removing or guarding their game_tele rows is a #408 backlog
+# item (train 9 candidate), not part of train 8.
 [[rule]]
 id = "map-in-client"
 kind = "keys_in_dbc"
@@ -17,6 +21,58 @@ why = "#408: a reachable server-only map hangs the client"
 [[rule.accept]]
 key = "45"
 reason = "#408/#412/#425: Citadel map 45 is server-only until the client patch adds its Map.dbc row"
+
+[[rule.accept]]
+key = "13"
+reason = "OB-20 30.09.2026 (#409): server-only map (Testing), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "25"
+reason = "OB-20 30.09.2026 (#409): server-only map (Scott Test), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "29"
+reason = "OB-20 30.09.2026 (#409): server-only map (CashTest), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "31"
+reason = "OB-20 30.09.2026 (#409): server-only map (PVPZone01OG), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "37"
+reason = "OB-20 30.09.2026 (#409): server-only map (Azshara Crater), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "42"
+reason = "OB-20 30.09.2026 (#409): server-only map (Collin's Test), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "44"
+reason = "OB-20 30.09.2026 (#409): server-only map (Old Scarlet Citadel), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "49"
+reason = "OB-20 30.09.2026 (#409): server-only map (Quel'Thalas Cut Scene), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "50"
+reason = "OB-20 30.09.2026 (#409): server-only map (Silvermoon City Raid), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "150"
+reason = "OB-20 30.09.2026 (#409): server-only map (Tamamo Map), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "804"
+reason = "OB-20 30.09.2026 (#409): server-only map (Eldrethalas), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "806"
+reason = "OB-20 30.09.2026 (#409): server-only map (Frostmane Retreat), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
+
+[[rule.accept]]
+key = "809"
+reason = "OB-20 30.09.2026 (#409): server-only map (Gnomeshrink), no areatrigger_teleport target; reachable only via GM .tele (game_tele); players cannot enter"
 
 # Area triggers only fire when the client knows them, and their map must agree.
 [[rule]]

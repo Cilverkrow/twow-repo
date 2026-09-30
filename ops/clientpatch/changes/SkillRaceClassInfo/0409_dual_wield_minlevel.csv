@@ -1,0 +1,5 @@
+op,key,field,value,note
+# Dual wield from level 1 is a server rule since twow-core migration 20260830134658
+# (skill_race_class_info_mod row 132, MinLevel 1); the client base still says 20.
+# Display consistency only, no new rule (OB-20 decision 30.09.2026, #409).
+set,132,MinLevel,sql:skill_race_class_info_mod.MinLevel,dual wield from level 1 (20260830134658)
