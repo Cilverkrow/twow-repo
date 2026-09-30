@@ -5,3 +5,9 @@ op,key,field,value,note
 set,16266,Description_lang_enUS,sql:spell_template.description,CV-1 cap 13%
 set,29079,Description_lang_enUS,sql:spell_template.description,CV-1 cap 27%
 set,29080,Description_lang_enUS,sql:spell_template.description,CV-1 cap 40%
+# Effect 3 (the Rockbiter build percent, 10/20/30 %) was changed on the server by
+# core migration 20260927150000 (effectBasePoints3 9/19/29; the client base has 19 for
+# all three), so the tooltip value comes from spell_template too (OB-15, patch v2 build).
+set,16266,EffectBasePoints[2],sql:spell_template.effectBasePoints3,Rockbiter build 10% (20260927150000)
+set,29079,EffectBasePoints[2],sql:spell_template.effectBasePoints3,Rockbiter build 20% (20260927150000)
+set,29080,EffectBasePoints[2],sql:spell_template.effectBasePoints3,Rockbiter build 30% (20260927150000)
