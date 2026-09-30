@@ -149,7 +149,8 @@ class RogueDeltasEndToEnd(unittest.TestCase):
         for spell, skill, sup, hi, lo in ((90140, 38, 0, 0, 0), (90142, 38, 90143, 0, 0), (90143, 38, 90144, 0, 0),
                                           (90144, 38, 0, 0, 0), (90208, 40, 0, 175, 125), (90209, 40, 0, 225, 175),
                                           (90210, 40, 0, 275, 225), (90211, 40, 0, 325, 275)):
-            sla.append("\t".join(str(v) for v in (spell, skill, spell, 0, 8, 1, sup, 0, hi, lo)))
+            # id = spell - 60000: the server column is smallint unsigned (#367, 2026-09-30).
+            sla.append("\t".join(str(v) for v in (spell - 60000, skill, spell, 0, 8, 1, sup, 0, hi, lo)))
         (self.tmp / "skill_line_ability.tsv").write_text("\n".join(sla) + "\n", encoding="utf-8")
         # A server export with a distinct value in every mirrored column.
         kinds = {c.name: c.kind for c in spell_b.columns}
@@ -182,8 +183,8 @@ class RogueDeltasEndToEnd(unittest.TestCase):
         self.assertEqual(consistency.blocking(findings), [])
         self.assertEqual(self.tables["Spell"].get((90150,), "Description_lang_enUS"), "description of 90150")
         self.assertEqual(self.tables["Talent"].get((9178,), "PrereqTalent[0]"), 9175)
-        self.assertEqual(self.tables["SkillLineAbility"].get((90142,), "SupercededBySpell"), 90143)
-        self.assertEqual(self.tables["SkillLineAbility"].get((90208,), "SkillLine"), 40)
+        self.assertEqual(self.tables["SkillLineAbility"].get((30142,), "SupercededBySpell"), 90143)
+        self.assertEqual(self.tables["SkillLineAbility"].get((30208,), "SkillLine"), 40)
 
     def test_a_missing_server_spell_is_caught(self):
         # Drop one rank spell from the export: the talent and spell rules must fail.
