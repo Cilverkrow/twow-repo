@@ -113,3 +113,10 @@ mangosd	WhoList.RequestCooldownSeconds	INTENTIONAL_CHANGE	mangosd.overlay.conf	t
 aiplayerbot	AiPlayerbot.RosterList.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	train7-3-roster-list-209
 mangosd	Funserver.Loot.Units.Dungeon.Range	INTENTIONAL_CHANGE	mangosd.overlay.conf	train7-3-owner-dungeon-loot-2-4
 mangosd	Funserver.Loot.Units.Raid.Range	INTENTIONAL_CHANGE	mangosd.overlay.conf	train7-3-owner-raid-loot-ranges
+mangosd	DynamicRespawn.PlayersThreshold	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
+mangosd	DynamicRespawn.PercentPerPlayer	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
+mangosd	DynamicRespawn.MaxReductionRate	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
+mangosd	DynamicRespawn.MinRespawnTime	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
+mangosd	DynamicRespawn.MinIndoorRespawnTime	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
+aiplayerbot	AiPlayerbot.SpecAura.TalentClasses	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-409-357-367-train8-real-talents
+aiplayerbot	AiPlayerbot.QuestRescue.IdleMinutes	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-421-owner-quest-rescue-30min
