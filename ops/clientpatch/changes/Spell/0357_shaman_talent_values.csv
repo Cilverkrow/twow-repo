@@ -1,0 +1,18 @@
+op,key,field,value,note
+# #357/#455 (patch v6): Enhancement talent values the server changed (docs/design/shaman-tank.md
+# lines 110/141 and 298-301); the client base still had Turtle's numbers, so the tooltips
+# ($s1) showed the old values. EffectBasePoints[0] only - the texts are equal (OB-50 list,
+# #455 issuecomment-5920511391). Values from spell_template, the server is the source of truth.
+set,52967,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Rushing Winds r1 (+1 per stack)
+set,52968,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Rushing Winds r2
+set,52969,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Rushing Winds r3
+set,52970,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Enkindled Flames r1 (+50 % at r3)
+set,52971,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Enkindled Flames r2
+set,52972,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Enkindled Flames r3
+set,58128,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Earthen Bulwark r1 (15 %)
+set,58129,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Earthen Bulwark r2 (20 %)
+set,58130,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Earthen Bulwark r3 (25 %)
+set,58248,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Elemental Weapons (Frostbrand) r1 (+50 % at r3)
+set,58249,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Elemental Weapons (Frostbrand) r2
+set,58250,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Elemental Weapons (Frostbrand) r3
+set,16287,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Improved Ghost Wolf r3 (instant)
