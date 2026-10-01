@@ -15,6 +15,10 @@
 > below is still the correct history, but Shyalya is no longer a live upstream — read
 > [the amendment](#amendment-2026-09-27-the-upstream-of-record-announced-its-retirement)
 > before acting on the merge rules.
+>
+> **Amended 2026-10-01: the upstream of record is gone.** `Shyalya/tortoise-wow` was
+> removed from GitHub; `UPSTREAM.lock` now points at a frozen archive branch in
+> twow-core — see [the second amendment](#amendment-2026-10-01-the-upstream-of-record-was-removed).
 
 ## Context
 
@@ -226,6 +230,36 @@ One thing that should happen under either: the freshness guard currently sits at
 `max_drift_commits = 50`** and goes red on upstream's next push. Under (a) it should be
 retired; under (b) it should be retargeted. Feeding it one more commit at a time is the
 option that serves neither.
+
+## Amendment (2026-10-01): the upstream of record was removed
+
+Recorded as a fact, with the interim measure taken to keep CI meaningful. The open
+decision above is **still open**; this amendment does not take (a) or (b).
+
+- **Removed, not archived.** Since 2026-10-01 `Shyalya/tortoise-wow` answers HTTP 404 on the
+  API and `git ls-remote` reports "Repository not found". The account `Shyalya` still
+  exists, without this repository. An *archived* repository would have stayed readable;
+  this one did not. The last green `upstream-freshness` run was 2026-10-01 09:18Z, the
+  first red one 16:19Z (twow-core#253/#254: "cannot fetch playerbots-integration-gh").
+- **Nothing was lost.** The snapshot recorded above —
+  tag `upstream-archive/shyalya-playerbots-integration-gh-2026-09-27`, tip `f2df1b6a` — is the
+  complete upstream history we will ever have. Re-checked on 2026-10-01: merge base with
+  our `main` is still `6be01e53` (= `fork_point`), the tracking mirror `3f9a0622` is an
+  ancestor of the tip, distance 49 commits.
+- **Interim measure (twow-core#255 on `release/8.x`, #256 on `main`).** The tip is published as
+  the branch **`upstream-archive-playerbots-integration-gh`** in twow-core, because the guard
+  (`tools/ci/check-upstream-lock.sh`) fetches branches only. `UPSTREAM.lock` points
+  `upstream_url` at twow-core and `upstream_branch` at that branch; `fork_point` and the
+  tracking pair are unchanged, and all seven checks pass against it. The guard stays on and
+  fail-closed: it still catches a wrong `fork_point` and a moved tracking branch.
+- **The archive branch is frozen.** Nobody pushes to it. Branch protection is an owner
+  decision (pending); until then this is a convention.
+- **`max_drift_commits` lost its meaning.** Nothing can arrive after `f2df1b6a`, so check 4
+  measures a fixed distance (49 of 50) instead of staleness. That is acceptable for a frozen
+  source and is the reason the interim measure is not a decision: under (a) the guard should
+  be reduced to its history checks, under (b) it gets a live `upstream_url` again.
+- **Still open, parked as an owner backlog item:** whether `Penqle/tortoise-wow` becomes the
+  new upstream (b), or tracking is retired (a).
 
 ## Consequences
 
