@@ -274,6 +274,14 @@ the hash. The files are client data and never enter Git; the tests use
 synthetic snippets. `build` also stops when a talent tree has more talents than
 the frame has buttons.
 
+**Record order.** The client keeps one record range per talent tree: rows of a
+`TabID` that are not one contiguous block in `Talent.dbc` hide the earlier
+block (only the new talents were visible, #455). `[record_order]` in
+`clientpatch.toml` names such DBCs and their group column; `build` moves new
+rows directly behind their group and stops if a group is still split. IDs and
+record bytes do not change, and the server loads by ID, so the server copy
+must have the same content but may keep another order.
+
 **Add a server table.** Add a `[source.<name>]` with a `SELECT` and its key
 column to `sql/sources.toml`.
 

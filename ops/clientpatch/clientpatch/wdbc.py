@@ -156,6 +156,32 @@ class Table:
         self.rows.insert(pos, row)
         self._rebuild_index()
 
+    def group_by(self, column: str) -> None:
+        """Stable regrouping: every row moves directly behind the rows that share
+        its value in `column` and come first in the file. Rows of a value that is
+        already one contiguous block keep their relative order; rows of a value
+        not seen before stay where they fall. Record bytes do not change."""
+        i = self.binding.index(column)
+        first: dict = {}
+        for pos, row in enumerate(self.rows):
+            first.setdefault(row.values[i], pos)
+        order = sorted(range(len(self.rows)), key=lambda p: (first[self.rows[p].values[i]], p))
+        self.rows = [self.rows[p] for p in order]
+        self._rebuild_index()
+
+    def split_groups(self, column: str) -> dict:
+        """{value: number of separate blocks} for every value of `column` whose
+        rows are not one contiguous block."""
+        i = self.binding.index(column)
+        blocks: dict = {}
+        prev = object()
+        for row in self.rows:
+            v = row.values[i]
+            if v != prev:
+                blocks[v] = blocks.get(v, 0) + 1
+                prev = v
+        return {v: n for v, n in blocks.items() if n > 1}
+
     def blank_row(self) -> list:
         return ["" if c.kind == "string" else (0.0 if c.kind == "float" else 0)
                 for c in self.binding.columns]
