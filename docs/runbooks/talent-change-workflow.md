@@ -1,6 +1,6 @@
 # Runbook: change talents (new talents, new spells, trainer spells)
 
-Status: 2026-10-01, from trains 8, 8b and patch v4 (#357, #367, #409, #455).
+Status: 2026-10-01, from trains 8, 8b and patches v4/v5 (#357, #367, #409, #455).
 Owner decision 2026-10-01 (#409): talent trees will keep growing; this is the
 fixed workflow. Server part: OB-10; client part: OB-15; data/roster: OB-40;
 deploy: OB-30; release and approvals: OB-00.
@@ -14,12 +14,13 @@ the reason is given next to it.
 |---|---|---|
 | R1 | **Every spell a player can learn, see or cast has an ID < 65536.** New custom spells come from the free block behind the Turtle spells (section 2). | The 1.12 protocol sends spell IDs as uint16 in `SMSG_INITIAL_SPELLS`, `SMSG_SUPERCEDED_SPELL`, `SMSG_REMOVED_SPELL`. 90xxx arrived as `id − 65536` after a relog: wrong spells in the spellbook, talent frame out of step (#455, train 8). |
 | R2 | **A new ID is checked against the client `Spell.dbc` (base, dbc → patch-9) and `spell_template`** before it is used, by OB-50. | A reused ID makes the client show the other spell's text and icon. |
-| R3 | **Talent.dbc is one file for server and client.** The server copy is the `server-dbc/` output of the same clientpatch build; both change in the same window. | Server and client disagree on ranks and positions otherwise (#409). |
+| R3 | **Talent.dbc has the same content on server and client** (same IDs, all fields equal); the byte order of the records may differ, because the server loads by ID. The server copy comes from the `server-dbc/` output of a clientpatch build; a content change goes to both in the same window. A pure reorder (R9) is client-only. Check: same ID set and fields, as `builds\ob15-clientpatch-v5\verify_v5.py`. | Server and client disagree on ranks and positions otherwise (#409). Patch v5 (#455) reordered the client file only; the 8b server copy `7072ee1e` stayed. |
 | R4 | **At most 30 talents per tree** (talent frame buttons, patch v4). The build enforces it. More needs a new `[ui] talent_buttons` and a new patch. | Turtle's frame had 20 buttons; 26 talents showed an incomplete tree (#455). |
 | R5 | **Trainer teach spells: visual 107, target 0, interruptFlags 0** (the trainer casts), like every class teach spell. Never clone Turtle's 47312. Teach spells the player casts on themselves (profession recipes) need visual 222 **and** target 1 (self); a cast time is optional (Turtle's 47200–47341 are instant self-casts that work). Since hotfix 8.3 the server routes 222 + target 0 to the trainer cast, so a wrong clone no longer hangs, but R5 stays the rule for the data. | 47312 clones (visual 222, target 0) hung the player in a crafting cast, "Another action is in progress", money taken (#455, 61213–61220). |
 | R6 | **`skill_line_ability.id` < 65536** (smallint unsigned; core contract `skill_line_ability_id_range_contract`, no `INSERT IGNORE`). New rows from **30300** upwards, checked before use. The old "spell − 60000" convention does **not** work for 61xxx spells (61221 − 60000 = 1221 collides with the base rows 1–7210). | IDs 90140+ were silently clamped by `INSERT IGNORE` (#219). |
 | R7 | **DB and client changes go with a main train** (Ä15). Hotfix trains carry no migration. A client-only change (UI, tooltips with identical DBC data) may go with a hotfix train. | Release pattern Ä15. |
 | R8 | **Nothing client-derived goes into Git** (DBCs, MPQs, Turtle interface files). The pipeline extracts them from the client at build time. | Both repos are public. |
+| R9 | **Every talent tree is one contiguous record block in the client Talent.dbc.** `[record_order] Talent = "TabID"` makes the build put new rows directly behind their tree and stop if a tree is still split. Talent IDs need not be contiguous. | The client keeps one record range per tree: new rows at the end of the file hid the base talents of their tree (`GetNumTalents(Combat)` = 8 instead of 26, #455, fixed in patch v5). |
 
 ## 2. ID registry (keep this table current, in the same PR as the new IDs)
 
@@ -110,7 +111,11 @@ confirmed by OB-50's ID range list (#455 issuecomment-5926452548).
 1. Launcher: ⟳ in the Assets banner, restart the launcher (catalogue cache 7
    days), install version N, **restart the game fully** (not `/reload`).
 2. Talent frame: every tree complete (base + new talents), no "Too many
-   talents in talent frame!" popup.
+   talents in talent frame!" popup. Count check in chat (open the frame once;
+   tab 1–3 by OrderIndex):
+   `/script DEFAULT_CHAT_FRAME:AddMessage("MAX="..tostring(MAX_NUM_TALENTS).." N="..GetNumTalents(2))`
+   must show the expected number of talents of that tree (R4, R9). Lua errors
+   are hidden by default: `/console scriptErrors 1` while testing.
 3. Learn one new talent; buy one new spell at the trainer (no cast animation,
    no "Another action is in progress", money only on success).
 4. **Log out and in again (relog):** talent rank and points unchanged, no
