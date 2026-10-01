@@ -19,6 +19,10 @@
 > **Amended 2026-10-01: the upstream of record is gone.** `Shyalya/tortoise-wow` was
 > removed from GitHub; `UPSTREAM.lock` now points at a frozen archive branch in
 > twow-core — see [the second amendment](#amendment-2026-10-01-the-upstream-of-record-was-removed).
+>
+> **Decided 2026-10-01 (owner): variant (a).** This fork is its own trunk; upstream tracking
+> is retired, upstream content arrives by cherry-pick only, and related projects are reviewed
+> monthly — see [the decision](#decision-2026-10-01-variant-a-we-are-our-own-trunk).
 
 ## Context
 
@@ -259,7 +263,44 @@ decision above is **still open**; this amendment does not take (a) or (b).
   source and is the reason the interim measure is not a decision: under (a) the guard should
   be reduced to its history checks, under (b) it gets a live `upstream_url` again.
 - **Still open, parked as an owner backlog item:** whether `Penqle/tortoise-wow` becomes the
-  new upstream (b), or tracking is retired (a).
+  new upstream (b), or tracking is retired (a). *Decided the same day — see below.*
+
+## Decision (2026-10-01): variant (a), we are our own trunk
+
+Owner decision (relayed by OB-00 under Ä13), in substance and partly verbatim: "We are our
+own trunk from now on. We want to compare ourselves with Penqle … A is the wiser variant."
+Plus: watch GitHub attentively for who else pursues the same project.
+
+**1. Upstream tracking is retired.**
+- `UPSTREAM.lock` stays as the **historical record** of where this fork came from, pointed at
+  the frozen archive branch `upstream-archive-playerbots-integration-gh` (`f2df1b6a`).
+- New required key `upstream_tracking_mode = retired` (twow-core#257 on `main`, #258 on
+  `release/8.x`). In that mode `tools/ci/check-upstream-lock.sh` **skips the drift check
+  (check 4)**: a budget against a frozen tip measures a constant. The history checks 1–3
+  and 5–7 stay: they still catch a moved tracking branch, a dead-branch merge and a
+  forgotten `fork_point`. The `upstream-freshness` job stays on and fail-closed.
+- **No more branch merges from any upstream.** Content from Penqle/tortoise-wow or any other
+  project arrives only as a **deliberate cherry-pick** with its own PR, review and the
+  provenance noted in the commit message (source repository, commit, licence).
+- The merge rules in the Decision section above remain the correct history for the period
+  2026-09-02 – 2026-10-01; they no longer describe a live process.
+
+**2. Observation instead of tracking — a monthly routine.**
+- **What:** `Penqle/tortoise-wow` first, then related public projects: Turtle-WoW forks with
+  playerbots, `tortoise-docker` and similar container setups, and anyone pursuing the same
+  goal (persistent organic bots on a 1.12/Turtle base) *without* a template project of ours.
+- **Who / when:** OB-50 (research), monthly as a backlog routine, with a dated list in an issue
+  per run: repository, activity, licence, what is new, and **candidates to adopt** (commit,
+  why, estimated effort, conflict risk with our delta). OB-50 only prepares; the owning
+  specialist chat decides on adoption.
+- **Licences and provenance (hard rules):** respect the source's licence (the mangos/cmangos
+  lineage is GPL; anything AGPL-licensed must keep its obligations, including source
+  availability); keep author attribution; **nothing derived from leaked Turtle-WoW code or
+  data**, regardless of where it is found. When the origin of a change is unclear, it is not
+  adopted.
+- **Penqle comparison:** the first run compares our delta against `Penqle/tortoise-wow` `main`
+  (which Shyalya was syncing from) to establish a baseline of what they have that we lack,
+  and vice versa.
 
 ## Consequences
 
