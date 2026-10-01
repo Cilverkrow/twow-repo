@@ -25,7 +25,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import __version__, consistency, mpq
+from . import __version__, consistency, mpq, ui
 from .base import dbc_files, identify, locate, sha256_file
 from .binding import Binding, load_bindings
 from .delta import Touched, apply_all, changed_dbcs
@@ -289,11 +289,17 @@ def build(cfg: Config, base_dir: Path, sql_dir: Path, version: int, label: str,
             f"[{block[0].rule}] key {block[0].key}: {block[0].message}")
     log(f"consistency: {len(rules)} rule(s), {len(findings)} finding(s), all accepted")
 
+    if "Talent" in changed:
+        ui.check_talents_per_tab(tables["Talent"], ui.talent_buttons(cfg.data))
+    ui_files = ui.build_files(cfg.data, base_dir, staging)
+    for row in ui_files:
+        log(f"ui: {row['path']} ({row['transform']}, source {row['source_sha256'][:12]})")
+
     info = {"version": version, "label": label, "kind": "release",
             "commit": git_commit(cfg.root), "base": base.id, "build": base.build,
             "tool": f"clientpatch {__version__}", "python": sys.version.split()[0],
             "changed_dbcs": changed, "consistency_rules": [r.id for r in rules],
-            "foreign_archive_warnings": foreign_warnings}
+            "ui_files": ui_files, "foreign_archive_warnings": foreign_warnings}
     _write_version(staging, cfg, info)
 
     server_dir = out_dir / "server-dbc"
@@ -422,7 +428,26 @@ def extract_base(cfg: Config, client_dir: Path, out_dir: Path, mpqcli: str | Non
             shutil.move(str(got), dst)
             source[dst.name] = archive.name
         log(f"{archive.name}: {len(members)} DBC(s)")
+    # Interface files we patch (clientpatch.ui): same archives, same rule.
+    ui_source: dict[str, str] = {}
+    for entry in ui.files(cfg.data):
+        want = entry["path"].lower()
+        for archive in used:
+            hits = [m for m in mpq.list_raw(tool, cfg.mpq, archive) if m.lower() == want]
+            if hits:
+                got = mpq.extract_file(tool, cfg.mpq, archive, hits[0], tmp)
+                dst = ui.local_path(out_dir, entry["path"])
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(got), dst)
+                ui_source[entry["path"]] = archive.name
+        if entry["path"] not in ui_source:
+            raise ClientPatchError(f"{entry['path']}: in none of the base archives")
+        log(f"ui: {entry['path']} from {ui_source[entry['path']]}")
     shutil.rmtree(tmp, ignore_errors=True)
+    if ui_source:
+        (out_dir / "ui-report.txt").write_text(
+            "# ui file\tarchive it was taken from (last in load order wins)\n"
+            + "".join(f"{k}\t{v}\n" for k, v in sorted(ui_source.items())), encoding="utf-8", newline="\n")
     report = "".join(f"{k}\t{v}\n" for k, v in sorted(source.items()))
     (out_dir / "extract-report.txt").write_text(
         "# dbc\tarchive it was taken from (last in load order wins)\n" + report,

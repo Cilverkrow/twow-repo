@@ -47,3 +47,22 @@ member_prefix = "DBFilesClient\\"
 # one that loads after us (or in an unknown order) carries a DBC we change.
 known_other = ["base.MPQ", "fonts.MPQ", "interface.MPQ", "misc.MPQ", "model.MPQ",
                "sound.MPQ", "speech.MPQ", "terrain.MPQ", "texture.MPQ", "wmo.MPQ"]
+
+[ui]
+# Client interface files we patch (clientpatch/ui.py). Turtle's talent frame
+# has 20 buttons per tree; our trees have up to 26 (#455). Owner 2026-10-01
+# (#409): 30 buttons, room for later talent additions. The source files are
+# client data: extract-base copies them into <base>/ui, they never enter Git.
+# A sha256 that no longer matches means Turtle changed the file: the build
+# stops until the transform has been reviewed against the new version.
+talent_buttons = 30
+
+[[ui.file]]
+path = 'Interface\AddOns\Blizzard_TalentUI\Blizzard_TalentUI.lua'
+sha256 = "35b425ea06216a8814af159b539b4417d15e1fe5d8c0c1469c816c63c6eab0ea"
+transform = "talent_buttons_lua"
+
+[[ui.file]]
+path = 'Interface\AddOns\Blizzard_TalentUI\Blizzard_TalentUI.xml'
+sha256 = "dd3b741e3f1f2df71e6f7a993b29a68c6dd84dab52af603581e92139d26e0463"
+transform = "talent_buttons_xml"
