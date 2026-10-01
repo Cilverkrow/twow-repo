@@ -262,6 +262,18 @@ are three kinds:
 Known differences go into `[[rule.accept]]`, **with a reason**. An accept that
 no longer matches is reported as stale.
 
+**Patch a client interface file.** Turtle's talent frame (`Blizzard_TalentUI`,
+last copy in `patch-9.mpq`) has 20 buttons per tree. Our extended trees need
+more (#455), so `[ui]` in `clientpatch.toml` raises it to 30. Each `[[ui.file]]`
+names a file in the base archives, the sha256 of Turtle's copy and a transform
+from `clientpatch/ui.py`; every replacement of a transform must match exactly
+once. `extract-base` copies the files into `<base>/ui/`. `build` stops when the
+client copy no longer has the configured hash, so we never ship our edit over
+a newer Turtle version: review the transform against the new file, then update
+the hash. The files are client data and never enter Git; the tests use
+synthetic snippets. `build` also stops when a talent tree has more talents than
+the frame has buttons.
+
 **Add a server table.** Add a `[source.<name>]` with a `SELECT` and its key
 column to `sql/sources.toml`.
 

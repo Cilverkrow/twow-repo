@@ -76,6 +76,7 @@ class Pipeline(unittest.TestCase):
         cfg = (ROOT / "clientpatch.toml").read_text(encoding="utf-8")
         cfg = cfg.replace('bindings = "bindings"', f'bindings = "{(ROOT / "bindings").as_posix()}"')
         cfg = cfg.replace('sql_sources = "sql/sources.toml"', 'sql_sources = "sources.toml"')
+        cfg = cfg.split("\n[ui]")[0] + "\n"  # the synthetic base has no interface files (tests/test_ui.py)
         (self.tmp / "clientpatch.toml").write_text(cfg)
         (self.tmp / "bases").mkdir()
         from clientpatch.base import fingerprint_toml
