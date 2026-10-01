@@ -1,0 +1,117 @@
+old_id,new_id,kind,note
+90001,61002,server_only,Take Cover (item spell; not in patch v2)
+90002,61003,server_only,Throw Spear (item spell; not in patch v2)
+90003,61004,server_only,Rage of Alterac (item spell; not in patch v2)
+90004,61005,server_only,Rage of Alterac (item spell; not in patch v2)
+90005,61006,server_only,Fiery Temper (item spell; not in patch v2)
+90006,61007,server_only,Fiery Temper (item spell; not in patch v2)
+90100,61101,talent_rank,Attack Speed Rank 1
+90101,61102,talent_rank,Attack Speed Rank 2
+90102,61103,talent_rank,Attack Speed Rank 3
+90103,61104,talent_rank,Attack Speed Rank 4
+90104,61105,talent_rank,Attack Speed Rank 5
+90105,61106,talent_rank,Earthen Guard Rank 1
+90106,61107,talent_rank,Earthen Guard Rank 2
+90107,61108,talent_rank,Earthen Guard Rank 3
+90108,61109,talent_rank,Earthen Guard Rank 4
+90109,61110,talent_rank,Earthen Guard Rank 5
+90111,61112,talent_rank,Imbue Mastery Rank 1
+90112,61113,talent_rank,Imbue Mastery Rank 2
+90113,61114,talent_rank,Imbue Mastery Rank 3
+90114,61115,talent_rank,Retaliation Rank 1
+90115,61116,talent_rank,Retaliation Rank 2
+90116,61117,talent_rank,Retaliation Rank 3
+90117,61118,talent_rank,Charged Stormstrike
+90118,61119,talent_rank,Storm Wisdom Rank 1
+90119,61120,talent_rank,Storm Wisdom Rank 2
+90120,61121,talent_rank,Storm Wisdom Rank 3
+90121,61122,talent_rank,Storm Wisdom Rank 4
+90122,61123,talent_rank,Storm Wisdom Rank 5
+90123,61124,proc,Storm Wisdom
+90124,61125,talent_rank,Chain Storm
+90125,61126,proc,Storm Wisdom
+90126,61127,talent_rank,Shield Constitution Rank 1
+90127,61128,talent_rank,Shield Constitution Rank 2
+90128,61129,talent_rank,Shield Constitution Rank 3
+90129,61130,talent_rank,Shield Ward
+90130,61131,talent_rank,Ancestral Arms Rank 1
+90131,61132,proc,Ancestral Arms
+90132,61133,proc,Ancestral Arms
+90133,61134,proc,Ancestral Arms
+90134,61135,proc,Ancestral Arms
+90135,61136,proc,Ancestral Arms
+90136,61137,proc,Ancestral Arms
+90137,61138,proc,Ancestral Arms
+90138,61139,proc,Ancestral Arms
+90139,61140,proc,Ancestral Arms
+90140,61141,kit,Spit
+90141,61142,proc,Spit
+90142,61143,kit,Shadow Dance Rank 1
+90143,61144,kit,Shadow Dance Rank 2
+90144,61145,kit,Shadow Dance Rank 3
+90145,61146,proc,Shadow Dance
+90146,61147,proc,Shadow Dance
+90150,61151,talent_rank,Blindside Rank 1
+90151,61152,talent_rank,Blindside Rank 2
+90152,61153,talent_rank,Blindside Rank 3
+90153,61154,talent_rank,Blindside Rank 4
+90154,61155,talent_rank,Flowing Blades Rank 1
+90155,61156,talent_rank,Flowing Blades Rank 2
+90156,61157,talent_rank,Frozen Blood
+90157,61158,talent_rank,Vigorous Fury
+90158,61159,talent_rank,Fated Echo
+90159,61160,talent_rank,Nimble Body Rank 1
+90160,61161,talent_rank,Nimble Body Rank 2
+90161,61162,talent_rank,Nimble Body Rank 3
+90162,61163,talent_rank,Nimble Body Rank 4
+90163,61164,talent_rank,Nimble Body Rank 5
+90164,61165,talent_rank,Guarded Stance Rank 1
+90165,61166,talent_rank,Guarded Stance Rank 2
+90166,61167,talent_rank,Guarded Stance Rank 3
+90167,61168,talent_rank,Guarded Stance Rank 4
+90168,61169,talent_rank,Guarded Stance Rank 5
+90169,61170,talent_rank,Riposte Flow Rank 1
+90170,61171,talent_rank,Riposte Flow Rank 2
+90171,61172,talent_rank,Riposte Flow Rank 3
+90172,61173,talent_rank,Arcane Evasion Rank 1
+90173,61174,talent_rank,Arcane Evasion Rank 2
+90174,61175,talent_rank,Arcane Evasion Rank 3
+90175,61176,talent_rank,Coup de Grace Rank 1
+90176,61177,talent_rank,Coup de Grace Rank 2
+90177,61178,talent_rank,Coup de Grace Rank 3
+90178,61179,talent_rank,Brazen Strike
+90179,61180,talent_rank,Hardened Shadows Rank 1
+90180,61181,talent_rank,Hardened Shadows Rank 2
+90181,61182,talent_rank,Hardened Shadows Rank 3
+90182,61183,talent_rank,Ghostly Evasion
+90183,61184,talent_rank,Shadow Strikes Rank 1
+90184,61185,talent_rank,Shadow Strikes Rank 2
+90185,61186,talent_rank,Shadow Strikes Rank 3
+90186,61187,talent_rank,Shadow Strikes Rank 4
+90187,61188,talent_rank,Deep Wounds
+90188,61189,talent_rank,Shadow Edge Rank 1
+90189,61190,talent_rank,Shadow Edge Rank 2
+90190,61191,talent_rank,Shadow Edge Rank 3
+90191,61192,proc,Vigorous Fury
+90192,61193,proc,Shadow Edge
+90193,61194,proc,Hemorrhage
+90200,61201,proc,Agitating Poison Rank 1 (proc; SpellItemEnchantment 90141 EffectArg)
+90201,61202,proc,Agitating Poison Rank 2 (proc; SpellItemEnchantment 90142 EffectArg)
+90202,61203,proc,Agitating Poison Rank 3 (proc; SpellItemEnchantment 90143 EffectArg)
+90203,61204,proc,Agitating Poison Rank 4 (proc; SpellItemEnchantment 90144 EffectArg)
+90204,61205,kit,Agitating Poison Rank 1 (poison coating; item use; enchant 90141)
+90205,61206,kit,Agitating Poison Rank 2 (poison coating; item use; enchant 90142)
+90206,61207,kit,Agitating Poison Rank 3 (poison coating; item use; enchant 90143)
+90207,61208,kit,Agitating Poison Rank 4 (poison coating; item use; enchant 90144)
+90208,61209,kit,Agitating Poison Rank 1 (poison recipe)
+90209,61210,kit,Agitating Poison Rank 2 (poison recipe)
+90210,61211,kit,Agitating Poison Rank 3 (poison recipe)
+90211,61212,kit,Agitating Poison Rank 4 (poison recipe)
+90212,61213,trainer,Agitating Poison Rank 1 (teaches 90208)
+90213,61214,trainer,Agitating Poison Rank 2 (teaches 90209)
+90214,61215,trainer,Agitating Poison Rank 3 (teaches 90210)
+90215,61216,trainer,Agitating Poison Rank 4 (teaches 90211)
+90216,61217,trainer,Spit (teaches 90140)
+90217,61218,trainer,Shadow Dance Rank 1 (teaches 90142)
+90218,61219,trainer,Shadow Dance Rank 2 (teaches 90143)
+90219,61220,trainer,Shadow Dance Rank 3 (teaches 90144)

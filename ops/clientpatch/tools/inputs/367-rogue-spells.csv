@@ -1,72 +1,72 @@
 id,copy_from,class_mask,note
-90140,355,0,"#367 kit (core#188), CV-4"
-90141,355,0,"#367 kit (core#188), CV-4"
-90142,25780,0,"#367 kit (core#188), CV-5"
-90143,25780,0,"#367 kit (core#188), CV-5"
-90144,25780,0,"#367 kit (core#188), CV-5"
-90145,23547,0,"#367 kit (core#188), CV-5"
-90146,23547,0,"#367 kit (core#188), CV-5"
-90150,12297,0,#367 talent rank (core#194)
-90151,12297,0,#367 talent rank (core#194)
-90152,12297,0,#367 talent rank (core#194)
-90153,12297,0,#367 talent rank (core#194)
-90154,12298,0,"#367 talent rank (core#194), CV-6"
-90155,12298,0,"#367 talent rank (core#194), CV-6"
-90156,12297,0,#367 talent rank (core#194)
-90157,12297,0,#367 talent rank (core#194)
-90158,12297,0,#367 talent rank (core#194)
-90159,12297,0,#367 talent rank (core#194)
-90160,12297,0,#367 talent rank (core#194)
-90161,12297,0,#367 talent rank (core#194)
-90162,12297,0,#367 talent rank (core#194)
-90163,12297,0,#367 talent rank (core#194)
-90164,12297,0,#367 talent rank (core#194)
-90165,12297,0,#367 talent rank (core#194)
-90166,12297,0,#367 talent rank (core#194)
-90167,12297,0,#367 talent rank (core#194)
-90168,12297,0,#367 talent rank (core#194)
-90169,12298,0,"#367 talent rank (core#194), CV-7"
-90170,12298,0,"#367 talent rank (core#194), CV-7"
-90171,12298,0,"#367 talent rank (core#194), CV-7"
-90172,12297,0,"#367 talent rank (core#194), CV-8"
-90173,12297,0,"#367 talent rank (core#194), CV-8"
-90174,12297,0,"#367 talent rank (core#194), CV-8"
-90175,12297,0,"#367 talent rank (core#194), CV-9"
-90176,12297,0,"#367 talent rank (core#194), CV-9"
-90177,12297,0,"#367 talent rank (core#194), CV-9"
-90178,12297,0,#367 talent rank (core#194)
-90179,12297,0,#367 talent rank (core#194)
-90180,12297,0,#367 talent rank (core#194)
-90181,12297,0,#367 talent rank (core#194)
-90182,12297,0,#367 talent rank (core#194)
-90183,12297,0,#367 talent rank (core#194)
-90184,12297,0,#367 talent rank (core#194)
-90185,12297,0,#367 talent rank (core#194)
-90186,12297,0,#367 talent rank (core#194)
-90187,12297,0,"#367 talent rank (core#194), CV-10"
-90188,12298,0,#367 talent rank (core#194)
-90189,12298,0,#367 talent rank (core#194)
-90190,12298,0,#367 talent rank (core#194)
-90191,23547,0,#367 talent helper (core#194)
-90192,45613,0,#367 talent helper (core#194)
-90193,16511,0,"#367 talent helper (core#194), CV-10"
-90200,45613,copy,"#367 player poison rank (own values, no CV)"
-90201,45613,copy,"#367 player poison rank (own values, no CV)"
-90202,45613,copy,"#367 player poison rank (own values, no CV)"
-90203,45613,copy,"#367 player poison rank (own values, no CV)"
-90204,45612,copy,"#367 player poison rank (own values, no CV)"
-90205,45612,copy,"#367 player poison rank (own values, no CV)"
-90206,45612,copy,"#367 player poison rank (own values, no CV)"
-90207,45612,copy,"#367 player poison rank (own values, no CV)"
-90208,45611,copy,#367 P-2 poison recipe rank 1
-90209,45611,copy,#367 P-2 poison recipe rank 2
-90210,45611,copy,#367 P-2 poison recipe rank 3
-90211,45611,copy,#367 P-2 poison recipe rank 4
-90212,47312,copy,#367 P-2 trainer spell for recipe rank 1
-90213,47312,copy,#367 P-2 trainer spell for recipe rank 2
-90214,47312,copy,#367 P-2 trainer spell for recipe rank 3
-90215,47312,copy,#367 P-2 trainer spell for recipe rank 4
-90216,47312,copy,#367 P-1 trainer spell Spit
-90217,47312,copy,#367 P-1 trainer spell Shadow Dance rank 1
-90218,47312,copy,#367 P-1 trainer spell Shadow Dance rank 2
-90219,47312,copy,#367 P-1 trainer spell Shadow Dance rank 3
+61141,355,0,"#367 kit (core#188), CV-4"
+61142,355,0,"#367 kit (core#188), CV-4"
+61143,25780,0,"#367 kit (core#188), CV-5"
+61144,25780,0,"#367 kit (core#188), CV-5"
+61145,25780,0,"#367 kit (core#188), CV-5"
+61146,23547,0,"#367 kit (core#188), CV-5"
+61147,23547,0,"#367 kit (core#188), CV-5"
+61151,12297,0,#367 talent rank (core#194)
+61152,12297,0,#367 talent rank (core#194)
+61153,12297,0,#367 talent rank (core#194)
+61154,12297,0,#367 talent rank (core#194)
+61155,12298,0,"#367 talent rank (core#194), CV-6"
+61156,12298,0,"#367 talent rank (core#194), CV-6"
+61157,12297,0,#367 talent rank (core#194)
+61158,12297,0,#367 talent rank (core#194)
+61159,12297,0,#367 talent rank (core#194)
+61160,12297,0,#367 talent rank (core#194)
+61161,12297,0,#367 talent rank (core#194)
+61162,12297,0,#367 talent rank (core#194)
+61163,12297,0,#367 talent rank (core#194)
+61164,12297,0,#367 talent rank (core#194)
+61165,12297,0,#367 talent rank (core#194)
+61166,12297,0,#367 talent rank (core#194)
+61167,12297,0,#367 talent rank (core#194)
+61168,12297,0,#367 talent rank (core#194)
+61169,12297,0,#367 talent rank (core#194)
+61170,12298,0,"#367 talent rank (core#194), CV-7"
+61171,12298,0,"#367 talent rank (core#194), CV-7"
+61172,12298,0,"#367 talent rank (core#194), CV-7"
+61173,12297,0,"#367 talent rank (core#194), CV-8"
+61174,12297,0,"#367 talent rank (core#194), CV-8"
+61175,12297,0,"#367 talent rank (core#194), CV-8"
+61176,12297,0,"#367 talent rank (core#194), CV-9"
+61177,12297,0,"#367 talent rank (core#194), CV-9"
+61178,12297,0,"#367 talent rank (core#194), CV-9"
+61179,12297,0,#367 talent rank (core#194)
+61180,12297,0,#367 talent rank (core#194)
+61181,12297,0,#367 talent rank (core#194)
+61182,12297,0,#367 talent rank (core#194)
+61183,12297,0,#367 talent rank (core#194)
+61184,12297,0,#367 talent rank (core#194)
+61185,12297,0,#367 talent rank (core#194)
+61186,12297,0,#367 talent rank (core#194)
+61187,12297,0,#367 talent rank (core#194)
+61188,12297,0,"#367 talent rank (core#194), CV-10"
+61189,12298,0,#367 talent rank (core#194)
+61190,12298,0,#367 talent rank (core#194)
+61191,12298,0,#367 talent rank (core#194)
+61192,23547,0,#367 talent helper (core#194)
+61193,45613,0,#367 talent helper (core#194)
+61194,16511,0,"#367 talent helper (core#194), CV-10"
+61201,45613,copy,"#367 player poison rank (own values, no CV)"
+61202,45613,copy,"#367 player poison rank (own values, no CV)"
+61203,45613,copy,"#367 player poison rank (own values, no CV)"
+61204,45613,copy,"#367 player poison rank (own values, no CV)"
+61205,45612,copy,"#367 player poison rank (own values, no CV)"
+61206,45612,copy,"#367 player poison rank (own values, no CV)"
+61207,45612,copy,"#367 player poison rank (own values, no CV)"
+61208,45612,copy,"#367 player poison rank (own values, no CV)"
+61209,45611,copy,#367 P-2 poison recipe rank 1
+61210,45611,copy,#367 P-2 poison recipe rank 2
+61211,45611,copy,#367 P-2 poison recipe rank 3
+61212,45611,copy,#367 P-2 poison recipe rank 4
+61213,47312,copy,#367 P-2 trainer spell for recipe rank 1
+61214,47312,copy,#367 P-2 trainer spell for recipe rank 2
+61215,47312,copy,#367 P-2 trainer spell for recipe rank 3
+61216,47312,copy,#367 P-2 trainer spell for recipe rank 4
+61217,47312,copy,#367 P-1 trainer spell Spit
+61218,47312,copy,#367 P-1 trainer spell Shadow Dance rank 1
+61219,47312,copy,#367 P-1 trainer spell Shadow Dance rank 2
+61220,47312,copy,#367 P-1 trainer spell Shadow Dance rank 3

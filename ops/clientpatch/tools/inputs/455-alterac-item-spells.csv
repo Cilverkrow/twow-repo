@@ -1,0 +1,7 @@
+id,copy_from,class_mask,note
+61002,45425,copy,"Take Cover, Alterac item spell (core 20260802200000, was 90001; #455)"
+61003,21066,copy,"Throw Spear, Alterac item spell (core 20260802200000, was 90002; #455)"
+61004,2652,copy,"Rage of Alterac equip proc (core 20260802200000, was 90003; #455)"
+61005,2050,copy,"Rage of Alterac heal (core 20260802200000, was 90004; #455)"
+61006,2652,copy,"Fiery Temper equip proc (core 20260802200000, was 90005; #455)"
+61007,45425,copy,"Fiery Temper buff (core 20260802200000, was 90006; #455)"

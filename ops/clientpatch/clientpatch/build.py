@@ -199,6 +199,44 @@ def load_tables(names: list[str], bindings: dict[str, Binding], base_dir: Path) 
     return tables
 
 
+# The 1.12 protocol sends spell IDs as uint16 in SMSG_INITIAL_SPELLS,
+# SMSG_SUPERCEDED_SPELL and SMSG_REMOVED_SPELL (twow-core Player.cpp): a spell
+# above 65535 reaches the client as id - 65536 after a relog (#455, train 8b).
+MAX_CLIENT_SPELL = 0xFFFF
+SPELL_REF_COLUMNS = {
+    "Talent": [f"SpellRank[{i}]" for i in range(9)] + ["RequiredSpellID"],
+    "SkillLineAbility": ["Spell", "SupercededBySpell"],
+}
+ENCHANT_SPELL_EFFECTS = {1, 3, 7}  # SpellItemEnchantment.Effect: proc, equip and use spell
+
+
+def check_client_spell_ids(tables: dict[str, Table], touched: dict[str, Touched]) -> None:
+    """Every Spell row we add or change, and every spell a changed Talent,
+    SkillLineAbility or spell-type SpellItemEnchantment row points at, must fit
+    into 16 bits."""
+    bad = []
+    if "Spell" in touched:
+        bad += [f"Spell row {k[0]}" for k in sorted(touched["Spell"].keys()) if k[0] > MAX_CLIENT_SPELL]
+    for name, columns in SPELL_REF_COLUMNS.items():
+        if name not in touched:
+            continue
+        for key in sorted(touched[name].keys()):
+            for col in columns:
+                v = tables[name].get(key, col)
+                if v > MAX_CLIENT_SPELL:
+                    bad.append(f"{name} {key[0]} {col}={v}")
+    if "SpellItemEnchantment" in touched:
+        t = tables["SpellItemEnchantment"]
+        for key in sorted(touched["SpellItemEnchantment"].keys()):
+            for i in range(3):
+                v = t.get(key, f"EffectArg[{i}]")
+                if t.get(key, f"Effect[{i}]") in ENCHANT_SPELL_EFFECTS and v > MAX_CLIENT_SPELL:
+                    bad.append(f"SpellItemEnchantment {key[0]} EffectArg[{i}]={v}")
+    if bad:
+        raise DeltaError(f"{len(bad)} spell ID(s) above {MAX_CLIENT_SPELL} (the 1.12 client keeps "
+                         f"spell IDs in 16 bits, #455); first: {', '.join(bad[:5])}")
+
+
 def build(cfg: Config, base_dir: Path, sql_dir: Path, version: int, label: str,
           out_dir: Path, mpqcli: str | None = None, log=print,
           server_dbc_dir: Path | None = None) -> dict:
@@ -239,6 +277,8 @@ def build(cfg: Config, base_dir: Path, sql_dir: Path, version: int, label: str,
         tables[name].write(staging / "DBFilesClient" / f"{name}.dbc")
         log(f"{name}: {len(files)} delta file(s), {len(diffs)} field change(s)")
     write_review(all_diffs, out_dir / "review.csv")
+    check_client_spell_ids(tables, touched)
+    log(f"spell IDs: every patched spell and spell reference <= {MAX_CLIENT_SPELL}")
 
     findings = consistency.run(rules, tables, sql, touched)
     consistency.write_report(findings, out_dir / "consistency.csv")

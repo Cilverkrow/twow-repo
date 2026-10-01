@@ -41,7 +41,7 @@ class Pipeline(unittest.TestCase):
         write(base, "Talent", pack(binding("Talent"), [
             {"ID": 100, "TabID": 261, "SpellRank[0]": 16039}]))
         write(base, "Spell", pack(binding("Spell"), [
-            {"ID": 90100, "EffectBasePoints[0]": 4, "Name_lang_enUS": "Earthen Bulwark",
+            {"ID": 61101, "EffectBasePoints[0]": 4, "Name_lang_enUS": "Earthen Bulwark",
              "Description_lang_enUS": "Reduces damage taken by $s1%."}]))
         write(base, "Map", pack(binding("Map"), [{"ID": 0}, {"ID": 1}]))
         # extract-base records archives outside the base; none in this client.
@@ -52,7 +52,7 @@ class Pipeline(unittest.TestCase):
         self.sql = self.tmp / "sql"
         self.sql.mkdir()
         (self.sql / "spell_template.tsv").write_text(
-            "entry\teffectBasePoints1\n16039\t0\n90100\t9\n90101\t19\n")
+            "entry\teffectBasePoints1\n16039\t0\n61101\t9\n61102\t19\n")
         (self.sql / "map_template.tsv").write_text("entry\tmap_name\n0\tAzeroth\n1\tKalimdor\n")
         (self.tmp / "sources.toml").write_text(
             '[source.spell_template]\nquery = "SELECT * FROM spell_template"\nkey = "entry"\n'
@@ -69,10 +69,10 @@ class Pipeline(unittest.TestCase):
         (changes / "Talent").mkdir(parents=True)
         (changes / "Spell").mkdir(parents=True)
         (changes / "Talent" / "0001_rank2.csv").write_text(
-            HEADER + "set,100,SpellRank[1],90101,#357 rank 2\n")
+            HEADER + "set,100,SpellRank[1],61102,#357 rank 2\n")
         (changes / "Spell" / "0001_bulwark.csv").write_text(
-            HEADER + "set,90100,EffectBasePoints[0],sql:spell_template.effectBasePoints1,\n"
-                     'set,90100,Description_lang_enUS,"Reduces damage taken by $s1%.\\nCap: see CV-1.",CV-1\n')
+            HEADER + "set,61101,EffectBasePoints[0],sql:spell_template.effectBasePoints1,\n"
+                     'set,61101,Description_lang_enUS,"Reduces damage taken by $s1%.\\nCap: see CV-1.",CV-1\n')
         cfg = (ROOT / "clientpatch.toml").read_text(encoding="utf-8")
         cfg = cfg.replace('bindings = "bindings"', f'bindings = "{(ROOT / "bindings").as_posix()}"')
         cfg = cfg.replace('sql_sources = "sql/sources.toml"', 'sql_sources = "sources.toml"')
@@ -116,15 +116,29 @@ class Pipeline(unittest.TestCase):
 
     def test_inconsistent_server_value_blocks(self):
         (self.tmp / "changes" / "Spell" / "0002_wrong.csv").write_text(
-            HEADER + "set,90100,EffectBasePoints[0],4,deliberately not the server value\n")
+            HEADER + "set,61101,EffectBasePoints[0],4,deliberately not the server value\n")
         with self.assertRaisesRegex(ConsistencyError, "EffectBasePoints"):
             self.run_build()
 
     def test_missing_server_rank_blocks(self):
         (self.tmp / "changes" / "Talent" / "0002_rank3.csv").write_text(
-            HEADER + "set,100,SpellRank[0],99999,\n")
-        with self.assertRaisesRegex(ConsistencyError, "99999"):
+            HEADER + "set,100,SpellRank[0],60999,\n")
+        with self.assertRaisesRegex(ConsistencyError, "60999"):
             self.run_build()
+
+    def test_spell_ids_above_16_bits_block(self):
+        # #455: the 1.12 client truncates spell IDs to 16 bits after a relog.
+        (self.sql / "spell_template.tsv").write_text(
+            "entry\teffectBasePoints1\n16039\t0\n61101\t9\n61102\t19\n90100\t9\n")
+        (self.tmp / "changes" / "Talent" / "0002_wide.csv").write_text(
+            HEADER + "set,100,SpellRank[2],90100,rank 3 above 65535\n")
+        with self.assertRaisesRegex(DeltaError, r"Talent 100 SpellRank\[2\]=90100"):
+            self.run_build()
+        (self.tmp / "changes" / "Talent" / "0002_wide.csv").unlink()
+        (self.tmp / "changes" / "Spell" / "0002_wide.csv").write_text(
+            HEADER + "insert,90100,,copy:61101,a new spell above 65535\n")
+        with self.assertRaisesRegex(DeltaError, "Spell row 90100"):
+            self.run_build("out2")
 
     def test_unknown_base_is_a_clear_error(self):
         write(self.base, "Map", pack(binding("Map"), [{"ID": 0}]))  # modified client file

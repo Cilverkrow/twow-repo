@@ -8,7 +8,7 @@ single source of truth: every mapped column is written as
 only a new export. The input is a small CSV:
 
     id,copy_from,class_mask,note
-    90150,12297,0,Blindside rank 1 (#367)
+    61151,12297,0,Blindside rank 1 (#367)
 
 - ``copy_from``: an existing client spell the new row starts from. It supplies
   what spell_template cannot: locale flags and the other locales. Use the

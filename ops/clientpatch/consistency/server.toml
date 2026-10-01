@@ -161,7 +161,7 @@ sql = "SkillCostIndex"
 dbc = "SkillCostIndex"
 
 # Talent rank spells and prerequisites of rows we change must exist on the
-# server (stage 2: bot auras 90100-90199 become rank spells).
+# server (stage 2: bot auras become rank spells; 61101-61200 since #455, were 90100-90199).
 [[rule]]
 id = "talent-ranks-on-server"
 kind = "refs_in_sql"
@@ -489,7 +489,7 @@ dbc = "AttributesExC"
 sql = "attributesEx4"
 dbc = "AttributesExD"
 
-# Our own spells (90000-90999) may only use icons the client has: the Spell
+# Our own spells (61002-65535 since #455; they were 90000-90999) may only use icons the client has: the Spell
 # rows mirror spell_template, so an unknown spellIconId would reach the client
 # as a blank icon (OB-15 review of #432/#433).
 [[rule]]
@@ -501,7 +501,7 @@ why = "a talent or spell icon the client does not have shows as a blank square"
 
 # A spell-type enchantment (poisons, imbues) fires its EffectArg spell on the
 # server; a changed row whose proc spell the server lacks would do nothing
-# (#367 poison ranks I-IV, 90141-90144). EffectArg[0] only: for spell-type
+# (#367 poison ranks I-IV, enchantments 3060-3063 since #455). EffectArg[0] only: for spell-type
 # enchantments that is the spell. A non-spell enchantment we change (stat,
 # resistance) needs an accept with its reason here.
 [[rule]]

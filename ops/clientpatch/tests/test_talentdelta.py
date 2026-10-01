@@ -147,6 +147,13 @@ class ServerTests(unittest.TestCase):
         self.assertIn('generator talents of class 7 (first rank spells [100, 105]) != delta talents ([100, 102])', joined)
         self.assertIn('SkillRaceClassInfo 9', joined)
 
+    def test_range_renumbering_moves_created_spells(self):
+        # #455: a later migration moves a block of spells; the rank check follows it.
+        texts = ["UPDATE `tmp_spell` SET `entry` = 90100, `name` = 'x';\n"
+                 "UPDATE `tmp_spell` SET `entry` = 12000, `name` = 'y';",
+                 'UPDATE `spell_template` SET `entry` = `entry` - 28999 WHERE `entry` BETWEEN 90001 AND 90219;']
+        self.assertEqual({61101, 12000}, talentdelta.server_spells(texts))
+
     def test_old_core_gives_a_clear_error(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(FileNotFoundError):

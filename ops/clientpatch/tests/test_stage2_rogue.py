@@ -35,22 +35,22 @@ def apply_rogue(table, sql):
 # OB-20 (#367 issuecomment-5858585355): aura IDs per talent, owner rows/columns 1-based.
 OWNER_LINE = {
     # (tab, row, col): rank spells
-    (182, 1, 4): [90150, 90151, 90152, 90153],
-    (182, 3, 4): [90154, 90155],
-    (182, 5, 4): [90156],
-    (182, 7, 1): [90157],
-    (182, 7, 3): [90158],
-    (181, 1, 1): [90159, 90160, 90161, 90162, 90163],
-    (181, 1, 4): [90164, 90165, 90166, 90167, 90168],
-    (181, 2, 4): [90169, 90170, 90171],
-    (181, 4, 4): [90172, 90173, 90174],
-    (181, 6, 1): [90175, 90176, 90177],
-    (181, 7, 1): [90178],
-    (181, 6, 4): [90179, 90180, 90181],
-    (181, 7, 4): [90182],
-    (183, 1, 1): [90183, 90184, 90185, 90186],
-    (183, 6, 4): [90187],
-    (183, 7, 3): [90188, 90189, 90190],
+    (182, 1, 4): [61151, 61152, 61153, 61154],
+    (182, 3, 4): [61155, 61156],
+    (182, 5, 4): [61157],
+    (182, 7, 1): [61158],
+    (182, 7, 3): [61159],
+    (181, 1, 1): [61160, 61161, 61162, 61163, 61164],
+    (181, 1, 4): [61165, 61166, 61167, 61168, 61169],
+    (181, 2, 4): [61170, 61171, 61172],
+    (181, 4, 4): [61173, 61174, 61175],
+    (181, 6, 1): [61176, 61177, 61178],
+    (181, 7, 1): [61179],
+    (181, 6, 4): [61180, 61181, 61182],
+    (181, 7, 4): [61183],
+    (183, 1, 1): [61184, 61185, 61186, 61187],
+    (183, 6, 4): [61188],
+    (183, 7, 3): [61189, 61190, 61191],
 }
 # Free slots in Turtle's Combat tree (OB-20 review of #386, live Talent.dbc), 1-based.
 FREE_COMBAT = {(1, 1), (1, 4), (2, 4), (3, 3), (4, 4), (6, 1), (6, 4), (7, 1), (7, 3), (7, 4)}
@@ -88,7 +88,8 @@ class RogueTalentContract(unittest.TestCase):
 
     def test_talent_ids_follow_the_first_rank(self):
         for talent_id, t in talents().items():
-            self.assertEqual(talent_id, t["ranks"][0] - 81000)
+            # talent ID = first rank - 81000 in the numbering before #455 (spells moved by -28999)
+            self.assertEqual(talent_id, t["ranks"][0] + 28999 - 81000)
 
     def test_combat_talents_use_free_slots_only(self):
         for t in talents().values():
@@ -112,15 +113,15 @@ class RogueTalentContract(unittest.TestCase):
         mirrored = {int(r["id"]) for r in csv.DictReader(INPUT.read_text(encoding="utf-8").splitlines())}
         for t in talents().values():
             self.assertTrue(set(t["ranks"]) <= mirrored)
-        # kit 90140-90146, talent line and helpers 90150-90193, poison ranks 90200-90207,
-        # recipes and trainer spells of P-1/P-2 90208-90219
-        expected = set(range(90140, 90147)) | set(range(90150, 90194)) | set(range(90200, 90220))
+        # kit 61141-61147, talent line and helpers 61151-61194, poison ranks 61201-61208,
+        # recipes and trainer spells of P-1/P-2 61209-61220
+        expected = set(range(61141, 61148)) | set(range(61151, 61195)) | set(range(61201, 61221))
         self.assertEqual(mirrored, expected)
 
     def test_enchantments_fire_the_mirrored_poison_procs(self):
         rows = rows_of(CHANGES / "SpellItemEnchantment" / "0367_agitating_poison_ranks.csv")
         procs = {int(r["key"]): int(r["value"]) for r in rows if r["field"] == "EffectArg[0]"}
-        self.assertEqual(procs, {90141: 90200, 90142: 90201, 90143: 90202, 90144: 90203})
+        self.assertEqual(procs, {3060: 61201, 3061: 61202, 3062: 61203, 3063: 61204})
 
 
 class RogueDeltasEndToEnd(unittest.TestCase):
@@ -146,11 +147,11 @@ class RogueDeltasEndToEnd(unittest.TestCase):
         # P-1/P-2 skill_line_ability rows as the core migration writes them.
         sla = ["id\tskill_id\tspell_id\trace_mask\tclass_mask\treq_skill_value\tsuperseded_by_spell\t"
                "learn_on_get_skill\tmax_value\tmin_value"]
-        for spell, skill, sup, hi, lo in ((90140, 38, 0, 0, 0), (90142, 38, 90143, 0, 0), (90143, 38, 90144, 0, 0),
-                                          (90144, 38, 0, 0, 0), (90208, 40, 0, 175, 125), (90209, 40, 0, 225, 175),
-                                          (90210, 40, 0, 275, 225), (90211, 40, 0, 325, 275)):
+        for spell, skill, sup, hi, lo in ((61141, 38, 0, 0, 0), (61143, 38, 61144, 0, 0), (61144, 38, 61145, 0, 0),
+                                          (61145, 38, 0, 0, 0), (61209, 40, 0, 175, 125), (61210, 40, 0, 225, 175),
+                                          (61211, 40, 0, 275, 225), (61212, 40, 0, 325, 275)):
             # id = spell - 60000: the server column is smallint unsigned (#367, 2026-09-30).
-            sla.append("\t".join(str(v) for v in (spell - 60000, skill, spell, 0, 8, 1, sup, 0, hi, lo)))
+            sla.append("\t".join(str(v) for v in (spell + 28999 - 60000, skill, spell, 0, 8, 1, sup, 0, hi, lo)))
         (self.tmp / "skill_line_ability.tsv").write_text("\n".join(sla) + "\n", encoding="utf-8")
         # A server export with a distinct value in every mirrored column.
         kinds = {c.name: c.kind for c in spell_b.columns}
@@ -181,16 +182,16 @@ class RogueDeltasEndToEnd(unittest.TestCase):
         self.assertEqual(len(rules), len(self.RULES))
         findings = consistency.run(rules, self.tables, self.sql, touched)
         self.assertEqual(consistency.blocking(findings), [])
-        self.assertEqual(self.tables["Spell"].get((90150,), "Description_lang_enUS"), "description of 90150")
+        self.assertEqual(self.tables["Spell"].get((61151,), "Description_lang_enUS"), "description of 61151")
         self.assertEqual(self.tables["Talent"].get((9178,), "PrereqTalent[0]"), 9175)
-        self.assertEqual(self.tables["SkillLineAbility"].get((30142,), "SupercededBySpell"), 90143)
+        self.assertEqual(self.tables["SkillLineAbility"].get((30142,), "SupercededBySpell"), 61144)
         self.assertEqual(self.tables["SkillLineAbility"].get((30208,), "SkillLine"), 40)
 
     def test_a_missing_server_spell_is_caught(self):
         # Drop one rank spell from the export: the talent and spell rules must fail.
         path = self.tmp / "spell_template.tsv"
         path.write_text("\n".join(ln for ln in path.read_text().splitlines()
-                                  if not ln.startswith("90168\t")) + "\n")
+                                  if not ln.startswith("61169\t")) + "\n")
         self.sql = SqlData(load_sources(ROOT / "sql" / "sources.toml"), self.tmp)
         with self.assertRaises(Exception):
             for dbc, table in self.tables.items():

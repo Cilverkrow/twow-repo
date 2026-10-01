@@ -1,9 +1,9 @@
 op,key,field,value,note
-insert,90141,,copy:3006,"Agitating Poison rank 1 (#386 D-1/D-8, CV-2)"
-set,90141,EffectArg[0],90200,proc spell of rank 1
-insert,90142,,copy:3006,"Agitating Poison rank 2 (#386 D-1/D-8, CV-2)"
-set,90142,EffectArg[0],90201,proc spell of rank 2
-insert,90143,,copy:3006,"Agitating Poison rank 3 (#386 D-1/D-8, CV-2)"
-set,90143,EffectArg[0],90202,proc spell of rank 3
-insert,90144,,copy:3006,"Agitating Poison rank 4 (#386 D-1/D-8, CV-2)"
-set,90144,EffectArg[0],90203,proc spell of rank 4
+insert,3060,,copy:3006,"Agitating Poison rank 1 (#386 D-1/D-8, CV-2)"
+set,3060,EffectArg[0],61201,proc spell of rank 1
+insert,3061,,copy:3006,"Agitating Poison rank 2 (#386 D-1/D-8, CV-2)"
+set,3061,EffectArg[0],61202,proc spell of rank 2
+insert,3062,,copy:3006,"Agitating Poison rank 3 (#386 D-1/D-8, CV-2)"
+set,3062,EffectArg[0],61203,proc spell of rank 3
+insert,3063,,copy:3006,"Agitating Poison rank 4 (#386 D-1/D-8, CV-2)"
+set,3063,EffectArg[0],61204,proc spell of rank 4

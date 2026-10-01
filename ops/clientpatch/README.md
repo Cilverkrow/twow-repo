@@ -201,11 +201,11 @@ files are applied in name order:
 ```csv
 op,key,field,value,note
 # lines starting with # are comments
-insert,90100,,copy:16039,new talent rank spell for the tooltip (#357)
-set,90100,Name_lang_enUS,Earthen Bulwark,
-set,90100,Description_lang_enUS,"Reduces damage taken by $s1%.\nCannot exceed 40%.",CV-1
-set,90100,EffectBasePoints[0],sql:spell_template.effectBasePoints1,server is the source of truth
-set,261,SpellRank[1],90101,rank 2
+insert,61101,,copy:16039,new talent rank spell for the tooltip (#357)
+set,61101,Name_lang_enUS,Earthen Bulwark,
+set,61101,Description_lang_enUS,"Reduces damage taken by $s1%.\nCannot exceed 40%.",CV-1
+set,61101,EffectBasePoints[0],sql:spell_template.effectBasePoints1,server is the source of truth
+set,261,SpellRank[1],61102,rank 2
 insert,3:7,,,dwarf shaman on the creation screen (#379)
 ```
 
