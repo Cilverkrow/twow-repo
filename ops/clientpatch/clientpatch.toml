@@ -48,6 +48,15 @@ member_prefix = "DBFilesClient\\"
 known_other = ["base.MPQ", "fonts.MPQ", "interface.MPQ", "misc.MPQ", "model.MPQ",
                "sound.MPQ", "speech.MPQ", "terrain.MPQ", "texture.MPQ", "wmo.MPQ"]
 
+[record_order]
+# DBC -> column whose rows must form one contiguous block. The client keeps one
+# record range per talent tree: Turtle's Talent.dbc has every TabID as one block,
+# and rows appended at the end of the file replaced the base block of their tree
+# (only the new talents were visible, #455). build regroups new rows behind
+# their group and stops if a group is still split. Record bytes and IDs do not
+# change; the server loads by ID, so its copy may keep another order.
+Talent = "TabID"
+
 [ui]
 # Client interface files we patch (clientpatch/ui.py). Turtle's talent frame
 # has 20 buttons per tree; our trees have up to 26 (#455). Owner 2026-10-01

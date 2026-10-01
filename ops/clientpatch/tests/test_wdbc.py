@@ -87,6 +87,36 @@ class Mutation(unittest.TestCase):
         with self.assertRaises(LayoutError):
             t.to_bytes()
 
+    def test_group_by_moves_new_rows_behind_their_tree(self):
+        # #455: the client reads only the last block of a talent tree.
+        b = binding("Talent")
+        rows = [{"ID": 110, "TabID": 181}, {"ID": 111, "TabID": 181}, {"ID": 128, "TabID": 182},
+                {"ID": 251, "TabID": 263}]
+        t = Table.from_bytes(pack(b, rows), b)
+        for tid, tab in ((9001, 263), (9150, 182), (9159, 181), (9160, 181)):
+            values = t.blank_row()
+            values[0], values[b.index("TabID")] = tid, tab
+            t.insert(values)
+        # 263 is the last base block, so 9001 already lands behind it
+        self.assertEqual(t.split_groups("TabID"), {181: 2, 182: 2})
+        raw_before = {r.values[0]: r.raw for r in t.rows if r.raw}
+        t.group_by("TabID")
+        self.assertEqual([k[0] for k in t.keys()], [110, 111, 9159, 9160, 128, 9150, 251, 9001])
+        self.assertEqual(t.split_groups("TabID"), {})
+        self.assertEqual(t.get((9159,), "TabID"), 181)
+        for r in t.rows:
+            if r.values[0] in raw_before:
+                self.assertEqual(r.raw, raw_before[r.values[0]])
+        again = Table.from_bytes(t.to_bytes(), b)
+        self.assertEqual(again.keys(), t.keys())
+
+    def test_group_by_keeps_a_grouped_table_unchanged(self):
+        b = binding("Talent")
+        data = pack(b, [{"ID": 1, "TabID": 5}, {"ID": 2, "TabID": 5}, {"ID": 3, "TabID": 7}])
+        t = Table.from_bytes(data, b)
+        t.group_by("TabID")
+        self.assertEqual(t.to_bytes(), data)
+
 
 if __name__ == "__main__":
     unittest.main()

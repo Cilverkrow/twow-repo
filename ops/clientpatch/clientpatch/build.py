@@ -274,6 +274,13 @@ def build(cfg: Config, base_dir: Path, sql_dir: Path, version: int, label: str,
             write_review(bad, out_dir / "undeclared.csv")
             raise DeltaError(f"{name}: {len(bad)} undeclared difference(s), see undeclared.csv")
         all_diffs += diffs
+        group = cfg.data.get("record_order", {}).get(name)
+        if group:
+            tables[name].group_by(group)
+            split = tables[name].split_groups(group)
+            if split:
+                raise DeltaError(f"{name}: rows of {group} {sorted(split)} are not one contiguous block "
+                                 f"(the client reads only the last block of a group, #455)")
         tables[name].write(staging / "DBFilesClient" / f"{name}.dbc")
         log(f"{name}: {len(files)} delta file(s), {len(diffs)} field change(s)")
     write_review(all_diffs, out_dir / "review.csv")
