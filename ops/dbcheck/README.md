@@ -97,6 +97,9 @@ commit it (`out/` and `work/` are ignored).
 
 ## Rules
 
+`rules/client-facts.toml` is generated from the game client by `python -m clientinventory facts` (see
+`ops/clientinventory`): display ids and tile numbers only. Regenerate it when the client changes.
+
 | Rule | Scope | Severity | Finds |
 |---|---|---|---|
 | `quest_no_giver` | global | error | nothing gives or starts the quest (creature, object, start item) |
@@ -107,6 +110,8 @@ commit it (`out/` and `work/` are ignored).
 | `boss_no_spawn_any` | global | warn | boss-rank creature with loot, never spawned, not summoned by a database script or listed as `[[summoned_boss]]` (C++ summons: `expected/cpp-summoned-bosses.toml`, found by scanning `SummonCreature` calls in twow-core) |
 | `item_no_source` | global | info | rare+ item no loot, vendor, quest reward or start item provides (crafted items appear: a lead, not a defect) |
 | `reference_loot_nested` | global | info | reference loot groups that point at other groups (followed at any depth) |
+| `gameobject_spawn_display_unknown_to_client` | global | warn | spawned game objects whose display id the client's `GameObjectDisplayInfo.dbc` lacks (rules/client-facts.toml) |
+| `creature_spawn_on_tile_without_client_terrain`, `gameobject_spawn_on_tile_without_client_terrain` | global | warn | spawns on Eastern Kingdoms / Kalimdor tiles for which the client has no map file (void spawns) |
 | `quest_helper_no_credit` | global | error | a quest objective is a helper NPC `quest_<id>_...` that nothing can credit: no spawn, no kill-credit script (command 8, any script table or EventAI action), no summon, no EventAI events, no `script_name`, and not listed as `[[credited_npc]]` (C++ credit, see `expected/cpp-credit-helpers.toml`). The name must match `quest_helper_name_like`; the underscore is literal (escaped with `!`, `LIKE ... ESCAPE '!'`). Limit: command 83 has no creature id, a helper credited only by it appears here and needs a look |
 | `quest_expected_missing` | quest | error | expected quest is not in the database |
 | `quest_giver_mismatch`, `quest_ender_mismatch` | quest | error | expected giver or turn-in creature does not match |
