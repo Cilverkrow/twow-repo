@@ -1,0 +1,16 @@
+# Exceptions to ops/ci/test-workflow-runner-policy.sh (#486). Empty on purpose:
+# every entry widens what a workflow may do, so each one needs review by the
+# code owner (.github/CODEOWNERS covers this file through ops/ci/**).
+#
+# Format, one entry per line, paths relative to the repository root:
+#
+#   workflow_run <path>   the file may use the workflow_run trigger; it must
+#                         still guard head_branch, event == 'push' and
+#                         head_repository.full_name (rule R2)
+#   self-hosted  <path>   the file may name self-hosted runner labels (R3);
+#                         never effective for a pull_request workflow (R1)
+#
+# Expected first entry (promote, plan B5 / owner decision 3b):
+#   workflow_run .github/workflows/promote.yml
+
+workflow_run .github/workflows/promote.yml

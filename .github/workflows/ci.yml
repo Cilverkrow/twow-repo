@@ -32,6 +32,10 @@
 #   * publish.yml stays a separate file: different triggers (main and tags only)
 #     and far broader permissions (packages/id-token/attestations write). Folding
 #     it in here would hand those permissions to every pull request.
+#   * the promotion of this pipeline's image to the registry (#486 B5, owner
+#     decision 3b): promote.yml, triggered by workflow_run after a green push
+#     run on main, for the same reason. This file only uploads the image and
+#     its record (core-image, debug-symbols, image-record).
 #
 # Platform split (ADR-0028): Linux is the complete gate, Windows is compile-only.
 # A clean clone CANNOT link on Windows - dep/windows/lib and mangosd.ico are
@@ -409,7 +413,7 @@ jobs:
     name: capacity preflight
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
 
@@ -616,6 +620,15 @@ jobs:
           shellcheck --severity=warning test/contract/live-smoke-triage.contract.sh
           bash test/contract/live-smoke-triage.contract.sh
 
+      # ops/live/release-digest.sh is the deploy rule of #486 decision 4. Its
+      # decisions are a function of publish-digest.json and the GitHub API, so
+      # it is tested against synthetic files and a stub gh.
+      - name: release-digest deploy rule contract
+        if: always()
+        run: |
+          shellcheck --severity=warning test/contract/release-digest.contract.sh
+          bash test/contract/release-digest.contract.sh
+
       # The issue importer has created duplicates or silently no-opped four
       # times: title matching (27 duplicates), `--state open` in the existence
       # check (REF-001/REF-002 refiled as #85/#86 after #79/#80 were closed),
@@ -670,6 +683,16 @@ jobs:
           bash ops/ci/test-image-build-parity.sh
           bash ops/ci/test-image-parity.sh
           bash ops/ci/test-split-debug.sh
+
+      # The promotion path (#486 B5/B6): promote.yml's trigger, guard,
+      # permissions, SHA pins and step order, the artifacts this file hands it,
+      # publish.yml as tag re-tag and dispatch-only from-source fallback; and
+      # the build-input key B5a reuses images by (throwaway git repositories).
+      - name: Promotion contracts
+        if: always()
+        run: |
+          bash ops/ci/test-promote-workflow.sh
+          bash ops/ci/test-build-input-key.sh
 
       # pipx is preinstalled on ubuntu-24.04 and is NOT on a plain Debian
       # runner image, so this cannot assume it. Order: an already-installed
@@ -1627,14 +1650,16 @@ jobs:
   # in-Dockerfile build are not exercised on a push any more, so a change that
   # breaks only them - a .dockerignore entry that removes a needed file, a
   # build-arg default, an apt package the builder stage needs - would get past
-  # this pipeline. publish.yml builds `--target runtime` from source on every
-  # push to main and every tag, so nothing is ever released without that path
-  # having worked, and nightly.yml compiles the same tree from a clean checkout
-  # twice (clang and all-features-off) so a source-level break is found within a
-  # day. Be precise about where the hole is: a Dockerfile-only change made on a
-  # topic branch is not proven by this pipeline. It is proven the moment it
-  # merges, by publish.yml, which is the last gate before a registry push -
-  # that is the trade, and it is a Dockerfile edit's author who should know it.
+  # this pipeline. Since #486 B5/B6 the image released is THIS job's image,
+  # promoted by promote.yml, and publish.yml builds from source only on a
+  # manual dispatch; the from-source path is proven by nightly.yml's
+  # docker-from-source job, once a day, and nightly.yml also compiles the same
+  # tree from a clean checkout twice (clang and all-features-off). Be precise
+  # about where the hole is: a Dockerfile change that breaks only `--target
+  # runtime` can reach main and is found within a day, not at merge. It cannot
+  # reach a deploy that way - what ships is `ci-staged`, which this job builds
+  # and the smoke job runs - but it would break the dispatch fallback until
+  # fixed, and it is a Dockerfile edit's author who should know it.
   #
   # Ordering: configure and header contracts first, then the complete default
   # build graph, then every registered CTest plus the disposable-DB adapter.
@@ -1731,7 +1756,7 @@ jobs:
       # stops at the root CMakeLists' FATAL_ERROR about an empty core/; with
       # only one level it stops at the core's own FATAL_ERROR about a missing
       # Eluna. `submodules: recursive` covers both.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           submodules: recursive
           # Shallow is fine for building; the revision header only needs HEAD.
@@ -1805,7 +1830,7 @@ jobs:
           docker volume rm -f "$BUILD_VOLUME" 2>/dev/null || true
           df -h .
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Validate compiler cache key contract
         run: bash ops/ci/test-compiler-cache-key.sh
@@ -1818,7 +1843,7 @@ jobs:
       # spending it on; exporting a gigabyte of Debian packages to buy back
       # sixty seconds would evict the cache that buys back an hour.
       - name: Build the toolchain image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: deploy/docker/Dockerfile.core
@@ -1878,7 +1903,7 @@ jobs:
       # intentionally keeps PRs from consuming the shared 10 GB cache budget.
       - name: Restore the compiler cache
         id: compiler-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .ccache
           key: ci-gcc-v2-${{ steps.compiler-cache-contract.outputs.fingerprint }}-${{ github.run_id }}
@@ -2204,7 +2229,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: test-results
           path: test-results/
@@ -2303,7 +2328,7 @@ jobs:
       # is no main-scoped cache to inherit yet. It is the run that creates one.
       - name: Save the compiler cache
         if: success() && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .ccache
           key: ci-gcc-v2-${{ steps.compiler-cache-contract.outputs.fingerprint }}-${{ github.run_id }}
@@ -2398,6 +2423,11 @@ jobs:
       # The core commit this image was built from: the gitlink of core/ in the
       # tested tree. On a pull request that is the merge ref's tree, which is
       # what was compiled.
+      #
+      # Also the tested tree and the build-input key (#486 B5/B5a): promote.yml
+      # compares a squash merge's tree with the tree its pin PR tested, and the
+      # key labels the image so a later commit with the same build inputs can
+      # be given this image without a compile (ops/ci/build-input-key.sh).
       - name: Record the core revision
         id: core-revision
         run: |
@@ -2407,8 +2437,18 @@ jobs:
             echo "::error::could not read the core gitlink from HEAD"
             exit 1
           }
-          echo "sha=$core_sha" >> "$GITHUB_OUTPUT"
-          echo "- **Core revision:** \`$core_sha\`" >> "$GITHUB_STEP_SUMMARY"
+          build_input=$(bash ops/ci/build-input-key.sh HEAD)
+          tree=$(git rev-parse 'HEAD^{tree}')
+          {
+            echo "sha=$core_sha"
+            echo "build_input=$build_input"
+            echo "tree=$tree"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "- **Core revision:** \`$core_sha\`"
+            echo "- **Tested tree:** \`$tree\`"
+            echo "- **Build-input key:** \`$build_input\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # `ci-staged` is `runtime-base` plus a COPY of ./stage - the same base
       # image, apt list, entrypoint, user and directory layout as the `runtime`
@@ -2417,12 +2457,12 @@ jobs:
       # that does and does not prove.
       #
       # Labels: Dockerfile.core has no LABEL, so without these the image says
-      # nothing about where it came from. They are the four a promotion checks
+      # nothing about where it came from. They are the ones promote.yml checks
       # before pushing (#486 B5) and the ones publish.yml sets as well:
       # revision/source/version through docker/metadata-action there, and
-      # io.twow.core.revision explicitly in both.
+      # io.twow.core.revision and io.twow.build-input explicitly in both.
       - name: Assemble the core image from the staged install
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: deploy/docker/Dockerfile.core
@@ -2437,6 +2477,7 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.version=sha-${{ github.sha }}
             io.twow.core.revision=${{ steps.core-revision.outputs.sha }}
+            io.twow.build-input=${{ steps.core-revision.outputs.build_input }}
           # No cache-to for the same reason as the toolchain image, and one
           # sharper one: the only substantial layer here is the COPY of the
           # staged install, which is 2.5 GB and different on every run by
@@ -2511,13 +2552,65 @@ jobs:
           docker save "$CORE_IMAGE" | gzip -1 > image/core.tar.gz
           ls -lh image/core.tar.gz
 
-      - uses: actions/upload-artifact@v4
+      # On a push to main, promote.yml (#486 B5, owner decision 3b) pushes this
+      # very tar to the registry after the whole run is green; on a pin PR, its
+      # tree is what promote compares the squash merge against. Both read this
+      # record from the run: the tested commit and tree, the image's labels,
+      # and sha256 sums of the core-image tar and of every debug-symbols file,
+      # which promote checks before `docker load`. Written under $RUNNER_TEMP,
+      # never into the checkout.
+      - name: Record the image for promotion
+        env:
+          CORE_SHA: ${{ steps.core-revision.outputs.sha }}
+          TREE: ${{ steps.core-revision.outputs.tree }}
+          BUILD_INPUT: ${{ steps.core-revision.outputs.build_input }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          out="$RUNNER_TEMP/image-record"
+          mkdir -p "$out"
+          image_sha256=$(sha256sum image/core.tar.gz | cut -d' ' -f1)
+          (cd debug-symbols && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum) \
+            > "$out/debug-symbols.sha256"
+          jq -n \
+            --arg commit "$GITHUB_SHA" \
+            --arg tree "$TREE" \
+            --arg event "$GITHUB_EVENT_NAME" \
+            --arg ref "$GITHUB_REF" \
+            --arg pr_head_sha "$PR_HEAD_SHA" \
+            --arg core_sha "$CORE_SHA" \
+            --arg build_input "$BUILD_INPUT" \
+            --arg core_image_sha256 "$image_sha256" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            '{commit: $commit, tree: $tree, event: $event, ref: $ref,
+              pr_head_sha: $pr_head_sha, core_sha: $core_sha,
+              build_input: $build_input, core_image_sha256: $core_image_sha256,
+              run_id: $run_id, run_attempt: $run_attempt}' \
+            > "$out/image-record.json"
+          cat "$out/image-record.json"
+          echo "- **core-image sha256:** \`$image_sha256\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: core-image
           path: image/core.tar.gz
-          # One day is plenty: its only consumer is the smoke job in this run.
-          retention-days: 1
+          # The smoke job in this run reads it within the hour. On main,
+          # promote.yml reads it after the whole run, and a promotion that
+          # failed for an outside reason (registry, attestation API) must be
+          # re-runnable over a weekend: three days there (#486 B5).
+          retention-days: ${{ github.ref == 'refs/heads/main' && 3 || 1 }}
           compression-level: 0
+          if-no-files-found: error
+
+      # A few hundred bytes; seven days so a pin PR's record is still there
+      # when its squash merge is promoted.
+      - name: Upload the image record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-record
+          path: ${{ runner.temp }}/image-record/
+          retention-days: 7
           if-no-files-found: error
 
       # The debug information split out of the binaries in this image (owner
@@ -2527,7 +2620,7 @@ jobs:
       # Kept longer on main, whose image is the one that will be promoted and
       # deployed; a pull request's are only of interest while it is open.
       - name: Upload the split debug symbols
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: debug-symbols
           path: debug-symbols/
