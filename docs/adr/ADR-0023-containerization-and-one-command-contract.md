@@ -1,9 +1,9 @@
 # ADR-0023: Containerization and the one-command contract
 
-- Status: Proposed; amended 2026-09-02 (stale bot-tree path corrected)
+- Status: Proposed; amended 2026-09-02 (stale bot-tree path corrected); **amended 2026-10-03** -- images are promoted, not rebuilt (owner-approved, #486; see amendment below)
 - Date: 2026-09-01
 - Primary: WS-40 / WS-50
-- Relates to: ADR-0028 (Linux/Docker is the platform), ADR-0027 (MariaDB 11.8), ADR-0006 (graceful shutdown)
+- Relates to: ADR-0028 (Linux/Docker is the platform), ADR-0027 (MariaDB 11.8), ADR-0006 (graceful shutdown), ADR-0031 (tick budget, no lost bots)
 
 ## Context
 
@@ -101,7 +101,8 @@ Concretely:
   budget an hour or more for mmaps generation.
 - **GHCR publishing** — `ghcr.io/cilverkrow/{mangosd,realmd,db-init}`, semver on release
   and commit SHA on `main`, with provenance attestation and an SBOM. **Built once,
-  promoted between environments, never rebuilt per environment.**
+  promoted between environments, never rebuilt per environment.** How: the tested CI
+  image is the published one (amendment 2026-10-03 below).
 - **Helm chart `deploy/helm/twow/`** — `mangosd` as a **StatefulSet** (one world server
   per realm, persistent volume for client data), `realmd` as a Deployment, MariaDB as a
   dependency chart or external, migrations as **pre-upgrade Jobs**, secrets via
@@ -144,6 +145,95 @@ Concretely:
   standing rule this cost us: a job that has only ever been *skipped* has proved nothing,
   and a green pipeline containing one is not the same as a green pipeline.
 
+## Amendment 2026-10-03: promote instead of rebuild (#486)
+
+Owner decision 7 of 2026-10-03, relayed by OB-00 in #486 (comment 5962586221),
+together with decisions 2b, 3b, 4, 10 and 13 of the same comment. Basis: the
+Phase-A measurement and plan of #486 (evidence paths below).
+
+**Why.** The decision above already said "built once, promoted, never rebuilt per
+environment". That held *between environments*, but not *between test and
+release*: `ci.yml` tested an image assembled from a staged install (`ci-staged`),
+and `publish.yml` then compiled the same commit a second time, from source, into
+`--target runtime`. So the binary that passed the smoke was never the binary that
+shipped. The second compile cost ~58 min cold on every `main` push, because its
+BuildKit cache mount does not survive an ephemeral runner. 68 successful publish
+runs covered only 24 distinct core SHAs, so 65 % of them re-compiled a core that
+had already been published. A hotfix took about 2 h from core merge to digest.
+
+**Decision.** The image CI builds and tests on `main` is the image that is
+published. Nothing is compiled a second time for publication.
+
+1. **Promotion** lives in its own workflow, `.github/workflows/promote.yml`
+   (decision 3b). It is triggered by `workflow_run` after the whole `ci.yml` run,
+   and only for `event == push`, `head_branch == main` and
+   `head_repository.full_name == Cilverkrow/twow-repo`. It pushes the tested CI
+   image under `sha-<40>` to `ghcr.io/cilverkrow/{mangosd,realmd}`, signs it with
+   `actions/attest-build-provenance` plus an SBOM attestation, and writes
+   `publish-digest.json`. Before pushing it re-checks the core gitlink trust,
+   the OCI labels (`revision`, `source`, `version`, `io.twow.core.revision`)
+   and the tree comparison with the tested pin-PR merge ref. A permissions-
+   bearing job therefore does not live in a file with a `pull_request` trigger.
+2. **`publish.yml` becomes a fallback.** A `v*` tag retags the promoted digest of
+   the tagged `main` commit (`docker buildx imagetools create`), with no compile.
+   A build from source runs only by `workflow_dispatch` behind the environment
+   `release-publish` (required reviewer: the owner). The db-init image and the
+   Helm chart stay as they are. `nightly.yml` keeps building `--target runtime`
+   from source as the proof that this target still builds.
+3. **Debug symbols are split** (decision 2b): CI and the Dockerfile builder use
+   the same build flags, symbols are separated with `objcopy --only-keep-debug` /
+   `strip --strip-debug`, and they ship **only** as a separate artifact or OCI
+   image (`mangosd-debug:sha-<40>`), never as a layer of the runtime image.
+4. **Deploy rule** (decision 4): the digest is taken from the attestation subject
+   or `publish-digest.json`, never resolved from a tag. Before the pull:
+   `gh attestation verify oci://ghcr.io/cilverkrow/mangosd@<digest>
+   --repo Cilverkrow/twow-repo --signer-workflow
+   Cilverkrow/twow-repo/.github/workflows/promote.yml --source-ref refs/heads/main
+   --deny-self-hosted-runners`. For the `v*` fallback the signer is
+   `publish.yml` with `--source-ref refs/tags/v…`. Release requires a green
+   `main` build+test **and** either a tree identical to the tested pin-PR merge
+   ref with a green pin-PR smoke, or a green `main` smoke. If the `main` smoke
+   turns red later, the deploy is stopped or rolled back.
+5. **No self-hosted runner** (decisions V3 and 10). A local runner is
+   reconsidered only if the Phase-C measurement misses its target, and then only
+   in a dedicated VM.
+6. **Documented exception: local main-train build** (decision 13). In a main-train
+   window, when the live server is stopped anyway (announced by OB-00), or on the
+   explicit owner order "Server aus, lokal bauen" for an urgent hotfix, the image
+   may be built on the host with 12-14 cores. It uses the same toolchain
+   (`Dockerfile.core`, `--target runtime`), a named, CPU-capped
+   `docker-container` buildx builder, BuildKit provenance `mode=max` and an SBOM,
+   the publish labels plus `io.twow.build.origin=local-maintrain`, the tag
+   `local-sha-<40>`, and a `local-digest.json`. The tool is
+   `ops/build/local-maintrain-image.sh`, the procedure is
+   `docs/runbooks/local-maintrain-image-build.md`. Such an image has **no**
+   GitHub attestation. It is deployed by digest after its BuildKit provenance,
+   labels and digest have been checked, and it is recorded in #319 and #486.
+   It is not a routine path. With the live server running, the 4-CPU rule for
+   host builds is unchanged.
+
+**Consequences.**
+
+- One compile per build input on the platform side for publication (pin-PR CI
+  and `main` CI). `publish.yml` compiles nothing on the normal path. Phase-A
+  estimate: core merge to digest ~95-100 min for a hotfix instead of ~120 min,
+  measured in Phase C.
+- The released image is the tested one: smoke, provenance and SBOM describe the
+  same bytes. The target size is ~100 MB instead of 1.06 GB, which also shortens
+  the deploy pull on the live host.
+- Crash analysis needs the matching debug artifact, matched by build-id. It is
+  kept with the same retention as the image.
+- The trust boundary moves to the deploy: rulesets protect `main`, `release/**`
+  and `v*`, but anyone with write access can run a workflow from another branch
+  and push signed images under the same package names. The ref-bound
+  `gh attestation verify` above is therefore mandatory, not optional. lhns keeps
+  write access (decision 12), so this check is the effective boundary.
+- Workflow changes take effect only when they are in `main` **and** in the active
+  core `release/*.x`.
+- Implementation is the set of #486 Phase-B PRs (image flags and split debug,
+  promote and publish fallback, runner policy). Until they are merged, the
+  current `publish.yml` path stays in force.
+
 ## Evidence
 
 - `deploy/docker/Dockerfile.core`, `deploy/docker/entrypoint-mangosd.sh`, `.dockerignore`
@@ -162,3 +252,8 @@ Concretely:
   file at 0600 plus `setfacl -m u:10001:r`, the same binary parses it and proceeds to the
   database. The mode bits and the owner are identical in both runs — the ACL is the only
   difference, which is what identifies the failure as a permission one.
+- Amendment 2026-10-03: owner decisions in #486, comment 5962586221; Phase-A plan,
+  measurements and critique under
+  `Y:\backup twwow\workspace-relocation-20260902\evidence\ws-40\cli486-build-runner\phaseA-20261002\`
+  (`final.md` sections 1-5, `facts.md`, `crit.md`); `publish.yml` cache and rebuild
+  behaviour as of `origin/main` 048788cf

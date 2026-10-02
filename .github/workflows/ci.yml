@@ -616,6 +616,16 @@ jobs:
           shellcheck --severity=warning test/contract/live-smoke-triage.contract.sh
           bash test/contract/live-smoke-triage.contract.sh
 
+      # ops/build/local-maintrain-image.sh (owner decision 13, #486) is only run
+      # by hand in a main-train window. Its guards and command line are checked
+      # here against a fake docker and a throw-away repository, so the script
+      # cannot rot between trains.
+      - name: local main-train image build contract
+        if: always()
+        run: |
+          shellcheck --severity=warning test/contract/local-maintrain-image.contract.sh
+          bash test/contract/local-maintrain-image.contract.sh
+
       # The issue importer has created duplicates or silently no-opped four
       # times: title matching (27 duplicates), `--state open` in the existence
       # check (REF-001/REF-002 refiled as #85/#86 after #79/#80 were closed),
