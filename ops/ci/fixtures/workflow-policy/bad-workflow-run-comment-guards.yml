@@ -1,0 +1,12 @@
+# expect: R2
+# Allowlisted, but the guard words stand only in a trailing comment and in a
+# name:, never in an if:.
+name: bad head_branch head_repository.full_name event == 'push'
+on: workflow_run  # head_branch head_repository.full_name event == 'push'
+permissions: {}
+jobs:
+  build:
+    if: github.event.workflow_run.conclusion == 'success' # head_branch
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo x

@@ -1,0 +1,10 @@
+# expect: R1
+# A quoted key is still runs-on.
+name: bad
+on: pull_request
+permissions: {}
+jobs:
+  build:
+    "runs-on": self-hosted
+    steps:
+      - run: echo x

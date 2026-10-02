@@ -1,0 +1,18 @@
+# A local reusable workflow is checked as a file of its own; an indentless
+# runs-on sequence with a hosted label and step-level uses: pass.
+name: ok-reusable-local
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  call:
+    uses: ./.github/workflows/ok.yml
+  build:
+    runs-on:
+    - ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request'
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4

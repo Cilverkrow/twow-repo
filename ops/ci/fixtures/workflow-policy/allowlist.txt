@@ -6,3 +6,6 @@ workflow_run bad-workflow-run-unguarded.yml
 self-hosted  ok-self-hosted-push.yml
 self-hosted  bad-pr-self-hosted.yml
 self-hosted  bad-pr-labels-self-hosted.yml
+workflow_run bad-workflow-run-comment-guards.yml
+self-hosted  bad-workflow-call-self-hosted.yml
+self-hosted  bad-pr-review-self-hosted.yml

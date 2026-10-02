@@ -1,0 +1,11 @@
+# expect: R2
+# A YAML complex key spelling of on:.
+name: bad
+? on
+: pull_request_target
+permissions: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo x

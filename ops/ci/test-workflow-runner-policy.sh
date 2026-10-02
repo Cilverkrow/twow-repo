@@ -13,22 +13,35 @@
 #
 # RULES. Comment lines (`^\s*#`) and the bodies of block scalars (`run: |`,
 # `description: >-`, ...) are removed first, so prose and shell code that merely
-# mention a label or a trigger are never findings.
+# mention a label or a trigger are never findings. Keys are matched as YAML
+# spells them (quoted, blanks before the colon, indentless sequences); forms a
+# line-based reader cannot follow fail closed instead of passing silently:
+# flow-mapping jobs, `runs-on` outside a block-style key, block-scalar
+# `runs-on`, YAML complex keys (`? key`).
 #
-#   R1  A workflow triggered by `pull_request` may not name `self-hosted`, or any
-#       label that only the self-hosted allowlist admits, in `runs-on:` or in its
-#       `labels:` entries. `runs-on` built from `vars.`, `inputs.` or `fromJSON`
-#       is forbidden in every workflow: repository variables are visible to fork
-#       PRs, so one variable would move every fork PR onto a self-hosted runner.
-#   R2  `pull_request_target` and `issue_comment` are forbidden. `workflow_run`
-#       is allowed only in files the allowlist names with `workflow_run`, and
-#       those files must check `head_branch`, `event == 'push'` and
-#       `head_repository.full_name`.
+#   R1  A workflow triggered by `pull_request`, `pull_request_review` or
+#       `pull_request_review_comment` (all run in fork-PR context) may not name
+#       `self-hosted`, or any label that only the self-hosted allowlist admits,
+#       in `runs-on:` or in its `labels:` entries, nor call a reusable workflow
+#       from another repository (job-level `uses: owner/repo/...@ref`, whose
+#       runs-on picks this repository's runners). `runs-on` built from `vars.`,
+#       `inputs.` or `fromJSON` is forbidden in every workflow: repository
+#       variables are visible to fork PRs, so one variable would move every fork
+#       PR onto a self-hosted runner. A file the allowlist names with
+#       `self-hosted` may not have the `workflow_call` trigger, since a callee
+#       inherits its caller's event.
+#   R2  `pull_request_target` and `issue_comment` are forbidden, also as bare
+#       words anywhere in code (backstop for trigger spellings not parsed).
+#       `workflow_run` is allowed only in files the allowlist names with
+#       `workflow_run`, and those files must check `head_branch`,
+#       `event == 'push'` and `head_repository.full_name` inside `if:` values
+#       (trailing comments and other keys do not count).
 #   R3  `runs-on` admits only the literal labels ubuntu-latest, ubuntu-24.04,
 #       windows-latest and windows-2022. Expressions and runner groups are not
 #       literals. `self-hosted` (with the default self-hosted labels linux, x64,
 #       arm64, windows, macos) is admitted only in files the allowlist names
-#       with `self-hosted`.
+#       with `self-hosted`. Reusable workflows from other repositories are not
+#       admitted in any workflow.
 #   R4  Every workflow has a top-level `permissions:` block.
 #   R5  Workflow files nested deeper than <root>/.github/workflows are reported
 #       as warnings only; GitHub never runs them.
@@ -124,11 +137,19 @@ listed() { # listed <newline list> <path>
 # Emit the facts of one workflow file, one per line, tab-separated:
 #   TRIGGER <name>
 #   LABEL   <line> <label, lower case>
-#   EXPR    <line> <expression>
+#   EXPR    <line> <expression, or why runs-on could not be read>
 #   GROUP   <line> <group>
 #   PERMS   <line>
-#   CODE    <text>      (every non-comment line outside block scalars)
-#   BODY    <text>      (every non-comment line inside a block scalar)
+#   IFEXPR  <text>      (value of an `if:` key, with continuation lines)
+#   NCODE   <line> <text>  (non-comment line outside block scalars, trailing
+#                          comment removed; input of the backstop greps)
+#   QKEY    <line>      (YAML complex key `? ...`)
+#   ROBAD   <line> <text>  (`runs-on` on a line not parsed as a runs-on key)
+#   JOBUSES <line> <ref>   (job-level `uses:`, a reusable workflow)
+#   JOBFLOW <line> <text>  (jobs or a job written as a flow mapping)
+# Keys are matched the way YAML spells them: optionally quoted, optionally
+# with blanks before the colon. Forms the parser does not understand are
+# reported (fail closed), never skipped.
 extract_facts() {
     awk -v q="'" '
     function ind(s) { match(s, /^ */); return RLENGTH }
@@ -140,16 +161,18 @@ extract_facts() {
         return s
     }
     function nocomment(s) { sub(/[ \t]+#.*$/, "", s); return s }
+    function keyis(s, k) { return s ~ ("^[\"" q "]?" k "[\"" q "]?[ \t]*:") }
     function value_of(s) { sub(/^[^:]*:/, "", s); return trim(nocomment(s)) }
     function emit_label(v, lno) {
         v = unquote(v)
         if (v == "") return
-        if (v ~ /\$\{\{/) { print "EXPR\t" lno "\t" v; return }
-        if (v ~ /^\{/)    { print "EXPR\t" lno "\t" v; return }
+        rocnt++
+        if (v ~ /\$[{][{]/) { print "EXPR\t" lno "\t" v; return }
+        if (v ~ /^[{]/)     { print "EXPR\t" lno "\t" v; return }
         print "LABEL\t" lno "\t" tolower(v)
     }
     function emit_flow(v, lno,   n, i, parts) {
-        if (v ~ /\$\{\{/) { print "EXPR\t" lno "\t" v; return }
+        if (v ~ /\$[{][{]/) { rocnt++; print "EXPR\t" lno "\t" v; return }
         gsub(/^\[|\]$/, "", v)
         n = split(v, parts, ",")
         for (i = 1; i <= n; i++) emit_label(parts[i], lno)
@@ -162,6 +185,10 @@ extract_facts() {
             if (parts[i] != "") print "TRIGGER\t" parts[i]
         }
     }
+    function ro_close() {
+        if (rocnt == 0) print "EXPR\t" roline "\truns-on without a parseable literal label"
+        inro = 0
+    }
     {
         line = $0
         sub(/\r$/, "", line)
@@ -169,21 +196,44 @@ extract_facts() {
         i = ind(line)
 
         # Body of a block scalar: everything indented deeper than its key line.
-        if (inblock) { if (i > blockind) { print "BODY\t" line; next }; inblock = 0 }
+        if (inblock) {
+            if (i > blockind) {
+                print "BODY\t" line
+                if (ifblock) print "IFEXPR\t" trim(nocomment(line))
+                next
+            }
+            inblock = 0; ifblock = 0
+        }
 
+        nline = nocomment(line)
         print "CODE\t" line
-
-        # Leaving the on: or runs-on: block.
-        if (inon && i == 0) inon = 0
-        if (inro && i <= roind) inro = 0
+        print "NCODE\t" NR "\t" nline
 
         body = trim(line)
         item = body
         sub(/^-[ \t]*/, "", item)
+        keycol = i + length(body) - length(item)
 
-        if (i == 0 && (body ~ /^("on"|on|true):/ || index(body, q "on" q ":") == 1)) {
+        # Continuation of a multi-line flow sequence `on: [push,`.
+        if (inonflow) {
+            onacc = onacc "," trim(nline)
+            if (index(nline, "]")) { emit_triggers(onacc); inonflow = 0 }
+        }
+
+        # Complex keys cannot be mapped to a rule; never legitimate here.
+        if (body ~ /^\?([ \t]|$)/ || item ~ /^\?([ \t]|$)/) print "QKEY\t" NR
+
+        # Leaving the on:, runs-on: or if: block. An indentless sequence
+        # (`runs-on:` then `- label` at the same indent) stays inside.
+        if (inon && i == 0) inon = 0
+        if (inro && (i < roind || (i == roind && body !~ /^-/))) ro_close()
+        if (inif && i <= ifind) inif = 0
+        if (inif) print "IFEXPR\t" trim(nline)
+
+        if (i == 0 && keyis(body, "(on|true)")) {
             v = value_of(body)
-            if (v ~ /^\{/) print "TRIGGER\t{flow-mapping}"
+            if (v ~ /^[{]/) print "TRIGGER\t{flow-mapping}"
+            else if (v ~ /^\[/ && index(v, "]") == 0) { inonflow = 1; onacc = v }
             else if (v != "") emit_triggers(v)
             else { inon = 1; onchild = -1 }
         } else if (inon) {
@@ -196,23 +246,63 @@ extract_facts() {
             }
         }
 
-        if (i == 0 && body ~ /^permissions:/) print "PERMS\t" NR
+        if (i == 0 && keyis(body, "permissions")) print "PERMS\t" NR
 
-        if (item ~ /^runs-on:/) {
-            v = value_of(item)
-            if (v == "") { inro = 1; roind = i }
-            else if (v ~ /^\[/) emit_flow(v, NR)
-            else emit_label(v, NR)
-        } else if (inro) {
-            if (body ~ /^-/) emit_label(nocomment(item), NR)
-            else if (item ~ /^labels:/) {
-                v = value_of(item)
-                if (v ~ /^\[/) emit_flow(v, NR); else if (v != "") emit_label(v, NR)
-            } else if (item ~ /^group:/) print "GROUP\t" NR "\t" value_of(item)
-            else print "EXPR\t" NR "\t" body
+        # jobs: job keys at the first child indent, job-level keys one deeper.
+        if (i == 0) {
+            injobs = keyis(body, "jobs")
+            if (injobs) {
+                jobind = -1
+                v = value_of(body)
+                if (v != "") print "JOBFLOW\t" NR "\t" v
+            }
+        } else if (injobs) {
+            if (jobind < 0) jobind = i
+            if (i == jobind) {
+                jobbody = -1
+                v = value_of(body)
+                if (v != "" && v !~ /^&[^ \t]*$/) print "JOBFLOW\t" NR "\t" v
+            } else if (i > jobind) {
+                if (jobbody < 0) jobbody = i
+                if (i == jobbody && body !~ /^-/ && keyis(item, "uses"))
+                    print "JOBUSES\t" NR "\t" unquote(value_of(item))
+            }
         }
 
-        if (nocomment(line) ~ /:[ \t]*[|>][-+0-9]*[ \t]*$/) { inblock = 1; blockind = i }
+        if (keyis(item, "if")) {
+            v = value_of(item)
+            if (v !~ /^[|>]/) { print "IFEXPR\t" v; inif = 1; ifind = keycol }
+        }
+
+        handled = 0
+        if (keyis(item, "runs-on")) {
+            handled = 1
+            if (inro) ro_close()
+            v = value_of(item)
+            rocnt = 0; roline = NR
+            if (v == "") { inro = 1; roind = i }
+            else if (v ~ /^[|>]/) print "EXPR\t" NR "\truns-on as a block scalar cannot be checked"
+            else {
+                if (v ~ /^\[/) emit_flow(v, NR); else emit_label(v, NR)
+                if (rocnt == 0) print "EXPR\t" NR "\truns-on without a parseable literal label"
+            }
+        } else if (inro) {
+            if (body ~ /^-/) emit_label(nocomment(item), NR)
+            else if (keyis(item, "labels")) {
+                v = value_of(item)
+                if (v ~ /^\[/) emit_flow(v, NR); else if (v != "") emit_label(v, NR)
+            } else if (keyis(item, "group")) { rocnt++; print "GROUP\t" NR "\t" value_of(item) }
+            else { rocnt++; print "EXPR\t" NR "\t" body }
+        }
+        if (!handled && nline ~ /runs-on/) print "ROBAD\t" NR "\t" trim(nline)
+
+        if (nline ~ /:[ \t]*[|>][-+0-9]*[ \t]*$/) {
+            inblock = 1; blockind = i; ifblock = keyis(item, "if")
+        }
+    }
+    END {
+        if (inro) ro_close()
+        if (inonflow) emit_triggers(onacc)
     }
     ' "$1"
 }
@@ -220,12 +310,14 @@ extract_facts() {
 # check_file <absolute file> <path relative to the allowlist base>
 # Prints annotations; returns the number of errors (capped at 255).
 check_file() {
-    local file="$1" rel="$2" facts code errors=0 pr=0 trig kind lno val
-    local selfhosted_ok=0
+    local file="$1" rel="$2" facts guards ncode errors=0 pr=0 trig kind lno val
+    local selfhosted_ok=0 seen_forbidden=0 seen_wfrun=0 callable=0
     facts="$(extract_facts "$file")"
-    # Guards may sit in a folded `if: >-` scalar, so block bodies count here;
-    # comment lines never do.
-    code="$(grep -E '^(CODE|BODY)' <<< "$facts" || true)"
+    # Guards count only inside `if:` values (folded or block scalars included),
+    # with trailing comments removed: a comment or a name: is no guard.
+    guards="$(grep -E '^IFEXPR' <<< "$facts" || true)"
+    # Backstop input: code lines without comments and without block bodies.
+    ncode="$(grep -E '^NCODE' <<< "$facts" | cut -f3- || true)"
     listed "$ALLOW_SELF_HOSTED" "$rel" && selfhosted_ok=1
 
     err() { echo "::error file=$rel${1:+,line=$1}::[$2] $3"; errors=$((errors + 1)); }
@@ -233,25 +325,44 @@ check_file() {
     while IFS=$'\t' read -r kind trig; do
         [ "$kind" = TRIGGER ] || continue
         case "$trig" in
-            pull_request) pr=1 ;;
+            # The review events run in fork-PR context as well.
+            pull_request|pull_request_review|pull_request_review_comment) pr=1 ;;
+            workflow_call) callable=1 ;;
             '{flow-mapping}')
                 pr=1
                 err "" R2 "'on:' written as a flow mapping cannot be checked; use the block form" ;;
             pull_request_target|issue_comment)
+                seen_forbidden=1
                 err "" R2 "trigger '$trig' runs with base-repository privileges on foreign input and is forbidden" ;;
             workflow_run)
+                seen_wfrun=1
                 if ! listed "$ALLOW_WORKFLOW_RUN" "$rel"; then
                     err "" R2 "workflow_run is allowed only in files the allowlist names with 'workflow_run'"
                 else
-                    grep -q 'head_branch' <<< "$code" \
-                        || err "" R2 "workflow_run without a head_branch guard"
-                    grep -Eq "event[[:space:]]*==[[:space:]]*'push'" <<< "$code" \
-                        || err "" R2 "workflow_run without an event == 'push' guard"
-                    grep -q 'head_repository\.full_name' <<< "$code" \
-                        || err "" R2 "workflow_run without a head_repository.full_name guard"
+                    grep -q 'head_branch' <<< "$guards" \
+                        || err "" R2 "workflow_run without a head_branch guard in an if:"
+                    grep -Eq "event[[:space:]]*==[[:space:]]*'push'" <<< "$guards" \
+                        || err "" R2 "workflow_run without an event == 'push' guard in an if:"
+                    grep -q 'head_repository\.full_name' <<< "$guards" \
+                        || err "" R2 "workflow_run without a head_repository.full_name guard in an if:"
                 fi ;;
         esac
     done <<< "$facts"
+
+    # Backstops for trigger spellings the parser may not see: the bare words
+    # count wherever they stand in code (comments and block bodies excluded).
+    if [ "$seen_forbidden" -eq 0 ] \
+        && grep -Eq '(^|[^A-Za-z0-9_])(pull_request_target|issue_comment)([^A-Za-z0-9_]|$)' <<< "$ncode"; then
+        err "" R2 "pull_request_target/issue_comment appears in code but was not parsed as a trigger; forbidden in any form"
+    fi
+    if [ "$seen_wfrun" -eq 0 ] && ! listed "$ALLOW_WORKFLOW_RUN" "$rel" \
+        && grep -Eq '(^|[^A-Za-z0-9_])workflow_run([^A-Za-z0-9_]|$)' <<< "$ncode"; then
+        err "" R2 "workflow_run appears in code of a file the allowlist does not name with 'workflow_run'"
+    fi
+    # A local callee inherits the caller's event, pull_request included.
+    if [ "$callable" -eq 1 ] && [ "$selfhosted_ok" -eq 1 ]; then
+        err "" R1 "workflow_call in a file the allowlist names with 'self-hosted': a pull_request caller would put fork code on that runner"
+    fi
 
     while IFS=$'\t' read -r kind lno val; do
         case "$kind" in
@@ -273,6 +384,21 @@ check_file() {
                     err "$lno" R3 "runs-on must be a literal label, not: $val"
                 fi ;;
             GROUP) err "$lno" R3 "runner groups are not GitHub-hosted standard runners: $val" ;;
+            ROBAD) err "$lno" R3 "runs-on must be written as a block-style key (one per line): $val" ;;
+            QKEY) err "$lno" R2 "YAML complex keys ('? ...') cannot be checked and are not allowed" ;;
+            JOBFLOW) err "$lno" R3 "jobs must be written in block style, not as a flow mapping: $val" ;;
+            JOBUSES)
+                case "$val" in
+                    ./*) ;; # local callee: checked as a workflow file of its own
+                    *)
+                        # A reusable workflow from another repository picks its
+                        # runs-on against this repository's runners.
+                        if [ "$pr" -eq 1 ]; then
+                            err "$lno" R1 "pull_request workflow calls a reusable workflow from another repository: $val"
+                        else
+                            err "$lno" R3 "reusable workflows from another repository are not allowed (runs-on unchecked): $val"
+                        fi ;;
+                esac ;;
         esac
     done <<< "$facts"
 

@@ -1,0 +1,9 @@
+# expect: R1
+# A reusable workflow from another repository chooses its runs-on against
+# this repository's runners, self-hosted ones included.
+name: bad
+on: pull_request
+permissions: {}
+jobs:
+  call:
+    uses: other/repo/.github/workflows/w.yml@main
