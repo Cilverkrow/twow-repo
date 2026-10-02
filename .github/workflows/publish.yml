@@ -217,9 +217,80 @@ jobs:
           # The way to stop compiling twice is to promote the image ci.yml
           # already built (#486 B5), not to cache this build.
 
-      # The registry attestation above is buildkit's. This one is signed against
-      # the workflow's OIDC identity and lands in the repository's attestation
-      # store, which is what `gh attestation verify` checks. They answer
+      # The DWARF that split-debug.sh moved out of the pushed binaries (owner
+      # decision 2b): exported from Dockerfile.core's FROM-scratch
+      # `debug-symbols` stage into a directory on the runner and uploaded as an
+      # artifact - never pushed, never a layer of the runtime image.
+      #
+      # Same builder, same context, same build-args as the `build` step, so the
+      # builder stage is a cache hit inside this job's buildx builder and
+      # nothing compiles a second time. That holds ONLY while nothing has
+      # written into the checkout (the build context `.`) since `build`: any
+      # new file there changes the builder stage's `COPY . /src`, BuildKit
+      # rebuilds it, and the relink (revision header with a fresh __DATE__/
+      # __TIME__) yields binaries whose build ids no longer match the pushed
+      # ones. So this step and its upload come DIRECTLY after `build`, the
+      # digest record below is written under $RUNNER_TEMP, and the next step
+      # compares the build ids with the pushed image instead of trusting the
+      # cache.
+      - name: Export the split debug symbols
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.core
+          target: debug-symbols
+          push: false
+          outputs: type=local,dest=debug-symbols
+          provenance: false
+          sbom: false
+          build-args: |
+            BUILD_TYPE=Release
+            BUILD_JOBS=${{ vars.CI_BUILD_JOBS || '4' }}
+
+      # The symbols are only useful if they belong to the binaries that were
+      # pushed: every GNU build id in BUILD-IDS must equal the one readelf
+      # reads from the same file in the pushed image (by digest, not tag).
+      # A mismatch means the export was a second build - fail the run rather
+      # than leave symbols gdb would reject looking valid.
+      - name: Check the debug symbols match the pushed binaries
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          tree="$RUNNER_TEMP/pushed-tree"
+          rm -rf "$tree"
+          mkdir -p "$tree"
+          cid=$(docker create "$REGISTRY/$OWNER/mangosd@$DIGEST" /bin/true)
+          docker cp "$cid:/opt/turtle" "$tree/opt-turtle"
+          docker rm "$cid" >/dev/null
+          manifest=debug-symbols/BUILD-IDS
+          [ -s "$manifest" ] || { echo "::error::$manifest is missing or empty"; exit 1; }
+          bad=0
+          while read -r want rel; do
+            [ -n "$rel" ] || continue
+            have=$(readelf -n "$tree/opt-turtle/$rel" 2>/dev/null \
+              | awk '/Build ID:/ { print $3; exit }')
+            if [ "${have:-none}" != "$want" ]; then
+              echo "::error::$rel: symbols for build id $want, pushed binary has ${have:-none}"
+              bad=$((bad + 1))
+            fi
+          done < "$manifest"
+          [ "$bad" -eq 0 ] || exit 1
+          echo "build ids match for $(wc -l < "$manifest") file(s)"
+
+      # Retained for 90 days: the symbols are needed for as long as an image
+      # built here might still be running or be rolled back to.
+      - name: Upload the split debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-${{ github.sha }}
+          path: debug-symbols/
+          retention-days: 90
+          if-no-files-found: error
+
+      # The build step's registry attestation is buildkit's. This one is signed
+      # against the workflow's OIDC identity and lands in the repository's
+      # attestation store, which is what `gh attestation verify` checks. They answer
       # different questions and both are wanted.
       # One digest, two names, so one attestation per name. Both must be
       # attested: `gh attestation verify` resolves by the name the user pulled,
@@ -248,6 +319,10 @@ jobs:
       # was pushed and attested under (realmd is byte-identical, see above).
       # `workflow` is github.workflow_ref, i.e. the signer a deploy passes to
       # `gh attestation verify --signer-workflow`.
+      #
+      # Written under $RUNNER_TEMP, never into the checkout: the checkout is
+      # the build context `.` (see the debug-symbols export above), and
+      # .dockerignore also excludes publish-digest/ in case that ever changes.
       - name: Record the published digest
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
@@ -259,7 +334,8 @@ jobs:
             echo "::error::build step returned no image digest"
             exit 1
           }
-          mkdir -p publish-digest
+          out="$RUNNER_TEMP/publish-digest"
+          mkdir -p "$out"
           jq -n \
             --arg repo_sha "$GITHUB_SHA" \
             --arg core_sha "$CORE_SHA" \
@@ -272,24 +348,33 @@ jobs:
             '{repo_sha: $repo_sha, core_sha: $core_sha, image: $image,
               digest: $digest, workflow: $workflow, run_id: $run_id,
               built_at: $built_at, images: [$image, $realmd]}' \
-            > publish-digest/publish-digest.json
-          cat publish-digest/publish-digest.json
+            > "$out/publish-digest.json"
+          cat "$out/publish-digest.json"
           {
             echo '## Published core image'
             echo
             echo "- Digest: \`$DIGEST\`"
             echo "- Names: \`$REGISTRY/$OWNER/mangosd\`, \`$REGISTRY/$OWNER/realmd\`"
-            echo "- Repo commit: \`$GITHUB_SHA\`"
+            echo "- Repo commit: \`$GITHUB_SHA\` (\`$GITHUB_REF\`)"
             echo "- Core commit: \`$CORE_SHA\`"
             echo "- Signer workflow: \`$WORKFLOW_REF\`"
             echo
+            # Owner decision 4 fixes the deploy rule to builds of main. The
+            # command below is that rule, literally - never $GITHUB_REF, which
+            # for a tag or a dispatch from a branch would print a command that
+            # passes for an image the rule must reject.
+            if [ "$GITHUB_REF" != refs/heads/main ]; then
+              echo "**Not deployable under #486 decision 4:** built from \`$GITHUB_REF\`, not refs/heads/main."
+              echo "The verification below fails for this digest, as it should."
+              echo
+            fi
             echo "Pin by digest only. Verify first:"
             echo
             echo '```'
             echo "gh attestation verify oci://$REGISTRY/$OWNER/mangosd@$DIGEST \\"
             echo "  --repo $GITHUB_REPOSITORY \\"
             echo "  --signer-workflow $GITHUB_REPOSITORY/.github/workflows/publish.yml \\"
-            echo "  --source-ref $GITHUB_REF --deny-self-hosted-runners"
+            echo "  --source-ref refs/heads/main --deny-self-hosted-runners"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -297,41 +382,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: publish-digest
-          path: publish-digest/publish-digest.json
-          if-no-files-found: error
-
-      # The DWARF that split-debug.sh moved out of the pushed binaries (owner
-      # decision 2b): exported from Dockerfile.core's FROM-scratch
-      # `debug-symbols` stage into a directory on the runner and uploaded as an
-      # artifact - never pushed, never a layer of the runtime image.
-      #
-      # Same builder, same context, same build-args as the `build` step, so the
-      # builder stage is a cache hit inside this job's buildx builder and
-      # nothing compiles a second time. The files are matched to the pushed
-      # binaries by GNU build id (BUILD-IDS); symbols from any other build of
-      # the same commit would not match.
-      - name: Export the split debug symbols
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: deploy/docker/Dockerfile.core
-          target: debug-symbols
-          push: false
-          outputs: type=local,dest=debug-symbols
-          provenance: false
-          sbom: false
-          build-args: |
-            BUILD_TYPE=Release
-            BUILD_JOBS=${{ vars.CI_BUILD_JOBS || '4' }}
-
-      # Retained for 90 days: the symbols are needed for as long as an image
-      # built here might still be running or be rolled back to.
-      - name: Upload the split debug symbols
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-symbols-${{ github.sha }}
-          path: debug-symbols/
-          retention-days: 90
+          path: ${{ runner.temp }}/publish-digest/publish-digest.json
           if-no-files-found: error
 
   db-init:

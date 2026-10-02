@@ -40,6 +40,10 @@ image/
 # split-debug.sh output (#486 B4). Never part of an image: ci-staged COPYs only
 # ./stage, and sending the debug tree as build context would only cost time.
 debug-symbols/
+# publish.yml writes publish-digest.json under $RUNNER_TEMP; excluded here too so
+# a digest record in the checkout could never invalidate the builder cache
+# between the image build and the debug-symbols export (#486 B3).
+publish-digest/
 
 # Rendered runtime config and the environment it is rendered from. These are
 # generated artefacts, never inputs to the image, and mangosd.conf carries the

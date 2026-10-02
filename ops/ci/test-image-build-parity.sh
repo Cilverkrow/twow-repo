@@ -170,6 +170,44 @@ if grep -B3 -A12 'target: debug-symbols' "$PUBLISH" | grep -q 'push: true'; then
     fail "publish.yml pushes the debug-symbols stage - it must stay an artifact"
 fi
 
+# The debug-symbols export reuses the builder stage only while the build
+# context (the checkout) is unchanged since the `build` step. So: the export
+# comes before every later step that could write there (attestations, digest
+# record), the digest record lives under $RUNNER_TEMP, and the exported build
+# ids are checked against the pushed image.
+line_of() { grep -nF -- "$1" "$PUBLISH" | head -1 | cut -d: -f1; }
+build_line=$(line_of '- id: build')
+export_line=$(line_of '- name: Export the split debug symbols')
+attest_line=$(line_of 'uses: actions/attest-build-provenance@')
+record_line=$(line_of '- name: Record the published digest')
+if [ -z "$build_line" ] || [ -z "$export_line" ] || [ -z "$attest_line" ] || [ -z "$record_line" ]; then
+    fail "publish.yml lacks the build, debug-symbols export, attestation or digest record step"
+else
+    # Steps between `build` and the export: only `- name:`/`- uses:` lines are
+    # step starts; none may exist except the export itself.
+    between=$(awk -v a="$build_line" -v b="$export_line" \
+        'NR > a && NR < b && /^      - (name|uses|id|run):/' "$PUBLISH")
+    [ -z "$between" ] || fail "publish.yml runs a step between 'build' and the debug-symbols export: $between"
+    [ "$export_line" -lt "$attest_line" ] && [ "$export_line" -lt "$record_line" ] \
+        || fail "publish.yml exports the debug symbols after a step that may write into the build context"
+fi
+printf '%s\n' "$digest_step" | grep -Fq 'out="$RUNNER_TEMP/publish-digest"' \
+    || fail "publish-digest.json must be written under \$RUNNER_TEMP, not into the build context"
+if printf '%s\n' "$digest_step" | grep -v '^ *#' | grep -Eq 'mkdir -p publish-digest|> *publish-digest/'; then
+    fail "publish.yml writes publish-digest/ into the checkout (the build context)"
+fi
+grep -Fq 'path: ${{ runner.temp }}/publish-digest/publish-digest.json' "$PUBLISH" \
+    || fail "publish.yml uploads publish-digest.json from somewhere other than \$RUNNER_TEMP"
+grep -Fqx 'publish-digest/' "$DOCKERIGNORE" || fail ".dockerignore does not exclude publish-digest/"
+grep -Fq -- '- name: Check the debug symbols match the pushed binaries' "$PUBLISH" \
+    || fail "publish.yml does not check the exported build ids against the pushed image"
+# Owner decision 4: the printed verify command is the deploy rule, literally.
+printf '%s\n' "$digest_step" | grep -Fq -- '--source-ref refs/heads/main --deny-self-hosted-runners' \
+    || fail "publish.yml summary does not print --source-ref refs/heads/main"
+if grep -v '^ *#' "$PUBLISH" | grep -Fq -- '--source-ref $GITHUB_REF'; then
+    fail "publish.yml prints --source-ref \$GITHUB_REF (a tag/branch run would pass verification)"
+fi
+
 # --------------------------------------------------------- image-parity.yml
 if [ ! -f "$PARITY" ]; then
     fail "image-parity.yml is missing"
@@ -183,9 +221,22 @@ else
     perms=$(sed -n '/^permissions:/,/^[a-z]/p' "$PARITY" | grep -E '^  [a-z-]+:' | LC_ALL=C sort)
     [ "$perms" = "$(printf '  actions: read\n  contents: read')" ] \
         || fail "image-parity.yml top-level permissions must be exactly contents: read, actions: read"
-    if grep -v '^ *#' "$PARITY" | grep -Eq '^ +[a-z-]+: write'; then
+    # Job-level permissions override the top level, so none are allowed - in
+    # any style. Write grants are also caught in flow mappings
+    # (`{ contents: write }`) and as write-all.
+    if grep -v '^ *#' "$PARITY" | grep -Eq '^ +permissions:'; then
+        fail "image-parity.yml has a job-level permissions block (it would override the read-only top level)"
+    fi
+    if grep -v '^ *#' "$PARITY" | grep -Eq '(^ *|[:,{] *)[a-z-]+: *write|write-all'; then
         fail "image-parity.yml grants a write permission"
     fi
+    # A given ci_run_id must be held to the same standard as the default
+    # lookup: a successful push run of this repository's main, never a fork's
+    # pull_request run that uploaded a core-image of its own.
+    for check in '"$run_event" != push' '"$run_branch" != main' \
+                 '"$run_repo" != "$GITHUB_REPOSITORY"' '"$run_conclusion" != success'; do
+        grep -Fq -- "$check" "$PARITY" || fail "image-parity.yml does not check the CI run: $check"
+    done
     runs_on=$(grep -E '^ +runs-on:' "$PARITY" | sed 's/^ *runs-on: *//' | LC_ALL=C sort -u)
     [ "$runs_on" = 'ubuntu-latest' ] || fail "image-parity.yml runs-on must be the literal ubuntu-latest"
 fi
