@@ -108,7 +108,7 @@ These are verified or strongly evidenced hazards, not generic cautions. A footgu
 |---|---|---|---|
 | FG-065 | Raising the global profession limit before the RNDBOT cap | Bots could acquire up to six primary professions. | Ship and test the bot-specific cap first; then change config. |
 | FG-066 | Enforcing the bot cap only at trainers | Factory, spell, item, quest, script, GM, and direct `SetSkill` paths can bypass it. | Centralize and test every acquisition path without deleting persisted skills. |
-| FG-067 | Trainer-only early-riding migration | Bots still use hard-coded thresholds and mount items still require old levels. | Coordinate Core, Config, trainer rows, and item manifest. |
+| FG-067 | Trainer-only early-riding migration | Bots still use hard-coded thresholds and mount items still require old levels. | Coordinate Core, Config, trainer rows, and item manifest; #295 ships them together with client patch v7 (train 9). |
 | FG-068 | Updating every level-40/60 item | Ordinary items and intentionally gated special mounts can be damaged. | Derive a complete mount manifest from spells, skills, and sources; classify each item. |
 | FG-069 | Changing mount training price and assuming item price changed | Trainer cost and item purchase price are independent fields. | Treat purchase-price policy as a separate explicit decision. |
 | FG-070 | Repairing the trainer path from one unproven event | The controlled normal-account purchase succeeded and persisted correctly. | Require a reproducible failure before code, data, refund, or spell-grant action. |

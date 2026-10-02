@@ -26,10 +26,10 @@ the reason is given next to it.
 
 | Kind | Range | Used | Free from |
 |---|---|---|---|
-| Custom spells (player-facing and server-only) | 61002–65535 (behind Turtle's last spell 61001) | 61002–61007 Alterac item spells; 61101–61131 shaman stage 2 (61111 = old 90110, intentionally empty); 61141–61220 rogue kit, talents, helpers, poison ranks, recipes, trainer spells | **61221** |
+| Custom spells (player-facing and server-only) | 61002–65535 (behind Turtle's last spell 61001) | 61002–61007 Alterac item spells; 61101–61131 shaman stage 2 (61111 = old 90110, intentionally empty); 61141–61220 rogue kit, talents, helpers, poison ranks, recipes, trainer spells; **61300–61399 reserved for #295**: 61300–61303 riding ranks 225/300 and their teach spells, 61310 Blink cooldown passive | **61221** (up to 61299), then **61400** |
 | Enchantments (SpellItemEnchantment) | behind Turtle's last 3059 | 3060–3063 Agitating Poison I–IV | **3064** |
 | Talent IDs (Talent.dbc) | free IDs < 65536 (base max 476; 9011–9149 also free) | 9001–9010 shaman, 9150–9188 rogue | **9200** (check Talent.dbc) |
-| SkillLineAbility row IDs | < 65536 (base rows 1–7210) | 30140–30211 rogue P-1/P-2 | **30300** (check the client DBC and `skill_line_ability`) |
+| SkillLineAbility row IDs | < 65536 (base rows 1–7210) | 30140–30211 rogue P-1/P-2; **30300–30399 reserved for #295**: 30300–30301 riding ranks | **30400** (check the client DBC and `skill_line_ability`) |
 | Talent tree size | ≤ 30 per TabID | Combat 26, Enhancement 26, Assassination 23, Subtlety 23 | — |
 
 The old 90001–90219 numbering is history (train 8b moved it by −28999,
