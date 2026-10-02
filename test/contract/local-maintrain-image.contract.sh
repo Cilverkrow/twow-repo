@@ -27,12 +27,17 @@ printf 'FROM debian AS builder\nFROM debian AS runtime\n' > "$tmp/src/deploy/doc
 g -C "$tmp/src" submodule add -q "$tmp/core" core
 g -C "$tmp/src/core" config core.autocrlf false
 g -C "$tmp/src" add -A && g -C "$tmp/src" commit -qm platform
-g -C "$tmp/src" update-ref refs/remotes/origin/main HEAD
+# origin is a local bare repository; TWOW_TEST_ORIGIN_RE (test seam) admits it
+# so that the script's `git fetch origin main` works without network.
+g init -q --bare "$tmp/upstream.git"
+g -C "$tmp/src" remote add origin "$tmp/upstream.git"
+g -C "$tmp/src" push -q origin HEAD:refs/heads/main
 sha=$(git -C "$tmp/src" rev-parse HEAD)
 core_sha=$(git -C "$tmp/core" rev-parse HEAD)
 
 # Fake docker: logs argv, answers ps from FAKE_PS, inspect from FAKE_INSPECT,
-# and writes a metadata file for every build.
+# and writes a metadata file for every build. FAKE_FAIL_TARGET makes the build
+# of that target fail; FAKE_NODIGEST_TARGET writes metadata without a digest.
 cat > "$tmp/docker" <<'FAKE'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FAKE_LOG"
@@ -44,14 +49,25 @@ case "$1 ${2:-}" in
                            printf '%s' "${FAKE_PS_ALL:-}"
                        fi ;;
     "buildx inspect")  [[ -n "${FAKE_INSPECT:-}" ]] || exit 1; printf '%s\n' "$FAKE_INSPECT" ;;
-    "buildx build")    meta=''; prev=''
-                       for a in "$@"; do [[ $prev == --metadata-file ]] && meta=$a; prev=$a; done
-                       printf '{"containerimage.digest": "sha256:%064d"}\n' 7 > "$meta" ;;
+    "buildx build")    meta='' target='' prev=''
+                       for a in "$@"; do
+                           [[ $prev == --metadata-file ]] && meta=$a
+                           [[ $prev == --target ]] && target=$a
+                           prev=$a
+                       done
+                       [[ $target != "${FAKE_FAIL_TARGET:-}" ]] || exit 1
+                       if [[ $target == "${FAKE_NODIGEST_TARGET:-}" ]]; then
+                           echo '{"buildx.build.ref": "x"}' > "$meta"
+                       else
+                           printf '{"containerimage.digest": "sha256:%064d"}\n' 7 > "$meta"
+                       fi ;;
 esac
 exit 0
 FAKE
 chmod +x "$tmp/docker"
 export TWOW_DOCKER="$tmp/docker" FAKE_LOG="$tmp/calls" TWOW_TEST_NOW_HHMM=1200
+# Suffix match: Git for Windows reports the path as C:/..., Linux as /tmp/...
+export TWOW_TEST_ORIGIN_RE='/upstream[.]git$'
 base=(--name-prefix ob30 --reason "Zug 9 test" --source "$tmp/src" --out-dir "$tmp/out" --lock-file "$tmp/HOST-BUILD.lock")
 rc() { local r=0; "$@" >"$tmp/stdout" 2>"$tmp/stderr" || r=$?; echo "$r"; }
 
@@ -60,7 +76,8 @@ rc() { local r=0; "$@" >"$tmp/stdout" 2>"$tmp/stderr" || r=$?; echo "$r"; }
 [[ $(rc bash "$script" --reason x --dry-run) == 2 ]] || fail 'missing --name-prefix is a usage error'
 [[ $(rc bash "$script" "${base[@]}" --cpus 8 --dry-run) == 2 ]] || fail '--cpus 8 is rejected'
 [[ $(rc bash "$script" "${base[@]}" --cpus 16 --dry-run) == 2 ]] || fail '--cpus 16 is rejected'
-pass 'usage: prefix required, --cpus only 12..14'
+[[ $(rc bash "$script" "${base[@]}" --main-ref HEAD --dry-run) == 2 ]] || fail '--main-ref is gone (only origin/main is deployable)'
+pass 'usage: prefix required, --cpus only 12..14, no --main-ref'
 
 # ---------------------------------------------------------- time window ----
 [[ $(TWOW_TEST_NOW_HHMM=2345 rc bash "$script" "${base[@]}" --dry-run) == 3 ]] || fail '23:45 UTC must be refused'
@@ -101,6 +118,33 @@ g -C "$tmp/src" worktree add -q "$tmp/wt" HEAD 2>/dev/null
 grep -q 'not a full clone' "$tmp/stderr" || fail "worktree refusal reason: $(cat "$tmp/stderr")"
 pass 'source: dirty, unmerged, autocrlf=true and linked worktree are refused'
 
+# --------------------------------------------------------------- origin ----
+# A fork clone is refused before any fetch; the real regex is used (seam off).
+g -C "$tmp/src" remote set-url origin https://github.com/someone/twow-repo
+[[ $(env -u TWOW_TEST_ORIGIN_RE bash -c '"$@" >"$0/stdout" 2>"$0/stderr"; echo $?' "$tmp" bash "$script" "${base[@]}" --dry-run) == 3 ]] \
+    || fail 'fork origin must be refused'
+grep -q 'not https://github.com/Cilverkrow/twow-repo' "$tmp/stderr" || fail "fork refusal reason: $(cat "$tmp/stderr")"
+# The canonical URL passes the URL check and is then fetched; https is blocked
+# here, so the refusal must come from the fetch, not from the URL check.
+for u in https://github.com/Cilverkrow/twow-repo https://github.com/Cilverkrow/twow-repo.git git@github.com:Cilverkrow/twow-repo.git; do
+    g -C "$tmp/src" remote set-url origin "$u"
+    [[ $(GIT_ALLOW_PROTOCOL=file env -u TWOW_TEST_ORIGIN_RE bash -c '"$@" >"$0/stdout" 2>"$0/stderr"; echo $?' "$tmp" bash "$script" "${base[@]}" --dry-run) == 3 ]] \
+        || fail "canonical origin $u without network must be refused by the fetch"
+    grep -q 'git fetch origin main failed' "$tmp/stderr" || fail "canonical origin $u not accepted by the URL check: $(cat "$tmp/stderr")"
+done
+g -C "$tmp/src" remote set-url origin "$tmp/upstream.git"
+# A locally moved origin/main does not count: the script fetches it first.
+g -C "$tmp/src" commit -q --allow-empty -m 'local only'
+g -C "$tmp/src" update-ref refs/remotes/origin/main HEAD
+[[ $(rc bash "$script" "${base[@]}" --dry-run) == 3 ]] || fail 'locally moved origin/main must be refused after the fetch'
+grep -q 'is not on origin/main' "$tmp/stderr" || fail "moved origin/main refusal reason: $(cat "$tmp/stderr")"
+g -C "$tmp/src" reset -q --hard origin/main
+[[ $(rc bash "$script" "${base[@]}" --dry-run) == 0 ]] || fail "clean main must pass again: $(cat "$tmp/stderr")"
+for want in 'upstream.git",' "\"origin_main\": \"$sha\"" '"main_ref": "refs/remotes/origin/main"'; do
+    grep -Fq -- "$want" "$tmp/stdout" || fail "local-digest.json lacks: $want"
+done
+pass 'origin: fork refused, canonical URLs accepted, origin/main always fetched and recorded'
+
 # ---------------------------------------------------------- live guards ----
 : > "$tmp/calls"
 [[ $(FAKE_PS_MANGOSD='ws50-roster-v24-mangosd-1 ws50-roster-v24' rc bash "$script" "${base[@]}") == 3 ]] \
@@ -122,7 +166,7 @@ pass 'guards: live/test mangosd, build container, host lock, builder quota'
 
 # ------------------------------------------------------------ real run ----
 printf 'FROM debian AS debug-symbols\n' >> "$tmp/src/deploy/docker/Dockerfile.core"
-g -C "$tmp/src" commit -qam 'debug target' && g -C "$tmp/src" update-ref refs/remotes/origin/main HEAD
+g -C "$tmp/src" commit -qam 'debug target' && g -C "$tmp/src" push -q origin HEAD:refs/heads/main
 sha=$(git -C "$tmp/src" rev-parse HEAD)
 : > "$tmp/calls"
 [[ $(rc bash "$script" "${base[@]}" --cpus 14 --memory 28g --push) == 0 ]] || fail "fake run failed: $(cat "$tmp/stderr")"
@@ -152,3 +196,26 @@ grep '^buildx build ' "$tmp/calls" | grep -q -- '--provenance=false --sbom=false
 [[ $(grep -c '^buildx build ' "$tmp/calls") == 1 ]] || fail '--no-debug still built debug-symbols'
 grep -Fq '"deployable": false' "$tmp/out/local-digest.json" || fail 'unpushed image must not be deployable'
 pass 'reuse: matching builder kept, unpushed image marked not deployable'
+
+# ------------------------------------------------------------- failures ----
+# A failed build or a missing digest must still stop our builder (it holds the
+# CPU quota) and release the lock, and must not write local-digest.json.
+rm -f "$tmp/out/local-digest.json"
+: > "$tmp/calls"
+[[ $(FAKE_FAIL_TARGET=runtime rc bash "$script" "${base[@]}" --push) == 1 ]] || fail 'failing runtime build must exit 1'
+grep -q '^buildx stop ob30-maintrain-build$' "$tmp/calls" || fail 'builder not stopped after a failed build'
+[[ ! -e "$tmp/HOST-BUILD.lock" && ! -e "$tmp/out/local-digest.json" ]] || fail 'lock left or digest file written after a failed build'
+: > "$tmp/calls"
+[[ $(FAKE_NODIGEST_TARGET=runtime rc bash "$script" "${base[@]}" --push) == 1 ]] || fail 'missing runtime digest must exit 1'
+grep -q 'no containerimage.digest in runtime.metadata.json' "$tmp/stderr" || fail "missing runtime digest message: $(cat "$tmp/stderr")"
+grep -q '^buildx stop ob30-maintrain-build$' "$tmp/calls" || fail 'builder not stopped after a missing digest'
+: > "$tmp/calls"
+[[ $(FAKE_NODIGEST_TARGET=debug-symbols rc bash "$script" "${base[@]}" --push) == 1 ]] || fail 'missing debug digest must exit 1'
+grep -q 'no containerimage.digest in debug.metadata.json' "$tmp/stderr" || fail "missing debug digest message: $(cat "$tmp/stderr")"
+grep -q '^buildx stop ob30-maintrain-build$' "$tmp/calls" || fail 'builder not stopped after a missing debug digest'
+[[ ! -e "$tmp/HOST-BUILD.lock" && ! -e "$tmp/out/local-digest.json" ]] || fail 'lock left or digest file written after a missing digest'
+# Our own leftover builder container (e.g. after kill -9) does not block a rerun.
+[[ $(FAKE_PS_ALL='buildx_buildkit_ob30-maintrain-build0 moby/buildkit:buildx-stable-1' \
+     FAKE_INSPECT=$'Driver: docker-container\nDriver Options: cpu-period="100000" cpu-quota="1200000"' \
+     rc bash "$script" "${base[@]}" --push) == 0 ]] || fail "own leftover builder must not block the rerun: $(cat "$tmp/stderr")"
+pass 'failures: builder stopped and lock released on failed build or missing digest; own builder reused'

@@ -12,8 +12,9 @@
 # What it does, in order:
 #   1. refuses outside the allowed window (23:30-00:30 UTC always; 00:30-08:00
 #      UTC unless --owner-night-order),
-#   2. refuses unless the source is a full, clean, LF-only clone whose HEAD is
-#      on origin/main (the Dockerfile copies .git into the build, so a linked
+#   2. refuses unless the source is a full, clean, LF-only clone of
+#      github.com/Cilverkrow/twow-repo whose HEAD is on a freshly fetched
+#      origin/main (the Dockerfile copies .git into the build, so a linked
 #      worktree, a dirty tree or CRLF checkout would produce an image whose
 #      provenance does not describe it),
 #   3. refuses if any mangosd container is running, if another build container
@@ -69,8 +70,7 @@ Options:
   --out-dir DIR        where local-digest.json and metadata go
                        [Y:\backup twwow\...\builds\P-maintrain-<sha12>]
   --lock-file PATH     host build lock [Y:\backup twwow\...\builds\HOST-BUILD.lock]
-  --main-ref REF       ref HEAD must be contained in [origin/main]
-  --allow-unmerged     build a HEAD that is not on --main-ref (pin-PR rehearsal);
+  --allow-unmerged     build a HEAD that is not on origin/main (pin-PR rehearsal);
                        recorded as on_main=false, never deployable
   --debug-target NAME  Dockerfile target for split debug symbols [debug-symbols];
                        built only if the Dockerfile defines it
@@ -89,7 +89,7 @@ info()   { echo "== $*"; }
 
 # ------------------------------------------------------------------ args ----
 prefix='' reason='' cpus=12 memory='' push=0 dry=0 src='' out_dir='' lock_file=''
-main_ref=origin/main allow_unmerged=0 debug_target=debug-symbols no_debug=0 night_ok=0
+allow_unmerged=0 debug_target=debug-symbols no_debug=0 night_ok=0
 lock_set=0
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -100,7 +100,7 @@ while [[ $# -gt 0 ]]; do
         --source)            [[ $# -ge 2 ]] || die "$1 needs a value"; src=$2; shift 2 ;;
         --out-dir)           [[ $# -ge 2 ]] || die "$1 needs a value"; out_dir=$2; shift 2 ;;
         --lock-file)         [[ $# -ge 2 ]] || die "$1 needs a value"; lock_file=$2; lock_set=1; shift 2 ;;
-        --main-ref)          [[ $# -ge 2 ]] || die "$1 needs a value"; main_ref=$2; shift 2 ;;
+        --main-ref)          die "--main-ref was removed: only origin/main of Cilverkrow/twow-repo is deployable (see runbook)" ;;
         --debug-target)      [[ $# -ge 2 ]] || die "$1 needs a value"; debug_target=$2; shift 2 ;;
         --push)              push=1; shift ;;
         --dry-run)           dry=1; shift ;;
@@ -169,12 +169,26 @@ core_sha=$(git -C "$src" ls-tree HEAD core | awk '$2 == "commit" { print $3 }')
 core_head=$(git -C "$src/core" rev-parse HEAD)
 [[ "$core_head" == "$core_sha" ]] || refuse "core checkout $core_head differs from the gitlink $core_sha"
 
+# "On main" is only meaningful for the canonical repository, freshly fetched:
+# the image is labelled source=Cilverkrow/twow-repo and pushed into the same
+# ghcr.io/cilverkrow packages, and for a local image local-digest.json is the
+# only deploy gate. A fork clone or a stale/moved origin/main must not pass.
+# `git remote get-url` expands insteadOf, so the URL checked is the URL fetched.
+# TWOW_TEST_ORIGIN_RE is a test seam for the contract test only.
+origin_re=${TWOW_TEST_ORIGIN_RE:-'^(https://github\.com/|git@github\.com:)Cilverkrow/twow-repo(\.git)?/?$'}
+[[ -z "${TWOW_TEST_ORIGIN_RE:-}" ]] || echo "WARNING: TWOW_TEST_ORIGIN_RE is set (contract-test seam); never use it for a real build" >&2
+origin_url=$(git -C "$src" remote get-url origin 2>/dev/null || true)
+[[ -n "$origin_url" ]] || refuse "$src has no remote 'origin'"
+[[ "$origin_url" =~ $origin_re ]] \
+    || refuse "origin of $src is '$origin_url', not https://github.com/Cilverkrow/twow-repo; only the canonical repository is built (clone it as in the runbook)"
+git -C "$src" -c core.autocrlf=false fetch --quiet --no-tags origin '+refs/heads/main:refs/remotes/origin/main' \
+    || refuse "git fetch origin main failed in $src; on_main cannot be decided without a fresh origin/main"
+origin_main=$(git -C "$src" rev-parse --verify --quiet 'refs/remotes/origin/main^{commit}' || true)
+[[ -n "$origin_main" ]] || refuse "origin/main is unknown in $src after the fetch"
+
 on_main=true
-if ! git -C "$src" rev-parse --verify --quiet "$main_ref^{commit}" >/dev/null; then
-    refuse "$main_ref is unknown in $src (git fetch origin first)"
-fi
-if ! git -C "$src" merge-base --is-ancestor "$repo_sha" "$main_ref"; then
-    (( allow_unmerged == 1 )) || refuse "HEAD $repo_sha is not on $main_ref; only main commits are built for a train (--allow-unmerged for a non-deployable rehearsal)"
+if ! git -C "$src" merge-base --is-ancestor "$repo_sha" "$origin_main"; then
+    (( allow_unmerged == 1 )) || refuse "HEAD $repo_sha is not on origin/main ($origin_main); only main commits are built for a train (--allow-unmerged for a non-deployable rehearsal)"
     on_main=false
 fi
 
@@ -203,7 +217,7 @@ else
 fi
 
 info "builder=$builder (container $buildkit_container) cpus=$cpus memory=${memory:-vm-limit} push=$push dry_run=$dry"
-info "repo=$repo_sha core=$core_sha tree=$repo_tree on_main=$on_main"
+info "repo=$repo_sha core=$core_sha tree=$repo_tree on_main=$on_main (origin/main=$origin_main, $origin_url)"
 info "debug-symbols target '$debug_target': $( (( build_debug == 1 )) && echo build || echo skip )"
 info "out_dir=$out_dir lock=${lock_file:-none}"
 
@@ -236,7 +250,10 @@ $running"
     hits=$(awk '$2 ~ /mangosd/ { print }' <<<"$all")
     [[ -z "$hits" ]] || refuse "a container from a mangosd image is running:
 $hits"
-    builds=$(awk '$1 ~ /^buildx_buildkit_/ || $1 ~ /-build(-|$)/ || $1 ~ /maintrain/ { print }' <<<"$all")
+    # Our own builder container is left out: it is reused below, and the host
+    # lock already enforces one build at a time. A leftover from an aborted run
+    # must not block the rerun.
+    builds=$(awk -v own="$buildkit_container" '$1 != own && ($1 ~ /^buildx_buildkit_/ || $1 ~ /-build(-|$)/ || $1 ~ /maintrain/) { print }' <<<"$all")
     [[ -z "$builds" ]] || refuse "another build container is running (one build at a time):
 $builds"
 
@@ -246,7 +263,21 @@ $builds"
     fi
 fi
 
-cleanup_lock() { [[ -n "${lock_written:-}" ]] && rm -f "$lock_written"; }
+# On every exit (guard refusal, failed build, missing digest, signal): stop our
+# buildkitd so it does not keep the 12-14 CPU quota (its state/cache is kept),
+# and remove our own lock file. builder_up/lock_written are set only once that
+# resource is ours.
+lock_written='' builder_up=''
+cleanup() {
+    if [[ -n "$builder_up" ]]; then
+        echo "+ $DOCKER buildx stop $builder   # exit cleanup"
+        "$DOCKER" buildx stop "$builder" >/dev/null 2>&1 || true
+    fi
+    if [[ -n "$lock_written" ]]; then rm -f "$lock_written"; fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 if [[ -n "$lock_file" ]]; then
     if (( dry == 1 )); then
         [[ ! -e "$lock_file" ]] || echo "NOTE: lock file exists now - a real run would refuse: $lock_file"
@@ -255,7 +286,6 @@ if [[ -n "$lock_file" ]]; then
             "$prefix" "$created" "$$" > "$lock_file") 2>/dev/null \
             || refuse "host build lock exists: $lock_file ($(cat "$lock_file" 2>/dev/null || true))"
         lock_written=$lock_file
-        trap cleanup_lock EXIT INT TERM
     fi
 fi
 
@@ -281,7 +311,9 @@ elif inspect=$("$DOCKER" buildx inspect "$builder" 2>/dev/null); then
         || refuse "builder $builder exists with a different CPU quota; recreate it keeping its cache:
   $DOCKER buildx rm --keep-state $builder"
     info "reusing builder $builder (ccache and layer cache kept in its state volume)"
+    builder_up=1
 else
+    builder_up=1   # also if create fails half-way after starting the container
     run "${create_cmd[@]}"
 fi
 
@@ -320,10 +352,10 @@ build_target() {
     run "${cmd[@]}"
 }
 
-digest_of() {   # digest_of <metadata-file>
+digest_of() {   # digest_of <metadata-file>; prints nothing if there is no digest
     (( dry == 1 )) && { echo "sha256:<dry-run>"; return 0; }
-    grep -o '"containerimage\.digest"[[:space:]]*:[[:space:]]*"sha256:[0-9a-f]\{64\}"' "$1" \
-        | grep -o 'sha256:[0-9a-f]\{64\}' | head -n1
+    { grep -o '"containerimage\.digest"[[:space:]]*:[[:space:]]*"sha256:[0-9a-f]\{64\}"' "$1" 2>/dev/null \
+        | grep -o 'sha256:[0-9a-f]\{64\}' | head -n1; } || true
 }
 
 started=$(date +%s)
@@ -335,13 +367,15 @@ runtime_digest=$(digest_of "$out_dir/runtime.metadata.json")
 debug_digest=''
 if (( build_debug == 1 )); then
     build_target "$debug_target" "$out_dir/debug.metadata.json" "${debug_tags[@]}" \
-        || { echo "ERROR: debug-symbols build/push failed" >&2; exit 1; }
+        || { echo "ERROR: debug-symbols build/push failed; runtime image $runtime_digest is built/pushed but NOT recorded (no local-digest.json) - rerun" >&2; exit 1; }
     debug_digest=$(digest_of "$out_dir/debug.metadata.json")
+    [[ -n "$debug_digest" ]] || { echo "ERROR: no containerimage.digest in debug.metadata.json; runtime image $runtime_digest is NOT recorded (no local-digest.json) - rerun" >&2; exit 1; }
 fi
 elapsed=$(( $(date +%s) - started ))
 
 # Stop buildkitd so it does not hold the CPU quota; state (cache) is kept.
 run "$DOCKER" buildx stop "$builder" || true
+builder_up=''
 
 json_str() { local s=${1//\\/\\\\}; s=${s//\"/\\\"}; s=${s//$'\n'/ }; printf '"%s"' "$s"; }
 digest_json="$out_dir/local-digest.json"
@@ -356,6 +390,9 @@ write_json() {
     printf '  "tree": "%s",\n' "$repo_tree"
     printf '  "core_revision": "%s",\n' "$core_sha"
     printf '  "on_main": %s,\n' "$on_main"
+    printf '  "main_ref": "refs/remotes/origin/main",\n'
+    printf '  "origin_url": %s,\n' "$(json_str "$origin_url")"
+    printf '  "origin_main": "%s",\n' "$origin_main"
     printf '  "images": {\n'
     printf '    "mangosd": %s,\n' "$(json_str "${REGISTRY}/${OWNER}/mangosd@${runtime_digest}")"
     printf '    "realmd": %s,\n' "$(json_str "${REGISTRY}/${OWNER}/realmd@${runtime_digest}")"

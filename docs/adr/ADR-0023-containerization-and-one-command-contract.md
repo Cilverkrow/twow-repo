@@ -165,9 +165,24 @@ had already been published. A hotfix took about 2 h from core merge to digest.
 published. Nothing is compiled a second time for publication.
 
 1. **Promotion** lives in its own workflow, `.github/workflows/promote.yml`
-   (decision 3b). It is triggered by `workflow_run` after the whole `ci.yml` run,
-   and only for `event == push`, `head_branch == main` and
-   `head_repository.full_name == Cilverkrow/twow-repo`. It pushes the tested CI
+   (decision 3b). It is triggered by `workflow_run` after the whole `ci.yml` run.
+   A `workflow_run` workflow always runs from the default branch, whatever ref
+   triggered the CI run, so **branch trust is enforced inside `promote.yml`**,
+   not by the ref GitHub reports for the promote run. `promote.yml` acts only if
+   all of these hold for the triggering run:
+   - `workflow_run.path == '.github/workflows/ci.yml'`. `workflow_run` matches
+     the triggering workflow by its `name:`, and any write collaborator can add a
+     workflow named `ci` on another branch;
+   - `workflow_run.event == 'push'`, `workflow_run.conclusion == 'success'` and
+     `workflow_run.head_repository.full_name == 'Cilverkrow/twow-repo'`;
+   - `workflow_run.head_sha` is the current `refs/heads/main` commit or an
+     ancestor of it, checked through the API
+     (`gh api repos/Cilverkrow/twow-repo/compare/<head_sha>...main`, status
+     `identical` or `ahead`). The string `workflow_run.head_branch == main` is
+     **not** sufficient: for a tag push it holds the tag name, so a tag named
+     `main` would satisfy it.
+
+   It pushes the tested CI
    image under `sha-<40>` to `ghcr.io/cilverkrow/{mangosd,realmd}`, signs it with
    `actions/attest-build-provenance` plus an SBOM attestation, and writes
    `publish-digest.json`. Before pushing it re-checks the core gitlink trust,
@@ -189,8 +204,18 @@ published. Nothing is compiled a second time for publication.
    `gh attestation verify oci://ghcr.io/cilverkrow/mangosd@<digest>
    --repo Cilverkrow/twow-repo --signer-workflow
    Cilverkrow/twow-repo/.github/workflows/promote.yml --source-ref refs/heads/main
-   --deny-self-hosted-runners`. For the `v*` fallback the signer is
-   `publish.yml` with `--source-ref refs/tags/v…`. Release requires a green
+   --deny-self-hosted-runners`. This check proves only "signed by the
+   `promote.yml` of `main`, on a GitHub-hosted runner": because `promote.yml` is
+   a `workflow_run` workflow, every attestation it signs carries
+   `refs/heads/main`, whichever ref triggered the CI run. It rejects copies of
+   `promote.yml` run from other branches, but not a promote run that was fed a
+   foreign CI run; that is what the filter in point 1 prevents. The deploy
+   therefore also checks that the image label `org.opencontainers.image.revision`
+   (equal to the attested `publish-digest.json` revision) is a commit on `main`:
+   `gh api repos/Cilverkrow/twow-repo/compare/<revision>...main` gives
+   `identical` or `ahead`. For the `v*` fallback the signer is
+   `publish.yml` with `--source-ref refs/tags/v…` (a tag-push run, so there the
+   ref is the triggering one). Release requires a green
    `main` build+test **and** either a tree identical to the tested pin-PR merge
    ref with a green pin-PR smoke, or a green `main` smoke. If the `main` smoke
    turns red later, the deploy is stopped or rolled back.
@@ -204,7 +229,8 @@ published. Nothing is compiled a second time for publication.
    (`Dockerfile.core`, `--target runtime`), a named, CPU-capped
    `docker-container` buildx builder, BuildKit provenance `mode=max` and an SBOM,
    the publish labels plus `io.twow.build.origin=local-maintrain`, the tag
-   `local-sha-<40>`, and a `local-digest.json`. The tool is
+   `local-sha-<40>`, and a `local-digest.json`. It builds only a clean clone of
+   `Cilverkrow/twow-repo` whose HEAD is on a freshly fetched `origin/main`. The tool is
    `ops/build/local-maintrain-image.sh`, the procedure is
    `docs/runbooks/local-maintrain-image-build.md`. Such an image has **no**
    GitHub attestation. It is deployed by digest after its BuildKit provenance,
@@ -223,11 +249,20 @@ published. Nothing is compiled a second time for publication.
   the deploy pull on the live host.
 - Crash analysis needs the matching debug artifact, matched by build-id. It is
   kept with the same retention as the image.
-- The trust boundary moves to the deploy: rulesets protect `main`, `release/**`
-  and `v*`, but anyone with write access can run a workflow from another branch
-  and push signed images under the same package names. The ref-bound
-  `gh attestation verify` above is therefore mandatory, not optional. lhns keeps
-  write access (decision 12), so this check is the effective boundary.
+- The trust boundary has two parts. Rulesets protect `main`, `release/**` and
+  `v*`, but anyone with write access can run a workflow from another branch and
+  push signed images under the same package names, and lhns keeps write access
+  (decision 12). (a) Branch trust lives **inside `promote.yml`**: the filter in
+  point 1 (workflow path, push event, success, same repository, `head_sha`
+  contained in `main` via the API). (b) The deploy runs the `gh attestation
+  verify` above, which binds the image to the `promote.yml` of `main` on a
+  GitHub-hosted runner, plus the revision-on-`main` check. Neither part is
+  optional; `--source-ref refs/heads/main` alone cannot tell a promote of a
+  foreign CI run from a genuine one.
+- Owner settings (set by the owner himself, with admin bypass, decision 5)
+  therefore also include: a tag ruleset that blocks creating tags other than
+  `v*` (at least a tag named `main`), and `.github/workflows/promote.yml` under
+  CODEOWNERS and the `main` ruleset.
 - Workflow changes take effect only when they are in `main` **and** in the active
   core `release/*.x`.
 - Implementation is the set of #486 Phase-B PRs (image flags and split debug,

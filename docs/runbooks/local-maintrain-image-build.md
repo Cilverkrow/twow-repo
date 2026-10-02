@@ -82,11 +82,22 @@ ops/build/local-maintrain-image.sh --source "$SRC" --name-prefix ob30 \
 Das Skript (aus einem beliebigen Checkout aufrufbar, gebaut wird `--source`):
 
 1. lehnt ab bei gesperrter Uhrzeit, unsauberem oder nicht vollständigem Klon,
-   CRLF-Konfiguration, `HEAD` nicht auf `origin/main` (Ausnahme
+   CRLF-Konfiguration, einem `origin`, der nicht
+   `https://github.com/Cilverkrow/twow-repo` (oder `git@github.com:Cilverkrow/twow-repo.git`)
+   ist (Fork-Klon), `HEAD` nicht auf `origin/main` (Ausnahme
    `--allow-unmerged`: nur Probe, nie deploybar), laufendem `mangosd`, laufendem
-   Build-Container oder vorhandener Sperrdatei
-   `Y:\backup twwow\workspace-relocation-20260902\builds\HOST-BUILD.lock`;
-2. legt die Sperrdatei an (wird am Ende entfernt);
+   fremdem Build-Container oder vorhandener Sperrdatei
+   `Y:\backup twwow\workspace-relocation-20260902\builds\HOST-BUILD.lock`.
+   `origin/main` holt das Skript vorher selbst frisch
+   (`git fetch origin +refs/heads/main:refs/remotes/origin/main`, auch im
+   Probelauf); ohne Netz lehnt es ab. Ein lokal verschobenes oder veraltetes
+   `origin/main` zählt also nicht. Eine andere Referenz als `origin/main` lässt
+   sich nicht angeben (`--main-ref` gibt es nicht);
+2. legt die Sperrdatei an. Sie wird bei jedem Ende entfernt, auch nach einer
+   Ablehnung oder einem fehlgeschlagenen Build. Ebenso stoppt das Skript bei
+   jedem Ende den eigenen Builder (`docker buildx stop`), damit `buildkitd` die
+   12–14 Kerne nicht weiter belegt. Der eigene Builder-Container aus einem
+   abgebrochenen Lauf blockiert einen erneuten Lauf nicht;
 3. legt den Builder `<prefix>-maintrain-build` (Container
    `buildx_buildkit_<prefix>-maintrain-build0`) mit `cpu-quota = Kerne × 100000`
    an oder verwendet ihn weiter. Ein vorhandener Builder mit anderer Quote wird
@@ -106,9 +117,14 @@ Das Skript (aus einem beliebigen Checkout aufrufbar, gebaut wird `--source`):
    nur der Digest;
 7. stoppt den Builder-Container (`docker buildx stop`, der Cache bleibt) und
    schreibt `local-digest.json` (Felder wie `publish-digest.json`, dazu
-   `builder: local-maintrain`, `deployable`, `reason`, Laufzeit) nach
+   `builder: local-maintrain`, `deployable`, `reason`, Laufzeit, `origin_url`,
+   `origin_main` = gefetchter `main`-Stand, `main_ref`) nach
    `--out-dir`, Standard
    `Y:\backup twwow\workspace-relocation-20260902\builds\<prefix>-maintrain-<sha12>`.
+   Schlägt ein Build fehl oder fehlt ein Digest in den Metadaten, endet das
+   Skript mit Code 1 **ohne** `local-digest.json`. Ein schon gepushtes
+   Runtime-Image nennt die Fehlermeldung; es gilt als nicht erfasst und wird
+   nicht deployt. Erneut laufen lassen.
 
 Ohne `--push` wird das Image nur lokal geladen (`--load`). Der Docker-Exporter
 kann keine Attestierungen tragen. Ein solches Image ist ein lokales Prüfartefakt
@@ -128,7 +144,11 @@ Für einen lokalen Build gibt es **keine GitHub-Attestierung**, denn ohne
 GitHub-OIDC gibt es kein `gh attestation verify`. Stattdessen gilt:
 
 1. **Digest nur aus `local-digest.json`**, nie über einen Tag auflösen. Wer
-   Schreibrecht hat, kann Tags überschreiben.
+   Schreibrecht hat, kann Tags überschreiben. `deployable` muss `true` sein,
+   `origin_url` muss auf `Cilverkrow/twow-repo` zeigen, und `revision` muss auf
+   GitHub in `main` liegen:
+   `gh api repos/Cilverkrow/twow-repo/compare/<revision>...main --jq .status`
+   ergibt `identical` oder `ahead`.
 2. **BuildKit-Provenance prüfen.** Die Befehle druckt das Skript am Ende:
 
    ```sh
