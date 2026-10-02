@@ -1,0 +1,614 @@
+# Build once, promote (#486 B5, owner decisions V3 and 3b).
+#
+# The image a deploy pulls is the image ci.yml built and tested: `ci-staged`
+# from the build-and-test job, uploaded as the `core-image` artifact and run by
+# the smoke job. This workflow pushes exactly that tar to the registry after the
+# WHOLE ci run on main is green, and signs it. Nothing here compiles.
+#
+# WHY A SEPARATE FILE WITH workflow_run (decision 3b, not a job in ci.yml).
+# ci.yml runs for every pull request, from the PR's own copy of the file. A job
+# with packages/id-token/attestations write in that file would be one edit away
+# from running for a PR. A workflow_run workflow always runs from the default
+# branch's copy of this file, never from a PR, and only after ci finished - so
+# the write permissions below exist only in a file a PR cannot make run. The
+# cost is the smoke job's ~20 minutes before the push; in exchange the main
+# smoke is already green when the digest appears.
+#
+# WHAT IS CHECKED BEFORE ANYTHING IS PUSHED:
+#   * the triggering run: ci.yml (by path, not only by name), push event,
+#     branch main, this repository, conclusion success, head sha as checked out;
+#   * the core gitlink is on core main or a core release/* branch
+#     (ops/ci/check-core-gitlink-trust.sh, #486 B1) - fail = no push;
+#   * the image record ci.yml wrote: same commit, event, ref, run, core sha and
+#     build-input key; sha256 of the core-image tar and of every debug file;
+#   * the loaded image's labels: revision == head sha, io.twow.core.revision ==
+#     gitlink, io.twow.build-input == the key computed here.
+#
+# WHAT IS PUSHED, all under the 40-hex commit, never `latest`:
+#   ghcr.io/cilverkrow/mangosd:sha-<40>        the runtime image (+ bi-<key>)
+#   ghcr.io/cilverkrow/realmd:sha-<40>         the same digest under the second
+#                                              name the compose file and chart use
+#   ghcr.io/cilverkrow/mangosd-debug:sha-<40>  the split debug symbols (decision
+#                                              2b): FROM scratch, never a layer
+#                                              of the runtime image
+# each with a build-provenance attestation, the runtime image also with an SBOM
+# attestation, and publish-digest.json (artifact and summary) naming the digest a
+# deploy pins. Deploy rule (decision 4): ops/live/release-digest.sh.
+#
+# B5a. When the run's build-and-test was skipped (no C++ change), there is no
+# image to promote. The last promoted image with the same build-input key
+# (ops/ci/build-input-key.sh) is looked up by its bi-<key> tag, verified by
+# attestation and label, and tagged sha-<40> without a compile. If none exists,
+# nothing is pushed and the summary says so. (On a push to main ci.yml's scope
+# job always builds, so this is the rare path; commits that only touch
+# paths-ignore files start no ci run and get no image at all.)
+#
+# Attestation identity: a workflow_run run executes on refs/heads/main at the
+# default branch's newest commit, so the provenance names promote.yml@
+# refs/heads/main and that commit as its source. The commit that was BUILT is
+# the image's org.opencontainers.image.revision label and repo_sha in
+# publish-digest.json; release-digest.sh checks both.
+#
+# Actions are pinned to full commit SHAs (plan B5); the tag is in the comment.
+name: promote
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  # One promotion per commit at a time; a re-run waits instead of racing the
+  # first run's pushes and attestations.
+  group: promote-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+# Nothing at the top level; the one job below names exactly what it needs.
+permissions: {}
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: cilverkrow
+  HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+  CI_RUN_ID: ${{ github.event.workflow_run.id }}
+  # Job names in ci.yml (the `name:` of build-and-test and smoke).
+  CI_BUILD_JOB: build + test
+  CI_SMOKE_JOB: compose up + smoke
+
+jobs:
+  promote:
+    # The guard is checked again inside the job against the API; this `if:`
+    # only keeps the job from starting for anything else. It is also what
+    # ops/ci/test-workflow-runner-policy.sh requires of a workflow_run file.
+    if: >-
+      github.repository == 'Cilverkrow/twow-repo' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    name: promote core image
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      # download-artifact from the triggering run, run/job lookups, gh run download
+      actions: read
+      packages: write
+      # OIDC identity the attestations are signed against, and the attestation store
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      # The API's view of the triggering run, not only the event payload: the
+      # file must be ci.yml (workflow_run matches by NAME, and any workflow can
+      # call itself `ci`), and build-and-test decides promote or reuse.
+      - name: Check the triggering ci run
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [ "$(git rev-parse HEAD)" = "$HEAD_SHA" ] \
+            || { echo "::error::checkout is not $HEAD_SHA"; exit 1; }
+          info=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CI_RUN_ID" \
+            --jq '[.path, .event, .head_branch, .head_sha, .conclusion, .head_repository.full_name] | join(" ")')
+          read -r path event branch sha conclusion head_repo <<< "$info"
+          echo "ci run $CI_RUN_ID: $info"
+          [ "$path" = .github/workflows/ci.yml ] || { echo "::error::triggering run is $path, not ci.yml"; exit 1; }
+          [ "$event" = push ] && [ "$branch" = main ] && [ "$sha" = "$HEAD_SHA" ] \
+            && [ "$conclusion" = success ] && [ "$head_repo" = "$GITHUB_REPOSITORY" ] \
+            || { echo "::error::triggering run is not a green push run of main at $HEAD_SHA"; exit 1; }
+          jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CI_RUN_ID/jobs?per_page=100" \
+            --jq '.jobs[] | [.name, .conclusion] | join("=")')
+          build=$(printf '%s\n' "$jobs" | sed -n "s/^$CI_BUILD_JOB=//p" | head -1)
+          smoke=$(printf '%s\n' "$jobs" | sed -n "s/^$CI_SMOKE_JOB=//p" | head -1)
+          echo "build + test: ${build:-absent}, smoke: ${smoke:-absent}"
+          case "$build" in
+            success) mode=promote ;;
+            skipped) mode=reuse ;;
+            *) echo "::error::job '$CI_BUILD_JOB' is '${build:-absent}' in a green run"; exit 1 ;;
+          esac
+          core_sha=$(git ls-tree HEAD core | awk '$2 == "commit" { print $3 }')
+          printf '%s' "$core_sha" | grep -Eqx '[0-9a-f]{40}' || { echo "::error::no core gitlink"; exit 1; }
+          build_input=$(bash ops/ci/build-input-key.sh HEAD)
+          {
+            echo "mode=$mode"
+            echo "build=$build"
+            echo "smoke=${smoke:-absent}"
+            echo "core_sha=$core_sha"
+            echo "build_input=$build_input"
+          } >> "$GITHUB_OUTPUT"
+
+      # #486 B1: the pinned core commit must already be on core main or a core
+      # release/* branch. The script comes from the commit being promoted (a
+      # main commit); without it (B1 not merged) this fails, and nothing is
+      # pushed - by design.
+      - name: Core gitlink is on core main or release/*
+        run: |
+          set -euo pipefail
+          [ -f ops/ci/check-core-gitlink-trust.sh ] \
+            || { echo "::error::ops/ci/check-core-gitlink-trust.sh missing (#486 B1) - refusing to promote"; exit 1; }
+          bash ops/ci/check-core-gitlink-trust.sh
+
+      # Decision 4, first half of the second branch: was this exact tree tested
+      # by the pin PR, and was that PR's smoke green? Informational for the
+      # push (never fails the job), binding for the deploy rule. The tested
+      # tree comes from the image record of the PR's last ci run at its final
+      # head; GitHub drops refs/pull/N/merge once a PR is merged.
+      - name: Compare with the tested pin PR
+        id: pin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          tree=$(git rev-parse 'HEAD^{tree}')
+          pr="" pr_run="" pr_smoke=none identical=unknown tested=""
+          line=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/pulls" \
+            --jq "map(select(.merged_at != null and .merge_commit_sha == \"$HEAD_SHA\" and .base.ref == \"main\")) | .[0] // empty | \"\(.number) \(.head.sha) \(.head.repo.full_name)\"" \
+            2>/dev/null) || line=""
+          if [ -z "$line" ]; then
+            echo "no merged pull request has $HEAD_SHA as its merge commit (direct push?)"
+          else
+            read -r pr pr_head pr_repo <<< "$line"
+            echo "pin PR #$pr, final head $pr_head from $pr_repo"
+            if [ "$pr_repo" != "$GITHUB_REPOSITORY" ]; then
+              pr_smoke=untrusted-fork
+            else
+              run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=pull_request&head_sha=$pr_head&per_page=100" \
+                --jq "[.workflow_runs[] | select(.head_repository.full_name == \"$GITHUB_REPOSITORY\" and .status == \"completed\")] | sort_by(.run_number) | last // empty | \"\(.id) \(.conclusion)\"" \
+                2>/dev/null) || run=""
+              if [ -z "$run" ]; then
+                echo "no completed ci run for the PR head $pr_head"
+              else
+                read -r pr_run pr_conclusion <<< "$run"
+                pr_smoke=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$pr_run/jobs?per_page=100" \
+                  --jq ".jobs[] | select(.name == \"$CI_SMOKE_JOB\") | .conclusion" 2>/dev/null | head -1)
+                pr_smoke=${pr_smoke:-absent}
+                echo "pin PR ci run $pr_run: $pr_conclusion, smoke: $pr_smoke"
+                rec="$RUNNER_TEMP/pin-record"
+                if gh run download "$pr_run" -R "$GITHUB_REPOSITORY" -n image-record -D "$rec" >/dev/null 2>&1 \
+                   && [ -f "$rec/image-record.json" ]; then
+                  tested=$(jq -r '.tree // empty' "$rec/image-record.json")
+                  rec_head=$(jq -r '.pr_head_sha // empty' "$rec/image-record.json")
+                  if [ "$rec_head" != "$pr_head" ]; then
+                    echo "::warning::pin PR record is for head $rec_head, not $pr_head"
+                  elif [ "$tested" = "$tree" ]; then
+                    identical=true
+                  elif printf '%s' "$tested" | grep -Eqx '[0-9a-f]{40}'; then
+                    identical=false
+                  fi
+                else
+                  echo "pin PR run $pr_run has no image-record artifact (older than #486 B5, or expired)"
+                fi
+              fi
+            fi
+          fi
+          echo "tree: main $tree, tested ${tested:-unknown} -> $identical"
+          {
+            echo "pr=$pr"
+            echo "pr_run=$pr_run"
+            echo "pr_smoke=$pr_smoke"
+            echo "identical=$identical"
+            echo "tree=$tree"
+            echo "tested=$tested"
+          } >> "$GITHUB_OUTPUT"
+          exit 0
+
+      # ---------------------------------------------------------- promote
+      - name: Download core-image from the ci run
+        if: steps.run.outputs.mode == 'promote'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: core-image
+          path: ${{ runner.temp }}/ci/core-image
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Download debug-symbols from the ci run
+        if: steps.run.outputs.mode == 'promote'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: debug-symbols
+          path: ${{ runner.temp }}/ci/debug-symbols
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Download image-record from the ci run
+        if: steps.run.outputs.mode == 'promote'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: image-record
+          path: ${{ runner.temp }}/ci/image-record
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify the artifacts against the image record
+        if: steps.run.outputs.mode == 'promote'
+        env:
+          CORE_SHA: ${{ steps.run.outputs.core_sha }}
+          BUILD_INPUT: ${{ steps.run.outputs.build_input }}
+        run: |
+          set -euo pipefail
+          ci="$RUNNER_TEMP/ci"
+          rec="$ci/image-record/image-record.json"
+          field() { jq -r --arg k "$1" '.[$k] // empty' "$rec"; }
+          bad=0
+          check() {
+            if [ "$(field "$1")" != "$2" ]; then
+              echo "::error::image record $1 is '$(field "$1")', expected '$2'"
+              bad=1
+            fi
+          }
+          check commit "$HEAD_SHA"
+          check event push
+          check ref refs/heads/main
+          check run_id "$CI_RUN_ID"
+          check core_sha "$CORE_SHA"
+          check build_input "$BUILD_INPUT"
+          check tree "$(git rev-parse 'HEAD^{tree}')"
+          [ "$bad" -eq 0 ] || exit 1
+          want=$(field core_image_sha256)
+          have=$(sha256sum "$ci/core-image/core.tar.gz" | cut -d' ' -f1)
+          [ "$want" = "$have" ] || { echo "::error::core.tar.gz sha256 $have, record says $want"; exit 1; }
+          echo "core.tar.gz sha256 $have matches the record"
+          (cd "$ci/debug-symbols" && sha256sum --quiet -c "$ci/image-record/debug-symbols.sha256")
+          # No file beyond the recorded ones either.
+          listed=$(wc -l < "$ci/image-record/debug-symbols.sha256")
+          present=$(cd "$ci/debug-symbols" && find . -type f | wc -l)
+          [ "$listed" -eq "$present" ] || { echo "::error::debug-symbols has $present files, record lists $listed"; exit 1; }
+          echo "debug-symbols: $present files match the record"
+
+      - name: Load the image and check its labels
+        if: steps.run.outputs.mode == 'promote'
+        env:
+          CORE_SHA: ${{ steps.run.outputs.core_sha }}
+          BUILD_INPUT: ${{ steps.run.outputs.build_input }}
+        run: |
+          set -euo pipefail
+          loaded=$(gunzip -c "$RUNNER_TEMP/ci/core-image/core.tar.gz" | docker load)
+          echo "$loaded"
+          image=$(printf '%s\n' "$loaded" | sed -n 's/^Loaded image: //p' | head -1)
+          [ "$image" = twow/core:dev ] || { echo "::error::loaded '$image', expected twow/core:dev"; exit 1; }
+          labels=$(docker image inspect "$image" --format '{{json .Config.Labels}}')
+          label() { printf '%s' "$labels" | jq -r --arg k "$1" '.[$k] // empty'; }
+          bad=0
+          expect() {
+            if [ "$(label "$1")" != "$2" ]; then
+              echo "::error::label $1 is '$(label "$1")', expected '$2'"
+              bad=1
+            fi
+          }
+          expect org.opencontainers.image.revision "$HEAD_SHA"
+          expect org.opencontainers.image.source "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+          expect org.opencontainers.image.version "sha-$HEAD_SHA"
+          expect io.twow.core.revision "$CORE_SHA"
+          expect io.twow.build-input "$BUILD_INPUT"
+          [ "$bad" -eq 0 ] || exit 1
+          echo "labels match: revision $HEAD_SHA, core $CORE_SHA, build input $BUILD_INPUT"
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # One push, then carbon copies by digest: `imagetools create
+      # --prefer-index=false` with one source copies the manifest unchanged, so
+      # realmd and the bi-<key> tag carry the SAME digest (without the flag a
+      # single manifest is wrapped in a new index with a new digest). Every
+      # tag is read back and must resolve to that digest.
+      - name: Push the image
+        id: push
+        if: steps.run.outputs.mode == 'promote'
+        env:
+          BUILD_INPUT: ${{ steps.run.outputs.build_input }}
+        run: |
+          set -euo pipefail
+          m="$REGISTRY/$OWNER/mangosd"
+          r="$REGISTRY/$OWNER/realmd"
+          resolve() {
+            docker buildx imagetools inspect "$1" --format '{{json .Manifest}}' 2>/dev/null \
+              | jq -r '.digest // empty' || true
+          }
+          prev=$(resolve "$m:sha-$HEAD_SHA")
+          docker tag twow/core:dev "$m:sha-$HEAD_SHA"
+          docker push "$m:sha-$HEAD_SHA" | tee "$RUNNER_TEMP/push.log"
+          digest=$(sed -n 's/.*digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' "$RUNNER_TEMP/push.log" | tail -1)
+          printf '%s' "$digest" | grep -Eqx 'sha256:[0-9a-f]{64}' \
+            || { echo "::error::docker push reported no digest"; exit 1; }
+          if [ -n "$prev" ] && [ "$prev" != "$digest" ]; then
+            echo "::warning::sha-$HEAD_SHA moved from $prev to $digest (re-run of ci?). Deploys pin digests, not tags."
+          fi
+          docker buildx imagetools create --prefer-index=false --tag "$m:bi-$BUILD_INPUT" "$m@$digest"
+          docker buildx imagetools create --prefer-index=false --tag "$r:sha-$HEAD_SHA" "$m@$digest"
+          for ref in "$m:sha-$HEAD_SHA" "$m:bi-$BUILD_INPUT" "$r:sha-$HEAD_SHA"; do
+            got=$(resolve "$ref")
+            [ "$got" = "$digest" ] || { echo "::error::$ref resolves to '${got:-nothing}', pushed $digest"; exit 1; }
+          done
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "pushed $digest as $m:sha-$HEAD_SHA, $m:bi-$BUILD_INPUT, $r:sha-$HEAD_SHA"
+
+      # Decision 2b: the debug symbols as their own image, FROM scratch, with
+      # a label naming the runtime digest they belong to. gdb matches them by
+      # GNU build id (BUILD-IDS), so they can never be mistaken for another
+      # build's even under the same tag.
+      - name: Push the debug symbols image
+        id: debug
+        if: steps.run.outputs.mode == 'promote'
+        env:
+          CORE_SHA: ${{ steps.run.outputs.core_sha }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          d="$REGISTRY/$OWNER/mangosd-debug"
+          printf 'FROM scratch\nCOPY . /\n' > "$RUNNER_TEMP/Dockerfile.debug"
+          docker buildx build \
+            --file "$RUNNER_TEMP/Dockerfile.debug" \
+            --provenance=false --sbom=false \
+            --label "org.opencontainers.image.revision=$HEAD_SHA" \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "io.twow.core.revision=$CORE_SHA" \
+            --label "io.twow.debug-for=$REGISTRY/$OWNER/mangosd@$DIGEST" \
+            --tag "$d:sha-$HEAD_SHA" \
+            --metadata-file "$RUNNER_TEMP/debug-meta.json" \
+            --push \
+            "$RUNNER_TEMP/ci/debug-symbols"
+          digest=$(jq -r '."containerimage.digest" // empty' "$RUNNER_TEMP/debug-meta.json")
+          printf '%s' "$digest" | grep -Eqx 'sha256:[0-9a-f]{64}' \
+            || { echo "::error::debug image build reported no digest"; exit 1; }
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "pushed $d:sha-$HEAD_SHA = $digest"
+
+      - name: Attest mangosd
+        if: steps.run.outputs.mode == 'promote'
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/mangosd
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest realmd
+        if: steps.run.outputs.mode == 'promote'
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/realmd
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest mangosd-debug
+        if: steps.run.outputs.mode == 'promote'
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/mangosd-debug
+          subject-digest: ${{ steps.debug.outputs.digest }}
+          push-to-registry: true
+
+      - name: SBOM of the runtime image
+        if: steps.run.outputs.mode == 'promote'
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/mangosd@${{ steps.push.outputs.digest }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          format: spdx-json
+          output-file: ${{ runner.temp }}/sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Attest the SBOM (mangosd)
+        if: steps.run.outputs.mode == 'promote'
+        uses: actions/attest-sbom@bd218ad0dbcb3e146bd073d1d9c6d78e08aa8a0b # v2.4.0
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/mangosd
+          subject-digest: ${{ steps.push.outputs.digest }}
+          sbom-path: ${{ runner.temp }}/sbom.spdx.json
+          push-to-registry: true
+
+      - name: Attest the SBOM (realmd)
+        if: steps.run.outputs.mode == 'promote'
+        uses: actions/attest-sbom@bd218ad0dbcb3e146bd073d1d9c6d78e08aa8a0b # v2.4.0
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/realmd
+          subject-digest: ${{ steps.push.outputs.digest }}
+          sbom-path: ${{ runner.temp }}/sbom.spdx.json
+          push-to-registry: true
+
+      # ------------------------------------------------------------ B5a
+      # No image in this run. Reuse the image of an earlier promoted commit
+      # with the same build-input key, found by its bi-<key> tag and trusted
+      # only after the attestation (promote.yml, refs/heads/main, hosted
+      # runner) and the io.twow.build-input label check out. Retagged by
+      # carbon copy: same digest, already attested - no new attestation.
+      - name: Reuse the image of the same build input
+        id: reuse
+        if: steps.run.outputs.mode == 'reuse'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_INPUT: ${{ steps.run.outputs.build_input }}
+        run: |
+          set -euo pipefail
+          m="$REGISTRY/$OWNER/mangosd"
+          r="$REGISTRY/$OWNER/realmd"
+          d="$REGISTRY/$OWNER/mangosd-debug"
+          resolve() {
+            docker buildx imagetools inspect "$1" --format '{{json .Manifest}}' 2>/dev/null \
+              | jq -r '.digest // empty' || true
+          }
+          digest=$(resolve "$m:bi-$BUILD_INPUT")
+          if [ -z "$digest" ]; then
+            echo "::notice::build-and-test was skipped and no promoted image has build input $BUILD_INPUT - nothing pushed for $HEAD_SHA"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh attestation verify "oci://$m@$digest" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/promote.yml" \
+            --source-ref refs/heads/main \
+            --deny-self-hosted-runners
+          # Labels of the image config (a single manifest, or the amd64 entry
+          # of an index).
+          labels=$(docker buildx imagetools inspect "$m@$digest" --format '{{json .Image}}' \
+            | jq -c 'if has("config") then .config.Labels
+                     else (to_entries | map(select(.key | startswith("linux/amd64"))) | .[0].value.config.Labels)
+                     end')
+          label() { printf '%s' "$labels" | jq -r --arg k "$1" '.[$k] // empty'; }
+          [ "$(label io.twow.build-input)" = "$BUILD_INPUT" ] \
+            || { echo "::error::$m@$digest carries build input '$(label io.twow.build-input)', not $BUILD_INPUT"; exit 1; }
+          from=$(label org.opencontainers.image.revision)
+          docker buildx imagetools create --prefer-index=false --tag "$m:sha-$HEAD_SHA" "$m@$digest"
+          docker buildx imagetools create --prefer-index=false --tag "$r:sha-$HEAD_SHA" "$r@$digest"
+          for ref in "$m:sha-$HEAD_SHA" "$r:sha-$HEAD_SHA"; do
+            [ "$(resolve "$ref")" = "$digest" ] || { echo "::error::$ref does not resolve to $digest"; exit 1; }
+          done
+          debug_digest=$(resolve "$d:sha-$from")
+          if [ -n "$debug_digest" ]; then
+            docker buildx imagetools create --prefer-index=false --tag "$d:sha-$HEAD_SHA" "$d@$debug_digest"
+          else
+            echo "::warning::no debug symbols image for $from"
+          fi
+          {
+            echo "found=true"
+            echo "digest=$digest"
+            echo "debug_digest=$debug_digest"
+            echo "from=$from"
+          } >> "$GITHUB_OUTPUT"
+          echo "reused $digest (promoted for $from) as sha-$HEAD_SHA"
+
+      # ------------------------------------------------------------ record
+      # What a deploy pins (owner decision 4): the digest from here or from the
+      # attestation subject, never from resolving a tag. Same schema as
+      # publish.yml's publish-digest.json, plus the release-rule inputs that
+      # ops/live/release-digest.sh evaluates:
+      #   source           promoted | reused (B5a; reused_from names the commit)
+      #   ci_run_id        the ci run whose image this is
+      #   main_build_test  conclusion of `build + test` in that run
+      #   main_smoke       conclusion of `compose up + smoke` in that run
+      #   smoke_pending    false once main_smoke is success. With decision 3b
+      #                    promote runs after the whole ci run, so the main
+      #                    smoke is already finished here (plan B5 assumed 3a,
+      #                    where it was still pending)
+      #   tree_identical   true | false | null: squash tree == pin PR tested tree
+      #   pin_pr, pin_pr_run_id, pin_pr_smoke   the pin PR and its ci run's smoke
+      #   build_input      ops/ci/build-input-key.sh of repo_sha
+      #   debug_image, debug_digest            the split debug symbols
+      - name: Record the promoted digest
+        if: steps.run.outputs.mode == 'promote' || steps.reuse.outputs.found == 'true'
+        env:
+          MODE: ${{ steps.run.outputs.mode }}
+          DIGEST: ${{ steps.push.outputs.digest || steps.reuse.outputs.digest }}
+          DEBUG_DIGEST: ${{ steps.debug.outputs.digest || steps.reuse.outputs.debug_digest }}
+          REUSED_FROM: ${{ steps.reuse.outputs.from }}
+          CORE_SHA: ${{ steps.run.outputs.core_sha }}
+          BUILD_INPUT: ${{ steps.run.outputs.build_input }}
+          MAIN_BUILD: ${{ steps.run.outputs.build }}
+          MAIN_SMOKE: ${{ steps.run.outputs.smoke }}
+          PIN_PR: ${{ steps.pin.outputs.pr }}
+          PIN_PR_RUN: ${{ steps.pin.outputs.pr_run }}
+          PIN_PR_SMOKE: ${{ steps.pin.outputs.pr_smoke }}
+          IDENTICAL: ${{ steps.pin.outputs.identical }}
+          TREE: ${{ steps.pin.outputs.tree }}
+          TESTED: ${{ steps.pin.outputs.tested }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$DIGEST" | grep -Eqx 'sha256:[0-9a-f]{64}' || { echo "::error::no digest to record"; exit 1; }
+          case "$IDENTICAL" in true|false) tree_identical=$IDENTICAL ;; *) tree_identical=null ;; esac
+          case "$PIN_PR" in ''|*[!0-9]*) pin_pr=null ;; *) pin_pr=$PIN_PR ;; esac
+          [ "$MAIN_SMOKE" = success ] && smoke_pending=false || smoke_pending=true
+          source=promoted
+          [ "$MODE" = reuse ] && source=reused
+          out="$RUNNER_TEMP/publish-digest"
+          mkdir -p "$out"
+          jq -n \
+            --arg repo_sha "$HEAD_SHA" \
+            --arg core_sha "$CORE_SHA" \
+            --arg image "$REGISTRY/$OWNER/mangosd" \
+            --arg realmd "$REGISTRY/$OWNER/realmd" \
+            --arg digest "$DIGEST" \
+            --arg workflow "$WORKFLOW_REF" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg built_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg source "$source" \
+            --arg reused_from "$REUSED_FROM" \
+            --arg ci_run_id "$CI_RUN_ID" \
+            --arg main_build_test "$MAIN_BUILD" \
+            --arg main_smoke "$MAIN_SMOKE" \
+            --argjson smoke_pending "$smoke_pending" \
+            --argjson tree_identical "$tree_identical" \
+            --argjson pin_pr "$pin_pr" \
+            --arg pin_pr_run_id "$PIN_PR_RUN" \
+            --arg pin_pr_smoke "$PIN_PR_SMOKE" \
+            --arg build_input "$BUILD_INPUT" \
+            --arg debug_image "$REGISTRY/$OWNER/mangosd-debug" \
+            --arg debug_digest "$DEBUG_DIGEST" \
+            '{repo_sha: $repo_sha, core_sha: $core_sha, image: $image,
+              digest: $digest, workflow: $workflow, run_id: $run_id,
+              built_at: $built_at, images: [$image, $realmd],
+              source: $source, reused_from: $reused_from,
+              ci_run_id: $ci_run_id, main_build_test: $main_build_test,
+              main_smoke: $main_smoke, smoke_pending: $smoke_pending,
+              tree_identical: $tree_identical, pin_pr: $pin_pr,
+              pin_pr_run_id: $pin_pr_run_id, pin_pr_smoke: $pin_pr_smoke,
+              build_input: $build_input, debug_image: $debug_image,
+              debug_digest: $debug_digest}' \
+            > "$out/publish-digest.json"
+          cat "$out/publish-digest.json"
+          {
+            echo '## Promoted core image'
+            echo
+            echo "- Digest: \`$DIGEST\` ($source${REUSED_FROM:+ from $REUSED_FROM})"
+            echo "- Names: \`$REGISTRY/$OWNER/mangosd\`, \`$REGISTRY/$OWNER/realmd\` (tag \`sha-$HEAD_SHA\`)"
+            echo "- Debug symbols: \`$REGISTRY/$OWNER/mangosd-debug@${DEBUG_DIGEST:-none}\`"
+            echo "- Repo commit: \`$HEAD_SHA\`, core commit: \`$CORE_SHA\`"
+            echo "- ci run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$CI_RUN_ID (build + test: $MAIN_BUILD, smoke: $MAIN_SMOKE)"
+            echo "- Tree: main \`$TREE\`, pin PR tested \`${TESTED:-unknown}\` -> identical: $tree_identical"
+            echo "- Pin PR: ${PIN_PR:-none}, ci run ${PIN_PR_RUN:-none}, smoke: $PIN_PR_SMOKE"
+            echo "- Build-input key: \`$BUILD_INPUT\`"
+            echo
+            echo "Pin by digest only (decision 4). Check the release rule and the attestation with"
+            echo "\`ops/live/release-digest.sh publish-digest.json\`, which runs:"
+            echo
+            echo '```'
+            echo "gh attestation verify oci://$REGISTRY/$OWNER/mangosd@$DIGEST \\"
+            echo "  --repo $GITHUB_REPOSITORY \\"
+            echo "  --signer-workflow $GITHUB_REPOSITORY/.github/workflows/promote.yml \\"
+            echo "  --source-ref refs/heads/main --deny-self-hosted-runners"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload publish-digest.json
+        if: steps.run.outputs.mode == 'promote' || steps.reuse.outputs.found == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: publish-digest
+          path: ${{ runner.temp }}/publish-digest/publish-digest.json
+          retention-days: 90
+          if-no-files-found: error

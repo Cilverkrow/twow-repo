@@ -12,3 +12,5 @@
 #
 # Expected first entry (promote, plan B5 / owner decision 3b):
 #   workflow_run .github/workflows/promote.yml
+
+workflow_run .github/workflows/promote.yml
