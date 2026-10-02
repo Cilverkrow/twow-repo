@@ -22,7 +22,11 @@ PUBLISH="$REPO/.github/workflows/publish.yml"
 
 # Stub gh. Answers from files in $STUB: ci-run (the "<id> <conclusion>" line
 # for the ci push run lookup), jobs-<run id> (name=conclusion lines), and
-# attest-rc (exit code of `attestation verify`). Every call is logged.
+# attest-rc (exit code of `attestation verify`), attest-out (the invocationId
+# lines it prints; default run 900) and artifact-<run id> (the
+# publish-digest.json `run download` returns; fallback artifact-default, which
+# expect() sets to the file under test unless no-default exists). Every call
+# is logged.
 STUB="$WORK/stub"
 mkdir -p "$STUB"
 cat > "$WORK/gh" <<'EOF'
@@ -36,7 +40,25 @@ case "$1 $2" in
                 id=${2#*/actions/runs/}; id=${id%%/*}
                 cat "$STUB/jobs-$id" 2>/dev/null || exit 1; exit 0 ;;
         esac ;;
-    "attestation verify") exit "$(cat "$STUB/attest-rc" 2>/dev/null || echo 0)" ;;
+    "attestation verify")
+        rc=$(cat "$STUB/attest-rc" 2>/dev/null || echo 0)
+        [ "$rc" -eq 0 ] || exit "$rc"
+        cat "$STUB/attest-out" 2>/dev/null \
+            || echo "https://github.com/Cilverkrow/twow-repo/actions/runs/900/attempts/1"
+        exit 0 ;;
+    "run download")
+        id=$3 dir=""
+        shift 3
+        while [ $# -gt 0 ]; do
+            [ "$1" = -D ] && dir=$2
+            shift
+        done
+        [ -n "$dir" ] || exit 9
+        src="$STUB/artifact-$id"
+        [ -f "$src" ] || src="$STUB/artifact-default"
+        [ -f "$src" ] || exit 1
+        mkdir -p "$dir" && cp "$src" "$dir/publish-digest.json"
+        exit 0 ;;
 esac
 echo "stub gh: unexpected call: $*" >&2
 exit 9
@@ -57,6 +79,7 @@ record() {
     local file=$1; shift
     local workflow="$PROMOTE@refs/heads/main" source=promoted bt=success smoke=success
     local ti=true pr_smoke=success pr_run='"400"' reused_from="" image=ghcr.io/cilverkrow/mangosd digest=$D
+    local repo_sha=$SHA run_id=900
     local kv
     for kv in "$@"; do
         case "$kv" in
@@ -65,16 +88,17 @@ record() {
             pr_smoke=*) pr_smoke=${kv#*=} ;; pr_run=*) pr_run=${kv#*=} ;;
             reused_from=*) reused_from=${kv#*=} ;; image=*) image=${kv#*=} ;;
             digest=*) digest=${kv#*=} ;;
+            repo_sha=*) repo_sha=${kv#*=} ;; run_id=*) run_id=${kv#*=} ;;
         esac
     done
     cat > "$WORK/$file" <<EOF
 {
-  "repo_sha": "$SHA",
+  "repo_sha": "$repo_sha",
   "core_sha": "$CORE",
   "image": "$image",
   "digest": "$digest",
   "workflow": "$workflow",
-  "run_id": "900",
+  "run_id": "$run_id",
   "built_at": "2026-10-03T10:00:00Z",
   "images": [
     "$image",
@@ -100,6 +124,9 @@ EOF
 expect() {
     local want=$1 name=$2 rc=0
     shift 2
+    local last=""
+    [ $# -eq 0 ] || last=${!#}
+    if [ -f "$last" ] && [ ! -e "$STUB/no-default" ]; then cp "$last" "$STUB/artifact-default"; fi
     bash "$SCRIPT" "$@" > "$WORK/$name.out" 2> "$WORK/$name.err" || rc=$?
     if [ "$rc" -ne "$want" ]; then
         echo "FAIL: $name - expected rc=$want, got rc=$rc" >&2
@@ -118,7 +145,7 @@ grep -qx "DIGEST=$D" "$WORK/promoted_online.out" || fail "digest not printed"
 grep -qx "RELEASE=OK" "$WORK/promoted_online.out" || fail "RELEASE=OK not printed"
 grep -qx "SIGNER=$PROMOTE" "$WORK/promoted_online.out" || fail "signer not promote.yml"
 # The exact verification decision 4 prescribes.
-grep -qx "attestation verify oci://ghcr.io/cilverkrow/mangosd@$D --repo $REPO --signer-workflow $PROMOTE --source-ref refs/heads/main --deny-self-hosted-runners" \
+grep -qF "attestation verify oci://ghcr.io/cilverkrow/mangosd@$D --repo $REPO --signer-workflow $PROMOTE --source-ref refs/heads/main --deny-self-hosted-runners --format json --jq" \
     "$STUB/calls" || { cat "$STUB/calls" >&2; fail "attestation verify not called as the rule says"; }
 # The rule's inputs are re-read for the built commit, not taken from the file.
 grep -q "ci.yml/runs?event=push&branch=main&head_sha=$SHA" "$STUB/calls" || fail "ci run of $SHA not looked up"
@@ -177,6 +204,32 @@ reset_stub
 echo 1 > "$STUB/attest-rc"
 expect 4 attestation_fails "$WORK/ok.json"
 
+# ------------------------------------------------------------- binding
+# The attestation was made by another run than the one the file names (e.g.
+# an old promoted digest next to a newer green commit): refused.
+reset_stub
+echo "https://github.com/$REPO/actions/runs/777/attempts/2" > "$STUB/attest-out"
+expect 4 binding_other_run "$WORK/ok.json"
+grep -q "not the run that attested" "$WORK/binding_other_run.err" || fail "other run: wrong reason"
+[ ! -s "$WORK/binding_other_run.out" ] || fail "other run: something printed on stdout"
+
+# The local file was edited: it no longer matches the run's own artifact.
+record edited.json ti=false
+reset_stub
+cp "$WORK/edited.json" "$STUB/artifact-900"
+expect 4 binding_file_edited "$WORK/ok.json"
+grep -q "differs from the publish-digest artifact of run 900" "$WORK/binding_file_edited.err" || fail "edited: wrong reason"
+
+# The run's artifact cannot be downloaded: a lookup failure.
+reset_stub
+touch "$STUB/no-default"
+expect 5 binding_download_fails "$WORK/ok.json"
+
+# The attestation names no run at all.
+reset_stub
+echo "" > "$STUB/attest-out"
+expect 4 binding_no_run "$WORK/ok.json"
+
 # ------------------------------------------------------------- offline
 record off-red.json bt=failure
 reset_stub
@@ -196,8 +249,17 @@ grep -q "$OLD" "$WORK/reused_refused.err" || fail "reuse refusal does not name t
 # A version tag on a promoted digest: verified as promote.yml/main, rule for
 # the commit the image was built from.
 record retag.json workflow="$PUBLISH@refs/tags/v1.2.3" source=retagged reused_from=$OLD
+record promote-old.json repo_sha=$OLD run_id=800
 reset_stub
+echo "https://github.com/$REPO/actions/runs/800/attempts/1" > "$STUB/attest-out"
+cp "$WORK/promote-old.json" "$STUB/artifact-800"
 expect 0 retagged "$WORK/retag.json"
+grep -q "bound to promote run 800 of $OLD" "$WORK/retagged.err" || fail "retagged: digest not bound to the promote run"
+# The attested promote run recorded another commit than reused_from: refused.
+reset_stub
+echo "https://github.com/$REPO/actions/runs/800/attempts/1" > "$STUB/attest-out"
+cp "$WORK/ok.json" "$STUB/artifact-800"
+expect 4 retagged_unbound "$WORK/retag.json"
 grep -q "head_sha=$OLD" "$STUB/calls" || fail "retagged: rule not evaluated for the built commit"
 grep -q -- "--signer-workflow $PROMOTE --source-ref refs/heads/main" "$STUB/calls" || fail "retagged: not verified as a promotion"
 
@@ -226,6 +288,8 @@ record bad-digest.json digest=sha256:1234
 expect 2 bad_digest "$WORK/bad-digest.json"
 record bad-image.json image=ghcr.io/someone/mangosd
 expect 2 bad_image "$WORK/bad-image.json"
+record bad-run.json run_id=12x
+expect 2 bad_run_id "$WORK/bad-run.json"
 expect 2 missing_file "$WORK/nope.json"
 expect 2 no_arguments
 
