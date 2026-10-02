@@ -1,0 +1,6 @@
+# Code owners (#486, B0). Changes to workflows, CI scripts and the image
+# build need the owner's review once the rulesets require code-owner review
+# (docs/runbooks/github-settings-486.md). Later lines win; keep it short.
+/.github/       @Cilverkrow
+/ops/ci/        @Cilverkrow
+/deploy/docker/ @Cilverkrow

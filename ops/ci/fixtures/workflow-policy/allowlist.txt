@@ -1,0 +1,8 @@
+# Allowlist for the --self-test run only. Paths are relative to this directory.
+# The bad-* entries prove that an allowlist entry does not lift R1 or the
+# workflow_run guards.
+workflow_run ok-workflow-run.yml
+workflow_run bad-workflow-run-unguarded.yml
+self-hosted  ok-self-hosted-push.yml
+self-hosted  bad-pr-self-hosted.yml
+self-hosted  bad-pr-labels-self-hosted.yml

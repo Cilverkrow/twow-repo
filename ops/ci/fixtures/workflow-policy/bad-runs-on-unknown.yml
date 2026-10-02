@@ -1,0 +1,12 @@
+# expect: R3
+# A hosted label outside the whitelist.
+name: bad
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - run: echo x

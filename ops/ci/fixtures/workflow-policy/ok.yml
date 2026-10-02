@@ -1,0 +1,39 @@
+# A policy-conforming workflow. Comment lines and block-scalar bodies are prose:
+#   runs-on: self-hosted
+#   on: pull_request_target
+name: ok
+"on":
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: >-
+          Mentions runs-on: ${{ inputs.runner }} and self-hosted in prose only.
+        type: string
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest   # trailing comment
+    steps:
+      - run: |
+          echo "runs-on: self-hosted"
+          echo "issue_comment pull_request_target workflow_run"
+      - uses: docker/metadata-action@v5
+        with:
+          labels: ${{ steps.meta.outputs.labels }}
+  pinned:
+    runs-on: "ubuntu-24.04"
+    steps:
+      - run: echo pinned
+  flow:
+    runs-on: [windows-2022]
+    steps:
+      - run: echo flow
+  mapping:
+    runs-on:
+      labels: [windows-latest]
+    steps:
+      - run: echo mapping

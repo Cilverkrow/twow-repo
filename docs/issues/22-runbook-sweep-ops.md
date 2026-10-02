@@ -649,3 +649,48 @@ body: |
   **Dependencies:** ADR-0023, ADR-0024, PR #173, and the completed standalone
   twow-core Docker reproduction.
 ---
+id: OPS-027
+title: Pin every GitHub Action to a commit SHA and require SHA pinning
+workstream: WS-40
+priority: p1
+existing_ot: none
+source: docs/runbooks/github-settings-486.md
+superseded_by: none
+body: |
+  **Owner decision 03.10.2026 (#486, point 11):** yes, as a separate follow-up issue.
+
+  **Why:** every workflow in twow-repo and twow-core references actions by a
+  movable tag (`actions/checkout@v4`, `gitleaks/gitleaks-action@v2`,
+  `docker/build-push-action@v…`, …). A moved or hijacked tag (compare the
+  `tj-actions/changed-files` incident, 2025) runs foreign code with the job's
+  token - in `publish.yml` that is `packages: write` plus the OIDC identity the
+  image attestations are signed with. Both repositories report
+  `sha_pinning_required: false` (`gh api repos/Cilverkrow/<repo>/actions/permissions`).
+
+  **Scope:** all workflows in both repositories, including core's
+  `release/*.x` branch (workflow changes take effect only once they are on
+  `main` and on the active core release branch). `promote` and
+  `build-and-test` are already pinned by the B5 PR of #486 and are out of scope
+  here.
+
+  **Do:**
+  1. Replace every `uses: owner/action@<tag>` with `@<40-hex sha> # <tag>`
+     (comment keeps the human-readable version). Docker actions referenced by
+     image (`docker://…`) get a digest.
+  2. Extend `ops/ci/test-workflow-runner-policy.sh` (and the byte-identical core
+     copy at `.github/policy/`) with a rule: every `uses:` of a remote action is a
+     full commit SHA; add a bad fixture.
+  3. Owner sets `sha_pinning_required=true` in both repositories (Settings →
+     Actions → General → "Require actions to be pinned to a full-length commit
+     SHA", or `gh api -X PUT repos/Cilverkrow/<repo>/actions/permissions` with
+     `enabled`, `allowed_actions` and `sha_pinning_required` in the JSON body).
+  4. Decide how pins are refreshed (Dependabot `github-actions` ecosystem or a
+     documented manual cadence).
+
+  **Acceptance:** policy test green in both repositories with the new rule;
+  `gh api repos/Cilverkrow/<repo>/actions/permissions` shows
+  `sha_pinning_required: true` for both; one full CI run of each repository green
+  after the switch.
+
+  **Dependencies:** #486 B0/B1 (policy test and rulesets) merged first.
+---
