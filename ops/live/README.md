@@ -94,6 +94,7 @@ bash fill-digest.sh $(ops/live/release-digest.sh --fill-args publish-digest.json
 | signer | `promote.yml@refs/heads/main` (normal case, also for a version tag, which re-tags the promoted digest); `publish.yml@refs/tags/v…` only with `--fallback-tag` (from-source dispatch on a tag); anything else is refused |
 | release rule | main `build + test` green **and** (squash tree identical to the tree the pin PR tested **and** that PR's smoke green **or** the main smoke green). Re-read from the GitHub API for the built commit, not trusted from the file; only `tree_identical` comes from the file |
 | attestation | `gh attestation verify oci://ghcr.io/cilverkrow/mangosd@<digest> --repo Cilverkrow/twow-repo --signer-workflow Cilverkrow/twow-repo/.github/workflows/promote.yml --source-ref refs/heads/main --deny-self-hosted-runners` |
+| binding | the attestation names promote.yml on `main`, not the built commit, so it alone would pass for any digest promote ever pushed. The script therefore reads the attested run ids (`invocationId`), downloads `publish-digest` of the file's `run_id` and requires it to be byte-identical to the given file, and requires that run to be an attested one (for a version tag: an attested promote run whose own record names the same digest and the built commit). Any mismatch exits `4` |
 
 Exit codes: `0` release and verified, `3` the rule says no, `4` attestation
 failed, `5` a GitHub lookup failed, `2` usage or malformed file. `--offline`

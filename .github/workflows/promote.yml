@@ -194,13 +194,23 @@ jobs:
                 rec="$RUNNER_TEMP/pin-record"
                 if gh run download "$pr_run" -R "$GITHUB_REPOSITORY" -n image-record -D "$rec" >/dev/null 2>&1 \
                    && [ -f "$rec/image-record.json" ]; then
-                  tested=$(jq -r '.tree // empty' "$rec/image-record.json")
-                  rec_head=$(jq -r '.pr_head_sha // empty' "$rec/image-record.json")
-                  if [ "$rec_head" != "$pr_head" ]; then
+                  # The record is written by the PR's own copy of ci.yml, so
+                  # its fields are untrusted: keep them only if they are 40
+                  # hex, before they are compared, printed or written to
+                  # GITHUB_OUTPUT (a newline would add output keys).
+                  tested=$(jq -r '.tree // empty' "$rec/image-record.json" 2>/dev/null) || tested=""
+                  rec_head=$(jq -r '.pr_head_sha // empty' "$rec/image-record.json" 2>/dev/null) || rec_head=""
+                  printf '%s' "$tested" | grep -Eqx '[0-9a-f]{40}' || tested=""
+                  printf '%s' "$rec_head" | grep -Eqx '[0-9a-f]{40}' || rec_head=""
+                  if [ -z "$tested" ] || [ -z "$rec_head" ]; then
+                    echo "::warning::pin PR record has no valid tree/pr_head_sha (40 hex) - ignored"
+                    tested=""
+                  elif [ "$rec_head" != "$pr_head" ]; then
                     echo "::warning::pin PR record is for head $rec_head, not $pr_head"
+                    tested=""
                   elif [ "$tested" = "$tree" ]; then
                     identical=true
-                  elif printf '%s' "$tested" | grep -Eqx '[0-9a-f]{40}'; then
+                  else
                     identical=false
                   fi
                 else
@@ -209,6 +219,13 @@ jobs:
               fi
             fi
           fi
+          # Defense in depth: every output has a fixed shape.
+          printf '%s' "$pr" | grep -Eqx '[0-9]+' || pr=""
+          printf '%s' "$pr_run" | grep -Eqx '[0-9]+' || pr_run=""
+          case "$pr_smoke" in
+            success|failure|skipped|cancelled|absent|none|untrusted-fork) ;;
+            *) pr_smoke=absent ;;
+          esac
           echo "tree: main $tree, tested ${tested:-unknown} -> $identical"
           {
             echo "pr=$pr"

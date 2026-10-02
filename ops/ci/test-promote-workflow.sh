@@ -101,6 +101,7 @@ done
 if [ "$failures" -eq 0 ]; then
     [ "$trust" -lt "$login" ] || fail "core gitlink trust check must run before the registry login"
     [ "$verify" -lt "$push" ] && [ "$labels" -lt "$push" ] || fail "artifact and label checks must run before the push"
+    [ "$push" -lt "$debug" ] || fail "debug symbols image must be pushed after the runtime image (it labels the runtime digest)"
     [ "$trust" -lt "$reuse" ] || fail "core gitlink trust check must run before the B5a reuse"
     last_attest=$(grep -nF 'uses: actions/attest-' "$PROMOTE" | tail -1 | cut -d: -f1)
     [ "$last_attest" -lt "$record" ] || fail "publish-digest.json must be written after every attestation"
