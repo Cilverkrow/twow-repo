@@ -1,4 +1,4 @@
-"""Command line: ``python -m clientinventory <archives|maps|dbdiff|wdb> ...``.
+"""Command line: ``python -m clientinventory <archives|maps|dbdiff|wdb|facts> ...``.
 
 Everything is read-only. Client files are opened for reading only, database
 data comes from TSV exports (``mariadb -B``), results go to ``--out`` (keep it
@@ -12,7 +12,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from . import archives, dbdiff, maps, wdb
+from . import archives, dbdiff, facts, maps, wdb
 from .common import load_typed, read_tsv, write_tsv
 
 
@@ -97,6 +97,19 @@ def cmd_dbdiff(a) -> int:
     return 0
 
 
+def cmd_facts(a) -> int:
+    """Write the dbcheck macro file with the client's display ids and tile numbers (continents 0 and 1 by default)."""
+    map_dbc = {r["ID"]: (r["Directory"] or "") for r in load_typed(a.dbc, "Map")}
+    wanted = {m: map_dbc[m] for m in a.maps}
+    display, tiles = facts.build(a.dbc, a.client / "Data", a.lists, wanted)
+    text = facts.render(display, tiles, "client MPQ listings and GameObjectDisplayInfo.dbc")
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    with open(a.out, "w", encoding="utf-8", newline=chr(10)) as f:
+        f.write(text)
+    print(f"{len(display)} display ids, tiles per map: " + ", ".join(f"{m}: {len(v)}" for m, v in sorted(tiles.items())))
+    return 0
+
+
 def cmd_wdb(a) -> int:
     out = a.out / "wdb"
     plan = [("creaturecache", "creature_template", "name", "name"), ("itemcache", "item_template", "name", "name"),
@@ -140,6 +153,13 @@ def main(argv=None) -> int:
     p.add_argument("--db", type=Path, required=True, help="folder with the database TSV exports")
     p.add_argument("--out", type=Path, required=True)
     p.set_defaults(fn=cmd_dbdiff)
+    p = sub.add_parser("facts")
+    p.add_argument("--client", type=Path, required=True, help="client folder (contains Data/)")
+    p.add_argument("--lists", type=Path, required=True, help="folder with the mpqcli listings")
+    p.add_argument("--dbc", type=Path, required=True, help="folder with the client's effective DBCs")
+    p.add_argument("--maps", type=int, nargs="+", default=[0, 1], help="map ids whose tiles are written (default: 0 1)")
+    p.add_argument("--out", type=Path, required=True, help="the dbcheck macro file to write (ops/dbcheck/rules/client-facts.toml)")
+    p.set_defaults(fn=cmd_facts)
     p = sub.add_parser("wdb")
     p.add_argument("--client", type=Path, required=True)
     p.add_argument("--db", type=Path, required=True)

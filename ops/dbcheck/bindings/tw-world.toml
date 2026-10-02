@@ -30,6 +30,8 @@ id2 = "id2"        # a spawn row can place up to four creature entries
 id3 = "id3"
 id4 = "id4"
 map = "map"
+position_x = "position_x"
+position_y = "position_y"
 
 [table.creature_loot]
 name = "creature_loot_template"
@@ -213,3 +215,17 @@ name = "creature_ai_scripts"   # EventAI action scripts
 [table.script_creature_ai_scripts.columns]
 command = "command"      # 8: kill credit (datalong = creature entry); 10: summon
 datalong = "datalong"
+
+[table.gameobject]
+[table.gameobject.columns]
+guid = "guid"
+id = "id"
+map = "map"
+position_x = "position_x"
+position_y = "position_y"
+
+[table.gameobject_template]
+[table.gameobject_template.columns]
+entry = "entry"
+name = "name"
+display_id = "displayId"
