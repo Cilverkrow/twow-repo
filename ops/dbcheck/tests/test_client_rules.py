@@ -44,6 +44,19 @@ class ClientRules(unittest.TestCase):
         got = [(str(r[0]), str(r[2])) for r in rows(run(con), "gameobject_spawn_on_tile_without_client_terrain")]
         self.assertEqual(got, [("1", "1")])
 
+    def test_disabled_spawns_are_skipped(self):
+        con = world()
+        insert(con, "creature", guid=905, id=200, map=0, position_x=100000.0, position_y=0.0, spawn_flags=2)  # switched off
+        insert(con, "creature", guid=906, id=200, map=0, position_x=100000.0, position_y=0.0, spawn_flags=1)  # other flag: still counts
+        insert(con, "creature", guid=907, id=200, map=0, position_x=100000.0, position_y=0.0, spawn_flags=3)  # bit 2 set
+        insert(con, "gameobject_template", entry=9002, name="Unknown Model", displayId=9999999)
+        insert(con, "gameobject", guid=1, id=9002, map=0, position_x=100000.0, position_y=0.0, spawn_flags=2)
+        insert(con, "gameobject", guid=2, id=9002, map=0, position_x=100000.0, position_y=0.0)
+        result = run(con)
+        self.assertEqual([(str(r[0]), str(r[2])) for r in rows(result, "creature_spawn_on_tile_without_client_terrain")], [("0", "1")])
+        self.assertEqual([str(r[2]) for r in rows(result, "gameobject_spawn_on_tile_without_client_terrain")], ["1"])
+        self.assertEqual([(str(r[0]), str(r[3])) for r in rows(result, "gameobject_spawn_display_unknown_to_client")], [("9002", "1")])
+
     def test_missing_position_is_not_a_finding(self):
         con = world()
         insert(con, "creature", guid=904, id=200, map=0)
