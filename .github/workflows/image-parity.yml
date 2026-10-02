@@ -1,0 +1,248 @@
+# Is the image ci.yml built the same build as the image publish.yml pushed?
+#
+# The prerequisite for promoting the CI image instead of rebuilding it
+# (#486 B4/B5). For one twow-repo commit on main this compares the /opt/turtle
+# tree of
+#   * the `core-image` artifact of that commit's ci.yml push run (the
+#     `ci-staged` target, assembled from the staged install), and
+#   * the image publish.yml pushed for it (`--target runtime`, from source),
+# with ops/ci/image-parity.sh: file list (path, type, mode), the compiled-in
+# revision.h (REVISION_HASH/REVISION_DATE), every non-ELF file's content, and
+# the split-debug state of every ELF file. Image config (user, entrypoint,
+# workdir, ports, env) and the provenance labels are compared here. The result
+# is uploaded as the artifact `image-parity-<sha>`.
+#
+# READ-ONLY, on purpose. Manual dispatch only, GitHub-hosted only, and the
+# token can read the repository and its Actions artifacts and nothing else:
+# no packages, no id-token, no attestations, no writes. The published image is
+# public on GHCR, so pulling it needs no credential. Nothing here runs on the
+# live host and nothing is built (#486: no local build, no pull on the host).
+#
+# Limits worth knowing before dispatching:
+#   * `core-image` is kept for 1 day (ci.yml), so a commit older than that has
+#     nothing left to compare against; dispatch soon after the main run.
+#   * Without the `digest` input the published image is found by its
+#     `sha-<40>` tag. That is fine for a diagnostic and is labelled as such in
+#     the report; a deploy never resolves a tag (#486 owner decision 4).
+name: image-parity
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character twow-repo commit on main to compare
+        required: true
+        type: string
+      ci_run_id:
+        description: ci.yml run id to take core-image from (default - newest successful push run of that commit)
+        required: false
+        type: string
+        default: ''
+      digest:
+        description: Published digest sha256:... to compare (default - resolve the sha-<40> tag)
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: image-parity-${{ github.event.inputs.sha }}
+  cancel-in-progress: false
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    name: CI image vs published image
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # Inputs reach the scripts only through the environment, never by
+      # ${{ }} interpolation into a run block.
+      SHA: ${{ github.event.inputs.sha }}
+      CI_RUN_ID: ${{ github.event.inputs.ci_run_id }}
+      DIGEST: ${{ github.event.inputs.digest }}
+      PUBLISHED: ghcr.io/cilverkrow/mangosd
+      CI_IMAGE: twow/core:dev
+    steps:
+      - name: Validate inputs
+        run: |
+          set -eu
+          printf '%s' "$SHA" | grep -Eqx '[0-9a-f]{40}' || {
+            echo "::error::sha must be a full 40-character lowercase commit id"
+            exit 1
+          }
+          if [ -n "$CI_RUN_ID" ] && ! printf '%s' "$CI_RUN_ID" | grep -Eqx '[0-9]+'; then
+            echo "::error::ci_run_id must be numeric"
+            exit 1
+          fi
+          if [ -n "$DIGEST" ] && ! printf '%s' "$DIGEST" | grep -Eqx 'sha256:[0-9a-f]{64}'; then
+            echo "::error::digest must be sha256:<64 hex>"
+            exit 1
+          fi
+
+      # The dispatching ref (main), for ops/ci/image-parity.sh - the CURRENT
+      # comparison, which also works for commits older than the script. The
+      # compared commit's core gitlink is read through the API below. No
+      # submodules, no credentials left behind.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Resolve the core commit and the CI run
+        id: resolve
+        run: |
+          set -euo pipefail
+          core_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/core?ref=$SHA" \
+            --jq 'select(.type == "submodule") | .sha')
+          printf '%s' "$core_sha" | grep -Eqx '[0-9a-f]{40}' || {
+            echo "::error::no core gitlink at $SHA"
+            exit 1
+          }
+          run_id=$CI_RUN_ID
+          if [ -z "$run_id" ]; then
+            query="head_sha=$SHA&event=push&status=success&per_page=10"
+            run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?$query" \
+              --jq '.workflow_runs[0].id // empty')
+          fi
+          [ -n "$run_id" ] || {
+            echo "::error::no successful ci.yml push run for $SHA"
+            exit 1
+          }
+          run_sha=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq '.head_sha')
+          run_path=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq '.path')
+          [ "$run_sha" = "$SHA" ] || {
+            echo "::error::run $run_id built $run_sha, not $SHA"
+            exit 1
+          }
+          case "$run_path" in
+            .github/workflows/ci.yml*) ;;
+            *) echo "::error::run $run_id is $run_path, not ci.yml"; exit 1 ;;
+          esac
+          echo "core_sha=$core_sha" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "core $core_sha, ci run $run_id"
+
+      - name: Load the CI image
+        env:
+          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p parity/ci-artifact
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name core-image --dir parity/ci-artifact || {
+            echo "::error::core-image of run $RUN_ID is gone (kept 1 day) - nothing to compare"
+            exit 1
+          }
+          gunzip -c parity/ci-artifact/core.tar.gz | docker load
+          docker image inspect "$CI_IMAGE" > parity/ci-inspect.json
+
+      - name: Pull the published image
+        id: published
+        run: |
+          set -euo pipefail
+          digest=$DIGEST
+          if [ -z "$digest" ]; then
+            digest=$(docker buildx imagetools inspect "$PUBLISHED:sha-$SHA" \
+              --format '{{json .Manifest}}' | jq -r '.digest')
+            echo "::notice::digest resolved from the tag sha-$SHA (diagnostic only; deploys never resolve tags)"
+          fi
+          printf '%s' "$digest" | grep -Eqx 'sha256:[0-9a-f]{64}' || {
+            echo "::error::no published image found for $SHA"
+            exit 1
+          }
+          docker pull "$PUBLISHED@$digest"
+          docker image inspect "$PUBLISHED@$digest" > parity/published-inspect.json
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Extract both install trees
+        env:
+          PUB_DIGEST: ${{ steps.published.outputs.digest }}
+        run: |
+          set -euo pipefail
+          extract() {
+            local image=$1 dest=$2 cid
+            mkdir -p "$dest"
+            cid=$(docker create "$image")
+            docker cp "$cid:/opt/turtle/." "$dest/"
+            docker rm "$cid" > /dev/null
+          }
+          extract "$CI_IMAGE" parity/ci-tree
+          extract "$PUBLISHED@$PUB_DIGEST" parity/published-tree
+
+      - name: Compare
+        id: compare
+        env:
+          CORE_SHA: ${{ steps.resolve.outputs.core_sha }}
+          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+          PUB_DIGEST: ${{ steps.published.outputs.digest }}
+        run: |
+          set -uo pipefail
+          rc=0
+          report=parity/report/report.md
+          bash ops/ci/image-parity.sh "$CORE_SHA" \
+            parity/ci-tree parity/published-tree parity/report || rc=$?
+          mkdir -p parity/report
+
+          # Runtime contract of the two images: same base stage, so these must
+          # match exactly.
+          config='.[0].Config | {User, Entrypoint, Cmd, WorkingDir, ExposedPorts, Env}'
+          jq -S "$config" parity/ci-inspect.json > parity/report/ci-config.json
+          jq -S "$config" parity/published-inspect.json > parity/report/published-config.json
+          {
+            echo
+            echo '## Image config'
+            echo
+          } >> "$report"
+          if diff -u parity/report/ci-config.json parity/report/published-config.json \
+               > parity/report/config.diff; then
+            echo '- ok: user, entrypoint, cmd, workdir, ports, env identical' >> "$report"
+          else
+            echo '- FAIL: image config differs (see config.diff)' >> "$report"
+            rc=1
+          fi
+
+          # Provenance labels: each must name this commit and its core.
+          {
+            echo
+            echo '## Labels'
+            echo
+            echo "- ci run: $RUN_ID"
+            echo "- published: \`$PUBLISHED@$PUB_DIGEST\`"
+          } >> "$report"
+          for side in ci published; do
+            labels=$(jq -c '.[0].Config.Labels // {}' "parity/$side-inspect.json")
+            rev=$(printf '%s' "$labels" | jq -r '.["org.opencontainers.image.revision"] // ""')
+            core=$(printf '%s' "$labels" | jq -r '.["io.twow.core.revision"] // ""')
+            echo "- $side: revision=\`${rev:-<none>}\` io.twow.core.revision=\`${core:-<none>}\`" >> "$report"
+            if [ "$rev" != "$SHA" ]; then
+              echo "  - FAIL: $side revision label is not $SHA" >> "$report"
+              rc=1
+            fi
+            if [ -z "$core" ]; then
+              echo "  - note: $side has no core label (built before #486 B3/B4)" >> "$report"
+            elif [ "$core" != "$CORE_SHA" ]; then
+              echo "  - FAIL: $side core label is not $CORE_SHA" >> "$report"
+              rc=1
+            fi
+          done
+
+          cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-parity-${{ github.event.inputs.sha }}
+          path: parity/report/
+          if-no-files-found: warn
+
+      - name: Fail on mismatch
+        if: steps.compare.outputs.rc != '0'
+        run: |
+          echo "::error::the CI image and the published image differ - see the image-parity artifact"
+          exit 1

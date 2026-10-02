@@ -39,19 +39,20 @@ permissions:
   id-token: write
   attestations: write
 
-# Every job here is Linux, so every job here follows ci.yml onto the
-# self-hosted runner while GitHub-hosted runners are billing-blocked. The full
-# rationale and the one-variable way back are in the header of ci.yml: set the
-# repository variable CI_RUNNER to `ubuntu-24.04` and all three workflows move
-# back at once.
+# WHERE THIS RUNS: GitHub-hosted runners, and only there. The repository is
+# public, so hosted minutes are free; the billing block that once moved these
+# jobs onto the shared self-hosted pod `k8s-twow-repo` is over, and every
+# publish run since has run on a hosted VM (`vars.CI_RUNNER` is unset). The
+# variable fallback in the runs-on lines is being replaced by a literal
+# `ubuntu-latest` (#486 B1); a self-hosted runner is out of scope (#486,
+# owner decision 2026-10-03).
 #
-# This is the workflow with write credentials, so it is worth being explicit
-# about what moving it means: a self-hosted runner executes with the repository
-# GITHUB_TOKEN's packages:write and the workflow's OIDC identity on a machine
-# this project does not exclusively own. That is a real trust change from a
-# hosted ephemeral VM and it should be revisited when hosted billing returns -
-# it is not a reason to leave the release path unable to run at all, but it is a
-# reason not to leave it here permanently.
+# This is the workflow with write credentials, which is why that matters: a
+# self-hosted runner would execute with the repository GITHUB_TOKEN's
+# packages:write and the workflow's OIDC identity on a machine this project
+# does not exclusively own, and a persistent machine can leak or poison what
+# the next job signs. A hosted ephemeral VM cannot. Deploys verify that with
+# `gh attestation verify ... --deny-self-hosted-runners`.
 env:
   REGISTRY: ghcr.io
   OWNER: cilverkrow
@@ -112,8 +113,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          # Full history: the build stamps a revision header from git.
-          fetch-depth: 0
+          # Shallow, exactly like ci.yml's build-and-test (#486 B4). The
+          # revision header the build stamps needs only the core submodule's
+          # HEAD: `git rev-parse --short=20 HEAD` and `git show -s --format=%ci`
+          # read that one commit, so history does not change it. Measured
+          # before the switch, with fetch-depth 0 here and 1 in ci.yml, for core
+          # 441d62e7: both configured "Core revision: 441d62e771be7269d580
+          # 2026-10-02 19:13:36 +0200" (runs 37044803023 and 37044803296).
+          # Full history only made the `COPY . /src` context larger.
+          fetch-depth: 1
 
       # The self-hosted runner is a shared pod with ~28 GB free, not a fresh VM
       # with 70. A from-source build of this tree plus two published images does
@@ -136,6 +144,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # The core commit inside this image: the gitlink of core/ in the commit
+      # being published. Until now it was only implied by that gitlink and by
+      # the revision string compiled into the binary; it goes into an OCI label,
+      # the job summary and publish-digest.json below.
+      - name: Record the core revision
+        id: core-revision
+        run: |
+          set -eu
+          core_sha=$(git ls-tree HEAD core | awk '$2 == "commit" { print $3 }')
+          printf '%s' "$core_sha" | grep -Eqx '[0-9a-f]{40}' || {
+            echo "::error::could not read the core gitlink from HEAD"
+            exit 1
+          }
+          echo "sha=$core_sha" >> "$GITHUB_OUTPUT"
+
       - id: meta
         uses: docker/metadata-action@v5
         with:
@@ -147,6 +170,11 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,format=long,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          # Added to metadata-action's own OCI labels (created, revision,
+          # source, version, ...). ci.yml puts the same label on the image it
+          # assembles, so a promotion (#486 B5) can compare the two.
+          labels: |
+            io.twow.core.revision=${{ steps.core-revision.outputs.sha }}
 
       - id: build
         uses: docker/build-push-action@v6
@@ -175,26 +203,19 @@ jobs:
           # part of the artifact, so a promoted digest carries them along.
           provenance: mode=max
           sbom: true
-          # This used to also read ci.yml's ci-core scope, on the theory that a
-          # release tag built after main had gone green could reuse its layers.
-          # ci.yml does not build `--target runtime` any more - it assembles the
-          # CI image from an install staged on the runner - so nothing writes
-          # ci-core and reading it was a guaranteed miss. Its own scope is the
-          # only one left that can hit.
-          # One scope, and mode=min rather than max.
-          #
-          # mode=max caches every intermediate layer. Across two matrix scopes
-          # that filled ~7 GB of the repository's 10 GB Actions cache - a single
-          # buildkit blob was 5.39 GiB - which evicted ci.yml's 2.2 GB ccache
-          # before the next run could restore it. The visible result was ccache
-          # reporting `Hits: 0 / 1517 (0.00%)` and `build + test` cold-compiling
-          # for 64 minutes on every push, forever.
-          #
-          # mode=min caches the final layers only, which is what a push needs.
-          # The expensive compile is kept warm by ccache on the runner, not by
-          # storing every intermediate image layer in the shared cache.
-          cache-from: type=gha,scope=core
-          cache-to: type=gha,mode=min,scope=core
+          # NO Actions (type=gha) cache for this image, deliberately (#486 B3).
+          # It used to read and write `type=gha,scope=core,mode=min`, and that
+          # could never hit: mode=min stores only the final layers, the payload
+          # layer changes on every build, and the compile happens behind a
+          # BuildKit cache mount (`--mount=type=cache,target=/ccache`) that
+          # type=gha does not export and that starts empty on every hosted VM.
+          # Measured in run 37044803023: all 1,507 targets compiled cold
+          # (3504.7 s), and the export then spent 110 s writing a ~950 MB blob
+          # that only evicted useful entries from the repository's 10 GB cache.
+          # (Before that, mode=max across two matrix scopes filled ~7 GB and
+          # evicted ci.yml's ccache, so `build + test` ran cold for weeks.)
+          # The way to stop compiling twice is to promote the image ci.yml
+          # already built (#486 B5), not to cache this build.
 
       # The registry attestation above is buildkit's. This one is signed against
       # the workflow's OIDC identity and lands in the repository's attestation
@@ -215,6 +236,103 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.OWNER }}/realmd
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+
+      # What a deploy pins, written down where a deploy can read it (#486 B3,
+      # owner decision 4): the digest comes from here or from the attestation
+      # subject, NEVER from resolving a tag - anyone who can push can move a
+      # tag. Written only after both attestations succeeded, so a
+      # publish-digest.json always names an attested digest.
+      #
+      # Schema: {repo_sha, core_sha, image, digest, workflow, run_id, built_at}.
+      # `image` is the mangosd name; `images` adds every name the same digest
+      # was pushed and attested under (realmd is byte-identical, see above).
+      # `workflow` is github.workflow_ref, i.e. the signer a deploy passes to
+      # `gh attestation verify --signer-workflow`.
+      - name: Record the published digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          CORE_SHA: ${{ steps.core-revision.outputs.sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -eu
+          printf '%s' "$DIGEST" | grep -Eqx 'sha256:[0-9a-f]{64}' || {
+            echo "::error::build step returned no image digest"
+            exit 1
+          }
+          mkdir -p publish-digest
+          jq -n \
+            --arg repo_sha "$GITHUB_SHA" \
+            --arg core_sha "$CORE_SHA" \
+            --arg image "$REGISTRY/$OWNER/mangosd" \
+            --arg realmd "$REGISTRY/$OWNER/realmd" \
+            --arg digest "$DIGEST" \
+            --arg workflow "$WORKFLOW_REF" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg built_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{repo_sha: $repo_sha, core_sha: $core_sha, image: $image,
+              digest: $digest, workflow: $workflow, run_id: $run_id,
+              built_at: $built_at, images: [$image, $realmd]}' \
+            > publish-digest/publish-digest.json
+          cat publish-digest/publish-digest.json
+          {
+            echo '## Published core image'
+            echo
+            echo "- Digest: \`$DIGEST\`"
+            echo "- Names: \`$REGISTRY/$OWNER/mangosd\`, \`$REGISTRY/$OWNER/realmd\`"
+            echo "- Repo commit: \`$GITHUB_SHA\`"
+            echo "- Core commit: \`$CORE_SHA\`"
+            echo "- Signer workflow: \`$WORKFLOW_REF\`"
+            echo
+            echo "Pin by digest only. Verify first:"
+            echo
+            echo '```'
+            echo "gh attestation verify oci://$REGISTRY/$OWNER/mangosd@$DIGEST \\"
+            echo "  --repo $GITHUB_REPOSITORY \\"
+            echo "  --signer-workflow $GITHUB_REPOSITORY/.github/workflows/publish.yml \\"
+            echo "  --source-ref $GITHUB_REF --deny-self-hosted-runners"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload publish-digest.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-digest
+          path: publish-digest/publish-digest.json
+          if-no-files-found: error
+
+      # The DWARF that split-debug.sh moved out of the pushed binaries (owner
+      # decision 2b): exported from Dockerfile.core's FROM-scratch
+      # `debug-symbols` stage into a directory on the runner and uploaded as an
+      # artifact - never pushed, never a layer of the runtime image.
+      #
+      # Same builder, same context, same build-args as the `build` step, so the
+      # builder stage is a cache hit inside this job's buildx builder and
+      # nothing compiles a second time. The files are matched to the pushed
+      # binaries by GNU build id (BUILD-IDS); symbols from any other build of
+      # the same commit would not match.
+      - name: Export the split debug symbols
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.core
+          target: debug-symbols
+          push: false
+          outputs: type=local,dest=debug-symbols
+          provenance: false
+          sbom: false
+          build-args: |
+            BUILD_TYPE=Release
+            BUILD_JOBS=${{ vars.CI_BUILD_JOBS || '4' }}
+
+      # Retained for 90 days: the symbols are needed for as long as an image
+      # built here might still be running or be rolled back to.
+      - name: Upload the split debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-${{ github.sha }}
+          path: debug-symbols/
+          retention-days: 90
+          if-no-files-found: error
 
   db-init:
     needs: discover

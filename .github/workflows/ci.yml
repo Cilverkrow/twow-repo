@@ -656,6 +656,21 @@ jobs:
           docker run --rm -i hadolint/hadolint:v2.12.0-alpine \
             hadolint --ignore DL3008 - < deploy/docker/Dockerfile.core
 
+      # The CI image and the published image must stay the same build (#486
+      # B4): same configure for what ships, the same split-debug step, debug
+      # symbols never in a runtime layer, matching labels, and a read-only
+      # parity workflow. No container and no server compile, which is why
+      # they run here, before anything is built: the first reads the files,
+      # the second runs the parity comparison script against synthetic trees,
+      # the third splits a one-line -g1 program for real (the hosted runner
+      # has gcc and binutils).
+      - name: Image build parity contracts
+        if: always()
+        run: |
+          bash ops/ci/test-image-build-parity.sh
+          bash ops/ci/test-image-parity.sh
+          bash ops/ci/test-split-debug.sh
+
       # pipx is preinstalled on ubuntu-24.04 and is NOT on a plain Debian
       # runner image, so this cannot assume it. Order: an already-installed
       # yamllint, then pipx, then a throwaway venv - the last of which needs
@@ -1664,7 +1679,15 @@ jobs:
       # would leave a multi-gigabyte volume behind on a shared daemon every run.
       BUILD_VOLUME: twow-build
       # Keep main and pull-request objects in one compatible ccache population.
-      # This is CI-only debug information; production images are built elsewhere.
+      #
+      # The configure below is the SAME build configuration as Dockerfile.core's
+      # builder stage, because the image assembled from it is the one that gets
+      # promoted (#486 B4): DEBUG_SYMBOLS=OFF plus -g1 in CMAKE_C_FLAGS and
+      # CMAKE_CXX_FLAGS, then split-debug.sh after the install. DEBUG_SYMBOLS
+      # must stay OFF: the core's switch appends a plain -g after -g1, and the
+      # last -g level wins. Why -g1 and not -g, and why the debug info is split
+      # out: note 4 at the top of Dockerfile.core.
+      # ops/ci/test-image-build-parity.sh holds the two configures together.
       CI_CACHE_DEBUG_SYMBOLS: 'OFF'
       CI_CACHE_ARCH: x86-64-v2
       # This is a throwaway credential for the per-run container below. It is
@@ -1712,12 +1735,21 @@ jobs:
         with:
           submodules: recursive
           # Shallow is fine for building; the revision header only needs HEAD.
+          # publish.yml checks out the same way (#486 B4). The depth does not
+          # change revision.h anyway: the core's CMakeLists asks git only for
+          # `rev-parse --short=20 HEAD` and `show -s --format=%ci` of the core
+          # submodule's HEAD, both properties of that one commit. Measured for
+          # core 441d62e7 while publish still used fetch-depth 0: both
+          # pipelines configured
+          # "Core revision: 441d62e771be7269d580 2026-10-02 19:13:36 +0200"
+          # (runs 37044803296 and 37044803023).
           fetch-depth: 1
 
       # Moved ahead of the build rather than sitting just before the image step,
       # because the build tree is now on the runner's disk instead of inside
-      # BuildKit and it is the biggest thing here. Pull-request builds explicitly
-      # disable DEBUG_SYMBOLS below; main keeps them for diagnostic parity. The
+      # BuildKit and it is the biggest thing here. Every build here, pull
+      # request or main, configures DEBUG_SYMBOLS=OFF with -g1 (see the env
+      # block of this job), the same as Dockerfile.core. The
       # runner ships with ~25 GB of toolchains this build never touches.
       # Without the room the run dies deep in the compile with "{standard
       # input}: Fatal error: <object>: No such file or directory", which is the
@@ -1816,6 +1848,8 @@ jobs:
           cache_cmake_flags=$(printf '%s' \
             'CMAKE_BUILD_TYPE=Release;' \
             'DEBUG_SYMBOLS=OFF;' \
+            'CMAKE_C_FLAGS=-g1;' \
+            'CMAKE_CXX_FLAGS=-g1;' \
             'CMAKE_INSTALL_PREFIX=/opt/turtle;' \
             'TW_ARCH=x86-64-v2;' \
             'MODULES=static;' \
@@ -1925,6 +1959,8 @@ jobs:
           bash ops/ci/in-builder.sh 'cmake -S /src -B /build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DDEBUG_SYMBOLS=${{ env.CI_CACHE_DEBUG_SYMBOLS }} \
+            -DCMAKE_C_FLAGS=-g1 \
+            -DCMAKE_CXX_FLAGS=-g1 \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
             -DTW_ARCH=x86-64-v2 \
             -DMODULES=static \
@@ -2234,12 +2270,23 @@ jobs:
       # that. An OOM here does not print the words "out of memory" - it shows up
       # as ninja reporting a signal, or as the assembler failing to write an
       # object file, which reads exactly like running out of disk.
+      #
+      # split-debug.sh runs right after the install, exactly as in
+      # Dockerfile.core's builder stage: the staged binaries lose their DWARF
+      # (kept: code, .symtab, a .gnu_debuglink) and the debug files land in
+      # ./debug-symbols, which is outside ./stage and therefore outside the
+      # image. Both pipelines must do this the same way or the CI image is not
+      # the build publish ships (#486 B4).
+      #
+      # No test binary reaches ./stage although BUILD_TESTING=ON: no test
+      # target has an install() rule (see note 3 in Dockerfile.core).
       - name: Stage the verified install
         run: |
           date +%s > "$RUNNER_TEMP/twow-image-assembly.started"
           bash ops/ci/in-builder.sh "cmake --install /build \
+            && bash deploy/docker/split-debug.sh /opt/turtle /src/debug-symbols \
             && ccache --show-stats"
-          du -sh stage
+          du -sh stage debug-symbols
           ls -la stage/bin
 
       # Only the default branch writes a cache, for the reason spelled out at the
@@ -2348,10 +2395,32 @@ jobs:
           docker run --rm --pull=missing alpine:3.22 df -h / || true
           docker system df || true
 
+      # The core commit this image was built from: the gitlink of core/ in the
+      # tested tree. On a pull request that is the merge ref's tree, which is
+      # what was compiled.
+      - name: Record the core revision
+        id: core-revision
+        run: |
+          set -eu
+          core_sha=$(git ls-tree HEAD core | awk '$2 == "commit" { print $3 }')
+          printf '%s' "$core_sha" | grep -Eqx '[0-9a-f]{40}' || {
+            echo "::error::could not read the core gitlink from HEAD"
+            exit 1
+          }
+          echo "sha=$core_sha" >> "$GITHUB_OUTPUT"
+          echo "- **Core revision:** \`$core_sha\`" >> "$GITHUB_STEP_SUMMARY"
+
       # `ci-staged` is `runtime-base` plus a COPY of ./stage - the same base
       # image, apt list, entrypoint, user and directory layout as the `runtime`
-      # target publish.yml ships. See the long comment at the top of this job
-      # for what that does and does not prove.
+      # target publish.yml ships, built from the same configuration (note 3 in
+      # Dockerfile.core). See the long comment at the top of this job for what
+      # that does and does not prove.
+      #
+      # Labels: Dockerfile.core has no LABEL, so without these the image says
+      # nothing about where it came from. They are the four a promotion checks
+      # before pushing (#486 B5) and the ones publish.yml sets as well:
+      # revision/source/version through docker/metadata-action there, and
+      # io.twow.core.revision explicitly in both.
       - name: Assemble the core image from the staged install
         uses: docker/build-push-action@v6
         with:
@@ -2363,6 +2432,11 @@ jobs:
           # and `docker save` it for the smoke job.
           load: true
           tags: ${{ env.CORE_IMAGE }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=sha-${{ github.sha }}
+            io.twow.core.revision=${{ steps.core-revision.outputs.sha }}
           # No cache-to for the same reason as the toolchain image, and one
           # sharper one: the only substantial layer here is the COPY of the
           # staged install, which is 2.5 GB and different on every run by
@@ -2444,6 +2518,20 @@ jobs:
           # One day is plenty: its only consumer is the smoke job in this run.
           retention-days: 1
           compression-level: 0
+          if-no-files-found: error
+
+      # The debug information split out of the binaries in this image (owner
+      # decision 2b): a separate artifact, never a layer of the image. Matched
+      # to a binary by the GNU build id listed in BUILD-IDS, so these files
+      # belong to THIS run's image and to no other build of the same commit.
+      # Kept longer on main, whose image is the one that will be promoted and
+      # deployed; a pull request's are only of interest while it is open.
+      - name: Upload the split debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols
+          path: debug-symbols/
+          retention-days: ${{ github.ref == 'refs/heads/main' && 90 || 3 }}
           if-no-files-found: error
 
   # ---------------------------------------------------------------- smoke

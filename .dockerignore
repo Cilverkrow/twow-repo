@@ -37,6 +37,9 @@ ops/
 .ci/
 test-results/
 image/
+# split-debug.sh output (#486 B4). Never part of an image: ci-staged COPYs only
+# ./stage, and sending the debug tree as build context would only cost time.
+debug-symbols/
 
 # Rendered runtime config and the environment it is rendered from. These are
 # generated artefacts, never inputs to the image, and mangosd.conf carries the

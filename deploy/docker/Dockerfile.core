@@ -2,7 +2,7 @@
 #
 # Tortoise-WoW core (mangosd + realmd), Linux build.
 #
-# Two things about this file are load-bearing and easy to get wrong:
+# Four things about this file are load-bearing and easy to get wrong:
 #
 # 1. CMAKE_INSTALL_PREFIX is identical in both stages. The prefix is compiled
 #    into the binary (SYSCONFDIR, see CMakeLists.txt), so building under /build
@@ -22,11 +22,48 @@
 # be building the old image and the smoke job would stop exercising what ships.
 # There is exactly one apt list per stage and both workflows read it from here.
 #
-#   builder-base --> builder ----+
-#                                 \
+#   builder-base --> builder ----+------> debug-symbols (FROM scratch, never
+#                                 \                      deployed, see below)
 #   runtime-base --> runtime <----+  (publish.yml, nightly, `--target runtime`)
 #                \
 #                 -> ci-staged      (ci.yml only, see below)
+#
+# 3. BUILD CONFIGURATION PARITY (#486 B4). The builder stage below and ci.yml's
+#    build-and-test configure the shipped targets identically, so the image CI
+#    assembles (ci-staged) and the image built here (runtime) are the same
+#    build and the CI image can be promoted instead of rebuilt:
+#      CMAKE_BUILD_TYPE=Release, CMAKE_INSTALL_PREFIX=/opt/turtle,
+#      TW_ARCH=x86-64-v2, MODULES=static, DEBUG_SYMBOLS=OFF,
+#      CMAKE_C_FLAGS=-g1, CMAKE_CXX_FLAGS=-g1,
+#    then `cmake --install` and deploy/docker/split-debug.sh.
+#    ops/ci/test-image-build-parity.sh fails when the two drift apart.
+#
+#    ci.yml additionally sets BUILD_TESTING=ON and
+#    BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON. Those only ADD test targets:
+#    their compile flags are PRIVATE to the test targets, no test target has an
+#    install() rule and googletest is fetched with INSTALL_GTEST=OFF, so the
+#    installed tree is the same. Measured on commit 048788cf: CI (tests ON,
+#    run 37044803296) and publish (tests OFF, run 37044803023) installed the
+#    same 19 paths, no test binary among them.
+#
+# 4. DEBUG INFORMATION (#486, owner decision 2b). Compiled with -g1 and split:
+#    split-debug.sh moves the DWARF into separate .debug files that end up in
+#    the `debug-symbols` stage and in a CI/publish artifact, never in a layer of
+#    the runtime image. The installed binaries keep .symtab and a
+#    .gnu_debuglink to their .debug file.
+#
+#    Why -g1 and not -g: -g1 keeps function descriptions and line tables -
+#    enough for a symbolised backtrace with file:line from a crash or a core
+#    dump - and drops the type and local-variable DWARF that makes up most of
+#    a -g build (the -g image carried ~1 GB of it, 94% of the payload). The
+#    debug flags are part of every compile line and so of every ccache entry:
+#    full -g objects would not fit the repository's 10 GB Actions cache next to
+#    everything else (ci.yml's ccache was already 4.1/4.0 GB full without any
+#    debug info). DEBUG_SYMBOLS=OFF is required alongside: the core's switch
+#    appends a plain -g after these flags, and the last -g level wins.
+#    GCC's contract is that debug options do not change the generated code
+#    (-fcompare-debug exists to check it), so the shipped machine code is that
+#    of a build without debug information.
 
 ARG DEBIAN_VERSION=trixie
 ARG PREFIX=/opt/turtle
@@ -116,18 +153,27 @@ WORKDIR /src
 # /src/.git/modules/core.
 COPY . /src
 
+# The debug flags are literals, not ARGs, on purpose: they are half of the
+# parity contract with ci.yml (note 3 at the top), and a build-arg would let a
+# caller produce a "runtime" image that is no longer the build CI tested.
 RUN --mount=type=cache,target=/ccache \
     CCACHE_DIR=/ccache cmake -S /src -B /build -G Ninja \
       -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
       -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DTW_ARCH=${TW_ARCH} \
       -DMODULES=${MODULES} \
+      -DDEBUG_SYMBOLS=OFF \
+      -DCMAKE_C_FLAGS=-g1 \
+      -DCMAKE_CXX_FLAGS=-g1 \
       -DCMAKE_C_COMPILER_LAUNCHER=ccache \
       -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
+# /debug-symbols is outside ${PREFIX} deliberately: the runtime stage copies the
+# whole prefix, and only the debug-symbols stage below reads /debug-symbols.
 RUN --mount=type=cache,target=/ccache \
     CCACHE_DIR=/ccache cmake --build /build --parallel "${BUILD_JOBS}" \
-    && cmake --install /build
+    && cmake --install /build \
+    && bash /src/deploy/docker/split-debug.sh "${PREFIX}" /debug-symbols
 
 # ------------------------------------------------------------ runtime-base
 #
@@ -209,6 +255,21 @@ RUN if [ -d "${PREFIX}/etc/modules" ]; then \
       chown turtle:turtle "${PREFIX}/etc/modules"; \
     fi
 USER turtle
+
+# ----------------------------------------------------------- debug-symbols
+#
+# NEVER DEPLOYED. The DWARF split-debug.sh moved out of the installed binaries,
+# as a filesystem-only stage: ${PREFIX}/<path>.debug (the install path
+# mirrored, gdb's debug-file-directory layout) plus BUILD-IDS.
+# publish.yml exports it with `--target debug-symbols` and a `type=local`
+# output and uploads it as an artifact; that second build reuses the builder
+# stage from the same job, it does not compile again.
+#
+# FROM scratch so nothing can run it and nothing mistakes it for an image to
+# deploy. The runtime stage above never references it (owner decision 2b: the
+# symbols are a separate artifact, never a layer of the runtime image).
+FROM scratch AS debug-symbols
+COPY --from=builder /debug-symbols /
 
 # --------------------------------------------------------------- ci-staged
 #

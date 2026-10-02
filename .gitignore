@@ -140,6 +140,7 @@ Thumbs.db
 /.ci/
 /image/
 /test-results/
+/debug-symbols/
 
 # Cygwin/MSYS crash dumps. Git Bash drops these in the working directory when a
 # tool it forked dies, so they appear at the repo root rather than anywhere
