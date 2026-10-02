@@ -290,6 +290,25 @@ jobs:
           python3 -m unittest discover -s tests -v
           python3 -m dbcheck check
 
+  # Client/server inventory tool (ops/clientinventory, #455). Pure Python standard
+  # library on synthetic archives and tables: no client files, no database, no Docker.
+  clientinventory:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    name: clientinventory tools
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Unit tests
+        shell: bash
+        working-directory: ops/clientinventory
+        run: |
+          set -euo pipefail
+          python3 -c 'import sys; assert sys.version_info >= (3, 11), f"clientinventory needs Python 3.11+ (tomllib via clientpatch), runner has {sys.version}"'
+          python3 -m unittest discover -s tests -v
+
   # A normal job's service containers start before its first step. Capacity
   # therefore has to be its own dependency if a full disk is to stop MariaDB,
   # BuildKit and the compiler before any of them allocate more space.
@@ -318,6 +337,8 @@ jobs:
   #   ops/dbcheck/**         the world database checks (#437): Python, TOML and
   #                          SQL rules that only the `dbcheck` job reads. Same
   #                          reasoning as ops/clientpatch/**.
+  #   ops/clientinventory/** the client/server inventory tool (#455): Python only,
+  #                          read by the `clientinventory` job alone. Same reasoning.
   #
   # Deliberately NOT on it, with reasons, because each is a mistake someone will
   # be tempted to make:
@@ -370,7 +391,7 @@ jobs:
           while IFS= read -r f; do
             [ -z "$f" ] && continue
             case "$f" in
-              services/bot-brain/*|docs/*|runbooks/*|ops/clientpatch/*|ops/dbcheck/*) ;;
+              services/bot-brain/*|docs/*|runbooks/*|ops/clientpatch/*|ops/dbcheck/*|ops/clientinventory/*) ;;
               *) echo "  needs the C++ build: $f"; needed=true ;;
             esac
           done <<< "$files"
