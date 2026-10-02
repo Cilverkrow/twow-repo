@@ -6,8 +6,8 @@ op,key,field,value,note
 # 2. The buff text of every player mount spell names the speeds of its family: family 1 (own
 #    aura-32 value below 100) +60/+100 %, family 2 (100 and above) +60/+100/+140/+180 %,
 #    mount-speed-100 flag at least +100 %. Same 465 spells as the migration's list.
-# Generated, sorted by spell ID: builds/cli295-riding/evidence/clientpatch/gen-0295-mount-spells.sh
-# from the dry-run manifest builds/cli295-riding/evidence/manifest/spells-295.tsv.
+# Generated (aura-32 rows, then buff-text rows, each by spell ID): tools/gen_mount_spells.py from tools/inputs/295-mount-spells.csv;
+# edit the input list, never this file (tests/test_gen_mount_spells.py compares the two).
 set,16082,EffectBasePoints[1],sql:spell_template.effectBasePoints2,"Palomino Stallion: family 1, aura-32 value 100 -> 60 (CV-14)"
 set,16083,EffectBasePoints[1],sql:spell_template.effectBasePoints2,"White Stallion: family 1, aura-32 value 100 -> 60 (CV-14)"
 set,17460,EffectBasePoints[1],sql:spell_template.effectBasePoints2,"Frost Ram: family 1, aura-32 value 100 -> 60 (CV-14)"
