@@ -32,6 +32,7 @@ id4 = "id4"
 map = "map"
 position_x = "position_x"
 position_y = "position_y"
+spawn_flags = "spawn_flags"   # bit 2 (SPAWN_FLAG_DISABLED): the spawn is switched off
 
 [table.creature_loot]
 name = "creature_loot_template"
@@ -223,6 +224,7 @@ id = "id"
 map = "map"
 position_x = "position_x"
 position_y = "position_y"
+spawn_flags = "spawn_flags"   # bit 2 (SPAWN_FLAG_DISABLED): the spawn is switched off
 
 [table.gameobject_template]
 [table.gameobject_template.columns]
