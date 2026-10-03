@@ -116,6 +116,22 @@ jobs:
           set -euo pipefail
           [ "$(git rev-parse HEAD)" = "$HEAD_SHA" ] \
             || { echo "::error::checkout is not $HEAD_SHA"; exit 1; }
+          # #507: this file always runs from main, but the checkout is the commit
+          # of the triggering ci run. A commit from before the promote tooling
+          # (#500) has none of its scripts, so there is nothing to promote: say so
+          # and end green instead of failing with exit 127. This is the ONLY exit
+          # before the trust step; the steps behind it check skip != 'true', and
+          # `mode` is not written on this path. A commit WITH the tooling never
+          # takes this branch, so every other failure stays fail-closed.
+          missing=""
+          for f in ops/ci/build-input-key.sh ops/ci/check-core-gitlink-trust.sh ops/live/release-digest.sh; do
+            [ -f "$f" ] || missing="$missing $f"
+          done
+          if [ -n "$missing" ]; then
+            echo "::notice::commit $HEAD_SHA predates promote tooling (#500, missing:$missing) - nothing to promote"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           info=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CI_RUN_ID" \
             --jq '[.path, .event, .head_branch, .head_sha, .conclusion, .head_repository.full_name] | join(" ")')
           read -r path event branch sha conclusion head_repo <<< "$info"
@@ -150,6 +166,7 @@ jobs:
       # main commit); without it (B1 not merged) this fails, and nothing is
       # pushed - by design.
       - name: Core gitlink is on core main or release/*
+        if: steps.run.outputs.skip != 'true'
         run: |
           set -euo pipefail
           [ -f ops/ci/check-core-gitlink-trust.sh ] \
@@ -162,6 +179,7 @@ jobs:
       # tree comes from the image record of the PR's last ci run at its final
       # head; GitHub drops refs/pull/N/merge once a PR is merged.
       - name: Compare with the tested pin PR
+        if: steps.run.outputs.skip != 'true'
         id: pin
         env:
           GH_TOKEN: ${{ github.token }}
@@ -329,9 +347,11 @@ jobs:
           [ "$bad" -eq 0 ] || exit 1
           echo "labels match: revision $HEAD_SHA, core $CORE_SHA, build input $BUILD_INPUT"
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - if: steps.run.outputs.skip != 'true'
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+      - if: steps.run.outputs.skip != 'true'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
