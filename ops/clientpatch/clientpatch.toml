@@ -56,6 +56,11 @@ known_other = ["base.MPQ", "fonts.MPQ", "interface.MPQ", "misc.MPQ", "model.MPQ"
 # their group and stops if a group is still split. Record bytes and IDs do not
 # change; the server loads by ID, so its copy may keep another order.
 Talent = "TabID"
+# The same holds per skill in SkillRaceClassInfo: our shaman sword rows 90043/90055 at
+# the end of the file hid the base rows of skills 43/55 (no "Swords" for rogues and
+# warriors, #455 patch v7 "v6.1"). Only groups that receive new rows are checked;
+# Turtle's own split skill 137 stays as it is.
+SkillRaceClassInfo = "SkillID"
 
 [ui]
 # Client interface files we patch (clientpatch/ui.py). Turtle's talent frame

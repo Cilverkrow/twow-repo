@@ -117,6 +117,24 @@ class Mutation(unittest.TestCase):
         t.group_by("TabID")
         self.assertEqual(t.to_bytes(), data)
 
+    def test_move_behind_group_moves_only_new_rows(self):
+        # #455 v6.1: shaman sword rows 90043/90055 behind the base rows of skills 43/55;
+        # a skill the base already splits (Turtle's 137) keeps its order.
+        b = binding("SkillRaceClassInfo")
+        rows = [{"ID": 140, "SkillID": 43}, {"ID": 328, "SkillID": 43}, {"ID": 638, "SkillID": 43},
+                {"ID": 335, "SkillID": 44}, {"ID": 125, "SkillID": 55}, {"ID": 500, "SkillID": 137},
+                {"ID": 600, "SkillID": 98}, {"ID": 700, "SkillID": 137}]
+        t = Table.from_bytes(pack(b, rows), b)
+        for rid, skill in ((90043, 43), (90055, 55)):
+            values = t.blank_row()
+            values[0], values[b.index("SkillID")] = rid, skill
+            t.insert(values)
+        self.assertEqual(t.split_groups("SkillID"), {43: 2, 55: 2, 137: 2})
+        t.move_behind_group("SkillID", {(90043,), (90055,)})
+        self.assertEqual([k[0] for k in t.keys()], [140, 328, 638, 90043, 335, 125, 90055, 500, 600, 700])
+        self.assertEqual(t.split_groups("SkillID"), {137: 2})
+        self.assertEqual(Table.from_bytes(t.to_bytes(), b).keys(), t.keys())
+
 
 if __name__ == "__main__":
     unittest.main()
