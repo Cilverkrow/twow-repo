@@ -5,7 +5,9 @@
 # tree of
 #   * the `core-image` artifact of that commit's ci.yml push run (the
 #     `ci-staged` target, assembled from the staged install), and
-#   * the image publish.yml pushed for it (`--target runtime`, from source),
+#   * the image publish.yml built for it from source (`--target runtime`, a
+#     manual dispatch on main, tagged `src-sha-<40>`; since #486 B6 the
+#     `sha-<40>` tag is the promoted CI image itself and would compare equal),
 # with ops/ci/image-parity.sh: file list (path, type, mode), the compiled-in
 # revision.h (REVISION_HASH/REVISION_DATE), every non-ELF file's content, and
 # the split-debug state of every ELF file. Image config (user, entrypoint,
@@ -19,10 +21,10 @@
 # live host and nothing is built (#486: no local build, no pull on the host).
 #
 # Limits worth knowing before dispatching:
-#   * `core-image` is kept for 1 day (ci.yml), so a commit older than that has
+#   * `core-image` is kept for 3 days on main (ci.yml), so a commit older than that has
 #     nothing left to compare against; dispatch soon after the main run.
 #   * Without the `digest` input the published image is found by its
-#     `sha-<40>` tag. That is fine for a diagnostic and is labelled as such in
+#     `src-sha-<40>` tag. That is fine for a diagnostic and is labelled as such in
 #     the report; a deploy never resolves a tag (#486 owner decision 4).
 name: image-parity
 
@@ -39,7 +41,7 @@ on:
         type: string
         default: ''
       digest:
-        description: Published digest sha256:... to compare (default - resolve the sha-<40> tag)
+        description: Published digest sha256:... to compare (default - resolve the src-sha-<40> tag)
         required: false
         type: string
         default: ''
@@ -148,7 +150,7 @@ jobs:
           mkdir -p parity/ci-artifact
           gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
             --name core-image --dir parity/ci-artifact || {
-            echo "::error::core-image of run $RUN_ID is gone (kept 1 day) - nothing to compare"
+            echo "::error::core-image of run $RUN_ID is gone (kept 3 days on main) - nothing to compare"
             exit 1
           }
           gunzip -c parity/ci-artifact/core.tar.gz | docker load
@@ -160,9 +162,9 @@ jobs:
           set -euo pipefail
           digest=$DIGEST
           if [ -z "$digest" ]; then
-            digest=$(docker buildx imagetools inspect "$PUBLISHED:sha-$SHA" \
+            digest=$(docker buildx imagetools inspect "$PUBLISHED:src-sha-$SHA" \
               --format '{{json .Manifest}}' | jq -r '.digest')
-            echo "::notice::digest resolved from the tag sha-$SHA (diagnostic only; deploys never resolve tags)"
+            echo "::notice::digest resolved from the tag src-sha-$SHA (diagnostic only; deploys never resolve tags)"
           fi
           printf '%s' "$digest" | grep -Eqx 'sha256:[0-9a-f]{64}' || {
             echo "::error::no published image found for $SHA"
