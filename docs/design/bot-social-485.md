@@ -1,477 +1,530 @@
-# Bot-Sozialverhalten: Gilden, Quest-Abschluss, Gruppen-, Eskort- und Dungeon-Quests (#485)
+# Bot-Sozialverhalten: Questen, Berufe, Gruppen und Gilden (#485), Entwurf v2
 
-- **Status:** Entwurf zur Prüfung durch den Inhaber. Das Dokument ist ein Vorschlag, keine Entscheidung.
-- **Issue:** Refs #485. Verwandte Issues: #324, #365, #343, #453, #340, #405, #422, #474, #478, #484, #241.
-- **Zuständiger Chat:** OB-10. Chat und Addon liegen bei OB-15, Daten und Zählungen bei OB-40, Konfigurations- und Log-Evidenz bei OB-30.
-- **Datum:** 2026-10-02/03
+- **Status:** Entwurf v2 zur Prüfung durch OB-10 und den Inhaber. Vorschlag, keine Entscheidung. Ersetzt v1 vom 02.10.
+- **Issue:** Refs #485. Verwandt: #324, #333, #338, #340, #342, #343, #365, #405, #453, #471, #472, #474, #477, #478, #484.
+- **Zuständig:** OB-10 prüft und übernimmt die Umsetzung. Bot-Chat und Addon: OB-15. Daten, Zählungen und DB-Jobs: OB-40. Konfiguration, Deploy und Messung: OB-30.
+- **Datum:** 2026-10-03
 - **Quellstände:**
-  - Core `origin/main` e368599e. Live läuft `release/8.x` 441d62e7. Beide Commits haben einen identischen Tree (b4eae646, `git diff` leer). Zeilenangaben gelten deshalb für main und live gleichermaßen.
-  - Repo `origin/main` 048788cf. Es pinnt core auf 441d62e7 (#476).
-- **Live-Stack:** `ws50-roster-v24-180-048788cf`. Laut Smoke-Test vom 02.10. 19:30Z: Roster v6, 180/180 Bots online.
+  - Core `origin/main` ad5ba7f7 (8.10-Zwilling). Live v25 = `release/8.x` 14ed35c0. mod-playerbots ist auf beiden Ständen identisch mit v24 (441d62e7). Alle Zeilenangaben gelten für ad5ba7f7.
+  - Repo `origin/main` 8c872fca.
 - **Methode:**
-  - Ausgewertet wurden nur gesicherte Logs und Dumps auf Y: sowie Code über Git-Refs. Es gab keine Live-Abfragen, keine DB-Verbindung, keine Builds und kein Docker.
-  - Die Live-Konfiguration ist nachgebaut: Core-Vorlage, darauf das compose-Overlay, darauf das Profil `funserver-test`, analog zu `deploy/compose/render-config.sh:262-307`. Auf Y: liegt keine gesicherte v24-Datei.
-  - Dass live das Profil `funserver-test` läuft, ist nur indirekt belegt (UNSICHER, aber sehr wahrscheinlich).
-- **Evidenz** (Wurzel `Y:\backup twwow\workspace-relocation-20260902\evidence\`):
-  - `ws-60/ob00-train8b-window/live/pre-dump/tw_char.sql`: Stand 01.10. 03:06Z, sha256 `23fddf67…64af`
-  - `ws-60/ob00-train8b-window/live/pre-dump/tw_world.sql`: sha256 `cac2d36a…4d43`
-  - `ws-60/longrun-7d/*/{bot_events,deaths}.csv, perf.log`: 26.09. bis 30.09.
-  - Ergänzend `builds/ob30-*/gameplay-logs` bis 02.10. 21:08Z
-  - Arbeitsausgaben unter `ws-10/cli485-bot-social/work/{gilden,quest-logs,quest-classify,quest-join,quest-code,groups-death-tick,escort-dungeon,live-config}/`, mit `SHA256SUMS` bzw. `*sha256*.txt`
-- **Vorbehalt zur Messgröße:** Das Log-Event `TalkToQuestGiverAction` wird vor `CanRewardQuest` geschrieben (`TalkToQuestGiverAction.cpp:87` gegenüber `:113/:135`). Es zählt also Abgabe-**Versuche**. Belastbar ist nur `character_queststatus.rewarded`.
+  - Ausgewertet wurden nur gesicherte Dateien: die gameplay-logs der Züge 8 bis 8.9 auf Y:, die Live-Konfigurationsdateien (nur lesend) und die Dumps vom 01.10. 03:06Z.
+  - Es gab keine Abfrage der Live-DB, keinen Docker-Befehl und keinen Build.
+  - Primärbasis ist ein eingefrorener v24-Schnappschuss (19:28–22:08Z, 2,67 h, 180 Roster-Bots, Rosterphase v6/180) mit SHA256SUMS.
+  - Jede Kernaussage haben zwei unabhängige Prüfer gegengecheckt. Widerlegte Aussagen sind gestrichen, Korrekturen eingearbeitet.
+- **Evidenz** (Wurzel `Y:\backup twwow\workspace-relocation-20260902\evidence\ws-10\cli485-bot-social\work\v2\`):
+  - `snap-v24-20261002T2208Z\`: Server-Log, bot_events, perf, loot, levelup, deaths, SHA256SUMS
+  - je Thema ein Ordner mit `commands.sh` und Hash-Dateien: `quest-rates`, `quest-traces`, `quest-code`, `fishing`, `gathering`, `crafting`, `guild-impl`, `groups-death`, `conventions-reset`, `synthesis-prs`, `critic-completeness`
+- **Messbasis-Vorbehalt:**
+  - Raten nur in gleich langen Fenstern derselben Rosterphase vergleichen. Tickwerte erst ab dem XMP-Bruch vom 02.10. 15:40Z.
+  - v25 (8.10) ist als neue Basis noch nicht ausgewertet.
+  - `TalkToQuestGiverAction` zählt Abgabe-Versuche. Echte Belohnung: dasselbe Event plus `XpGainAction` ohne Opfer innerhalb von 15 s (149 von 150 Fällen = RewXP). Belastbar bleibt `character_queststatus.rewarded`.
 
 ---
 
-## 1. Gilden
+## 1. Entscheidungen vom 02./03.10. und was daraus folgt
 
-### 1.1 Ist-Stand (Dump 01.10. 03:06Z, vor Zug 8b)
+Quelle sind die Kommentare von OB-00 in #485, mit dem Wortlaut des Inhabers.
+
+| Thema | Entscheidung | Folge für den Entwurf |
+|---|---|---|
+| ADR-0031:127-129 | Live hat Vorrang, Bot-Gruppen laufen seit Zug 7; #324 bleibt Ziel | ADR-Text angepasst (dieser PR) |
+| #343 | Zuerst „Spieler + 4 Bots“, reine Bot-Dungeons sind Phase 2 | Abschnitt 5.5 |
+| Gilden-Zuschnitt | Gilden stellen eigene Gruppen-, Dungeon- und Raid-Runs, Rollen ausgewogen; Zahl wächst mit der Bot-Zahl | `BotsPerGuild` je Fraktion, Abschnitt 5.1 |
+| Urkunden | Bots kaufen und gründen nur bis zur Zielzahl; danach kein Verkauf an Bots; die heutigen Urkunden werden zum Gründen genutzt, Reste später gelöscht (OB-40, Trockenlauf) | PR-5 plus DB-Job |
+| Spieler | Gründen immer möglich; Bots aus anderen Gilden abwerben | Regeln in 5.1, Core-Hook Zug 10 |
+| Namen | Lore-nah, ohne Markenbezug; Inhaber gibt frei | Liste in 5.1 |
+| Leichenlauf | In Gruppen „korrekt“: Gruppe wartet bzw. belebt wieder | Abschnitt 5.3 |
+| Gildenchat | Nur Gildenkanal, nur wenn ein echter Spieler der Gilde online ist, selten; kein Bot-Bot-Chat | Gate (OB-15), Sofort-Konfig Rang 7 |
+| Auftrag v2 | Questen insgesamt, Quest-Items, Angeln, Sammel- und Herstellungsberufe | Abschnitte 2.4–2.7 |
+| Bot-Reset | Erst Quest-Schleife beheben, dann bewerten | Abschnitt 6 |
+
+---
+
+## 2. Befunde
+
+### 2.1 Questen: Bots stecken an Abgaben fest, nicht am Annehmen
+
+**Raten v24** (480 Bot-h, `quest-rates`):
 
 | Größe | Wert |
 |---|---|
-| Zeilen in `guild` / `guild_member` / `guild_rank` | 0 / 0 / 0 |
-| `petition` (gekaufte Urkunden, Item 5863) | 40. Besitzer: 39 aus Roster v6. Fraktion: 23 Allianz, 17 Horde |
-| `petition_sign` | 168 Zeilen von 110 Unterzeichnern, davon 107 aus Roster v6, verteilt auf 29 Petitionen |
-| Unterschriften pro Petition | 0 Unterschriften: 11 · 1–8: 21 · genau 9: 4 (IDs 6, 20, 23, 39) · mehr als 9: 4 (IDs 10:10, 22:14, 31:12, 59:10) |
-| Sofort abgabefähig, Urkunde noch im Inventar | 3: Besitzer 18 (pid 39), 310 (pid 20), 328 (pid 23) |
-| Verwaiste Petitionen (Urkunde nicht mehr im Inventar) | pid 6 (Besitzer 34) und pid 10 (Besitzer 9) |
-| Unterzeichner auf mehreren Petitionen | 39 (22 auf 2, 15 auf 3, 2 auf 4) |
+| Annahmen / Abwürfe | 2.308 / 2.463 (865 / 924 pro h) |
+| davon grau (8.7-Regel) | 1.560 Annahmen, 1.642 Abwürfe, Median 120 s dazwischen |
+| echte Abgaben | 150 (56/h, **0,31 je Bot-h**) |
+| XP | **523 je Bot-h** (Kill 357, Quest 141) |
+| Bots ohne XP in 160 min | **70 von 180** (40 davon schon in v23, ≥ 6,4 h) |
+| Bot-Zeit an Abgeber-Zielen | **64 %** |
+| Routenanfragen „nur Abgeber“ | 2.529 von 2.740 (92 %) |
 
-Die Bots kaufen also Urkunden und sammeln Unterschriften, schließen die Gründung aber nie ab. **OB-40 zählt den aktuellen Stand am 03.10.** mit einer leichten Abfrage ohne Joins: `COUNT(*)` je Tabelle für `guild`, `guild_member`, `petition` und `petition_sign`.
+**Ursachen, nach Gewicht:**
 
-### 1.2 Ursachen
+1. **Abgabe-Gate ohne Ausweg.**
+   - Ein Roster-Bot mit nur einer fertigen Quest fragt ausschließlich Abgeber an (`ChooseTravelTargetAction.cpp:2005`) und sammelt nicht (`TravelValues.cpp:369-377`, Hotfix 8.5).
+   - 170 von 179 Bots trugen beim letzten Request eine fertige Quest.
+   - Scheitert die Abgabe, gibt die Recovery nie auf: WORK-Timeouts am Abgeber zählen nicht (`TravelMgr.cpp:1117-1142`), Routensperren dauern 120 s.
+2. **Kontinentreisen kommen nie an.**
+   - 859 von 1.745 Abgeberwahlen (49 %) gehen auf einen anderen Kontinent: 0 von 665 kamen an, in 20 gesicherten Versionen kein einziges BoardTransport-Event.
+   - QuestRescue erzeugt weitere: 22 von 65 Rettungen landen auf dem anderen Kontinent.
+   - Die Ursache im Bewegungscode ist offen und gehört zu #342.
+3. **Unbenutzbare Abgeber.**
+   - Quest 310 „Bitter Rivals“: Das Abgeber-GO 270 spawnt nur per Skript (`spawntimesecs < 0`). Ergebnis: 32 Bots, 594 Ankünfte, 510 WORK-Timeouts, 0 Abgaben, 59,5 Bot-h (12,6 % der Zeit). Ein game_event oder Pool spawnt es nicht (0 von 7 GUIDs im Dump).
+   - Quest 5722: Der Abgeber steht in Ragefire Chasm. Die Instanzprüfung `TravelMgr.cpp:152` ist **invertiert**: `IsOverWorld` gehört zum Ziel-Quadrat und sperrt Oberwelt- statt Instanz-Abgeber. Ergebnis: 111 Wahlen nach RFC, 0 Abgaben. Die v1-Vermutung eines zweiten Pfads ist widerlegt.
+4. **Unsichtbare Bewegungsschleife.** 77 Bot/Quest/Ziel-Tripel (67 Bots) kommen nie an. `MoveToTravelTargetAction.cpp:149-158` setzt nach 11 Fehlversuchen ohne Trace auf COOLDOWN. Das erzeugt 3.110 der 3.932 `status_time_exceeded_cooldown`-Zeilen.
+5. **Annahme-Abwurf-Churn.** Zwei Drittel grau; 8.11 deckt ihn ab. Danach bleiben rechnerisch etwa 748 Annahmen und 656 Abwürfe. Davon sind rund 600 Grün-Abwürfe aus CleanQuestLog bei vollem Log: Das Softlimit 16 gilt nur für Reisen zu Questgebern, nicht für RPG-Annahmen.
+6. **Earth Sapta (1462/1463).** Zuerst gab es echte, aber leere Mehrfachbelohnungen. Nach der Kettenquest scheitert `CanRewardQuest`: 602 von 682 Events.
+7. **Quest-Items werden nicht benutzt.**
+   - Es gibt keinen autonomen Pfad „Item auf Ziel benutzen“, nur „rpg item“ mit Zufall 1/21.
+   - `[ItemUse]` zählt nur Öffnen und Imbue: 16 Fenster, 0 uses, 261 opens.
+   - 98 der 1.691 Quests L1–25 brauchen ein Item. v24: 77 Annahmen, 118 Abwürfe, 0 Abgaben.
+   - Quest-Starter-Items werden wegen `SyncQuestWithPlayer=1` nie gelootet.
+8. **Messlücken.** 501 von 2.463 Abwürfen haben keine geloggte Annahme (QuestDetailsAction loggt nicht), und Retire ist bei LogLevel 1 unsichtbar.
 
-1. **Hauptursache ist ein Schlüsselfehler aus der Portierung cmangos→vmangos.**
-   - `PetitionSignsValue` sucht in `petition_sign.petitionguid` nach dem **Item-GUID-Zähler der Urkunde** (`GuildValues.cpp:1276`). In vmangos steht in dieser Spalte aber eine eigene Petition-ID. Sie entsteht in `GeneratePetitionID`, liegt im Enchantment-Slot 0 und wird in `PetitionsHandler.cpp:147-154` sowie `GuildMgr.cpp:509` verwendet.
-   - Im Dump liegen die Petition-IDs bei 1..61, die Urkunden-GUIDs bei 69546..193342. Die Abfrage findet deshalb nie eine Zeile, und „petition signs“ ist immer 0.
-   - Folge 1: `PetitionTurnInAction::isUseful` (`GuildCreateActions.cpp:320`) und `GuildValues.h:265` verlangen `>= MinPetitionSigns` (laut Rekonstruktion aus Vorlage und Overlays 9, ohne Live-Abzug, siehe offene Frage 2). Die Bedingung wird nie wahr, der Bot reicht also nie ein.
-   - Derselbe Fehler steckt in `PetitionOfferAction` (`GuildCreateActions.cpp:151` und `:160-163`). Die Prüfung „schon unterschrieben“ greift nie, und `isUseful` von „offer petition nearby“ (`GuildCreateActions.h:32`) bleibt dauerhaft wahr.
-   - Folge 2: Die Bots bieten endlos an, ausgelöst über den Trigger „random“ (`GuildStrategy.cpp:8-10`). Pro gildenlosem Kandidaten in Sichtweite laufen dabei **2 synchrone `CharacterDatabase.PQuery`** im Update-Thread des Bots.
-2. **Zweiter Blocker im Core: Altlast.**
-   - `Petition::IsComplete()` prüft `size == MinPetitionSigns` (`GuildMgr.h:134`). `LoadPetitions` übernimmt Unterschriften beim Laden ohne Obergrenze (`GuildMgr.cpp:215, 261-262`). Bei mehr als 9 Unterschriften lehnt `HandleTurnInPetitionOpcode` die Abgabe ab (`PETITION_SIGN_NEED_MORE`, `PetitionsHandler.cpp:529`).
-   - Die Petitionen 10, 22, 31 und 59 bleiben deshalb auch nach Fix 1 blockiert.
-   - Sehr wahrscheinlich sind das Altzeilen aus dem `DeleteFromDB`-Fehler, der mit #241/06262d6d am 30.09. behoben wurde. Der Fix räumt diese Zeilen nicht auf.
-   - Die Blockade ist nicht absolut: Die Zahl sinkt, wenn ein Unterzeichner einer Gilde beitritt, gelöscht wird oder die Urkunde zerstört wird.
-3. **Dritte Hürde nach Fix 1: Ort und Reise.** `PetitionTurnInAction::isUseful` (`GuildCreateActions.cpp:298-320`) verlangt außer `petition signs >= MinPetitionSigns` auch: Strategie `travel`, `ChooseTravelTargetAction::isUseful`, eine Zone mit `AREA_FLAG_CAPITAL` und `!travel target traveling`. Quest-first-Roster-Bots kommen selten in Hauptstädte. Auch nach Fix 1 ist deshalb UNSICHER, ob die 3 abgabefähigen Bots (18, 310, 328) zeitnah einreichen. Abhilfe: Der `[Guild]`-Trace aus S4 loggt den `isUseful`-Grund; optional wird eine Reise zur Hauptstadt eingeplant, sobald die Unterschriften reichen (Zug 9, Spielentscheidung, Abbruch nach N Versuchen).
-4. **Der klassische Weg über die Fabrik ist abgeschaltet, und das ist gewollt.**
-   - `InitGuild` und `CreateRandomGuilds` sind der einzige Code, der `RandomBotGuildCount` liest (`PlayerbotFactory.cpp:360-364, 5037-5038`). Für Roster-Bots läuft dieser Weg im Normalbetrieb nie:
-     - `randomizeProgression=false` (`PersistentActiveRoster.cpp:355`, gelesen in `RandomPlayerbotMgr.cpp:2917`)
-     - Rücksprung in `RandomizeFirst` (`:3855-3858`)
-     - `OnBotLoginInternal` ruft kein `InitGuild` auf (`:4576-4591`)
-   - `DisableRandomLevels=1` ist dabei **keine** eigene Sperre (`PlayerbotFactory.cpp:191-214`).
-   - Der Weg bleibt über GM-Befehle erreichbar (`.bot random`, `.bot levelup`, `.bot init=`, `rndbot upgrade`) und theoretisch über InstaRandomize beim ersten Login, wenn ein Bot über Startlevel noch keine Spielzeit hat.
-5. **Was nicht die Ursache ist:**
-   - **Strategie:** Die Strategie `guild` haben freie Bots ohne Gruppe oder als Gruppenleiter (`AiFactory.cpp:1098/1109`) sowie Bots in einer Gruppe mit Bot-Master (`:1136-1141`). `rpg guild`, also der Urkundenkauf, kommt über `rpg` dazu (`RpgStrategy.cpp:30`).
-   - **Schalter:** Laut Rekonstruktion sind live `RandomBotFormGuild=1`, `GuildCount=12`, `GuildNearby=1`, `AllowGuildBots=1` und `DeleteRandomBotGuilds=0` gesetzt.
-   - **Weitere Module:** BotBrain (twow-repo) enthält keinen Gildencode. `PlayerbotGuildMgr` in mod-dungeon-clear ist nur ein Stub. `BeginnersGuilds` (Gilde 126) schließt RNDBOT-Konten aus und ist für Bots wirkungslos.
-6. **Voraussetzungen für den Urkundenkauf** (`GuildCreateActions.cpp:80-112`): GuilderType und GrouperType dürfen nicht SOLO sein (je etwa 20 % der Bots). Außerdem nötig sind mindestens 1000 Kupfer freies Gildenbudget und ein Urkunden-NPC in Reichweite. Im Dump halten 39 von 180 Roster-v6-Bots (22 %) eine offene Petition, dazu 1 Nicht-Roster-Charakter. Die Petition-IDs reichen bis 61, frühere Urkunden sind also verschwunden; die Zahl ist eine Untergrenze der Käufe (UNSICHER).
+**Tote Konfiguration:** `AutonomousLogSoftLimit`, `RejectBelowLevelDelta` und `MaxAboveLevelDelta` werden nicht ausgewertet. `quests=N` in `[Idle]` ist die Statusmap (Median 65), nicht das Questlog.
 
-### 1.3 Vorschlag
+**Vergleich:** Im gleich langen Startfenster von v22 waren es 1,09 Abgaben und 995 XP je Bot-h. Seit 8.7 stieg der Cross-Map-Anteil der Abgeberwahlen von 21 % auf rund 50 %.
 
-| Punkt | Vorschlag |
+### 2.2 Gilden: Schlüsselfehler plus Urkunden-Karussell
+
+- **Hauptursache (aus v1 bestätigt):**
+  - `PetitionSignsValue` und `PetitionOfferAction` fragen `petition_sign` mit dem Item-GUID-Zähler der Urkunde ab (`GuildValues.cpp:1276`, `GuildCreateActions.cpp:151/160`). vmangos speichert dort die Petition-ID (`PetitionsHandler.cpp:147-154`).
+  - Folge: 0 Gilden im ganzen Zug 8.
+  - Ein Replay aus Dump und allen SQL-Zeilen zeigt: 57 Petitionen hatten zeitweise genau 9 Unterschriften, eine Gründung wäre also möglich gewesen.
+- **Last:** 4.701 synchrone Petition-Abfragen pro Stunde im Map-Thread, Spitzen bis 24 ms; seit 01.10. 03:08Z über 70.000, keine konnte treffen.
+- **Karussell:**
+  - Der Core löscht bei jeder neuen Unterschrift die alte des Unterzeichners. Deshalb waren 88 % der 3.122 Unterschriften auf v24 Umzüge (≈ 1.164/h).
+  - Dazu kommen 256 wirkungslose Kaufversuche: `"item count", "Hitem:5863:"` wird nie geparst.
+- **Kauf-Zerstör-Schleife:** Seit 8.3 wurden 32 Urkunden gelöscht (Bots 44, 227, 877, 7), oft in derselben Sekunde wie ein Neukauf. Die 7 `[PetitionHandler] No petition exists`-Fehler auf v24 entstehen genau so (Bot 227, pid 129/130). Wer zerstört, ist nur per Korrelation belegt (SmartDestroyItemAction bei vollen Taschen; UNSICHER).
+- **Bestand 02.10. 22:08Z:**
+  - **82 offene Urkunden** (38 Allianz, 44 Horde), nicht 40. Am 03.10. 00:31Z waren es 84.
+  - **18 Waisen** (ids 1–18) ohne Urkunden-Item, alle aus dem L1-Reset vom 26.09. Deren Besitzer können keine neue Urkunde kaufen, der Core bricht still ab.
+- **Korrektur zu v1:** Gildenchat ist bei `BotChat.Direct=0` **nicht** stumm. `SayToGuild` fällt auf `BroadcastToGuild` zurück, und `GuildRepliesRate=65` lässt Bots auf Bots antworten. Dazu kommen /say-Wege (`InviteChat`, `RandomBotSayWithoutMaster=1`, `+custom::say`).
+- **Hauptstadt-Bedingung (v1, Punkt 3):** In 47 von 47 `[Idle]`-Proben von Urkunden-Besitzern in Hauptstädten war ein Reiseziel aktiv. Die Bedingung blockiert praktisch immer, deshalb entfällt sie im neuen Pfad.
+
+### 2.3 Gruppen und Tod
+
+- **Der eigene Ad-hoc-Austritt ist ein No-op** (#365 Schritt 2).
+  - `AdhocGroupAction::CheckLeave` löst „leave“ mit dem Bot selbst aus (`AdhocGroupAction.cpp:201`). `ShouldStayInGroup(…, player==bot, …)` hält ihn in der Gruppe (`LeaveGroupAction.cpp:68`, `SingletonGroupPolicy.h:16-19`).
+  - Auf 1.900 Austrittsentscheidungen folgte 1 echter Austritt. Leiter 3285 traf 69 No-op-Entscheidungen in 34 min, jede mit `ai->Reset()`.
+- **Echte Austritte laufen nur über LeaveFarAway.** Bei `RandomBotGroupNearby=0` gilt der Austritt sofort als nützlich (`LeaveGroupAction.cpp:123-124`), ausgelöst vom Zufallstrigger „seldom“. Die Verweildauer ist deshalb exponentiell verteilt, im Mittel 38 min.
+- **Gruppen sind selten geworden:** Paare mit gleichem Ziel in 50 yd fielen von 3.671 (Zug 7, 14,8 h) auf 5 (v24). Auf v24 entstand 1 Gruppe.
+- **Tod in bot-geführten Gruppen:**
+  - Der Geist wird nach median 3 s freigegeben (`ReleaseSpiritAction.h:103-113`).
+  - 95 % gehen zum Geistheiler (v24: 271 von 286, Leiche nur 5).
+  - Heiler finden nur unfreigegebene Körper in 26 yd (`PartyMemberToResurrect.cpp:40`). In Zug 7 gab es bei 221 Gruppentoden deshalb 0 Wiederbelebungen durch Mitglieder.
+- **Gefahr für D2:** Bot 27 (Nilenata) hängt seit v24 19:39:58Z mit `combat=1` in Zone 5561 fest; in v25 um 01:43:50Z idle 70 min. D2 („kein Bot ≥ 24 h ohne XP“) droht ab etwa 03.10. 19:40Z (UNSICHER, falls zwischendurch XP kam).
+
+### 2.4 Angeln
+
+- **Technisch funktioniert es seit 8.8:** 188 von 188 Bobber-Uses verarbeitet, 6 Sitzungen von 5 Bots, +320 Skill (Bot 301 auf 84 nach Journeyman).
+- **Die Teilnahme ist winzig.** 29 Zwecke, davon 22 mit `no_spot` (79 %).
+- **Ursachen:**
+  1. **Phantom-Zweck:** Der Zweck wird als Nebenwirkung einer Wertberechnung gestartet (`NeedTravelPurposeValue`, alle 5 s), auch ohne Angelziel. Bei 15 von 28 Zwecken ist kein Angelziel nachweisbar.
+  2. **Falsche Zeitbasis:** Die `no_spot`-Uhr (300 s) läuft ab Zweckstart. Erfolgreiche Sitzungen brauchten bis zum ersten Wurf 69–310 s.
+  3. **Sammelsperre:** Fertige Quests sperren jeden Sammelzweck (2.1, Punkt 1).
+- **Fang wird weggeworfen:** Von etwa 107 Fängen wurden 5 gelootet, alles Quest-Barsche. Rohfisch liegt unter 0,1 % des Botgelds, gilt deshalb als `ITEM_USAGE_NONE` und bleibt liegen. Fisch wurde in keiner Version verkauft.
+- **Kochen fehlt ganz:** 174 Bots stehen auf 1. Bots kaufen Holz und Rezepte, aber es gibt keinen Koch-Pfad.
+- **Weitere Fehler:**
+  - 28 % Trockenwürfe, weil eine Wasserprobe fehlt.
+  - `TravelMgr.cpp:748` überschattet die Zonen-Skillgrenze.
+- **Balance:** Angeln belegt 0,43 % der Bot-Zeit und stiehlt keine Questzeit; alle fünf Angler hatten vorher keinen Questfortschritt.
+
+### 2.5 Sammelberufe
+
+**Skill pro Tag** (OB-40, 30.09.–02.10., 47,9 h):
+
+| Beruf | pro Tag |
 |---|---|
-| **Fix** (Hotfix, keine DB) | `PetitionSignsValue` und `PetitionOfferAction` zählen im Speicher statt per SQL: `sGuildMgr.GetPetitionByCharterGuid(...)->GetSignatureCount()` bzw. `GetSignatureForAccount(accountId)`. `SingleCalculatedValue` wird zu einem `CalculatedValue` mit etwa 10 s Lebensdauer. Contract-Test: Kein Treffer für `petition_sign` in `mod-playerbots/strategy`. |
-| **Altlast** (Hotfix, Core, keine DB) | `IsComplete` prüft `>=` statt `==`. `LoadPetitions` übernimmt je Unterzeichner nur eine Unterschrift und je Petition höchstens `MinPetitionSigns`. Überzählige Zeilen werden nur geloggt und nicht gelöscht. Wer die Daten lieber per SQL bereinigt, braucht dafür eine Einzelfreigabe (DB-Mutation, Hauptzug, OB-40). |
-| **Anzahl** | `RandomBotGuildCount` begrenzt die Gründung per Urkunde **nicht**. Ohne Obergrenze entstehen theoretisch bis zu etwa 18 Gilden à 10 Bots. Vorschlag: In `BuyPetitionAction::canBuyPetition` gilt Bot-Gilden plus offene Urkunden der eigenen Fraktion < `RandomBotGuildCount/2`, also 6 je Fraktion. Empfehlung: 4–6 je Fraktion. |
-| **Größe** | Start mit etwa 10–15 Mitgliedern, Wachstum über `GuildManageNearby` (`GuildManagementActions.cpp:67-238`). Zielgröße 12–20 Mitglieder. `AiPlayerbot.GuildMaxBotLimit=30` (Default 1000) aktiviert „leave large guild“. |
-| **Neutrale Namen** | Die 400 Stock-Namen in `ai_playerbot_guild_names` sind in Repo und live identisch. Mindestens zu entfernen: „Iron Blizzard“, „Midnight Norrathians“, „Grammaton Collective“, „Illuminati“. Variante A: Konfigurationsschlüssel mit Ausschlussliste (hotfixfähig). Variante B: Migration (Hauptzug, Einzelfreigabe). Keine Texte aus dem Wiki kopieren. |
-| **Leiter** | Leiter wird ganz organisch der Besitzer der Urkunde. Die Rangrechte nach der Gründung regelt `GuildCreateActions.cpp:253-268`. |
-| **Beitritt nach Region und Stufe** | Optional für Zug 10: Angebot und Einladung nur bei \|ΔStufe\| ≤ 5 und gleicher Zone. Die Sichtdistanz und der regionale Quest-Hub der Roster-Bots erzeugen diese Nähe schon weitgehend. Fallback, falls das organisch zu langsam geht: ein deterministischer `RosterGuildPlanner`, einmal pro Admission und asynchron. Das ist eine Spielentscheidung und braucht eine Einzelfreigabe. **`CreateRandomGuilds` darf keinesfalls reaktiviert werden**, weil es synchron `SELECT account,guid FROM characters` scannt (`RandomPlayerbotFactory.cpp:1240`). |
-| **Tick-Kosten** | Nach dem Fix fallen die 2 synchronen DB-Abfragen pro Kandidat weg, das ist ein Gewinn für ADR-0024. Neu kommen nur Schleifen mit O(≤ 9) im Speicher dazu. Die Gründung kostet einmalig `Guild::Create` mit asynchronen `PExecute`-Aufrufen. Wie oft der Trigger „random“ feuert, ist nicht gemessen (UNSICHER). |
-| **Rollback** | Code: Hotfix zurücknehmen oder `RandomBotFormGuild=0`. Dann werden keine Urkunden mehr gekauft oder eingereicht, bestehende Gilden bleiben. Daten: Auflösen nur per `Guild::Disband` bzw. GM, nur mit Einzelfreigabe und nach einem Dump von `guild*` und `petition*`. Gildenzugehörigkeit ändert keine Roster-Mitgliedschaft, ADR-0010 ist nicht berührt. |
-| **Chat** | Gildenchat ist bei `BotChat.Direct=0` (#478, live 0) stumm. Gilden sind dann nur im Gildenfenster sichtbar. Ob sich das ändert, entscheidet der Inhaber, umgesetzt wird es mit Mengenbegrenzung durch OB-15. |
+| Kräuterkunde | +14,5 |
+| Erste Hilfe | +10,2 |
+| Bergbau | +4,1 |
+| Kürschnerei | +3,1 |
 
-Direkt nach dem Fix können bis zu 3 Bots sofort einreichen, mit Altlast-Fix kommen weitere dazu. Die Gilden tragen dann Stock-Namen der Urkunden, zum Beispiel „Vanguard of the Left“. Sollen bestehende Urkunden vorher aufgeräumt werden, ist das eine DB-Mutation mit Einzelfreigabe.
+**Kürschnern (#471 noch nicht erreicht):**
+- Bots lassen Schrott unter Geld/1000 liegen (`ItemUsageValue.cpp:466-475`). Die Leiche bleibt dann plünderbar, und der Core verweigert das Häuten (`Spell.cpp:6294-6306`).
+- Haut-Loot meldet der Core als `LOOT_PICKPOCKETING` (`Player.cpp:9829-9836`). Die Ausnahme für Haut-Loot griff deshalb nie, Lederfetzen fielen unter die Geldregel.
+- Leichen mit fremdem Loot werden zum Häutziel; der Bot nimmt sie jede Sekunde neu auf.
+- Bei Leichen der Stufe 10 umgeht `reqSkillValue` 0 die Messerprüfung.
+- Häutungen: v23 3 von 133 passenden Leichen, v24 0 von 37.
+- Korrektur: Die v2-Aussage „Kernregel (L−10)·10 ist die Hauptursache“ ist von beiden Prüfern widerlegt. Die Formel gilt, erklärt aber den Median 1 nicht.
 
----
+**Bergbau („breit, aber flach“):**
+- Begegnungen je Sammler-Stunde sind 8,7× seltener als bei Kräutern.
+- Knoten werden nur bis 25 y und ohne unfreundliche Einheit in 60 y abgeerntet.
+- 6 von 42 Bergleuten hatten am 01.10. keine Spitzhacke.
+- Aktive Bergbau-Zwecke bringen nichts: 79 Starts, 77× `no_skillup`, +9 Skill.
+- Erz wird nie behalten (2 Erzzeilen in 35 h).
 
-## 2. Quest-Abschluss: wo die Bots hängen
+**Weitere Befunde:**
+- **Trainer:** Die 12.055 `[PersistentRosterProfessionTraining]`-Ablehnungen sind kein Blocker, sondern Rauschen (eine Zeile je Bot und Trainer pro 300 s).
+- **Rang-Cap:** Der echte Engpass ist der fehlende Trainerbesuch am Cap. 5 Kräuterkundler und 6 Erste-Hilfe-Bots stehen seit ≥ 48 h auf 75/75.
+- **Kräuter:** Vom gemeldeten Knoten bis zum Öffnen kommen nur etwa 14 %. 59 % der Gather-Spuren stammen von Bots ohne den Beruf.
 
-Datengrundlage:
-- 21 kanonische, zeitlich getrennte `bot_events`-Segmente vom 24.09. bis 02.10. Teilmengen wurden per `comm` als vollständig enthalten geprüft und auf Segmentebene entfernt. Ein zeilenweises `sort -u` hätte 41.482 echte Ereignisse in derselben Sekunde gelöscht.
-- Klassifikation aus dem World-Dump mit einem eigenen Tuple-Parser (6708 Quests mit je 129 Spalten).
+### 2.6 Herstellung: der item-Cheat täuscht Reagenzien vor
 
-### 2.1 Abschluss je Quest-Kategorie
+- **Hauptursache:**
+  - Alle 180 Roster-Bots laufen mit `RndBotCheats = repair,breath,item,taxi`. Unter dem item-Cheat meldet `HasReagentsForValue` für jedes Rezept „vorhanden“ (`CraftValues.cpp:79-80`).
+  - `CraftRandomItemAction` wählt deshalb ein beliebiges Rezept. Der Core verlangt echte Reagenzien, Werkzeug und Fokus (`Spell.cpp:7453-7519`) und bricht still ab.
+- **Zahlen:**
+  - v24: 4.791 `stage=craft state=started`, 0 `no_materials`.
+  - 30.09.–02.10.: etwa 68.200 Versuche, etwa 3.150 Skillpunkte (≤ 1,5–6 % Erfolg), praktisch nur Verbände und Leinenballen.
+  - `started` heißt nur „castnc in die Warteschlange gestellt“; `detail` ist die Botstufe.
+  - Der Zufallspick trifft im Mittel nur in 12,7 % der Fälle ein wirklich herstellbares Rezept.
+- **Material wird verkauft** (`ItemUsageValue.cpp:187-188`). v24: 89× Leinen, ≈ 45× Kräuter, 64× Edelsteine, 38× Fleisch.
+- **Händler-Reagenzien werden nie gekauft:** 0 Phiolen (0 von 24 Alchemisten haben eine), 0 Kupferstäbe.
+- **Rohstofflücke:** Schmiede-, Ingenieurs- und Juwelier-Startrezepte brauchen Rauen Stein; v24 lootete 0 Kupfererz und 0 Rauen Stein. Lederverarbeitung bekommt kein Leder (2.5).
+- **Kochen** braucht ein Kochfeuer (Fokus). Der Trigger schließt Fokus-Rezepte aus, und das Lagerfeuer 818 ist kein Craft-Spell.
+- **Keine Ursachen:**
+  - `MAX_SPELL_ID`: Alle Rezepte haben IDs ≤ 58.046, 8.10 ändert hier nichts.
+  - Werkzeug: meist vorhanden.
+  - Rezepte: Startrezepte lernt der Bot zur Laufzeit.
+- **Geplante Paare** (`ProfessionPair.h`): Kräuter+Alchemie 33, Kürschnern+Leder 29, Bergbau+Schmiede 20, Bergbau+Ingenieur 14, Bergbau+Juwelier 15, Schneiderei+Verzauberkunst 27, Kräuter+Bergbau 24.
 
-Kategorien schließen sich gegenseitig aus. Rangfolge: Eskorte > Dungeon (Type 81 oder Dungeon-Zone) > Raid/PvP/Sonstige (Type 62/41/64/82) > Gruppe/Elite (Type 1 oder SuggestedPlayers > 1) > Elite-Ziel (Type 0) > Solo.
+### 2.7 Verbrauchsgüter
 
-| Kategorie | Quests angenommen | Annahme-Paare (Bot + Quest) | Abgabe/Paar | Abwurf/Paar | Reisen zum Ziel |
-|---|---|---|---|---|---|
-| normal_solo | 712 | 8.564 | **0,476** | 0,367 | 42.976 |
-| group_elite | 9 | 87 | **0,011** (nur 2499 Oakenscowl) | 0,736 | 5 |
-| dungeon | 18 | 91 | **0,000** | 0,780 | 1 |
-| escort | 4 | 5 | **0,000** | 1,000 | 0 |
-| elite_objective | 2 | 9 | 0,000 (Heuristik UNSICHER, z. B. 8513) | 0,778 | 0 |
-| raid_pvp_other | 6 | 82 | 0,390 (nur 50315 Gadgetzan Times) | 0,671 | – |
-
-Quelle: `work/quest-join/quest_category_funnel.tsv` (sha256 `888b5098…14aa`), `quest_join.tsv` (`dd38736d…`).
-
-### 2.2 Hängepunkte
-
-| Nr. | Befund | Zahl | Ursache (Code) | Sicherheit |
-|---|---|---|---|---|
-| H1 | Schleife aus Annehmen und Abwerfen grauer Quests seit Hotfix 8.7/8.8 | 8.7-Segment (3,76 h): 2.195 graue Annahmen, 2.308 graue Abwürfe. Etwa 870 Annahmen/h, Abgaben pro Annahme 0,06 (8.3: 0,30). Beispiel Cointooth/750 mit 88 Annahmen, Zyklus 2–3 min | Abwurf nach XP-Graustufe (`DropQuestAction.cpp:53-72`, `QuestSearchPolicy.h:252-270`). `AcceptAllQuestsAction::ProcessQuest` filtert aber nur rote Quests (`AcceptQuestAction.cpp:36-40`) | hoch. Zuordnung Segment↔Version über Ordnernamen UNSICHER |
-| H2 | Gruppen-, Dungeon- und Eskort-Quests werden angenommen, aber nie bearbeitet | 183 Annahme-Paare in group_elite + dungeon + escort, 1 Abgabe | Der Annahmepfad hat keinen Typfilter (`AcceptQuestAction.cpp:9-50`). Die Typfilter greifen erst bei der Reiseplanung (`TravelMgr.cpp:143, 150, 295-301, 307, 311-315`) und verlangen `can fight elite/boss`, also eine Gruppe (`MaintenanceValues.h:148/155`) | hoch |
-| H3 | Abgabe-Schleife der wiederholbaren Quest 1463 „Earth Sapta“ | 26.–30.09.: 621 von 2.364 Abgabe-Events (26,3 %). Über alle Segmente 24.09.–02.10.: 629 für 1463, dazu 53 für 1462 | Pfad NONE + IsAutoComplete (`TalkToQuestGiverAction.cpp:53-57`). Mechanismus UNSICHER | hoch (Zahl) |
-| H4 | Reiseschleifen zum Abgeber | 310 Bitter Rivals: 1.835 × TravelToTaker, 0 Abgaben. 5722: 362/0, Abgeber Maur Grimtotem steht **in RFC**. 1097: 337 | UNSICHER. `TravelMgr.cpp:149-154` sperrt die Abgabe von ELITE/DUNGEON in der **Overworld**, der Kommentar sagt „in instances“; geprüft wird `IsOverWorld(info.GetPosition())`. Bei 5722 liegt der Abgeber in RFC, ein Solo-Bot in der Oberwelt müsste also gesperrt sein. Dass trotzdem 362 TravelToTaker entstehen, deutet auf einen zweiten Pfad ohne diese Sperre hin (z. B. `ChooseTravelTargetAction`, UNSICHER). Bei 310/384/413 fehlt eventuell ein Kaufgegenstand (Prüfung durch OB-50) | mittel |
-| H5 | Reiseschleifen zu Questzielen ohne Fortschritt | 789: 6.324 Reisen bei 109 Fortschritten. 794: 4.413/14. 41216: 1.528/10 | Ziel nicht erreichbar oder GO-Rotation (#405) | hoch (Zahl) |
-| H6 | Fertig, aber nicht abgegeben (DB) | 580 Bot-Quest-Zeilen mit `status=1, rewarded=0` in 178 verschiedenen Quests, dazu 1.844 unfertige (186 Log-Bots, Dump 01.10. 03:06Z). Im Schnitt 13,0 aktive Quests je Bot (Maximum 18) | Vor allem Liefer- und Bericht-Quests mit Abgeber in einer anderen Zone oder Hauptstadt (310, 80300, 8792, 1097) | mittel |
-| H7 | Eskort-, Erkundungs- und Event-Quests ohne Bot-Ziel | Erkundung/Event (SpecialFlags&2): 103 Annahmen, 7 Abgaben (26.–30.09.) | `EntryQuestRelationMapValue` kennt keine Areatrigger- und Eskort-Ziele (`QuestValues.cpp:32-105`). Bei Quests ohne ReqItem/ReqCreature ist `NeedQuestObjective` immer false (`:655-675`) | hoch |
-| H8 | `HasProgress` stuft Quests mit `ObjectiveText` immer als „in Bearbeitung“ ein | 295 von 6708 Quests betroffen, 20 der angenommenen | `DropQuestAction.cpp:196` | mittel |
-| H9 | Quest-Teilen von Bot zu Bot ist wirkungslos | – | Das Paket an Bot-Mitglieder geht ohne Divider raus (`ShareQuestAction.cpp:170-180`), `AcceptQuestShareAction` lehnt ab (`AcceptQuestAction.cpp:117-165`) | mittel |
-| H10 | Gründe für `QuestDropped` sind nicht unterscheidbar | 943 Abwürfe (26.–30.09.) | `PlayerbotAI::DropQuest` loggt keinen Grund. `RetireOneSafeStaleQuest` und das Chat-Drop loggen gar kein Event | hoch |
-
-Phasenvergleich (Abgaben pro Annahme-Paar, ohne wiederholbare Quests): vor dem 26.09. 0,46 · P0 0,36 · P1 (Zug 6) 0,48 · P2 (Zug 7) 0,52 · P3 (Zug 8.x) 0,42. Annahme bis Abgabe im Median 36–61 min, p90 in Zug 7/8 jedoch 49–72 h. Vergleiche nur innerhalb derselben Roster-Phase und ab v24 (XMP-Wechsel am 02.10.).
-
-Hashes der Eingaben:
-- `quest_funnel.tsv`: `1433d7ae4fa0…9b94`
-- Segmente, Beispiele: 2026-09-27 `992896d1…c457`, train8-7 `c4012fbd…14e4c`, train8-8 `bfe82381…35db`. Diese Datei wächst noch, der Hash gilt für den Lesezeitpunkt.
-- Vollständig in `work/quest-logs/input_sha256.txt`
+- `UseConsumableAction.cpp:781` schaltet Verbrauchsgüter unter dem item-Cheat ab, und `ItemUsageValue.cpp:216` führt sie zum Verkauf.
+- v24: `[ItemUse]` 16 von 16 Fenstern mit uses=0, 40 verkaufte Verbände.
+- Gifte und Öle (ImbueAction) sind UNSICHER.
+- Ob Roster-Bots echte Verbände und Tränke nutzen sollen, entscheidet der Inhaber (Abschnitt 7).
 
 ---
 
-## 3. Entwurf Gruppen-Quests (Gruppe, Elite, Eskorte)
+## 3. Priorisierte Fix-Liste
 
-### 3.1 Ausgangslage
+**Leseregeln:**
+- Rang = erwartete ADR-0031-Wirkung je Aufwand und Risiko.
+- „Hotfix 8.x“ heißt ohne DB-Änderung, als 8.12 möglich (Zwilling auf `release/8.x`, Entscheidung OB-00).
+- Basiswerte stammen aus dem v24-Schnappschuss: `synthesis-prs/baseline_v24.tsv`.
+- Alle neuen Schalter haben neutrale Defaults. Profilwerte setzt ein twow-repo-PR erst nach dem Inhaberentscheid.
 
-- **Ad-hoc-Questgruppen aus #365 Schritt 2 sind seit Zug 7 live.** Konfiguration: `BotGroups.Enabled=1`, `MaxBots=5`, `LevelWindow=3`, Radius 50 yd, Scan 10 s, Paar-Cooldown 600 s. Code in `AiFactory.cpp:1170-1173` und `AdhocGroupAction.cpp`.
-- **Messung 26.09. bis 30.09.:**
-  - 926 Beitritte zu Bot-Gruppen, 102 Bots, 88 Leiter. 64 % der Gruppen hatten 2 Mitglieder.
-  - Mitgliedsdauer im Median 22 min (p90 89 min).
-  - Bots verbringen 6,9 % ihrer Zeit in Gruppen.
-  - Tode pro Bot-Stunde: in Gruppen 0,36, solo 0,61. Das ist eine reine Korrelation, nicht bereinigt.
-- **Henne-Ei-Problem:** Gruppen bilden sich nur um das *aktuelle* Reiseziel (`AdhocGroupAction.cpp:65-83`). Solo-Bots wählen Elite- und Dungeon-Ziele nie als Reiseziel. Deshalb entstehen für diese Ziele nie Gruppen.
-- **Konkurrierender Austrittspfad:** Bei `RandomBotGroupNearby=0` gibt `LeaveFarAwayAction::isUseful` sofort **true** zurück (`LeaveGroupAction.cpp:123`). Die Bedingungen: kein aktiver Spieler-Master, ein Gruppenmaster existiert, alle Mitglieder sind auf derselben Map. Ausgelöst wird das über „seldom“ und die Dead-Engine (`GroupStrategy.cpp:17-23, 32-38`). Ad-hoc-Gruppen sind davon nicht ausgenommen.
-  - Laut bot-groups.md enden Ad-hoc-Gruppen mit `objective_done` 6× und `idle` 104× (Zug 7.1c).
-  - Für die Austrittsgründe sind keine `[BotGroup]`-Logs auf Y: gesichert, die Verteilung bleibt UNSICHER.
-- **Wipe-Logik fehlt völlig.** Ohne Spieler-Master geben tote Bots ihren Geist sofort frei (`ReleaseSpiritAction.h:103-113`). Ab 27.09. werden ≥ 94 % am Geistheiler wiederbelebt (28.09.: 2.510 von 2.630; 26.09.: 3.414 von 3.843 = 89 %). Die meisten Tode passieren nicht am Questziel, sondern auf der Abgabe-Route, beim Angeln oder ohne Reiseziel („kill“ nur 132 von 12.677).
-
-### 3.2 Zusammenfinden
-
-1. **Bedarf statt Henne-Ei.** `AdhocGroupAction::CurrentObjective` liefert auch ein *gesuchtes* Ziel: eine Elite- oder Gruppenquest im Log, deren Ziel nur wegen `can fight elite` inaktiv ist. Radius, LevelWindow und Paar-Cooldown bleiben wie bisher.
-2. **Matchmaking-Raster (Zug 10, falls nötig).** Alle 30 s ein Bucket-Index `(team, map, zone, questId, objective)` in O(n) aus Snapshots, die jeder Bot in seinem eigenen Map-Tick schreibt (POD unter kurzem Mutex). Ergebnis ist nur eine *Absicht* im Eingangskorb des Leiters. Die Einladung führt der Leiter in seinem eigenen Map-Update aus, wenn beide auf derselben Map sind. Es gibt keine Gruppenoperationen aus dem World-Thread (ADR-0024 Inv. 6, #351).
-3. **Obergrenzen:**
-   - Gruppengröße 3–5 für Elite/Gruppe, 2–3 für Eskorte. Höchstens 30 Ad-hoc-Gruppen.
-   - Höchstens 3 Einladungen/s serverweit und höchstens 1 je Bot pro 30 s.
-   - Stufenfenster ≤ 3. Elite nur, wenn die niedrigste Stufe in der Gruppe ≥ Questlevel − 1 ist.
-4. **Wartezeit auf eine Gruppe:** höchstens 15 min, danach wird das Ziel über den vorhandenen QuestWorkTimeouts-Pfad (#405) zurückgestellt.
-
-### 3.3 Gemeinsam erledigen
-
-- **Kill-Credit** verteilt der Core (Loot/XP-Distanz, `MaxGroupXPDistance=74`). Den Bedarf aggregiert der Bot-Code bereits über `group or::{following party, need quest objective}` (`ChooseTravelTargetAction.cpp:406-427, 1906-1975`). Loot muss laut `docs/design/bot-groups.md:200-230` nicht geändert werden.
-- **`can fight elite`** verlangt eine Gruppe. Alle Mitglieder brauchen `can fight equal` und `following party`, und niemand darf `should sell` haben. **`can fight boss`** verlangt zusätzlich mehr als 3 Mitglieder.
-- **`following party`** ist wahr für den Leiter oder bei Strategie `follow`/`wander` (`GroupValues.cpp:28-38`). In Ad-hoc-Gruppen ist für Mitglieder `wander` aktiv, weil der Master ein Bot ist. Ob `ResetStrategies` beim Beitritt das Reiseziel zurücksetzt, ist UNSICHER.
-- **Quest-Teilen von Bot zu Bot reparieren (H9).** Für Bot-Mitglieder wird der Core-Pfad `HandlePushQuestToParty` genutzt, der den Divider setzt. Die bestehende Drossel bleibt (freeSlots < 15, 1/6).
-
-### 3.4 Trennen
-
-- **Ein einziger Austrittspfad.** `LeaveFarAwayAction::isUseful` gibt für registrierte Ad-hoc-Mitglieder false zurück. Austritt nur über `DecideLeave`, jeweils mit `[BotGroup] reason=`.
-- **Gründe:** `quest_turned_in`, `objective_done`, `instance`, `out_of_range` (2×Radius für 60 s), `level_window`, `idle` (10 min), neu `max_age` (60 min), `wipe`, `deaths`, `repop`.
-- **Registry:** `Forget` beim letzten Austritt bzw. Disband aufrufen, nicht erst bei ≤ 2 Mitgliedern. Repop und RemoveMember ebenfalls loggen.
-
-### 3.5 Tod und Wipe
-
-- **Wipe** heißt: Alle lebenden Mitglieder sterben innerhalb von 30 s. Geprüft wird beim Tod jedes Bots, mit Aufwand O(Gruppengröße).
-- **Einzeltod in der Gruppe:** Leichenlauf statt Geistheiler, solange keine Wiederbelebungskrankheit besteht und die Leiche ≤ 150 yd vom Leiter entfernt liegt. Die Gruppe wartet höchstens 90 s, `idle` pausiert in dieser Zeit. Das ist eine **Spielentscheidung des Inhabers** (Haltbarkeit, Wiederbelebungskrankheit).
-- **Nach einem Wipe:** Regroup an der Leiche, höchstens 120 s Wartefenster. Nach 2 Wipes am selben Ziel innerhalb von 30 min: Disband mit `reason=wipe`, Ziel für die ganze Gruppe 60 min sperren (DestinationDeathPolicy), Paar-Cooldowns setzen.
-- **Mitglied mit Todesserie:** Wer ≥ 3 Tode hat oder im Cautious-Modus ist (#422), tritt mit `reason=deaths` aus. Repop bleibt der harte Ausweg.
-- **Kein `follow` im Tot-Zustand** für Ad-hoc-Mitglieder (Dead-Engine `AiFactory.cpp:1271`). Das vermeidet Folgeketten über einen hängenden Leiter (#324).
-
-### 3.6 Eskorte
-
-- **Core-Verhalten** (`ScriptedEscortAI.cpp`):
-  - Geprüft wird alle 5 s, nur außerhalb des Kampfs und nur ohne QUESTGIVER-Flag (`:302-322`).
-  - In einer Gruppe scheitert die Eskorte erst, wenn **alle** Mitglieder tot sind, weiter als 100 yd entfernt sind oder die Quest nicht INCOMPLETE haben (`:214-238`). Ohne Gruppe zählt nur der Spieler selbst.
-  - Stirbt der NPC, lässt `GroupEventFailHappens` die Quest für alle Mitglieder unabhängig von der Distanz scheitern (`:168-177`, `Player.cpp:16132-16147`).
-  - Credit geht über `GroupEventHappens` an alle Mitglieder in XP-Distanz.
-- **Bot-Seite:**
-  - mod-playerbots kennt keine Eskorten (0 Treffer für `escort`).
-  - Bots starten Eskorten unbeabsichtigt, weil der Annahme-Opcode `OnQuestAccept` auslöst. Belegt ist das mit 435 Escorting Erland: Annahme und Abwurf 2:12 min später, Grund UNSICHER.
-  - Bei PARTY_ACCEPT bestätigen Mitglieder automatisch über „confirm quest“.
-  - Fehlgeschlagene Quests verwirft `CleanQuestLog` gelegentlich über den Trigger „random“ und nicht bei aktivem Spieler-Master. Das passiert *nicht* sofort.
-  - Dass Eskorten „regelmäßig scheitern“, ist nicht gemessen (UNSICHER).
-- **Inventar:** 24 Eskorten in Stufe 1–30 (Heuristik, Override-Liste nötig). Es gibt kein Eskort-Bit, Type 84 kommt nicht vor.
-- **Kurzfristig:** Eskorten für Bots ohne Gruppe sperren (siehe S3).
-- **Zug 10: Strategie `escort`.**
-  - Erkennung über `Player::GetEscortingGuid()` des Leiters.
-  - Die Strategie hat Vorrang vor allem anderen. Mitglieder folgen dem NPC in ≤ 15–20 yd und greifen seine Angreifer an. Vorlage dafür ist `DriveEscortCreature` in mod-dungeon-clear (`DcEngageActions.cpp:1236`). Heiler nehmen den NPC als Ziel.
-  - Start mit einer Whitelist aus 5–10 geprüften Eskorten (z. B. 435, 309, 863, 898).
-  - Bei FAILED: höchstens 2 Neuversuche nach dem Respawn, danach Sperre für 24 h. Diagnosezeile `[Escort] start|fail reason=…|done`.
-  - Aufwand etwa 5–7 Personentage.
-
-### 3.7 Tick-Kosten
-
-- **Ad-hoc-Scan heute:** 180 Bots / 10 s, k̄ ≈ 5–20 Nachbarn. Das ergibt etwa 0,3–1 ms CPU pro Sekunde, also < 0,1 ms pro Tick (< 0,3 % von p50 = 40 ms). Im Worst Case (90 Bots in einem Startgebiet) etwa 2,4 ms/s. Alles geschätzt, ohne Profiler (UNSICHER).
-- **Beitritt/Austritt:** `ResetStrategies`, Gear und Raids kosten geschätzt 1–5 ms, bei etwa 22–32 Beitritten/h vernachlässigbar.
-- **Budget** (ADR-0031 D1): max ≤ 3000 ms, Ziel p99 ≤ 1000 ms pro Tag. Strenger ist das Welle-2-Kriterium von OB-30: Ticks/min ≥ 900 und p99 ≤ 200 ms. v23 lag bei 978–1051 Ticks/min und p99 114–137 ms. Die gemessenen max-Ausreißer bis 21 s hängen an Starts und Stalls (#416), nicht an Gruppen.
-- Die Tages-Mediane von p99 lagen am 28./29.09. (Zug 7) bei 212–227 ms, also über 200 ms; erst v23 lag darunter. Gruppen-Features werden deshalb nur ab v24 und im gleichen Roster-Fenster gemessen. Eine Verschlechterung von p99 um mehr als 10 % ist ein Rollback-Grund.
-- **Gefährlich sind nur unbegrenzte Fehlerpfade:** Einladeschleifen und Reset-Stürme. Abnahme deshalb mit „kein Paar öfter als 6×/h“.
-
-### 3.8 Abgrenzung zu #324 und #365
-
-- Das Vorhaben ist eine **Erweiterung von #365 Schritt 2**, kein Parallelsystem. Ad-hoc-Gruppen bleiben auf Roster-Bots beschränkt, ohne Spieler und ohne Instanzen. Das Questlog wird nicht verändert. Schritt 3 von #365 (Gruppen-Questlog, Journal in `cv_bots`) bleibt dort.
-- `RandomBotGroupNearby` bleibt 0, das upstream-Feature `invite nearby` bleibt aus. Das kanonische compose-Overlay steht auf 1, das Profil `funserver-test:16` auf 0.
-- **Widerspruch, der gemeldet werden muss:** ADR-0031:127-129 sagt „Gruppen zwischen Bots bleiben aus bis #324“. Live sind aber seit Zug 7 Ad-hoc-Gruppen aktiv, und #324 ist offen. OB-00 entscheidet, ob #324 neu zugeschnitten oder ADR-0031 nachgezogen wird.
-
----
-
-## 4. Minimaler Weg zu Dungeon-Quests (RFC, DM, WC) – Bezug #343
-
-### 4.1 Ist-Stand
-
-- **Instanzzugang:** 5er-Instanzen haben keinen Gruppenzwang (`MapManager.cpp:211-249`). Die Mindeststufe prüft `MiscHandler.cpp:873-935`: RFC 8, DM 10, WC 10.
-- **Portale:** Bots können Instanzportale schon heute benutzen. Der Travel-Graph legt areaTrigger-Kanten an, `AreaTriggerAction` leitet `CMSG_AREATRIGGER` weiter, und der Leiter wartet vor einem Dungeon-Ziel (`MoveToTravelTargetAction.cpp:235`).
-- **LFG:** Im Vanilla-Build gibt es eine LFG-Warteschlange (Meeting Stones, `sLFGMgr`, `LfgActions.cpp:92-181`). Im Roster-Modus läuft `CheckLfgQueue` jedoch nie, weil der Roster-Zweig in `RandomPlayerbotMgr.cpp:1006` mit `return` endet. `LfgDungeons` bleibt deshalb leer, und `LfgJoinAction::isUseful` liefert immer false (`:1200-1202`). `RandomBotJoinLfg=1` ist für #343 also wirkungslos.
-- **mod-playerbots** hat Dungeon-Strategien nur für Raids (MC, BWL, Onyxia, Karazhan, Naxx).
-- **mod-dungeon-clear** ist gebaut und statisch gelinkt. Es bringt Routen für DM (9), WC (9) und RFC (3) sowie Event- und Eskort-Treiber mit, etwa für den Disciple of Naralex. Starten lässt es sich nur, wenn ein echter Spieler in der Gruppe ist oder ein GM es startet (`DungeonClearChatActions.cpp:62-83`). Es gibt keinen Enable-Schalter.
-- **mod-solo-dungeon** lässt KI-Bots, die in einem Dungeon sterben, immer lebend am Eingang innen wiederauferstehen (`mod_solo_dungeon.cpp:31-65`). Das ist der vorhandene Schutz vor verlorenen Bots nach einem Wipe.
-- **LFT-Bot-Fill** ist live aus und braucht ohnehin einen wartenden echten Spieler.
-- **mmaps für 36/43/389** sind in `C:\TW\ComTW\data` vorhanden (25/6/4 Tiles). Ob der Live-Container genau dieses Verzeichnis einbindet, ist UNSICHER und muss OB-30 prüfen.
-
-### 4.2 Eingänge und Quests
-
-| Dungeon | Eingang (Trigger) | Mindeststufe | Ausgang | Quests (Auswahl) | Annahme-Paare im Log |
-|---|---|---|---|---|---|
-| RFC (389), Horde | 2230 Map 1 (1818.4, −4427.3) | 8 | 2226 | 5723, 5725, 5728, 5761, 5722→**5724 (Abgeber/Geber innen)** | RFC-Paket ≈ 38 |
-| WC (43) | 228 Map 1 (−753.6, −2212.8) | 10 | 226 | 914, 962/60125, 1486, 1487, 41363, 41367. 959 liegt im **Außenbereich** | WC/Brachland ≈ 31 |
-| DM (36), Allianz | 78 Map 0 (−11208.5, 1685.3) | 10 | 119 (hinten 121) | 166, 214, 2040, 40396, 40478, 41392. 167/168 liegen in der **Oberwelt** (Jangolode) | gering |
-
-Type 81 heißt nicht automatisch Instanz. 167, 168 und 959 lassen sich als „Gruppe über Land“ erledigen. Mutanus (3654) und Sneed (643) haben keinen Spawn und werden durch Events erzeugt.
-
-### 4.3 Minimaler Pfad (RFC zuerst für Horde, DM für Allianz)
-
-| Schritt | Inhalt | Aufwand |
-|---|---|---|
-| 0 | Voraussetzung #324 bzw. erweiterte Ad-hoc-Gruppen: 5 Roster-Bots (Tank, Heiler, 3 Schaden) im passenden Stufenband (RFC 13–16, WC 15–21, DM 16–22). Rollen aus dem Roster (#308/#341) | 3–5 PT |
-| 1 | Typ-81-Quests für Gruppen mit `can fight boss` freigeben. Pro Dungeon eine gepflegte Questliste | 1–2 PT |
-| 2 | Anreise zum Entrance-Trigger. Der Leiter wartet, Eintritt über das Relay (beides vorhanden) | 1–2 PT |
-| 3 | Serverseitiger Starter für mod-dungeon-clear: „Bot-Gruppe in Dungeon und Leiter ist Tank-Bot → dc on“. Das ist eine Autorisierungs-Ausnahme und eine **Inhaberentscheidung**. Ob Quest-Items zuverlässig gelootet werden, ist UNSICHER | 3–4 PT |
-| 4 | Watchdog: höchstens 90 min und höchstens 2 Wipes, danach Teleport zum Ausgang, Quests behalten, Gruppe auflösen | 2 PT |
-| 5 | Ausgang (erst `dc off`, weil das Relay während des Laufs unterdrückt ist) und Abgabe über die normale Questreise. Sonderfall: 5722/5724 innerhalb von RFC | 1–2 PT |
-| 6 | Diagnosezeile `[Dungeon] enter\|mode\|pull\|wipe\|recover\|leave reason=…` | – |
-
-- **Summe:** etwa 12–17 PT, davon 3–5 PT für #324.
-- **Abnahme nach #343:** 1 Lauf bis zum Endboss, 1 sauberer Wipe-Recover, 0 verlorene Bots. Für den Dungeon-Reset durch den Bot-Leiter gilt #453 (Kandidat für Zug 9).
-- **Achtung, Vertragsabweichung:** Der #343-Vertrag verlangt „Spieler + 4 Roster-Bots“. Der hier skizzierte Pfad mit reinen Bot-Gruppen ist eine **Erweiterung** von #343, keine Erfüllung. Entweder bekommt #343 einen neuen Vertrag (Inhaber/OB-00), oder WS10-DUNGEON-QUEST-01 läuft als eigenes Issue mit `Refs #343`. Der Spieler-Pfad (mod-dungeon-clear mit echtem Spieler) ist heute schon möglich und sollte zuerst abgenommen werden.
-- **Tick-Kosten:** Eine Instanz-Map pro Gruppe, bearbeitet in 4 Instanz-Threads. Die Bots entlasten dabei Map 1, den Engpass bei den langsamen Updates (51.390 Zeilen, bis 212 ms). Leere Instanzen bleiben 30 min geladen. Zum Start höchstens 2 Bot-Dungeongruppen gleichzeitig.
-- **Ad-hoc-Gruppen** sind laut Inhabervertrag in Instanzen verboten. Für Dungeons braucht es deshalb einen eigenen Gruppentyp, den der Inhaber entscheidet.
-
----
-
-## 5. Priorisierte Schritte für Zug 9 und Zug 10
-
-Release-Regel Ä15: DB- und Client-Änderungen nur in Hauptzügen (9, 10). Hotfix-Züge (8.x bzw. 9.x) enthalten nur Code und Konfiguration, ohne DB. Hotfixes laufen als PR gegen `release/8.x` plus Zwilling auf main. Neue Konfigurationsschlüssel bekommen einen neutralen Default in `*.dist.in` und werden im Profil `funserver-test` eingeschaltet (ADR-0024 Inv. 4).
-
-| # | Schritt | Zug | Messgröße (ADR-0031) | Risiko | Aufwand | Zuständig |
+| Rang | Fix | Zug | Messgröße (Basis v24) | Ziel | Risiko | PT |
 |---|---|---|---|---|---|---|
-| S1 | Gilden: Unterschriften im Speicher zählen statt per SQL, SQL im World-Thread entfernen | Hotfix 8.x | Gilden > 0 innerhalb 72 h (OB-40 `COUNT(*) guild`) ODER `[Guild] turnin_blocked reason=not_in_capital\|traveling` belegt den Restblocker. Tick unverändert oder besser | niedrig. Gründungen sofort mit Stock-Namen | 1–2 PT | OB-10 |
-| S2 | Core: `IsComplete >=`, `LoadPetitions` begrenzen (ohne DB-Mutation) | Hotfix 8.x | 4 blockierte Petitionen werden abgabefähig | niedrig. Core-Änderung mit Upstream-Drift | 1 PT | OB-10 |
-| S3 | Annahmefilter für Roster-Bots ohne Spieler-Master: graue Quests sowie ohne Gruppe ELITE/DUNGEON/RAID/PvP, SuggestedPlayers > 1 und Eskorten (Liste) ablehnen. Dieselbe Bedingung wie `TravelMgr.cpp:143` | Hotfix 8.x | Annahmen/h, Abwürfe/h, Abgaben pro Annahme ≥ Stand 8.3 (0,30). Schleifen D3 | mittel. Folgequests fehlen, deshalb Ketten zunächst nur loggen | 2 PT | OB-10 |
-| S4 | Diagnose: `QuestDropped` mit Grund, Abgabe-Event erst nach `RewardQuest`, fehlende Annahmewege loggen, `[Guild]`-Trace mit Begründung von `isUseful` (Rate-Limit 300 s) | Hotfix 8.x | Zuordnung der Abwürfe ≥ 95 % | niedrig. CSV-Spaltenzahl bleibt gleich | 1–2 PT | OB-10 |
-| S5 | Ein einziger Austrittspfad: `LeaveFarAway` überspringt Ad-hoc-Mitglieder, Gründe werden geloggt. Diagnostics für 48 h, Logs auf Y: sichern | Hotfix 8.x | `objective_done`+`turned_in` ≥ 60 % der Austritte. Median-Dauer ≥ 10 min | niedrig | 1 PT | OB-10, OB-30 (Logs) |
-| S6 | Earth-Sapta-Schleife: Cooldown oder Sperre für wiederholbare Autocomplete-Quests. `HasProgress`-Fehler `DropQuestAction.cpp:196` | Hotfix 8.x | Anteil von 1463 an den Abgaben < 2 % | niedrig | 1 PT | OB-10 |
-| S7 | Konfigurations-Evidenz: gerenderte `aiplayerbot.conf` und `mangosd.conf` pro Deploy mit Hash und geschwärzten Secrets ablegen. Snapshot von `bot_events` 8.8 einfrieren | ab sofort | D4 Evidenz vollständig | keins | 0,5 PT | OB-30 |
-| S8 | Gildenanzahl und -größe (Obergrenze pro Fraktion, `GuildMaxBotLimit`), Ausschlussliste der Namen per Konfiguration | Hotfix 9.x (Code und Config, Default aus, Profil an); Namensmigration nur als S11 im Hauptzug | Gilden je Fraktion 4–6, Mitglieder 12–20 | mittel (Spielentscheidung) | 2 PT | OB-10, Inhaber |
-| S9 | Elite-Gruppen ohne Henne-Ei: gesuchtes Ziel in `AdhocGroupAction`, Quest-Teilen von Bot zu Bot | 9 | Abgabe pro Paar group_elite > 0,2 (Basis 0,011). Tode/Bot-h in Gruppe ≤ solo. Tick p99 ±10 % | mittel (Wipes) | 4–5 PT | OB-10 |
-| S10 | Erkundungsziele (`areatrigger_involvedrelation`) beim Laden. Abgeber in der Instanz (5722) klären bzw. reparieren | 9 | Abgaben bei SpecialFlags&2 > 7/103. TravelToTaker für 5722 → 0 | mittel | 3 PT | OB-10, OB-50 (Klassifikation) |
-| S11 | Neue Namensliste bzw. Bereinigung der Altlast-Petitionen per Migration (nur falls gewünscht) | 9 (Hauptzug) | – | mittel (DB, Einzelfreigabe) | 1 PT | OB-40 |
-| S12 | Wipe- und Tod-Regeln für Gruppen | 10 | Wipes pro Ziel ≤ 2. 0 verlorene Bots | mittel | 3 PT | OB-10 |
-| S13 | Eskort-Strategie mit Whitelist | 10 | Eskort-Abgaben > 0. Keine Schleifen aus Abbruch und Wiederannahme | mittel–hoch | 5–7 PT | OB-10 |
-| S14 | Minimaler Dungeon-Pfad RFC/DM/WC (#343, #453) | 10 | 1 Endboss-Lauf, 1 Wipe-Recover, 0 verlorene Bots. Abgaben Typ 81 > 0 | hoch | 12–17 PT | OB-10, OB-30 (mmaps) |
+| 1 | **PR-1** Abgaben, die wiederholt scheitern, 60 min parken; Gate, Fetch und Sammelsperre zählen nur ungeparkte | Hotfix/9 | Abgaben 0,31/Bot-h; XP 523/Bot-h; 70 Bots ohne XP; 64 % Zeit an Abgebern | gebundene Zeit < 25 %; Bots ohne XP < 20; XP ≥ 650 | geparkte fertige Quests belegen Log-Plätze | 2 |
+| 2 | **PR-2** Unbenutzbare Abgeber raus: Instanzprüfung umgedreht, Skript-GO-Abgeber übersprungen, Stall-Sperre mit Zielkarte | Hotfix/9 | Quest 310 59,5 Bot-h; 5722 111 Wahlen | 0 Reisen zu GO 270 und nach RFC | Event-GOs: 0 von 7 betroffen | 1 |
+| 3 | Kontinent-Questreisen bis #342 sperren (`MinLevelForCrossMapQuestRoute`, nur Kontinente) | Konfig | 0 von 665 angekommen | 0 Cross-Map-Wahlen | nur zusammen mit Rang 1 | 0,1 |
+| 4 | **PR-3** Kürschner-Kette: eigene Leiche leer plündern, Haut-Loot immer nehmen, kein Häutziel unter fremdem Loot | Hotfix/9 | Häutungen v24 1 in 2,67 h; Kürschnern +3,1/Tag | ≥ 3 Häutungen/h; ≥ 10 Skill/Tag | mehr Grauschrott | 1 |
+| 5 | **PR-4** Herstellung mit echten Reagenzien: bestes Rezept, direkter Selbst-Cast, Material behalten, Händler-Reagenzien kaufen | 9 | Alchemie, Schmiede, Ingenieur, Juwelier 0/Tag | Alchemie > 0; failed < 10 % | Taschen, Gold | 2 |
+| 6 | **PR-5** Gilden-Fundament: Zählung im Speicher, Ziel je Fraktion, freigegebene Namen, kein Karussell, kein /say an Bots | 9 | 0 Gilden; 4.701 Petition-SQL/h; 1.164 Umzüge/h | Ziel je Fraktion in 48 h; 0 Petition-SQL | Rollen-Füllen folgt | 2 |
+| 7 | Sofort-Konfig bis PR-5 aktiv (Entwurf #495): `RandomBotFormGuild=0`, `InviteChat=0`, `RandomBotSayWithoutMaster=0`, `+custom::say` streichen | Konfig | 4.701 SQL/h; ≥ 1.165 /say/h | jeweils 0 | keins | 0,1 |
+| 8 | GD-1: eigener Ad-hoc-Austritt wirksam; LeaveFarAway für registrierte Gruppen aus; Repop-Austritt geloggt | Hotfix/9 | 1 von 1.900 wirksam | ≥ 95 % in ≤ 15 s | gering | 1 |
+| 9 | Messbarkeit: `QuestRewarded` nach RewardQuest, Abwurfgrund, Retire als Event, `[QuestLog]`-Delta | Hotfix | 501 Abwürfe ohne Annahme | Bilanz schließt | Logvolumen | 1 |
+| 10 | Leere oder unmögliche Wiederholungs-Abgaben stoppen (Earth Sapta und 24 gleichartige) | 9 | 602 gescheiterte Abgaben | 0 | gering | 0,75 |
+| 11 | Rettung aus Dauerkampf mit unerreichbaren Gegnern | Hotfix | 3 Bots ≥ 130 min combat=1 (Bot 27) | 0 Bots > 30 min | Teleport aus legitimem Kampf | 1 |
+| 12 | Angeln I: Zweck erst beim Angelziel, `no_spot` ab Zielsetzung, Angelprüfung | 9 | 22 von 28 `no_spot` | ≥ 60 % mit Wurf | 8.5-Contract anpassen | 1,5 |
+| 13 | Angeln II: Fang behalten, Wasserprobe, Zonen-Skill-Bug | 9 | 5 von 107 Fängen gelootet; 28 % trocken | ≥ 90 %; < 5 % | Taschen | 1,5 |
+| 14 | Kochen: Lagerfeuer 818, Fokus in Reichweite | 9 | 173 von 174 auf 1 | ≥ 10/Tag bei Anglern | Feuer-GOs | 1,5 |
+| 15 | Sammelzwecke nur, wenn machbar (Werkzeug, Stufenband); Werkzeug bereitstellen | 9 | Bergbau 77 von 79 `no_skillup` | < 30 % | weniger Sammelreisen | 1,5 |
+| 16 | Knoten wirklich abernten (Reichweite, Feindregel, Prüfreihenfolge) | 9 | Kräuter 14 % Öffnung | ×2 | mehr Pulls | 2 |
+| 17 | Trainerreise am Rang-Cap (≤ 800 y, gleiche Karte) | 9/10 | 11 Bots ≥ 48 h auf 75/75 | 0 > 24 h | Tode unterwegs | 2 |
+| 18 | Quest-Items gezielt benutzen (Whitelist 10–15 Quests) | 9/10 | 77 Annahmen, 0 Abgaben | ≥ 0,25 je Annahme | Fehlanwendung | 3,5 |
+| 19 | QuestRescue nur auf den Kontinent der eigenen Abgaben | Hotfix | 22 von 65 kontinentfremd | ≤ 5 | weniger Ziele | 0,5 |
+| 20 | Softlimit 16 auch für RPG-Annahmen | 9, nach 8.11 | 600 Grün-Abwürfe | < 50/h | Folgequests | 0,75 |
+| 21 | Fertige Quests mit dauerhaft unbenutzbarem Abgeber aufgeben (nach 3 Parks) | 9 | 310 bei 24 Bots fertig | Log-Plätze frei | RewXP verloren | 1 |
+| 22 | Gruppenbildung an Elite- und Gruppenzielen (`QuestGroup.Enabled`) | 9/10 | 1 Gruppe in 2,65 h | Gruppen-Quests/Tag > 0 | Wipes | 3 |
+| 23 | GD-2 bis GD-4: Freigabe für Heiler halten, Leichenlauf, Warten, Wipe-Regel | 9, nach 8 | 0 Wiederbelebungen durch Mitglieder | ≥ 50 % per Leiche/Zauber | Folgetode | 5 |
+| 24 | Gilden II: Koordinator (Rollen), Gildenchat-Gate (OB-15), Abwerb-Hook (Core) | 9/10 | Rollen live 12/20/58 je Fraktion | Abweichung ≤ 1 je Rolle; Chat ≤ 4/h je Gilde | Core-Änderung | 5,7 |
+| 25 | Altbestand an Urkunden bereinigen; `reset-l1.sql` behandelt Petitionen und Gildenleitung | 9/10 (DB) | 84 offen, 18 Waisen | 0 Waisen | DB-Mutation | 1,5 |
+| 26 | Verbrauchsgüter für Roster-Bots (`RosterConsumables.UseReal`) | 9 | uses=0 | uses/h > 0 | Gold | 1 |
+| 27 | Eskort-Quests nur in Gruppe oder per Override-Liste (Erweiterung von `SkipForRosterBot`, nach 8.11) | 10 | 52 IDs: 3 Annahmen, 0 Abgaben | Eskort-Abgaben/Tag > 0 | 8.11-Überschneidung | 1 |
+| 28 | Dungeon Phase 1: `[Dungeon]`-Diagnose, DungeonClear-Konfig, Test mit dem Inhaber | 9 | 0 Läufe | 1 Endboss, 1 Wipe-Recover | Map-Pool-Crash (alt) | 1,5 |
 
-Reihenfolge: S7 → S1+S2 → S3+S4 → S5+S6 im nächsten Hotfix. Danach S8–S11 in Zug 9 und S12–S14 in Zug 10.
-
-**Messgröße „Gruppen-Quests abgegeben pro Tag“:** Abnahme für S3, S6, S9, S10, S13 und S14 erfolgt zusätzlich über `character_queststatus.rewarded`: Zuwachs je Tag und Bot-Stunde für die Quest-ID-Listen der Kategorien aus `work/quest-join/quest_join.tsv` (group_elite, dungeon, escort). Die Zählung macht OB-40 leicht, ohne Joins, in einer Wegwerf-DB aus Dumps. ADR-0031 kennt diese Messgröße bisher nicht; OB-00 trägt sie per Doku-PR nach. Event-Quoten aus `bot_events` gelten nur als Frühindikator.
-
-**Schleifen-Definition:** ADR-0031 D3 definiert eine Schleife nur über Tode bzw. „no destination“. Die Schleifen H1, H3, H4 und H5 brauchen eine eigene Messdefinition, als Vorschlag: „gleiches Paar Bot+Quest mehr als 3× angenommen pro 6 h“, „mehr als 50 TravelToTaker ohne Abgabe pro Bot+Quest und Tag“, „wiederholbare Quest mehr als 5 Abgaben pro Bot und Tag“. Aufnahme in ADR-0031 nur per Doku-PR und Entscheidung von OB-00.
+**Risiken und Wechselwirkungen:**
+- **8.11** ist nicht gepusht. Keiner der fünf PRs berührt `AcceptQuestAction.cpp`, `QuestAcceptPolicy.h` oder `DropQuestAction.cpp`. Gemeinsame Anker sind `PlayerbotAIConfig.h/.cpp`, `aiplayerbot.conf.dist.in` und `tests.cmake`; nach dem 8.11-Merge rebasen.
+- **core#275 (Reiten):** ändert `TravelMgr.h/.cpp`, `ItemUsageValue.cpp`, `BuyAction.cpp`, `VendorValues.cpp` und `tests.cmake`. Fachlich kürzt `NeedMoneyFor::mount` das Geld für Berufseinkäufe; den Gold-Vorrang entscheidet der Inhaber.
+- **Abhängigkeiten:**
+  - Rang 2 und 3 ohne Rang 1 ersetzen Reiseschleifen nur durch Ablehnung mit Backoff.
+  - PR-4 bringt Schmiede, Ingenieur und Juwelier erst etwas, wenn Erz und Stein ankommen (Rang 15/16).
+  - PR-5 ohne Rang 7 lässt den Altpfad mit 4.701 SQL/h laufen.
+- **Tick-Kosten** (erwartet ±0): PR-1 O(≤ 16) je Routenanfrage; PR-4 eine Rezeptbewertung je Bot und ≥ 60 s; PR-5 ein Snapshot höchstens alle 60 s ohne SQL.
+- **Basis Tick v24:** Minuten-p99 im Median 129 ms, Maximum 632 ms; Tick-Maximum 2.470 ms (während eines lokalen Builds).
 
 ---
 
-## 6. Issue-Vorschläge im Repo-Format (nicht angelegt)
+## 4. PRs dieser Nacht (Entwürfe gegen core `main`)
 
-Gedacht für eine neue Datei `docs/issues/60-bot-social.md`. Hinweis: Der Importer vergibt für neue Dateinamen das origin-Label `refactor` (`import-issues.sh:169-173`). Angelegt wird nur nach Trockenlauf (Aufruf ohne Argumente) mit `--apply --only <ID>`.
+Alle fünf PRs sind Entwürfe mit `Refs #485`. Jeder enthält eine Policy-Headerdatei mit Unit-Test und einen Source-Contract, registriert in `modules/mod-playerbots/tests.cmake`.
 
-Vor dem Anlegen offene und geschlossene Issues durchsuchen (Overlay §8). Bekannte Überschneidungen: H5 → #405 (GO-Rotation), Tode auf der Abgabe-Route → #422/#472, Credit-Fixes → #441, Leiter-/Gruppen-Vertrag → #324/#365. Dort passende Teile als Kommentar ergänzen statt ein neues Issue anzulegen. Titel ≤ 70 Zeichen inklusive Präfix (`docs/issues/README.md:29`).
+**Nachweis:**
+- Alle Source-Contracts liefen auf dem Host gegen einen LF-Export des Commits (`builds/cli485/build/run-contracts-commit.sh`).
+- Ein lokaler Build war nicht möglich: Das Welle-2-Messfenster auf v25 (00:30–08:00Z) ist laut OB-00 in #319 build- und containerfrei. Compile-Gate ist deshalb die PR-CI „Build core (Debian trixie)“.
+- OB-10 prüft fachlich. Die Spielwerte entscheidet der Inhaber.
+
+| PR | PR (Branch) | Inhalt | neue Schalter (Default → Vorschlag) |
+|---|---|---|---|
+| PR-1 | core#278 (`cli485/turnin-park`) | Abgaben parken (Rang 1) | `QuestFirstProgression.TurnInParkFailures` 0 → 3, `…ParkWindowSeconds` 3600, `…ParkSeconds` 3600, `…TurnInParkCountsRouteDanger` 0 → 1 (nur mit Rang 3) |
+| PR-2 | core#277 (`cli485/unusable-takers`) | Unbenutzbare Abgeber (Rang 2), Kontinent-Option für Rang 3 | `QuestFirstProgression.SkipScriptOnlyQuestTakers` 0 → 1, `…CrossMapContinentsOnly` 0 → 1 |
+| PR-3 | core#279 (`cli485/skin-chain`) | Kürschner-Kette (Rang 4, #471) | `ProfessionUse.ClearCorpseForSkinning` 0 → 1 |
+| PR-4 | core#280 (`cli485/craft-reagents`) | Herstellung mit echten Reagenzien (Rang 5, #333) | `ProfessionUse.RealReagents` 0 → 1, `.KeepCraftMaterials` 0 → 1, `.ReagentKeepStacks` 1, `.CraftFailBackoffSeconds` 1800, `.VendorReagents` "" → Liste |
+| PR-5 | core#281 (`cli485/guild-foundation`) | Gilden-Fundament (Rang 6) | `RosterGuild.BotsPerGuild` 0 → 45, `.NamesAlliance`/`.NamesHorde` "" → Liste, `.SnapshotSeconds` 60 |
+
+Dazu kommt der Konfig-Entwurf **#495** (Rang 7: kein Bot-Bot-/say, `RandomBotFormGuild=0` bis PR-5 aktiv ist).
+
+**Querabgleich** (`work/v2/impl-cross.md`):
+- Alle 10 PR-Paare, der Gesamtbaum und der Gesamtbaum mit core#275 laufen ohne Textkonflikt; der Gesamtbaum besteht 100 Contracts (nur die 2 Host-Artefakte scheitern).
+- **Echter Konflikt:** Der 8.11-Arbeitsstand von OB-10 und PR-3 ändern beide `LootAction.cpp:441`. Die geprüfte Auflösung steht im PR-3-Text.
+- **Gekoppelte Entscheidung S1:** `MinLevelForCrossMapQuestRoute=61` nur zusammen mit `CrossMapContinentsOnly=1` (PR-2) und `TurnInParkCountsRouteDanger=1` (PR-1). Sonst werden Abgaben auf dem anderen Kontinent nie geparkt.
+- **Empfohlene Merge-Reihenfolge:** 8.11 → PR-2 → PR-1 (gemeinsam ausliefern) → PR-4 → PR-3 (nach 8.11, mit Auflösung) → PR-5.
+
+---
+
+## 5. Entwürfe
+
+### 5.1 Gilden
+
+**Zielzahl:**
+- `Ziel je Fraktion = ceil(Roster-Bots der Fraktion / BotsPerGuild)`, berechnet aus der Rostergröße, nicht aus der Online-Zahl.
+- Bei 180 Bots und 45 je Gilde: 2 je Fraktion. Mit Welle 2 (360) werden es automatisch 4.
+
+**2×45 gegen 3×30 (je Fraktion):**
+
+| Kriterium | 2×45 | 3×30 |
+|---|---|---|
+| stufengleiche 5er-Gruppen | gleich (Allianz ≈ 12, Horde ≈ 11) | gleich |
+| 40er-Raid aus einer Gilde | ja | nein (nur 20er) |
+| schwächste Horde-Gilde | 4–5 Gruppen | 1–2 Gruppen |
+| Tank-Plätze je Gilde | 6 | 4 |
+
+**Empfehlung: 2×45.** Rollen-Soll aus dem Live-Roster (12/20/58 je Fraktion): **6/10/29** je Gilde. Laut Vertrag (10/20/60) wären es 5/10/30; das entscheidet der Inhaber.
+
+**Gründung (PR-5):**
+- Zählung der Unterschriften im Speicher, über Core-Accessoren, die unter dem Petition-Lock kopieren. Kein SQL mehr.
+- Kauf nur, wenn Gilden plus offene Bot-Urkunden unter dem Ziel liegen. Gründung nur unter dem Ziel, mit Reservierung unter Mutex: Auch bei 4 fertigen Urkunden und Ziel 2 entstehen genau 2 Gilden.
+- Unterschriften wandern nur noch zur volleren Urkunde; das beendet das Karussell.
+- Name aus der freigegebenen Liste. Eine fremde Urkunde wird vor der Abgabe umbenannt; das schreibt `UPDATE petition SET name` (DB-Schreibung des Spiels, im PR benannt).
+- Die Hauptstadt-Bedingung entfällt für Roster-Bots im neuen Pfad.
+- **Danach (Folge-PR):** Koordinator im Weltthread, der Mitglieder nach Rollenquote einlädt (Muster `ProcessQuestRescues`). Ohne ihn füllen sich Gilden nur organisch.
+
+**Urkunden-Verfall:**
+- Der Inhaber will, dass überzählige Bot-Urkunden verfallen.
+- Empfehlung: im Spiel nichts löschen (jede Löschung braucht eine Einzelfreigabe). PR-5 stoppt den Neukauf.
+- Nach den Gründungen löscht OB-40 alle Nicht-Gründer-Urkunden einschließlich der 18 Waisen per DB-Job: mit Trockenlauf, bei gestoppter Welt, nach Ansage durch OB-00.
+- Bitte bestätigen: Gilt der Löschentscheid für alle 84 und nicht nur für „40“?
+
+**Spieler gründen immer, Abwerben:**
+- Konflikt: Bei 2×45 sind alle Roster-Bots in Gilden und können keine Spieler-Urkunde unterschreiben (Core: `ERR_ALREADY_IN_GUILD_S`).
+- Vorschlag, eine Regel für Unterschreiben und Abwerben, als Core-Hook vor `ERR_ALREADY_IN_GUILD_S` (Zug 10):
+  - Nur ein echter Spieler der gleichen Fraktion lädt ein.
+  - Die Gilde des Spielers ist keine Bot-Gilde.
+  - Der Bot ist nicht Gildenmeister einer Bot-Gilde.
+  - Abklingzeit 24 h je Bot; PlayerbotSecurity bleibt.
+  - Ein Bot verlässt eine Spielergilde nie von sich aus.
+- Bis dahin gründen Spieler mit eigenen Unterzeichnern. Alternative: eine Reserve gildenloser Bots (z. B. `BotsPerGuild=40`).
+
+**Namensvorschlag** (alle ≤ 24 Zeichen, nur Buchstaben und Leerzeichen; eigene Formulierungen). Ob es gleichnamige echte Gilden oder Marken gibt, kann die CLI nicht prüfen.
+- **Allianz:** Wardens of Elwynn, Northshire Vigil, Lakeshire Bannermen, Westfall Harvestguard, Thelsamar Stoneguard, Ironforge Hearthguard, Gnomeregan Gearwrights, Menethil Tidewatch, Stromgarde Shieldbearers, Auberdine Moonwatch, Sentinels of Astranaar, Thalassian Spellwardens
+- **Horde:** Razor Hill Bladeguard, Durotar Dustriders, Bloodhoof Drummers, Mulgore Hornbearers, Sun Rock Trailwardens, Crossroads Wayguard, Echo Isles Shadowhunters, Brill Lanternwatch, Sepulcher Gravewardens, Hammerfall Warbanner, Stonard Swampblades, Kezan Sparkwrights
+
+**Gildenchat (OB-15, #478):**
+- Gate in `PlayerbotAI::SayToGuild`, ebenso für den `BroadcastToGuild`-Rückfall: nur wenn ein echtes Mitglied online ist, höchstens 4 Zeilen je Gilde und Stunde, keine Antworten auf Bot-Zeilen.
+- Bis das Gate live ist: `BotsPerGuild > 0` nur zusammen mit `EnableBroadcasts=0` (oder `BroadcastToGuildGlobalChance=0`) und `GuildRepliesRate=0`.
+
+### 5.2 Questen
+
+- **Grundsatz: parken statt abwerfen.** Eine fertige Quest bleibt im Log. Ihre Abgabe wird nach 3 Fehlschlägen innerhalb von 60 min für 60 min geparkt, und der Bot bekommt wieder Ziele, Geber und Sammelzwecke (PR-1).
+- Fehlschläge sind: Stall, Tod auf der Route, WORK-Timeout, Bewegungs-Cooldown und „keine Route“ (Letzteres nur ohne Kontinent- oder Zonenfilter).
+- Auch BotBrain-Intents laufen über `CopyTarget` und respektieren den Park.
+- Kontinentreisen bleiben gesperrt, bis #342 Transporte beherrscht (Rang 3).
+- Danach folgen Messbarkeit (Rang 9), Earth Sapta (Rang 10), das Softlimit für RPG-Annahmen (Rang 20), Quest-Items per Whitelist (Rang 18) und Eskort-Annahme nur in der Gruppe (Rang 27).
+- **Grau-Politik:** Turtle zahlt Quest-XP voll bis Questlevel +25 (`QuestDef.cpp:184-186`); seit 8.7 sank die Quest-XP von 280 auf 141 je Bot-h. Empfehlung: vorerst die 8.11-Regel, dann ein A/B-Test mit Delta 10 nach der Messung (Inhaber).
+
+### 5.3 Gruppen, Tod und Wipe
+
+- **GD-1 (Hotfix):** Der eigene Austritt wird wirksam (Auslöser = Leiter bzw. eigener Disband statt No-op); LeaveFarAway gilt nicht für registrierte Ad-hoc-Gruppen; Repop-Austritte werden geloggt.
+- **GD-2 bis GD-4 (Zug 9, Schalter `BotGroups.Death.Enabled = 0`):**
+  - Die Freigabe wird bis 75 s zurückgehalten, solange ein Gruppenheiler in 60 yd lebt. 41 der 180 Roster-Bots können wiederbeleben.
+  - Sonst läuft der Geist zur Leiche statt zum Geistheiler: bis 1.500 yd (deckt 93,4 % der v24-Leichen), höchstens 300 s.
+  - Die Gruppe wartet bis 180 s. Nach 2 Wipes in 30 min löst sie sich auf, und das Paar ist 60 min gesperrt.
+  - Solo-Bots gehen vorerst weiter zum Geistheiler.
+  - Sicherheitsnetze für 0 verlorene Bots bleiben: Core-Auto-Release nach 6 min, Geistheiler-Rückfall, DeathLoop-Repop.
+- **Gruppenbildung (Rang 22):** Paare an Elite- und Gruppenzielen, ausgelöst bei Ankunft am Ziel. Stau-Ziele mit QuestWorkTimeouts- oder Unreachable-Marke werden nicht gruppiert.
+- **Tick:** O(≤ 5) je Tod. Basis v24: 951 Ticks/min, Minuten-p99 129 ms.
+
+### 5.4 Berufe
+
+- **Kette:** Sammeln → behalten → herstellen → nutzen oder verkaufen.
+  - PR-3 liefert Leder.
+  - Rang 15/16 liefern Erz und Stein.
+  - PR-4 stellt mit echten Reagenzien her. Dabei bleibt der item-Cheat für alles andere; nur die Herstellung prüft echtes Material.
+  - Rang 14 bringt Kochen, Rang 13 den Fisch.
+- **Messgröße:** Skill pro Tag je Beruf (OB-40-Tagessnapshot). Dazu neue Traces: `stage=craft state=cast_started|failed` mit Spell-ID, `CraftCastStarted` in bot_events, `stage=skin state=looted|cleared`.
+- **Schleifenschutz:** höchstens ein Cast je `CraftIntervalSeconds` (300 s), 30 min Sperre nach echtem Fehlschlag (Reagenz, Werkzeug, Fokus), Händlerkauf höchstens 1 Stapel je Reagenz.
+
+### 5.5 Eskorte und Dungeon (aus v1, aktualisiert)
+
+- **Eskorte:**
+  - mod-playerbots kennt keine Eskorten. Der Core lässt die Quest scheitern, wenn alle Gruppenmitglieder weiter als 100 yd entfernt oder tot sind, oder wenn der NPC stirbt (`ScriptedEscortAI.cpp`).
+  - Zug 10: Annahme nur in einer Gruppe ab 2 oder über eine Whitelist (Erweiterung von `SkipForRosterBot` nach 8.11), dann Strategie `escort`. Vorlage ist `DriveEscortCreature` in mod-dungeon-clear.
+- **Dungeon #343, Phase 1 (Spieler + 4 Bots):**
+  - mod-dungeon-clear startet mit einem echten Spieler.
+  - Risiken: Wipe-Recovery (StayDead- und Loot-Roll-Overrides sind wegen eines Map-Pool-Crashs aus), `DungeonClear.*` ist live nicht gesetzt, die `[Dungeon]`-Diagnose fehlt, und nur etwa 11 % der Bots sind ≥ L17.
+  - Empfehlung: Ragefire mit 1 Tank, 1 Heiler, 2 DPS plus Spieler, `DungeonClear.AsyncPathfinding = 0`, Termin mit dem Inhaber.
+  - Live bindet `C:\TW\ComTW\data` (mmaps) ein; damit ist die offene Frage 9 aus v1 erledigt.
+- **Phase 2 (nur Bots):** braucht einen eigenen Pfad für einen Bot-Leiter (die dc-Befehle akzeptieren nur echte Spieler und GMs), Gruppen aus Gildenrollen, Instanz-Reset (#453) und eine Begrenzung gleichzeitiger Läufe.
+
+---
+
+## 6. Bot-Reset: Nutzen gegen Kosten
+
+**Kosten eines Vollresets jetzt:**
+- Im Median 13,5 Stufen je Bot, rund 2.400 Bot-Stufen bzw. 143 h Fortschritt seit dem 26.09.
+- Alle Berufsskills (Kräuter Median 75, Erste Hilfe 54 Bots über 75) und der Questverlauf gehen verloren.
+- Das laufende 7-Tage- und Welle-2-Fenster wird abgebrochen.
+- Weltstopp, Cold-Backup, rund 105 min Login-Wellen.
+
+**Neuer Defekt:** `reset-l1.sql` löscht die Urkunden-Items, lässt `petition` und `petition_sign` aber stehen. So entstanden die 18 Waisen. Ein Vollreset jetzt würde die übrigen verwaisen lassen, und 39 Roster-Bots könnten nie wieder eine Urkunde kaufen. Gildenmitgliedschaft und -leitung behandelt das Skript ebenfalls nicht (UNSICHER).
+
+**Nutzen ohne Reset:** Die Effizienz lässt sich auch ohne Reset messen: in gleich langen Fenstern ab v24/v25, mit der Welle-2-Kohorte (startet ohnehin auf L1) oder mit einem kleinen Kohorten-Reset (`--ordinals`, 20–40 Bots).
+
+**Empfehlung: jetzt kein Reset.** Frühestens nach ≥ 24 h Messung von 8.11 plus PR-1/PR-2, im Hauptzug-Fenster. Vorbedingungen: `reset-l1.sql` behandelt Petitionen und Gilden, die Urkunden sind bereinigt, Einzelfreigabe liegt vor.
+
+---
+
+## 7. Entscheidungen für den Inhaber
+
+Jeweils mit Empfehlung:
+
+1. **Gilden:**
+   - `BotsPerGuild` **45** (2×45 je Fraktion) oder 30.
+   - Rollen-Soll 6/10/29 (live) oder 5/10/30 (Vertrag).
+2. **Namensliste** (5.1) freigeben oder einzelne Namen ersetzen. Ohne freigegebene Liste gründen Bots im neuen Pfad nicht.
+3. **Urkunden:**
+   - kein Verfall im Spiel; nach den Gründungen DB-Job durch OB-40 für alle Nicht-Gründer-Urkunden einschließlich der Waisen;
+   - bis PR-5 aktiv ist, Rang 7 (OB-00).
+4. **Spielergründung und Abwerben:** Core-Hook in Zug 10 nach den Regeln in 5.1, oder eine Reserve gildenloser Bots.
+5. **Gildenchat:** höchstens 4 Zeilen je Gilde und Stunde, nur mit echtem Mitglied online.
+6. **Leichenlauf in Gruppen, Zeitwerte:** 75 s / 60 yd / 1.500 yd / 300 s / 180 s / 2 Wipes in 30 min / 60 min Sperre.
+7. **Questen:**
+   - (a) Park 3/3600/3600: ja.
+   - (b) Kontinent-Questreisen bis #342 sperren: ja, nur zusammen mit PR-1.
+   - (c) Grau-Politik zunächst nach 8.11, A/B-Test später.
+   - (d) Fertige Quests nur aufgeben, wenn sie grau sind und ihr Abgeber nur per Skript erscheint oder in einer Instanz steht, und das erst nach 3 Parks.
+   - (e) QuestRescue nur auf den eigenen Kontinent.
+   - (f) Quest-Items zunächst per Whitelist.
+8. **Herstellung:**
+   - item-Cheat für Roster-Bots behalten; nur die Herstellung prüft echte Reagenzien.
+   - Händler-Reagenzien bis 1 Stapel aus dem tradeskill-Budget; `ReagentKeepStacks=1`; 30 min Sperre nach Fehlschlag.
+   - Verbrauchsgüter (Verbände, Tränke) für Roster-Bots freigeben?
+9. **Angeln und Kochen:** Fisch behalten und kochen, sobald Kochen umgesetzt ist, sonst verkaufen; eigene Lagerfeuer erlaubt; Angeln als Lückenfüller; Level-Marge der Angelplätze +5.
+10. **Sammeln:**
+    - Werkzeug (Spitzhacke, Messer) beim Lernen zum Händlerpreis bereitstellen, auch rückwirkend für 3 Bergleute und 4 Kürschner.
+    - Trainerreise am Cap bis 800 y auf derselben Karte.
+    - Erste Hilfe über 150 vorerst nicht.
+11. **Bot-Reset:** jetzt nicht (Abschnitt 6).
+12. **Dungeon Phase 1:** Ragefire mit dem Inhaber, Termin offen.
+
+---
+
+## 8. Offene Punkte
+
+- **Kontinentreisen:** Warum Cross-Map-Routen nie ankommen, ist offen (MoveTo bzw. Transport, #342).
+- **Stall-Schleifen in Städten** (Sturmwind 1416/1323/5413, Unterstadt 4556, Orgrimmar 15700): mmaps, Aufzug oder Tram? Klärung im Test-Realm.
+- **Restrisiken Gilden:**
+  - Der Core ändert Signaturlisten ohne Lock, PR-5 liest deshalb nur Kopien unter dem Petition-Mutex.
+  - Wie der ACE-Ini-Parser Namenslisten mit Kommas behandelt, ist mit dem bestehenden Listen-Muster umgesetzt, aber erst nach Deploy belegt.
+- **Urkunden-Zerstörung:** Nur per Korrelation belegt; ein Destroy-Trace für Item 5863 ist vorgeschlagen.
+- **Messungen nach Deploy:** v25 als neue Basis; die Wirkung von PR-1 ist nur geschätzt.
+- **8.11:** Bei der Annahme-Messung klären, ob ConfirmQuestAction, UseQuestGiverItem und GuildAcceptQuestOrderAction abgedeckt sind.
+
+---
+
+## 9. Issue-Vorschläge (nicht angelegt)
+
+Format wie `docs/issues`. Titel ≤ 70 Zeichen. Vor dem Anlegen nach Dubletten suchen (#405, #422/#472, #441, #324/#365).
 
 ```yaml
 ---
-id: WS10-GUILD-PETITION-KEY-01
-title: "WS10-GUILD-PETITION-KEY-01: Count petition signatures in memory"
+id: WS10-QUEST-TURNIN-PARK-01
+title: "WS10-QUEST-TURNIN-PARK-01: Park turn-ins that keep failing"
 workstream: WS-10
 priority: p1
 existing_ot: none
-source: "#485; evidence/ws-10/cli485-bot-social/work/gilden/"
+source: "#485; core PR cli485/turnin-park"
 superseded_by: none
 body: |
-  Vertrag: PetitionSignsValue (GuildValues.cpp:1276) und PetitionOfferAction
-  (GuildCreateActions.cpp:151,160-163) zählen Unterschriften über sGuildMgr statt per SQL
-  mit Item-GUID. Core: Petition::IsComplete >= statt ==, LoadPetitions begrenzt
-  (überzählige Zeilen nur loggen, keine DB-Mutation). Contract-Test: kein petition_sign
-  in mod-playerbots/strategy. Hotfix ohne DB.
-  Abnahme: guild > 0 innerhalb 48 h (OB-40-Zählung); Tick p99 nicht schlechter als v24.
-  Owner chat: OB-10. Refs #485, #241.
+  Vertrag: PR-1 mergen, Profil 3/3600/3600. Abnahme im gleichen 160-min-Fenster:
+  gebundene Zeit < 25 %, Bots ohne XP < 20, XP >= 650/Bot-h, 0 verlorene Bots,
+  Minuten-p99 <= 140 ms. Owner chat: OB-10. Refs #485.
 ---
-id: WS10-QUEST-ACCEPT-FILTER-01
-title: "WS10-QUEST-ACCEPT-FILTER-01: Skip grey/group quests for solo bots"
+id: WS10-QUEST-TAKER-USABLE-01
+title: "WS10-QUEST-TAKER-USABLE-01: No unusable quest takers as targets"
 workstream: WS-10
 priority: p1
 existing_ot: none
-source: "#485; work/quest-logs/segments.tsv, work/quest-join/quest_category_funnel.tsv"
+source: "#485; core PR cli485/unusable-takers"
 superseded_by: none
 body: |
-  Vertrag: AcceptAllQuestsAction::ProcessQuest (AcceptQuestAction.cpp:36-40) lehnt für
-  Roster-Bots ohne Spieler-Master graue Quests ab (gleiche Ausnahmen wie DropGrey) und
-  ohne 'can fight boss/elite' Type 1/81/62/41, SuggestedPlayers>1, Eskort-Liste.
-  Ketten-Vorquests zuerst nur loggen ([QuestAccept] skip=…).
-  Abnahme: Abgaben/Annahme >= 0,30 im gleichen Roster-Fenster; Grau-Zyklen pro Paar <= 1/h.
+  Vertrag: PR-2 mergen, SkipScriptOnlyQuestTakers=1, CrossMapContinentsOnly=1 mit
+  MinLevelForCrossMapQuestRoute=61 bis #342. Abnahme: 0 Ankünfte an GO 270,
+  0 Wahlen nach RFC für 5722. Owner chat: OB-10. Refs #485, #342.
+---
+id: WS10-SKIN-CHAIN-01
+title: "WS10-SKIN-CHAIN-01: Skinners clear their corpse, keep skin loot"
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: "#485, #471; core PR cli485/skin-chain"
+superseded_by: none
+body: |
+  Vertrag: PR-3 mergen, ClearCorpseForSkinning=1. Abnahme: >= 3 Häutungen/h,
+  Kürschnern >= 10 Skill/Tag (OB-40). Owner chat: OB-10. Refs #485, #471.
+---
+id: WS10-CRAFT-REAL-REAGENTS-01
+title: "WS10-CRAFT-REAL-REAGENTS-01: Craft with real reagents"
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: "#485, #333; core PR cli485/craft-reagents"
+superseded_by: none
+body: |
+  Vertrag: PR-4 mergen, RealReagents=1, KeepCraftMaterials=1, VendorReagents-Liste.
+  Abnahme: Alchemie > 1 bei >= 5 Bots nach 24 h, failed < 10 %, Phiolen gekauft.
+  Owner chat: OB-10. Refs #485, #333.
+---
+id: WS10-GUILD-FOUNDATION-01
+title: "WS10-GUILD-FOUNDATION-01: Roster bots found capped guilds"
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: "#485; core PR cli485/guild-foundation"
+superseded_by: none
+body: |
+  Vertrag: PR-5 mergen, BotsPerGuild und Namen nach Inhaberentscheid, vorher Rang 7.
+  Abnahme: Gilden je Fraktion = Ziel in 48 h, 0 Petition-SQL, Umzüge ~ 0.
   Owner chat: OB-10. Refs #485.
 ---
-id: WS10-QUEST-DIAG-01
-title: "WS10-QUEST-DIAG-01: Log drop reasons and real turn-ins"
+id: WS10-ADHOC-LEAVE-02
+title: "WS10-ADHOC-LEAVE-02: Ad-hoc self leave works, single leave path"
 workstream: WS-10
 priority: p1
 existing_ot: none
-source: "#485"
+source: "#485; AdhocGroupAction.cpp:201, LeaveGroupAction.cpp:68,123"
 superseded_by: none
 body: |
-  Vertrag: DropQuest(reason) für grey|red|log_pressure|failed|failed_timer|guild_order|
-  chat|retire; TalkToQuestGiver-Event erst nach RewardQuest, sonst QuestTurnInFailed;
-  ConfirmQuest/Share/Item-Start loggen. CSV-Spaltenzahl unverändert. [Guild]-Trace mit
-  isUseful-Grund (Rate-Limit 300 s). Abnahme: >= 95 % Drops mit Grund. Owner chat: OB-10. Refs #485.
+  Vertrag: GD-1. Abnahme: >= 95 % der eigenen Austritte in <= 15 s, keine
+  Wiederholzeilen. Owner chat: OB-10. Refs #485, #365, #324.
 ---
-id: WS10-ADHOC-LEAVE-01
-title: "WS10-ADHOC-LEAVE-01: Single leave path for ad-hoc quest groups"
+id: WS10-COMBAT-RESCUE-01
+title: "WS10-COMBAT-RESCUE-01: Rescue bots stuck in endless combat"
 workstream: WS-10
 priority: p1
 existing_ot: none
-source: "#485; LeaveGroupAction.cpp:123"
+source: "#485; Bot 27 zone 5561 combat=1 since v24"
 superseded_by: none
 body: |
-  Vertrag: LeaveFarAwayAction::isUseful = false für registrierte Ad-hoc-Mitglieder;
-  alle Austritte [BotGroup] reason=…; Forget beim letzten Austritt; Repop geloggt.
-  Diagnostics 48 h, Logs nach Y:. Abnahme: objective_done+turned_in >= 60 % der Austritte.
-  Owner chat: OB-10. Refs #485, #365, #324.
----
-id: WS10-QUEST-LOOPS-01
-title: "WS10-QUEST-LOOPS-01: Stop Earth Sapta turn-in and HasProgress loops"
-workstream: WS-10
-priority: p2
-existing_ot: none
-source: "#485; work/quest-logs/qe_sorted.tsv"
-superseded_by: none
-body: |
-  Vertrag: Cooldown/Sperre für wiederholbare Autocomplete-Quests (1462/1463) bei
-  Roster-Bots; DropQuestAction.cpp:196 (ObjectiveText => Fortschritt) korrigieren.
-  Abnahme: 1463-Anteil an Abgaben < 2 %. Owner chat: OB-10. Refs #485.
----
-id: WS10-GUILD-SHAPE-01
-title: "WS10-GUILD-SHAPE-01: Cap bot guild count, size and names"
-workstream: WS-10
-priority: p2
-existing_ot: none
-source: "#485"
-superseded_by: none
-body: |
-  Vertrag (nach Inhaberentscheidung): Obergrenze Bot-Gilden+Urkunden je Fraktion
-  < RandomBotGuildCount/2; GuildMaxBotLimit 30; Namens-Ausschlussliste per Config
-  (Migration nur in Hauptzug, Einzelfreigabe). Optional |ΔStufe|<=5 bei Angebot/Einladung.
-  Abnahme: 4–6 Gilden je Fraktion, 12–20 Mitglieder, 0 verlorene Bots. Owner chat: OB-10. Refs #485.
----
-id: WS10-GROUPQUEST-ELITE-01
-title: "WS10-GROUPQUEST-ELITE-01: Group bots for wanted elite objectives"
-workstream: WS-10
-priority: p2
-existing_ot: none
-source: "#485; AdhocGroupAction.cpp:65-83"
-superseded_by: none
-body: |
-  Vertrag: CurrentObjective liefert auch gesuchte Elite-/Gruppenziele; Bot-zu-Bot-
-  Questteilen über HandlePushQuestToParty; Wartezeit <= 15 min. Abnahme: Abgabe/Paar
-  group_elite > 0,2; Tode/Bot-h in Gruppe <= solo; Tick p99 ±10 %; kein Paar > 6 Einladungen/h.
-  Owner chat: OB-10. Refs #485, #365.
----
-id: WS10-ESCORT-01
-title: "WS10-ESCORT-01: Add whitelisted escort strategy for bot groups"
-workstream: WS-10
-priority: p2
-existing_ot: none
-source: "#485; work/escort-dungeon/escort_quest_ids.txt"
-superseded_by: none
-body: |
-  Vertrag: Strategie 'escort' (GetEscortingGuid), Follow <= 20 yd, NPC-Angreifer angreifen,
-  Whitelist 5–10 Quests, max. 2 Retries, [Escort]-Diagnose. Abnahme: Eskort-Abgaben > 0,
-  keine Abbruch-/Wiederannahme-Schleifen. Owner chat: OB-10. Refs #485.
----
-id: WS10-DUNGEON-QUEST-01
-title: "WS10-DUNGEON-QUEST-01: Minimal bot dungeon path for RFC, DM, WC"
-workstream: WS-10
-priority: p2
-existing_ot: none
-source: "#485; #343"
-superseded_by: none
-body: |
-  Vertrag: 5er-Rostergruppe, Typ-81-Freigabe mit 'can fight boss', Anreise Entrance-Trigger,
-  serverseitiger dungeon-clear-Starter (Inhaberentscheidung), Watchdog 90 min/2 Wipes,
-  Ausgang+Abgabe, [Dungeon]-Diagnose, max. 2 Gruppen gleichzeitig.
-  Abnahme: 1 Endboss-Lauf, 1 Wipe-Recover, 0 verlorene Bots. Owner chat: OB-10. Refs #485, #343, #453.
----
-id: WS10-QUEST-EXPLORE-01
-title: "WS10-QUEST-EXPLORE-01: Give bots areatrigger objectives"
-workstream: WS-10
-priority: p2
-existing_ot: none
-source: "#485; QuestValues.cpp:32-105,655-675"
-superseded_by: none
-body: |
-  Vertrag: EntryQuestRelationMapValue lädt areatrigger_involvedrelation beim Laden,
-  NeedQuestObjective berücksichtigt Erkundungsziele; Abgeber in Instanz (5722)
-  nicht als Solo-Reiseziel. Abnahme: rewarded-Zuwachs SpecialFlags&2 > Basis 7/103;
-  TravelToTaker 5722 → 0/Tag. Owner chat: OB-10. Refs #485.
+  Vertrag: Rang 11 (Hotfix). Abnahme: 0 Bots > 30 min mit combat=1 ohne
+  Schaden/XP; D2 eingehalten. Owner chat: OB-10. Refs #485.
 ---
 id: WS40-CONFIG-EVIDENCE-01
 title: "WS40-CONFIG-EVIDENCE-01: Store rendered configs per deploy"
 workstream: WS-40
-priority: p1
+priority: p2
 existing_ot: none
-source: "#485; work/live-config/README.txt"
+source: "#485"
 superseded_by: none
 body: |
-  Vertrag: pro Deploy gerenderte aiplayerbot.conf + mangosd.conf (Secrets geschwärzt)
-  mit sha256 unter evidence/ws-40/ob30-release-train-<zug>/config/; bot_events-Snapshot
-  8.8 einfrieren. Abnahme: D4 vollständig für v25+. Owner chat: OB-30. Refs #485.
+  Vertrag: Pro Deploy die gerenderten aiplayerbot.conf und mangosd.conf (Secrets
+  geschwärzt) mit sha256 unter evidence/ws-40/ablegen. Owner chat: OB-30. Refs #485.
 ---
 ```
 
----
-
-## 7. Risiken und offene Fragen
-
-**Risiken**
-- **ADR-0031-Veto:** Kein Schritt darf einen Bot gefährden oder den World-Thread blockieren. Das betrifft vor allem S12–S14: Instanzen, Leichenlauf, Wipes. mod-solo-dungeon und Repop sind der Schutz.
-- **Sofort-Gründungen nach S1/S2:** Es entstehen Gilden mit Stock-Namen und ohne Obergrenze, solange S8 fehlt. Bei `AllowTwoSide.Interaction.Guild=1` (Vorlagenwert, live nicht geprüft) könnten Gilden mit beiden Fraktionen entstehen (`PetitionsHandler.cpp:312`).
-- **S3:** Kann gewollte Kettenquests unterdrücken.
-- **Gruppen-Wipes:** Gruppen ohne Heiler sterben. Deshalb Boss- und Dungeon-Inhalte erst ab 4 Mitgliedern.
-- **`ResetStrategies` beim Beitritt** setzt möglicherweise das Reiseziel zurück (UNSICHER).
-- **#478:** Erst `BotChat.Direct=1` macht Gildenleben im Chat sichtbar. Damit werden aber alle Broadcast-Quellen auf einmal hörbar (Spam).
-- **Kapazität von OB-10:** #484 läuft parallel. Die Overlay-Regel „ein Issue in Arbeit“ wird verletzt, und es gibt gemeinsame Merge-Anker (`tests.cmake`, Index in `docs/README.md`). OB-00 legt die Reihenfolge fest.
-
-**Offene Fragen**
-1. Wie viele Gilden und Petitionen gibt es live aktuell? Zählt OB-40 am 03.10.
-2. Live-Werte von `MinPetitionSigns` und `AllowTwoSide.Interaction.Guild`: nur aus der Vorlage rekonstruiert (9 bzw. 1, UNSICHER).
-3. Sind die Petitionen mit mehr als 9 Unterschriften vollständig vor dem Deploy von #241 entstanden? Dafür fehlt ein Dump-Vergleich (UNSICHER).
-4. Wie oft feuert der Trigger „random“ für „offer petition nearby“? Danach richtet sich, wie viele synchrone Abfragen pro Minute heute verschwendet werden.
-5. Wie verteilen sich die Ad-hoc-Austritte (LeaveFarAway gegenüber `objective_done`/`idle`)? Es sind keine `[BotGroup]`-Logs gesichert.
-6. `TravelMgr.cpp:149-154`: Ist die Abgabesperre in der Overworld vertauscht? Davon hängt die Ursache der Schleife bei 5722 ab.
-7. Mechanismus der Schleife bei Earth Sapta: Gibt es eine echte Mehrfachbelohnung, oder schlägt `CanRewardQuest` fehl?
-8. Rufen alle relevanten Eskort-Skripte die Basis-Implementierung `JustDied` (FailQuest) auf? Die Eskort-Liste (24 bzw. 52) ist heuristisch.
-9. Bindet live genau `C:\TW\ComTW\data` (mmaps) ein? Prüfung durch OB-30.
-10. Werden Quest-Items in mod-dungeon-clear zuverlässig gelootet? Test in einer Wegwerf-Umgebung.
-11. Entscheidungen des Inhabers:
-    - Gildenanzahl (Vorschlag 4–6 je Fraktion) und Zielgröße
-    - organische oder deterministische Gründung
-    - eigene Namensliste
-    - Umgang mit den 40 bestehenden Urkunden
-    - Leichenlauf statt Geistheiler in Gruppen
-    - Öffnung von mod-dungeon-clear für reine Bot-Gruppen
-    - eigener Gruppentyp für Instanzen
-12. Widerspruch ADR-0031:127-129 gegenüber den live aktiven Ad-hoc-Gruppen bei offenem #324: wird an OB-00 gemeldet.
-13. Fehlende Log-Segmente (30.09. 00:34–16:58, 02.10. 04:11–15:42) und der weiter wachsende Snapshot von 8.8: Soll OB-30 sie einfrieren und mit Hash ablegen?
+Weitere Kandidaten ohne Block: Rang 9, 10, 12–28. Sie werden als Issues angelegt, sobald OB-10 die Reihenfolge festlegt.
