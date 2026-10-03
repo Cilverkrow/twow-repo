@@ -120,3 +120,7 @@ mangosd	DynamicRespawn.MinRespawnTime	INTENTIONAL_CHANGE	mangosd.overlay.conf	is
 mangosd	DynamicRespawn.MinIndoorRespawnTime	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
 aiplayerbot	AiPlayerbot.SpecAura.TalentClasses	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-409-357-367-train8-real-talents
 aiplayerbot	AiPlayerbot.QuestRescue.IdleMinutes	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-421-owner-quest-rescue-30min
+aiplayerbot	AiPlayerbot.InviteChat	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
+aiplayerbot	AiPlayerbot.RandomBotSayWithoutMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
+aiplayerbot	AiPlayerbot.RandomBotNonCombatStrategies	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-ambient-say
+aiplayerbot	AiPlayerbot.RandomBotFormGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-guild-founding-off-until-roster-guild
