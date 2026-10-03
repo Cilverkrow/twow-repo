@@ -1,0 +1,10 @@
+# self-hosted is admitted for a file the allowlist names, without pull_request.
+name: ok-self-hosted-push
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - run: echo build

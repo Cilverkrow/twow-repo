@@ -1,0 +1,12 @@
+# expect: R4
+# No top-level permissions block; a job-level one does not count.
+name: bad
+on:
+  push:
+jobs:
+  build:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo x

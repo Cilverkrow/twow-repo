@@ -1,0 +1,11 @@
+# expect: R2
+# The inline trigger list is parsed as well.
+name: bad
+on: [push, pull_request_target]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo x

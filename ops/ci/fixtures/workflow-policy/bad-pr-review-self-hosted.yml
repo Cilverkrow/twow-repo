@@ -1,0 +1,13 @@
+# expect: R1
+# pull_request_review runs in fork-PR context like pull_request; the
+# self-hosted allowlist entry does not lift R1.
+name: bad
+on:
+  pull_request_review:
+    types: [submitted]
+permissions: {}
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - run: echo x

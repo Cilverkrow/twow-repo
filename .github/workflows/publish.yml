@@ -61,7 +61,7 @@ jobs:
   # deploy/helm/twow). Rather than fail on their absence, the pipeline discovers
   # what exists and publishes that - and says in the log what it skipped.
   discover:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: what is publishable
     outputs:
       db_init: ${{ steps.check.outputs.db_init }}
@@ -97,7 +97,7 @@ jobs:
   # contract. The second build is a cache hit, not a second compile.
   core:
     needs: discover
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: core images (mangosd, realmd)
     # No matrix. mangosd and realmd were built as two matrix entries from the
     # SAME Dockerfile and the SAME `--target runtime`, differing only in the tag
@@ -219,7 +219,7 @@ jobs:
   db-init:
     needs: discover
     if: needs.discover.outputs.db_init == 'true'
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: db-init
     steps:
       # Recursive: the SQL this image ships is core/sql, in the submodule. A
@@ -341,7 +341,7 @@ jobs:
   helm:
     needs: discover
     if: needs.discover.outputs.helm == 'true'
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: helm chart
     steps:
       - uses: actions/checkout@v4

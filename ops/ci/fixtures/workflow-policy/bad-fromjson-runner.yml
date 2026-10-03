@@ -1,0 +1,12 @@
+# expect: R1
+# fromJSON builds a label list at run time.
+name: bad
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ${{ fromJSON('["self-hosted"]') }}
+    steps:
+      - run: echo x

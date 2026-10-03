@@ -12,6 +12,7 @@
 #          +----> build-and-test ---> smoke
 #   lint -----------------------+
 #
+#   core-gitlink-trust     (seconds; the core pin is on core main/release/*)
 #   windows-compile        (DISABLED 2026-09-02 - manual dispatch only)
 #
 # Six job entries. ONE full server compile per push, in the build-and-test job,
@@ -44,11 +45,19 @@
 # hosted runners are free and the billing block that forced a self-hosted
 # runner no longer applies.
 #
-#     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+#     runs-on: ubuntu-latest
 #
-# The repository variable is still the override: set CI_RUNNER to `self-hosted`
-# (the implicit label every self-hosted runner carries) and every Linux job in
-# ci.yml, nightly.yml and publish.yml moves in one edit with no commit.
+# A LITERAL, deliberately, in every workflow (#486). This used to read
+# `${{ vars.CI_RUNNER || 'ubuntu-latest' }}`, with the variable as a one-edit
+# switch onto a self-hosted runner. That switch was a hole: repository
+# variables are visible to fork pull requests, so setting it would have sent
+# every fork PR onto the self-hosted machine without the PR changing a line.
+# ops/ci/test-workflow-runner-policy.sh (run in the lint job) now rejects
+# runs-on built from vars./inputs./fromJSON, any label outside ubuntu-latest,
+# ubuntu-24.04, windows-latest and windows-2022, and self-hosted labels unless
+# ops/ci/workflow-policy-allowlist.txt names the file - and never for a
+# pull_request workflow. Moving a job off GitHub-hosted runners is therefore a
+# reviewed commit, not a variable.
 #
 # History worth keeping, because it explains code elsewhere in this file. While
 # the Linux jobs ran on `k8s-twow-repo` they failed in ways that had nothing to
@@ -217,7 +226,7 @@ jobs:
   # Docker runtime, a database, a realmd/mangosd start, a production
   # configuration, or a full C++ build.
   config-provenance:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: config provenance
     timeout-minutes: 10
     steps:
@@ -253,7 +262,7 @@ jobs:
   # The MPQ packing tests need the pinned mpqcli and are skipped here; they run
   # in the tool's container (ops/clientpatch/Dockerfile) and locally.
   clientpatch:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: clientpatch tools
     timeout-minutes: 5
     steps:
@@ -273,7 +282,7 @@ jobs:
   # World database checks (ops/dbcheck, #437). Pure Python standard library on a
   # synthetic SQLite mini database: no MariaDB, no game data, no Docker.
   dbcheck:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: dbcheck tools
     timeout-minutes: 5
     steps:
@@ -293,7 +302,7 @@ jobs:
   # Client/server inventory tool (ops/clientinventory, #455). Pure Python standard
   # library on synthetic archives and tables: no client files, no database, no Docker.
   clientinventory:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: clientinventory tools
     timeout-minutes: 5
     steps:
@@ -357,7 +366,7 @@ jobs:
   # other run restores its compiler cache from, and a main commit that was never
   # fully built is a cache poisoned for everyone.
   scope:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: scope
     timeout-minutes: 5
     outputs:
@@ -405,7 +414,7 @@ jobs:
           fi
 
   capacity:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: capacity preflight
     timeout-minutes: 10
     steps:
@@ -449,7 +458,7 @@ jobs:
   # Each runs regardless of what failed before it, and the job still reports
   # failure, because a failed step fails its job even when later steps succeed.
   lint:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: lint
     timeout-minutes: 20
     steps:
@@ -628,6 +637,26 @@ jobs:
         if: always()
         run: bash ops/audit/issue-tooling-guard.sh
 
+      # Runner and trigger policy (#486, B1). Every workflow stays on literal
+      # GitHub-hosted labels, pull_request workflows never name a self-hosted
+      # label, runs-on is never built from vars./inputs./fromJSON, and
+      # pull_request_target / issue_comment / unguarded workflow_run cannot get
+      # in. The self-test first proves each rule still fires on its fixture
+      # (ops/ci/fixtures/workflow-policy), then the real workflows are checked.
+      # This guards the merged state; a PR's own copy is guarded by the
+      # rulesets and CODEOWNERS (docs/runbooks/github-settings-486.md).
+      - name: Workflow runner policy
+        if: always()
+        run: |
+          bash ops/ci/test-workflow-runner-policy.sh --self-test
+          bash ops/ci/test-workflow-runner-policy.sh
+
+      # Offline contract for the core-gitlink-trust job below: throwaway git
+      # repositories, no network.
+      - name: Core gitlink trust contract
+        if: always()
+        run: bash ops/ci/test-core-gitlink-trust.sh
+
       # The platform used to carry sql/ at the root: a near-duplicate of
       # core/sql that nothing kept in step, that db-init.sh read in preference
       # to the core's, and that killed a published server at world load on a
@@ -787,6 +816,37 @@ jobs:
           fi
           echo "checked $(echo "$added" | wc -w) new .sql file(s), none use 'manual'"
 
+  # --------------------------------------------------------- core gitlink trust
+  #
+  # The `core` gitlink must name a commit that is already on twow-core main or a
+  # release/* branch (#486, B1). Without this a pin PR could point core at an
+  # unreviewed fork PR head (refs/pull/N/head) and CI, promote and publish would
+  # build and ship it. The fetch goes to the fixed twow-core URL, never to what
+  # .gitmodules says, and is commit-only (--filter=tree:0), so the job takes
+  # seconds and needs no secret: core is public.
+  #
+  # It also compares the core copy of the runner policy script
+  # (.github/policy/test-workflow-runner-policy.sh at the pinned commit) with
+  # ops/ci/, skipped with a notice while core does not carry the copy yet.
+  #
+  # Required status check: `core-gitlink-trust` (see
+  # docs/runbooks/github-settings-486.md).
+  core-gitlink-trust:
+    runs-on: ubuntu-latest
+    name: core-gitlink-trust
+    timeout-minutes: 10
+    steps:
+      # No submodules: the gitlink is read from the tree, the core history is
+      # fetched by the script into a temporary bare repository.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Core gitlink is on core main or release/*
+        run: |
+          bash ops/ci/check-core-gitlink-trust.sh \
+            --compare ops/ci/test-workflow-runner-policy.sh=.github/policy/test-workflow-runner-policy.sh
+
   # ---------------------------------------------------------------- integration
   #
   # The database bootstrap, from empty, against a real MariaDB.
@@ -816,7 +876,7 @@ jobs:
   # No submodules or live database: the service's dependencies are pinned by
   # services/bot-brain/go.sum and unit tests do not talk to MariaDB.
   go:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: go (bot-brain)
     timeout-minutes: 10
 
@@ -919,7 +979,7 @@ jobs:
   # bot_brain_wire_tests only ever needed that one header directory.
   bot-brain-integration:
     needs: capacity
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: bot-brain live integration
     timeout-minutes: 15
 
@@ -976,7 +1036,7 @@ jobs:
 
   integration:
     needs: capacity
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: bootstrap from empty
     timeout-minutes: 90
 
@@ -1641,7 +1701,7 @@ jobs:
       ${{ !cancelled()
           && needs.capacity.result == 'success'
           && (needs.scope.result != 'success' || needs.scope.outputs.cpp == 'true') }}
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: build + test
     permissions:
       contents: read
@@ -2476,7 +2536,7 @@ jobs:
   # naming rather than papering over.
   smoke:
     needs: build-and-test
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: compose up + smoke
     # Minutes, not hours: the compile already happened upstream in the DAG. The
     # old 150-minute budget existed only to cover `up --build`.

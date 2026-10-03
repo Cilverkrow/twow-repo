@@ -1,0 +1,16 @@
+# expect: R1
+# labels: entries of a runs-on mapping count too.
+name: bad
+on:
+  - push
+  - pull_request
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on:
+      labels:
+        - self-hosted
+        - linux
+    steps:
+      - run: echo x
