@@ -73,6 +73,9 @@ aiplayerbot	AiPlayerbot.ProfessionUse.Craft	INTENTIONAL_CHANGE	aiplayerbot.overl
 aiplayerbot	AiPlayerbot.ProfessionUse.CraftIntervalSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-333-profession-use
 aiplayerbot	AiPlayerbot.ProfessionUse.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-333-profession-use
 aiplayerbot	AiPlayerbot.ProfessionUse.TraceCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-333-profession-use
+aiplayerbot	AiPlayerbot.ProfessionUse.RealReagents	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-craft-real-reagents
+aiplayerbot	AiPlayerbot.ProfessionUse.KeepCraftMaterials	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-craft-real-reagents
+aiplayerbot	AiPlayerbot.ProfessionUse.VendorReagents	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-craft-real-reagents
 aiplayerbot	AiPlayerbot.LootRoll.RoleAware	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-341-role-aware-loot-roll
 aiplayerbot	AiPlayerbot.LootRoll.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-341-role-aware-loot-roll-trace
 aiplayerbot	AiPlayerbot.ZoneEscape.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-zone-escape
