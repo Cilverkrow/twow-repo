@@ -110,13 +110,12 @@ Nicht required: `msvc compile-only` (nur per Dispatch).
 |---|---|
 | `Build core (Debian trixie)` | |
 | `Upstream ref is the one we claim to track` | |
+| `Workflow runner policy` | neu mit dem Core-PR zu B0/B1/B2 (eigener Job `workflow-policy`, läuft bei jedem PR). Erst eintragen, wenn dieser PR auf core `main` liegt, sonst warten ältere Core-PRs ewig auf „Expected“ |
 
 Nicht required: `Build core (MSVC, windows-latest)` (bei PRs übersprungen) und
 `POSIX-only-Aufrufe in den Modulen` (`msvc-portability.yml` hat einen Pfadfilter;
-ein Pfad-gefilterter Required Check bliebe bei anderen PRs ewig „Expected“). Sobald
-der Core-PR zu B1 den Policy-Schritt einbringt, läuft er innerhalb eines dieser
-Jobs; ein eigener Job müsste hier ergänzt werden. `require_code_owner_review` wirkt
-im Core erst, wenn dort `.github/CODEOWNERS` liegt (Core-PR zu B0/B1).
+ein Pfad-gefilterter Required Check bliebe bei anderen PRs ewig „Expected“).
+`require_code_owner_review` wirkt im Core erst, wenn dort `.github/CODEOWNERS` liegt (Core-PR zu B0/B1).
 
 `strict_required_status_checks_policy: false`: der PR muss nicht auf dem neuesten
 `main` stehen (sonst wäre nach jedem Merge ein neuer Voll-Lauf nötig).
