@@ -43,6 +43,14 @@ Quelle sind die Kommentare von OB-00 in #485, mit dem Wortlaut des Inhabers.
 
 ## 2. Befunde
 
+### 2.0 Grundlage aus Zug 8
+
+Dieses Design setzt zwei in Zug 8 behobene Grundursachen voraus (Hinweis OB-10):
+- **`QueuePacket` wird für Bots nie verarbeitet** (#474). Deshalb nutzen Bots GOs und Items seit 8.8/8.9 über direkte Handler; vorher scheiterten Bobber, Questobjekte und Behälter still.
+- **`MAX_SPELL_ID` 60000 blockierte eigene Spells** (#484, 8.10). Eigene Spells ab 61002, auch eigene Rezepte (61xxx), endeten nach `prepare()`. Herstell-Raten vor dem 03.10. sind für diese Rezepte daher keine Basis.
+
+Seit dem Entwurf kamen außerdem die Hotfixes 8.11–8.15 auf main. Sie bringen eine gemeinsame Annahme- und Abwurfregel, den Kampf-Watchdog für Bot 27, eine Transport-Sperre nach 12 min, „craft started“ erst nach dem Cast und einen Annahmestopp bei vollem Questlog. Die fünf PRs werden darauf aufgesetzt.
+
 ### 2.1 Questen: Bots stecken an Abgaben fest, nicht am Annehmen
 
 **Raten v24** (480 Bot-h, `quest-rates`):
@@ -381,7 +389,23 @@ Dazu kommt der Konfig-Entwurf **#495** (Rang 7: kein Bot-Bot-/say, `RandomBotFor
 
 ## 7. Entscheidungen für den Inhaber
 
-Jeweils mit Empfehlung:
+**Stand 03.10. 09:59Z:** Der Inhaber hat alle Punkte wie empfohlen entschieden (OB-00 in #485). Wortlaut: „alles wie empfohlen namen übernehmen und in einen pool legen aus dem die bots die gründung herstellen“.
+
+| Nr. | Punkt | Entscheidung |
+|---|---|---|
+| 1 | Gildengröße | 45 Bots (180 Bots → 2 je Fraktion, 270 → 3, 360 → 4) |
+| 2 | Rollen je Gilde | 5/10/30 |
+| 3 | Namen | die 24 Vorschläge als konfigurierbarer, erweiterbarer Namenspool |
+| 4 | 84 Nicht-Gründer-Urkunden | nach der Gründung löschen (OB-40, Trockenlauf, Liste) |
+| 5 | Abwerben | Abwerb-Hook: Bot nimmt Einladung bzw. Urkunde eines Spielers an und wechselt |
+| 6 | Quest nach 3 Fehlschlägen | 60 min zurückstellen |
+| 7 | Kontinentsperre | nur mit den passenden Schaltern aus core#277/#278 |
+| 8 | Herstellung | item-Cheat bleibt; nur die Herstellung prüft echtes Material; Händler-Reagenzien bis 1 Stapel |
+| 9 | Verbände und Tränke | ja, Roster-Bots benutzen sie |
+| 10 | Bot-Reset | nein (Welle 2, Variante A: neue L1-Bots gegen alte Bots nach den Fixes) |
+| 11 | Müll mitnehmen fürs Kürschnern | ja (`ClearCorpseForSkinning`) |
+
+Die Empfehlungen, auf die sich die Entscheidung bezieht:
 
 1. **Gilden:**
    - `BotsPerGuild` **45** (2×45 je Fraktion) oder 30.
