@@ -1,0 +1,16 @@
+op,key,field,value,note
+# #484 train 9, Brazen Strike (talent 9178, rank spell 61179): Backstab from the front below 60 % target health.
+# The 1.12 client predicts "must be behind the target" from AttributesExB 0x100000 and never sends a frontal
+# Backstab. twow-core 20261003200000 clears attributesEx2 0x100000 on the 9 Backstab ranks and keeps the server
+# rule via customFlags 0x40 (SPELL_CUSTOM_BEHIND_TARGET) plus the IsFunserverFrontalBackstab exception.
+# The value comes from the server row, so spell-matches-server stays the single check. The helper/NPC
+# spells 2592-2595, 8723, 11282-11284, 25411 and 25973 are not Backstab ranks and stay untouched.
+set,53,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 1 (#484 Brazen Strike)
+set,2589,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 2
+set,2590,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 3
+set,2591,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 4
+set,8721,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 5
+set,11279,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 6
+set,11280,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 7
+set,11281,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 8
+set,25300,AttributesExB,sql:spell_template.attributesEx2,Backstab rank 9
