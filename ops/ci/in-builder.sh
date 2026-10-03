@@ -128,6 +128,17 @@ docker run --rm --user 0:0 \
 # showed up as a warm build coming out cold, not as anything mentioning
 # the cache. Overridable so a measurement can move it without a commit.
 #
+# CCACHE_MAXSIZE 5G (was 4G until #486 B4). The build now compiles with -g1 so
+# that the CI image is the same build as the published one (see note 4 in
+# deploy/docker/Dockerfile.core); line tables and function DWARF make every
+# object larger, and the 4G cache was already full (4.1/4.0 GB, 90 cleanups in
+# run 37044803296) without them. Budget, against the repository's 10 GB:
+# 9.07 GB in use before B3/B4, of which ~1.9 GB were publish.yml's dead
+# type=gha core blobs that B3 stops writing; 9.07 - 1.9 - 4.1 + 5 = ~8.1 GB.
+# Measure after the first warm main run (the step summary prints current and
+# maximum size and the cleanup count) before moving it again.
+# ops/ci/test-compiler-cache-key.sh pins this default.
+#
 # NOTE: keep comments out of the continued command below. A '#' line
 # between two backslash-continued arguments ends the continuation, and
 # every following --env becomes a command in its own right.
@@ -139,7 +150,7 @@ exec docker run --rm \
     --env CI_DB_PORT \
     --env MARIADB_ROOT_PASSWORD \
     --env CCACHE_DIR=/ccache \
-    --env CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-4G}" \
+    --env CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-5G}" \
     --env CCACHE_COMPRESS=1 \
     --env CCACHE_COMPRESSLEVEL="${CCACHE_COMPRESSLEVEL:-6}" \
     --env CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime \
