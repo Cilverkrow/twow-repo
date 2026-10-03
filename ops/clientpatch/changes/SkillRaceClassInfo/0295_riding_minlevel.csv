@@ -1,0 +1,5 @@
+op,key,field,value,note
+# #295 train 9: riding (skill 762, row 890 for every race and class) from level 10 is a server rule
+# since twow-core 20261002210000 (skill_race_class_info_mod row 890, MinLevel 10); the client base
+# says 40. Server-loaded DBC: the build's server-dbc/ copy goes live in the same window (OB-30).
+set,890,MinLevel,sql:skill_race_class_info_mod.MinLevel,riding from level 10 (20261002210000)

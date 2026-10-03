@@ -10,7 +10,9 @@ Stage 2 pins each source to file and line at a pinned twow-core commit.
 The rogue entries CV-2 and CV-4 to CV-10 are pinned at twow-core `15fc5da4` (#367).
 CV-4 to CV-10 are taken by the rogue change (#367, #433); the shaman entries
 (CV-1, CV-3, CV-11 onwards, #357) continue at CV-11 so the two changes do not
-collide.
+collide. CV-14 to CV-16 are riding and player snares (#295, train 9); they name
+file and function on the core branch `feat/295-riding-stages`, and the line pin
+follows with the train-9 core commit.
 
 | id | spell | value | source | player-visible |
 |---|---|---|---|---|
@@ -27,6 +29,9 @@ collide.
 | CV-11 | Shield Constitution 61127-61129, Shield Ward 61130 | +1/2/3 % stamina and -2 % damage taken per active Lightning Shield charge | `spell_shaman_shield_charge_scaling` (core#187) | yes (#357) |
 | CV-12 | Storm Wisdom 61119-61123 | stacks are removed by the Lightning Bolt / Chain Lightning cast | `spell_shaman_storm_wisdom` (core#187) | yes (#357) |
 | CV-13 | Retaliation 61115-61117 | free Lightning Shield proc + 1 charge, at most once per second (1 s = `spell_proc_event.Cooldown`) | `spell_shaman_retaliation` (core#187) | yes (#357) |
+| CV-14 | player mount spells (the 465 of `Spell/0295_mount_spells.csv`); riding teach spells 33389, 33392, 61301, 61303 | mounted speed of players and bots by riding rank (75/150/225/300) and mount family: family 1 (own aura-32 value below 100) +60/+100/+100/+100 %, family 2 (100 and above) +60/+100/+140/+180 %; the mount-speed-100 flag is family 2 and at least +100 %; no riding: level / 2 %; racing cars keep their value; NPCs unchanged. `Funserver.Riding.Stages.Enabled = 0`: 75 -> +60 %, 150 and above -> +100 % | `src/game/FunserverRidingStages.h` `FunserverRiding::MountedSpeedPct`, applied in `Aura::CalculateRidingMountSpeed` (`src/game/Spells/SpellAuras.cpp`) | yes (the texts name the speeds) |
+| CV-15 | every slow (aura 33, negative) a player-controlled unit (player, bot, their pets, guardians, totems, traps, charmed units; not a player or bot charmed by an NPC) casts on another unit | amount x (100 + `Funserver.PlayerSnare.SlowPct`) / 100, at most `Funserver.PlayerSnare.MaxSlowPct`; a slow already above the cap keeps its value; funserver profile x1.4, cap 90 % (a 50 % slow becomes 70 %); NPC slows and self-slows unchanged | `src/game/FunserverRidingStages.h` `FunserverSnare::ScaleSlow`, applied in `WorldObject::CalculateSpellDamage` (`src/game/Objects/Object.cpp`); caster rule `FunserverSnare::IsPlayerSnareCaster` (`src/game/FunserverPlayerSnare.h`, defined in `src/game/Objects/Object.cpp`) | **no**: the IDs are shared with NPCs, the tooltips keep the base value |
+| CV-16 | every root (aura 26) a player-controlled unit (same caster rule as CV-15, NPC-charmed players excluded) casts on another unit | duration x (100 + `Funserver.PlayerSnare.RootDurationPct`) / 100 before diminishing returns; funserver profile x1.4 (Frost Nova 8 s -> 11.2 s); the whole aura lasts longer, so Entangling Roots deals 40 % more damage | `src/game/FunserverRidingStages.h` `FunserverSnare::ScaleRootDuration`, applied in `Spell::DoSpellHitOnUnit` (`src/game/Spells/Spell.cpp`); caster rule as CV-15 | **no**: the tooltips keep the base duration |
 
 ## Server-side-only talent ranks
 

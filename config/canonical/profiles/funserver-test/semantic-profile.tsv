@@ -120,3 +120,7 @@ mangosd	DynamicRespawn.MinRespawnTime	INTENTIONAL_CHANGE	mangosd.overlay.conf	is
 mangosd	DynamicRespawn.MinIndoorRespawnTime	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
 aiplayerbot	AiPlayerbot.SpecAura.TalentClasses	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-409-357-367-train8-real-talents
 aiplayerbot	AiPlayerbot.QuestRescue.IdleMinutes	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-421-owner-quest-rescue-30min
+mangosd	Funserver.Riding.Stages.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-riding-stages-train9
+mangosd	Funserver.PlayerSnare.SlowPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-player-slows-x1-4
+mangosd	Funserver.PlayerSnare.MaxSlowPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-player-slow-cap-90-pinned-default
+mangosd	Funserver.PlayerSnare.RootDurationPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-player-roots-40

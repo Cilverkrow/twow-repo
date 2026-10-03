@@ -1,0 +1,25 @@
+op,key,field,value,note
+# #295 train 9: skill line rows of the new riding ranks in skill 762 (Riding), twow-core
+# 20261002210000 skill_line_ability 30300/30301, copies of 5071 (Journeyman, 33391). Row IDs from
+# the #295 block 30300-30399 (runbook talent-change-workflow R6 and section 2). Every value mirrors
+# skill_line_ability; copy:5071 supplies the columns the server table does not have.
+insert,30300,,copy:5071,"Riding 225, rank Expert 61300"
+set,30300,SkillLine,sql:skill_line_ability.skill_id,
+set,30300,Spell,sql:skill_line_ability.spell_id,
+set,30300,RaceMask,sql:skill_line_ability.race_mask,
+set,30300,ClassMask,sql:skill_line_ability.class_mask,
+set,30300,MinSkillLineRank,sql:skill_line_ability.req_skill_value,
+set,30300,SupercededBySpell,sql:skill_line_ability.superseded_by_spell,
+set,30300,AcquireMethod,sql:skill_line_ability.learn_on_get_skill,
+set,30300,TrivialSkillLineRankHigh,sql:skill_line_ability.max_value,
+set,30300,TrivialSkillLineRankLow,sql:skill_line_ability.min_value,
+insert,30301,,copy:5071,"Riding 300, rank Artisan 61302"
+set,30301,SkillLine,sql:skill_line_ability.skill_id,
+set,30301,Spell,sql:skill_line_ability.spell_id,
+set,30301,RaceMask,sql:skill_line_ability.race_mask,
+set,30301,ClassMask,sql:skill_line_ability.class_mask,
+set,30301,MinSkillLineRank,sql:skill_line_ability.req_skill_value,
+set,30301,SupercededBySpell,sql:skill_line_ability.superseded_by_spell,
+set,30301,AcquireMethod,sql:skill_line_ability.learn_on_get_skill,
+set,30301,TrivialSkillLineRankHigh,sql:skill_line_ability.max_value,
+set,30301,TrivialSkillLineRankLow,sql:skill_line_ability.min_value,
