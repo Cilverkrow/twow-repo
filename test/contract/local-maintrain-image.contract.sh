@@ -128,8 +128,8 @@ grep -q 'not https://github.com/Cilverkrow/twow-repo' "$tmp/stderr" || fail "for
 # here, so the refusal must come from the fetch, not from the URL check.
 for u in https://github.com/Cilverkrow/twow-repo https://github.com/Cilverkrow/twow-repo.git git@github.com:Cilverkrow/twow-repo.git; do
     g -C "$tmp/src" remote set-url origin "$u"
-    [[ $(GIT_ALLOW_PROTOCOL=file env -u TWOW_TEST_ORIGIN_RE bash -c '"$@" >"$0/stdout" 2>"$0/stderr"; echo $?' "$tmp" bash "$script" "${base[@]}" --dry-run) == 3 ]] \
-        || fail "canonical origin $u without network must be refused by the fetch"
+    rc=$(env -u TWOW_TEST_ORIGIN_RE GIT_ALLOW_PROTOCOL=file bash -c '"$@" >"$0/stdout" 2>"$0/stderr"; echo $?' "$tmp" bash "$script" "${base[@]}" --dry-run)
+    [[ $rc == 3 ]] || fail "canonical origin $u without network must be refused by the fetch"
     grep -q 'git fetch origin main failed' "$tmp/stderr" || fail "canonical origin $u not accepted by the URL check: $(cat "$tmp/stderr")"
 done
 g -C "$tmp/src" remote set-url origin "$tmp/upstream.git"
