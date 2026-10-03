@@ -85,4 +85,10 @@ quest groups of up to 5 bots, skipping quest objectives that keep timing out, an
 talent auras for the shaman and rogue tank paths. Zone escape retries after 600 s.
 The `[AutoLearn]`, `[VendorGear]` and `[BotGroup]` traces are for the first 24 hours.
 
+Bot chat and guild charters (#485, owner decision 2026-10-02): bots no longer /say to other
+bots (`AiPlayerbot.InviteChat = 0`, `AiPlayerbot.RandomBotSayWithoutMaster = 0`, no
+`custom::say` in the non-combat strategies); guild chat while a real member is online follows
+with #478. Roster bots stop buying, offering and turning in guild charters
+(`AiPlayerbot.RandomBotFormGuild = 0`) until the core roster guild founding is live.
+
 All one hundred and fourteen deviations are classified in `semantic-profile.tsv`.
