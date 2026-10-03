@@ -1,0 +1,13 @@
+op,key,field,value,note
+# #484 train 9, owner test 03.10.2026 (issuecomment-5972156860): the applied Agitating Poison always showed
+# "rank I" in the buff bar and weapon tooltip. 0367_agitating_poison_ranks.csv creates 3060-3063 with copy:3006
+# and sets only EffectArg[0], so all four enchantments kept Turtle's name "Agitating Poison I". The client shows
+# the SpellItemEnchantment name for a temporary weapon enchantment. Text only: the effect (EffectArg) is unchanged,
+# and the server has no name source for enchantments. 3060 keeps "Agitating Poison I". The base row carries a
+# deDE name ("Aufstachelndes Gift"), so deDE gets the rank numeral too.
+set,3061,Name_lang_enUS,Agitating Poison II,#484 rank name
+set,3062,Name_lang_enUS,Agitating Poison III,#484 rank name
+set,3063,Name_lang_enUS,Agitating Poison IV,#484 rank name
+set,3061,Name_lang_deDE,Aufstachelndes Gift II,#484 rank name deDE
+set,3062,Name_lang_deDE,Aufstachelndes Gift III,#484 rank name deDE
+set,3063,Name_lang_deDE,Aufstachelndes Gift IV,#484 rank name deDE
