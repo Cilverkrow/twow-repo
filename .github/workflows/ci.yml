@@ -2638,7 +2638,7 @@ jobs:
     name: compose up + smoke
     # Minutes, not hours: the compile already happened upstream in the DAG. The
     # old 150-minute budget existed only to cover `up --build`.
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     # packages: read is for the private client-data image below. The workflow's
     # default is contents: read only, and a job cannot inherit a permission the
@@ -2907,10 +2907,14 @@ jobs:
         run: |
           set -eu
           C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
+          # Deadline by wall clock, not by loop count: each pass also pays for two
+          # `docker inspect` calls, so a counter drifts well past its nominal limit
+          # (twow-repo#310). Hosted runners vary from 11 to 21 minutes here.
+          deadline_s=1800
           started=$(date +%s)
           $C up -d mangosd
           h=starting
-          for _ in $(seq 1 600); do
+          while [ $(( $(date +%s) - started )) -lt "$deadline_s" ]; do
             h=$(docker inspect -f '{{.State.Health.Status}}' "$($C ps -aq mangosd)" 2>/dev/null || echo starting)
             [ "$h" = "healthy" ] && break
             # An exited container will never become healthy; stop waiting for it.
@@ -2921,13 +2925,20 @@ jobs:
             sleep 2
           done
           [ "$h" = "healthy" ] || {
-            echo "::error::mangosd did not become healthy within 1200s"
+            echo "::error::mangosd did not become healthy within ${deadline_s}s"
             $C logs --tail 200 mangosd
             exit 1
           }
           elapsed=$(( $(date +%s) - started ))
           printf -- '- **mangosd / world-ready:** %dm %02ds\n' \
             "$((elapsed / 60))" "$((elapsed % 60))" >> "$GITHUB_STEP_SUMMARY"
+          # One greppable log line per run (`gh run view --log`), so the start
+          # time can be tracked across trains without opening the summary.
+          echo "::notice::world_ready_seconds=${elapsed}"
+          # mangosd's own load time, to tell server load apart from runner and
+          # health-check overhead. Informational: a missing line must not fail.
+          lt=$($C logs mangosd 2>&1 | grep -m1 'Loading time' || true)
+          echo "mangosd: ${lt:-no 'Loading time' line in the mangosd log}"
           $C ps -a
 
       # bot-brain and the stub model, for test/smoke/60-bot-dialogue.sh.
