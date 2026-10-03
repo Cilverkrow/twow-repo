@@ -116,7 +116,9 @@ Das Skript (aus einem beliebigen Checkout aufrufbar, gebaut wird `--source`):
    `local-` hält den Tag getrennt vom CI-Tag `sha-<40>`. Maßgeblich ist ohnehin
    nur der Digest;
 7. stoppt den Builder-Container (`docker buildx stop`, der Cache bleibt) und
-   schreibt `local-digest.json` (Felder wie `publish-digest.json`, dazu
+   schreibt `local-digest.json` (eigenes Schema, nicht `publish-digest.json`:
+   `revision` ≙ `repo_sha`, `core_revision` ≙ `core_sha`, `digest` gleich,
+   `images` als Objekt mit vollen `name@digest`-Referenzen; dazu
    `builder: local-maintrain`, `deployable`, `reason`, Laufzeit, `origin_url`,
    `origin_main` = gefetchter `main`-Stand, `main_ref`) nach
    `--out-dir`, Standard
