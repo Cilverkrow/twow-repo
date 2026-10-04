@@ -22,7 +22,7 @@ the train 7 pin.
 | `select_roster_v5.py` | deterministic generator (stdlib only), any size, EXPAND and REPLACE |
 | `race-class-catalog.tsv` | the 61 race × class pairs after train 7, with source (`live`, `new-178`, `new-165`) |
 | `spec-roles.tsv` | talent path → role; every path is in `../respec/premade-spec-index.tsv` |
-| `test_select_roster_v5.py` | 25 tests on the real 154 base with synthetic pools |
+| `test_select_roster_v5.py` | 27 tests on the real 154 base with synthetic pools |
 | `guild_plan.py` | guild split of a plan (#518): roles per guild, class by class, level bands, stable over stages |
 | `../expand-272/make_replace_request.py` | canonical REPLACE request (+ `test_make_replace_request.py`) |
 | `../reset-l1`, `../respec` | `--ordinals` now accepts lists such as `89,109,140,149,155-180` |
@@ -187,14 +187,17 @@ guild per faction (+90 bots): 270, 360, 450, …, 810 (810 instead of 800, so gu
 | `--female-share 0.55` | owner: more women than men; new slots are women until the faction reaches the share |
 | `--cell-min 1` | owner: every usable race x class x role cell gets at least one bot, so rare pairs (dwarf shaman, undead paladin, druids) appear as healer, tank and DPS |
 | `--tank-class-weight 1=2` | owner: warriors may tank clearly more often (twice the share of each other tank class) |
+| `--healer-min-new 1` | every stage adds at least one healer of each healer class, so the new guild gets each class even when kept guilds hold two |
+| `--rare-pairs 3:7,3:9,5:2 --rare-share 0.025` | owner: rare race x class pairs (dwarf shaman, dwarf warlock, undead paladin; later tauren paladin 6:2, night/high elf shaman 4:7, 10:7) at most 2.5 % of the faction each, but never below every role and the healer minimum |
+| `--profession-shares Label=N,…` | overall pair shares; proposal (owner 04.10): Herbalism/Alchemy 22, Tailoring/Enchanting 18, Mining/Blacksmithing 16, Skinning/Leatherworking 14, Mining/Engineering 12, Mining/Jewelcrafting 10, Herbalism/Mining 8 |
 
-Per stage with g guilds per faction (owner 04.10: variety instead of a paladin limit):
-`--target 90g --per-faction 7g,10g,28g --cap max(5,2g) --healer-min g --female-share 0.55 --cell-min 1 --tank-class-weight 1=2`,
+Per stage with g guilds per faction (owner 04.10):
+`--target 90g --per-faction 7g,10g,28g --cap max(5,2g) --healer-min g --healer-min-new 1 --female-share 0.55 --cell-min 1 --tank-class-weight 1=2 --rare-pairs 3:7,3:9,5:2 --rare-share 0.025 --profession-shares <proposal>`,
 with `--base` = the plan of the previous stage.
 
 **Professions (#485/#518):** Skinning/Leatherworking only for leather classes (hunter, rogue, shaman,
 druid), but leather classes are not all leatherworkers. Every new bot takes the pair furthest below its
-share; ties go to a pair its class prefers, then to the pair its class has least of.
+share (a pair the class prefers counts 1.5x as urgent, e.g. Tailoring/Enchanting for cloth wearers); ties go to the pair its class has least of.
 
 `guild_plan.py plan.csv --per-guild 7,10,28 [--levels guid-level.tsv] [--keep previous-guilds.tsv]` deals
 each role class by class (rarest first) over the guilds, then by 5-level band. `--keep` leaves the guilds
@@ -207,7 +210,7 @@ twow-core#281 (guild foundation).
 python3 select_roster_v5.py --base ../plan-154/v4-154-roster-plan.csv --catalog race-class-catalog.tsv \
     --specs spec-roles.tsv --target 180 --per-faction 10,20,60 --cap 4 --replace-excess \
     --demand demand.tsv --slots-out slots.tsv --summary-out summary.md
-python3 -m unittest test_select_roster_v5.py          # 25 tests
+python3 -m unittest test_select_roster_v5.py          # 27 tests
 python3 -m unittest ../expand-272/test_make_replace_request.py ../expand-272/test_make_expand_request.py
 bash ../reset-l1/test-reset-l1-scope.sh --container <disposable> --csv ../plan-154/v4-154-roster-plan.csv --ordinals 101-130
 ```
