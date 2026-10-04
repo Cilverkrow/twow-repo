@@ -58,6 +58,7 @@ already mirrored with `sql:` values:
 - 61118 Charged Stormstrike rank 1: rank text (`0357_shaman_spells.csv`).
 - 61124/61126 Storm Wisdom buffs: text and icon (`0357_shaman_spells.csv`).
 - 29079/29080 Elemental Weapons: rank texts (`0357_shaman_elemental_weapons.csv`).
+- 61002, 61004, 61006, 61007 Alterac event item spells (#511, core migration 20261004080000): haste leftover, visuals, proc charges, family and aura texts (`0455_alterac_item_spells.csv`).
 
 Talent.dbc and SpellItemEnchantment.dbc are server-loaded. The server copies
 from the same build go live in the same window as the core change. Until the
