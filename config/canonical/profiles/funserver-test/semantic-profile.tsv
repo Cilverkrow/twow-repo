@@ -121,5 +121,7 @@ mangosd	DynamicRespawn.PercentPerPlayer	INTENTIONAL_CHANGE	mangosd.overlay.conf	
 mangosd	DynamicRespawn.MaxReductionRate	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
 mangosd	DynamicRespawn.MinRespawnTime	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
 mangosd	DynamicRespawn.MinIndoorRespawnTime	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
+mangosd	Rogue.KeepComboPointsOnSelect	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-484-owner-combo-switches-20261004
+mangosd	Rogue.ProcComboPointsToCurrentTarget	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-484-owner-combo-switches-20261004
 aiplayerbot	AiPlayerbot.SpecAura.TalentClasses	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-409-357-367-train8-real-talents
 aiplayerbot	AiPlayerbot.QuestRescue.IdleMinutes	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-421-owner-quest-rescue-30min
