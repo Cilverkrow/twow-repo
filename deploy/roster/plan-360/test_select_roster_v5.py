@@ -218,6 +218,37 @@ class GeneratorTest(unittest.TestCase):
             self.assertGreaterEqual(sum(r["gender"] == "1" for r in mine), 99, "55 % of 180")
         self.assertIn("gender_fallback=0", run.stdout)
 
+    def test_leatherworking_only_leather_classes_but_not_all(self):
+        # #518 owner: Leatherworking only for leather classes, but leather classes also take other pairs
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20))
+        new = run.rows()[154:]
+        lw = [r for r in new if r["profession_pair"] == gen.LEATHER_PAIR]
+        self.assertTrue(lw)
+        self.assertEqual({int(r["class"]) for r in lw} - gen.LEATHER_CLASSES, set())
+        leather_new = [r for r in new if int(r["class"]) in gen.LEATHER_CLASSES]
+        self.assertGreater(len({r["profession_pair"] for r in leather_new}), 3, "leather classes keep other pairs")
+        self.assertLess(len(lw), len(leather_new) * 0.7)
+
+    def test_cell_min_rare_pairs_in_every_role(self):
+        # #518 owner: rare pairs (dwarf shaman, undead paladin, druids) appear in every role
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--cell-min", "1"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        have = Counter((int(r["race"]), int(r["class"]), r["role"]) for r in rows)
+        for race, cls, role in [(3, 7, "HEALER"), (3, 7, "TANK"), (3, 7, "DPS"), (5, 2, "HEALER"), (5, 2, "TANK"),
+                                (5, 2, "DPS"), (4, 11, "HEALER"), (4, 11, "TANK"), (6, 11, "HEALER"), (6, 11, "TANK")]:
+            self.assertGreaterEqual(have[(race, cls, role)], 1, (race, cls, role))
+
+    def test_tank_class_weight_more_warriors(self):
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--tank-class-weight", "1=2"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        for races in (gen.ALLIANCE, gen.HORDE):
+            tanks = Counter(int(r["class"]) for r in rows if int(r["race"]) in races and r["role"] == "TANK")
+            self.assertGreater(tanks[1], max(n for c, n in tanks.items() if c != 1), tanks)
+
     def test_capped_fill(self):
         self.assertEqual(gen.capped_fill({1: 2}, 8, [1, 2, 11], {2: 1}), {1: 5, 2: 1, 11: 4})
         self.assertEqual(gen.capped_fill({2: 3}, 3, [1, 2], {2: 1}), {1: 3, 2: 3}, "nobody shrinks")
