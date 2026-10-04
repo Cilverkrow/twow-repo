@@ -453,6 +453,76 @@ Undead / Warhorse / Charger teach spells; the totem items still need the bag gra
 Side effect [V code]: the bot trainer scan reads every class trainer, so Alliance
 paladin bots would also find Redemption r1 there (harmless).
 
+### 3.7 Class-quest gear for off-faction classes (owner decision D6, 2026-10-04)
+
+Owner, verbatim: "auch zu spielen oder per post" ([#379 issuecomment-5979979939](https://github.com/Cilverkrow/twow-repo/issues/379#issuecomment-5979979939)).
+The gear rewards of the class quests become available to Horde paladins and Alliance
+shamans in **two ways**: playable (an equivalent quest for their own faction) or by
+mail from a level. Bots need neither (§4.3).
+
+**Affected rewards [V `item_template`, `quest_template`, cli484-db 04.10]:** all are
+bind on pickup (`bonding = 1`) and have no carry limit (`max_count = 0`), so a second
+copy is technically possible.
+
+| Chain (own faction today) | Quests | Level | Reward |
+|---|---|---|---|
+| Paladin "Tome of Valor / Test of Righteousness" (589) | 1650 → 1651 → 1652 → 1653 → 1654 → 1806 (6) | 20 (QL 21-25) | 9607 Bastion of Stormwind (shield, class 2); 6953 Verigan's Fist (2H mace, class 2) |
+| Paladin "Mightstone" (589) | 8415 → 8414 → 8416 → 8418 (4) | 50 (QL 50-52) | 20620 Holy Mightstone + choice 20504 Lightforged Blade / 20505 Chivalrous Signet / 20512 Sanctified Orb |
+| Shaman "Vortalus" (Turtle, 434) | 41938 → 41939 (2) | 20 (QL 26) | choice 58127 Hammer of Earthfury / 58128 Axe of Raging Winds / 58129 Claw of Tempered Fire |
+| Shaman "Da Voodoo" (434) | 8410 → 8412 → 8413 (3) | 50 (QL 52) | choice 20369 Azurite Fists / 20503 Enamored Water Spirit / 20556 Wildstaff |
+
+Chain quest items (7083, 6993, 18746) are only needed inside the chains, not granted.
+
+#### Way A: playable (equivalent quest chain for the own faction)
+
+- **What:** new quest entries (own IDs, own texts, not Turtle's) with the same objectives
+  and rewards, `RequiredRaces` = the off-faction races, quest givers = the new D11
+  trainers (Thunder Bluff / Undercity for paladins, Ironforge / Darnassus / Alah'Thalas
+  for shamans); objectives in neutral or own-faction places where the original sends
+  players into enemy cities.
+- **Tables:** `quest_template` (+ locales), `creature_questrelation` /
+  `creature_involvedrelation`, loot conditions for quest drops that are bound to the
+  original quest IDs (`conditions`, `*_loot_template`), possibly `quest_start_scripts`
+  / script hooks where the original uses a script (escorts, events), client quest cache
+  (texts come from the server).
+- **Effort:** L–XL (15 quests in 4 chains, texts and placement by OB-20, a test run per
+  chain in the test realm). A chain whose objectives depend on hostile-faction NPCs needs
+  a redesign, not a copy.
+- **Risks:** script and loot bindings to the original quest IDs (items do not drop,
+  chain stalls); balance of the new routes; text and lore work; maintenance of two
+  parallel chains. Double rewards are impossible per chain (normal quest state), but a
+  player who also gets the mail (Way B) must not get both → shared marker below.
+
+#### Way B: by mail from a level (recommended first)
+
+- **What:** at the level of the chain (20 / 50; Vortalus 20) a mail from the class
+  trainer NPC with the item(s); for choice rewards the player picks at the new D11
+  trainer (gossip "claim class reward"), which then sends exactly that item by mail.
+  Without a choice (9607, 6953, 20620) the mail goes out automatically at the level-up
+  or the next login.
+- **Marker (idempotent):** on sending, the original final quest (1806, 8418, 41939, 8413)
+  is set to rewarded for the character (`character_queststatus` rewarded). That is the
+  natural "already received" flag, survives relogs, prevents a second mail and also
+  locks Way A (shared marker). Race change resets nothing (D15 blocks it anyway).
+- **Lost mail:** returned or expired mail (30 days; system mail returned to an NPC is
+  deleted) or a deleted/sold item: the D11 trainer offers "replace lost class reward"
+  if the marker is set and the item is in none of bags, bank or mailbox; it re-sends one
+  copy. Against vendor-gold abuse the replacement copy is rate-limited (e.g. once per 7
+  days, logged with a `[ClassReward]` line) [D].
+- **Double receipt:** prevented by the marker (one automatic mail) plus the
+  bags/bank/mailbox check before a replacement; the check covers the mailbox so an
+  unread mail is not duplicated.
+- **Full mailbox / offline:** mail is sent on the next login if the mailbox is full
+  (deferred retry, as for totems D13).
+- **Effort:** M (core: level-up/login hook shared with B7, gossip option at the D11
+  trainers, mail send, marker, replacement check, contract; world SQL: gossip menu /
+  trainer flags). Fits into B7/B8.
+- **Risks:** lost mail is handled by the replacement path; gold from repeated
+  replacements (rate limit); BoP items in mail work (bound when taken out).
+
+**Recommendation:** Way B with B7/B8 (players phase), Way A only where OB-20 wants
+playable content later (train 11+). Bots: nothing.
+
 ## 4. Bot side
 
 ### 4.1 Factory and contracts
@@ -793,9 +863,10 @@ Sizes: S ≤ 0.5 day, M 1-2 days, L ≥ 3 days of agent work, excluding review w
 | B4 | `IsAlliance` + high elf (pre-existing bug) | **hotfix 8.21, OB-20** (not in this work) | S | none; no DB |
 | B5 | Table B racials for bots; `GetShamanSpellForRace` tauren 45500 → 45502; optional `skill_line_ability` race-mask migration (tauren script fix 47262 → 47341: hotfix 8.21, OB-20) | core | S-M | D7 |
 | B6 | roster: catalog rows, `--rare-pairs`, names extension, factory window, A5/A6 | repo, OB-40 / OB-00 | M | B1+B2 deployed, names approved, D12 |
-| B7 | player grant hook (level-up + login, deferred full-bag case), optional D18 creation gate | core | M | D3, D4, D5b, D13, D18 |
+| B7 | player grant hook (level-up + login, deferred full-bag case), class-quest gear by mail (§3.7 Way B: mail, claim gossip, marker, replacement), optional D18 creation gate | core | M | D3, D4, D5b, D6, D13, D18 |
 | B8 | off-faction trainers (D11 table): `creature_template`, `npc_trainer`(_template), `creature` spawns; **also closes the gap of 5/2 and 3/7 today** | core world SQL, OB-20 | M | D4, D11 (owner GPS check); first main train with approval, not "players last" |
 | B9 | client deltas + R-CBI-1 tool extension (numeric key) + probe build + pipeline Stage 3 edit | repo, OB-15 | M | train-9 client patch (#488/#512/#514) merged; B1 in the export DB; D1, D10 |
+| B11 | playable class-quest chains for off-faction classes (§3.7 Way A, 15 quests in 4 chains) | core world SQL, OB-20 | L–XL | D6, D11; train 11+ |
 | B10 | acceptance §6.4, release notes | OB-30 / OB-00 | S-M | all |
 
 **Bots first:** B1+B2+B3 (+B5) in train 10, then B6. B4 (`IsAlliance` + high elf) and
@@ -810,6 +881,23 @@ already contains the train-10 pairs.
 
 ## 8. Owner and OB decisions
 
+**Owner decisions of 2026-10-04** ([#379 issuecomment-5979979939](https://github.com/Cilverkrow/twow-repo/issues/379#issuecomment-5979979939), verbatim "auch zu spielen oder per post" (D6), "rest wie emfpohlen"):
+
+- **D6 decided differently from the recommendation:** class-quest gear for off-faction
+  classes is available **playable or by mail from a level** → §3.7 (both ways with
+  effort and risks; recommendation: mail first).
+- **All other decisions as recommended:** D1 (bots in train 10, players when grant,
+  trainers and client are ready), D2 4/10/20/30, D4, D5a/D5b (free riding as parity),
+  D7 (one rule for all Alliance shamans), D10, D11 (OB-20 table, **earlier**), D12 ((b),
+  floors may exceed 2.5 %), D13 (re-grant); D3, D14, D15, D18 as in the OB-20 review.
+- **D7 follow-up [open, OB-00]:** "one rule" leaves open whether that rule is *all three
+  racials* (continuation of the 2026-09-27 decision) or *none* for dwarf, night elf and
+  high elf shamans. Phase B assumes **all three** (no change for the dwarf) unless the
+  owner says otherwise.
+- Bugs 47262 and `IsAlliance`/high elf: hotfix 8.21 (OB-20).
+
+The table below keeps the options for reference.
+
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
 | D1 | Players get the pairs in train 10 or later | train 10 / later train | bots in train 10; players only when B7+B8+B9 are ready together |
@@ -818,7 +906,7 @@ already contains the train-10 pairs.
 | D4 | Paladin rewards | auto-grant 12/20/40/60 / spells at new Horde trainers (fee) | grant Redemption 12, Sense Undead 20; mounts per D5 |
 | D5a | Paladin class mounts for Horde paladins | (a) Warhorse 40 / Charger 60 as is; (b) tauren get normal kodos 18990 / 23249 instead; (c) new "sunwalker kodo" (Spell.dbc + creature, client work) | (a) for train 10; (c) not in train 10 |
 | D5b | **Free riding with the class mount** (33388 at 40, 33391 at 60; after #295 the trainer value is only 50 s / 5 g) | yes, parity with Alliance paladins and warlocks / no (needs a core change in `UpdateOldRidingSkillToNew` and a grant of 13819/23214 without the teach spell) | **yes (parity)**, OB-20 agrees (5979966747): small value after #295, warlocks already have it, no special rule for mount speed; owner confirms |
-| D6 | Gear rewards: 9607 Bastion of Stormwind, 6953 Verigan's Fist, 8418 Mightstone choices 20504/20505/20512, 41939 Vortalus choices, 8413 Da Voodoo choices; chain items 7083, 6993, 18746 (quest items, no grant needed) | none / some | none. **Deviation from the owner's wording** ("quest gegenstände und spells gibt es für horde paladine und schamanen allianz"): we grant the spells and the totems, not the gear rewards; owner to confirm |
+| D6 | Gear rewards: 9607 Bastion of Stormwind, 6953 Verigan's Fist, 8418 Mightstone choices 20504/20505/20512, 41939 Vortalus choices, 8413 Da Voodoo choices; chain items 7083, 6993, 18746 (quest items, no grant needed) | none / playable / by mail | **decided 04.10: playable or by mail** (§3.7); recommendation: mail first (Way B), playable chains later |
 | D7 | **Shaman racials.** Owner 2026-09-27, verbatim: "Zwergen-Schamane bekommt alle drei Horde-Rassenfähigkeiten der Schamanen: Hex (Troll, 45504), Feral Spirit (Ork, 45505/45514), Ethereal Form (Tauren, 45502) („weil er alleine für die Allianz steht“)". With NE and HE shamans the dwarf is no longer alone. | Q1: does the 09-27 decision still apply? Q2: if yes, NE/HE also all three, or none? Q3 **answered (OB-20 5979966747): the tauren racial is Ethereal Form 45502** (client SLA 6187 race 0x20, quest wording "spiritwalking"); `GetShamanSpellForRace` → 45500 is inconsistent and moves to 45502 in B5. Q4: script fix and Table B rows for Horde bots (troll 47263, tauren 47341) in any case; the script fix ships as **hotfix 8.21 (OB-20)** | owner for Q1/Q2; OB-20 recommends one rule for all Alliance shamans (all three or none) |
 | D8 | High elf shaman stats | A human offset / B orc copy / C A + 10/2 spirit delta | A (C if the owner wants the HE spirit flavour) |
 | D9 | Tauren paladin stats | human paladin + priest offset / dwarf paladin + warrior offset | priest offset |
