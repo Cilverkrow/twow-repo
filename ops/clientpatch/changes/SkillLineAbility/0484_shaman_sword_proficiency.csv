@@ -1,0 +1,8 @@
+op,key,field,value,note
+# #455/#484 (patch 8, main train 9): shamans with Ancestral Arms (#357 W) showed "Melee Attack 0"
+# with a sword. Turtle's own shaman talent weapons list the shaman in the class mask of their
+# proficiency spell (197 Two-Handed Axes 0x47, 199 Two-Handed Maces 0x443); Swords 201 (row 5)
+# and Two-Handed Swords 202 (row 7) did not. The server adds 0x40 in the train-9 migration
+# (skill_line_ability id 5/7 class_mask 399 -> 463, 7 -> 71); the client mirrors it.
+set,5,ClassMask,sql:skill_line_ability.class_mask,Swords 201 + shaman (0x18f -> 0x1cf)
+set,7,ClassMask,sql:skill_line_ability.class_mask,Two-Handed Swords 202 + shaman (0x7 -> 0x47)
