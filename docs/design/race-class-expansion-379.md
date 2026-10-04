@@ -18,7 +18,7 @@ In short:
   [core#179](https://github.com/Cilverkrow/twow-core/pull/179) on 2026-09-27.
   They lack the player client part and the class-quest rewards.
 - **Bots first**, then the client for players **collectively in one patch**
-  (called patch v9 here, after the owner's wording; OB-15 assigns the number, §5.4).
+  (**patch 9**, catalog version 9: patch 7 = sword hotfix "v6.1" live, train 9 = patch 8; OB-15, §5.4).
 - **Class-quest rewards** for factions without the class quests (Horde paladin,
   Alliance shaman): as a trainer spell, or granted into the bag from a level.
   Owner proposal for totems: earth 5, fire 10, water 20, air 30 (to be confirmed).
@@ -681,13 +681,15 @@ comes from the pool selection, not from the factory [V OB-40].
   `git grep` hits; bindings `server_loaded = false`).
 - **Consequence [V]:** a modified client can create 3/7 and 5/2 today, and after B1
   also 6/2, 4/7 and 10/7. Such a player character has no trainer and, until B7, no
-  grants. Whether to allow this or gate player creation of these pairs until v9 is
+  grants. Whether to allow this or gate player creation of these pairs until patch 9 is
   D18.
 - **Client:** `CharacterCreate.lua` builds the class buttons from
   `GetClassesForRace()` (:94, :243); `MAX_CLASSES_PER_RACE = 8` (:3), more gives "Too
   many classes!" (:152-154); the XML defines buttons 1..8 [V]. That
   `GetClassesForRace()` reads CharBaseInfo is community knowledge [A]; Turtle's own
-  pairs exist only as appended CharBaseInfo rows [V]. Confirm with a one-row probe.
+  pairs exist only as appended CharBaseInfo rows [V]. Confirm with a one-row probe **on the
+  test realm** with one test CharBaseInfo row (client patch installed by hand by OB-00),
+  not through the catalog (OB-15 review 5980116513).
 - **Bots** are created server-side; other clients only display race/class [A].
 
 ### 5.2 Deltas (Phase B, files not written)
@@ -700,6 +702,17 @@ comes from the pool selection, not from the factory [V OB-40].
 
 No SRCI, TalentTab, ChrRaces, ChrClasses or glue delta. Classes per race after
 #379: **dwarf 8 = the glue limit**, undead 7, high elf 7, tauren 6, night elf 6 [V].
+Any further dwarf class would give "Too many classes!" (OB-15: base classes per race
+human 7, orc 6, dwarf 7, night elf 5, undead 6, tauren 5, gnome 5, troll 7, goblin 5,
+high elf 6).
+
+**No block rule for CharBaseInfo** (OB-15 review 5980116513, evidence): in the client
+base, race 7 (gnome) is split in file order - `(7,1),(7,4),(7,8),(7,9)` ... `(8,…)` ...
+`(7,3)` - and Turtle's gnome hunter works; `(10,2)` (high elf paladin) is appended at
+the end too. Unlike Talent (R9, #455) and SkillRaceClassInfo (#503), CharBaseInfo is
+read in full, so the 5 inserts are **appended**; no `[record_order]` entry for
+CharBaseInfo. CharStartOutfit: base 136 rows, ids 1-136 sorted; new ids 137-146 are
+appended (the client looks up by race/class/sex, not by position).
 
 CharStartOutfit is cosmetic (creation preview); orphan base rows (9/2, 10/9, race
 11) show it enables nothing [V].
@@ -716,25 +729,30 @@ acceptance accordingly.
   a `playercreateinfo` row. Needs a tool change: `consistency.py:127-128` refuses
   composite keys, and the SQL loader parses every key as an integer
   (`sqlsrc.py:110`), so the source key must be numeric, e.g.
-  `SELECT race*100+class AS k FROM playercreateinfo`, plus a kind `pairs_in_sql` (or
-  key mapping) on the DBC side [V].
+  `SELECT race*100+class AS k FROM playercreateinfo`. **Decided with OB-15:** a small
+  rule kind `pairs_in_sql` (DBC columns `RaceID`, `ClassID` -> key `race*100+class`),
+  fail closed, plus a test with a synthetic pair without a server row [V tool, D rule].
 - **R-CBI-2 server pairs ⊆ client pairs**: informational; after #379 the difference
   is empty.
 - **R-CSO-1 outfit items exist**: **not possible without code change**. CSO pads
   empty slots with ItemID −1; `refs_in_sql` skips only falsy values
   (`consistency.py:139`, `if v and …`), so every −1 slot becomes a finding, and
   accepts per row key would hide real findings. `sql/sources.toml` has no
-  `item_template` source. Either a new source + "ignore values ≤ 0" in the tool, or
-  manual review in `review.csv` (recommended for train 10).
+  `item_template` source. **Implement it (OB-15):** in `refs_in_sql` skip values ≤ 0
+  (`if v and v > 0`; −1 = empty slot is the only negative sentinel in the bound reference
+  columns) and add a source `item_template` (`SELECT entry FROM item_template`). Before
+  that, check that no existing `refs_in_sql` rule relies on negative values (today Talent
+  ranks and enchant `EffectArg`, both ≥ 0). If the train-10 timeline is tight, manual
+  review in `review.csv` is the interim, with a follow-up issue.
 - Outfit food == `playercreateinfo_item` food: manual review in `review.csv`.
 
 ### 5.4 Coupling and patch numbering
 
-- **Numbering is not settled [V PR titles]:** #503 shipped as patch 7 "v6.1"; #488
-  (riding, train 9) says "Patch v7"; #512 (talents) and #514 (sword masks) say
-  "patch 8". All three are open. This design names the #379 release "v9" after the
-  owner; OB-15 assigns the final number. B9 depends on "the train-9 client patch(es)
-  with #488, #512, #514 merged", whatever their number.
+- **Numbering (OB-00 / OB-15, 2026-10-03, review 5980116513):** catalog version 7 = sword
+  hotfix "v6.1" (#503, live); train 9 (#488 riding + #512 talents + #514 sword masks) =
+  **patch 8** (#488 asked to change its "v7" texts, #488 issuecomment-5970337182);
+  **#379 (train 10) = patch 9 (catalog version 9)**. B9 depends on "patch 8 (train 9)
+  merged and live".
 - #379 adds the new directories CharBaseInfo/CharStartOutfit; only the optional SLA
   delta shares a directory with #514/#488 (disjoint keys). Prefix files `0379_`.
   `consistency/server.toml` edits are append-only (#512 edits it too; #512 does not
@@ -743,13 +761,19 @@ acceptance accordingly.
   (`build.py:315-322`); `main` already has Talent and SpellItemEnchantment deltas,
   #488 adds SkillRaceClassInfo. A #379 build therefore emits Talent,
   SpellItemEnchantment and SkillRaceClassInfo (plus whatever train 9/10 add). "No
-  server DBC deploy for #379" holds only if these are **byte-identical** to the
-  deployed set (OB-30 compares as in #503). The build needs a pristine
+  server DBC deploy for #379" holds only if these are **content-equal (R3)** to the
+  deployed set: same IDs, all fields equal; the order may differ, because
+  `[record_order]` puts new rows behind their block and the server loads by ID (e.g.
+  build Talent `86c0706f` vs mounted `7072ee1e`, SRCI `17b1daa2` vs `4e877895`). Checked
+  like `builds/ob15-clientpatch-v5/verify_v5.py` and `v7/verify_v7.py` (OB-15 review
+  5980116513). The build needs a pristine
   `--server-dbc` directory, not the live `data/dbc` after the coupled train-9 deploy.
 - The DBC part of #379 (CharBaseInfo, CharStartOutfit) is client-only; the SLA
   variant of D7 is not (§5.2).
 - **Never ship CharBaseInfo rows before the server rows are live**, otherwise the
-  button gives a create error (no crash) [V `Player.cpp:918-922`].
+  button gives a create error (no crash) [V `Player.cpp:918-922`]. In runbook
+  terms: patch 9 and the `playercreateinfo` migration in the **same** main-train-10
+  window, the catalog switch only after the smoke (OB-15).
 
 ## 6. Risks and test plan
 
@@ -821,7 +845,7 @@ acceptance accordingly.
 
 1. Build twice, byte-identical; `review.csv` exactly 5 CharBaseInfo + 10
    CharStartOutfit inserts (+ optional 4 SLA rows); `undeclared.csv` empty; R-CBI-1
-   PASS; `server-dbc/` byte-identical to the deployed set.
+   PASS; `server-dbc/` content-equal (R3) to the deployed set.
 2. For each of 3/7, 5/2, 6/2, 4/7, 10/7: button visible, preview outfit (tauren
    paladin without boots), create, log in, start zone.
 3. Spellbook: three class tabs and Shield for both classes; **paladin** Mail from
@@ -848,7 +872,7 @@ Sizes: S ≤ 0.5 day, M 1-2 days, L ≥ 3 days of agent work, excluding review w
 | B6 | roster: catalog rows, `--rare-pairs`, names extension, factory window, A5/A6 | repo, OB-40 / OB-00 | M | B1+B2 deployed, names approved, D12 |
 | B7 | player grant hook (level-up + login, deferred full-bag case), class-quest gear by mail (§3.7: once per character, quest marker, no re-delivery), optional D18 creation gate | core | M | D3, D4, D5b, D6, D13, D18 |
 | B8 | off-faction trainers (D11 table): `creature_template`, `npc_trainer`(_template), `creature` spawns; **also closes the gap of 5/2 and 3/7 today** | core world SQL, OB-20 | M | D4, D11 (owner GPS check); first main train with approval, not "players last" |
-| B9 | client deltas + R-CBI-1 tool extension (numeric key) + probe build + pipeline Stage 3 edit | repo, OB-15 | M | train-9 client patch (#488/#512/#514) merged; B1 in the export DB; D1, D10 |
+| B9 | patch 9: client deltas + R-CBI-1 (`pairs_in_sql`) and R-CSO-1 tool changes + probe build + pipeline Stage 3 edit | repo, OB-15 | M | patch 8 (train 9) merged and live; B1 in the export DB; D1, D10 |
 | B10 | acceptance §6.4, release notes | OB-30 / OB-00 | S-M | all |
 
 **Bots first:** B1+B2+B3 (+B5) in train 10, then B6. B4 (`IsAlliance` + high elf) and
