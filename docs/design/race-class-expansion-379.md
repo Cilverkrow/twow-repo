@@ -492,12 +492,11 @@ mailed.
 - **No re-delivery:** a deleted, sold, returned or expired mail (30 days) or item is not
   replaced (owner). The marker stays set.
 - **Choice rewards** (Mightstone, Vortalus, Da Voodoo): the mail carries **one** item.
-  Recommendation: picked by the talent tree with the most points at the mail level
+  **Decided (D6b, owner "genau so", 04.10):** picked by the talent tree with the most points at the mail level
   (paladin: Holy → 20512 Orb, Protection → 20505 Signet, Retribution → 20504 Blade;
   shaman L50: Elemental → 20503, Enhancement → 20369 Fists, Restoration → 20556 Wildstaff;
   shaman L20: Elemental → 58129, Enhancement → 58128, Restoration → 58127); without talent
-  points the first option. Alternative: all three items (more than the quest gives).
-  **Small open point for OB-00/owner (D6b)**; Phase B assumes "one by spec".
+  points the first option.
 - **Full mailbox / offline:** mail is created on the next login when it could not be
   sent (deferred, same as the totem retry, D13).
 - **Effort:** S–M within B7 (hook, mail creation, marker, contract; no world data except
@@ -869,8 +868,8 @@ already contains the train-10 pairs.
 - **D6 decided differently from the recommendation:** class-quest gear for off-faction
   classes comes **by mail only**, once per character from the matching level, with a
   marker against a second mail; no replacement quest ("zu viel aufwand"), no protection
-  or re-delivery if a bot sells it → §3.7. Open detail D6b: choice rewards (one by spec
-  recommended).
+  or re-delivery if a bot sells it → §3.7. **D6b decided ("genau so"):** for choice rewards one item matching the
+  talent spec.
 - **All other decisions as recommended:** D1 (bots in train 10, players when grant,
   trainers and client are ready), D2 4/10/20/30, D4, D5a/D5b (free riding as parity),
   D7 (one rule for all Alliance shamans), D10, D11 (OB-20 table, **earlier**), D12 ((b),
@@ -891,7 +890,7 @@ The table below keeps the options for reference.
 | D4 | Paladin rewards | auto-grant 12/20/40/60 / spells at new Horde trainers (fee) | grant Redemption 12, Sense Undead 20; mounts per D5 |
 | D5a | Paladin class mounts for Horde paladins | (a) Warhorse 40 / Charger 60 as is; (b) tauren get normal kodos 18990 / 23249 instead; (c) new "sunwalker kodo" (Spell.dbc + creature, client work) | (a) for train 10; (c) not in train 10 |
 | D5b | **Free riding with the class mount** (33388 at 40, 33391 at 60; after #295 the trainer value is only 50 s / 5 g) | yes, parity with Alliance paladins and warlocks / no (needs a core change in `UpdateOldRidingSkillToNew` and a grant of 13819/23214 without the teach spell) | **yes (parity)**, OB-20 agrees (5979966747): small value after #295, warlocks already have it, no special rule for mount speed; owner confirms |
-| D6 | Gear rewards: 9607 Bastion of Stormwind, 6953 Verigan's Fist, 8418 Mightstone choices 20504/20505/20512, 41939 Vortalus choices, 8413 Da Voodoo choices; chain items 7083, 6993, 18746 (quest items, no grant needed) | none / playable / by mail | **decided 04.10: by mail only**, once per character with a marker, no replacement quest, no re-delivery (§3.7); D6b open: choice rewards one by spec (recommended) or all three |
+| D6 | Gear rewards: 9607 Bastion of Stormwind, 6953 Verigan's Fist, 8418 Mightstone choices 20504/20505/20512, 41939 Vortalus choices, 8413 Da Voodoo choices; chain items 7083, 6993, 18746 (quest items, no grant needed) | none / playable / by mail | **decided 04.10: by mail only**, once per character with a marker, no replacement quest, no re-delivery (§3.7); D6b decided: choice rewards one item by talent spec |
 | D7 | **Shaman racials.** Owner 2026-09-27, verbatim: "Zwergen-Schamane bekommt alle drei Horde-Rassenfähigkeiten der Schamanen: Hex (Troll, 45504), Feral Spirit (Ork, 45505/45514), Ethereal Form (Tauren, 45502) („weil er alleine für die Allianz steht“)". With NE and HE shamans the dwarf is no longer alone. | **Decided 04.10: all three for every Alliance shaman ("yes wie beim zwerg").** Q3 **answered (OB-20 5979966747): the tauren racial is Ethereal Form 45502** (client SLA 6187 race 0x20, quest wording "spiritwalking"); `GetShamanSpellForRace` → 45500 is inconsistent and moves to 45502 in B5. Q4: script fix and Table B rows for Horde bots (troll 47263, tauren 47341) in any case; the script fix ships as **hotfix 8.21 (OB-20)** | decided: all three (dwarf, night elf, high elf) |
 | D8 | High elf shaman stats | A human offset / B orc copy / C A + 10/2 spirit delta | A (C if the owner wants the HE spirit flavour) |
 | D9 | Tauren paladin stats | human paladin + priest offset / dwarf paladin + warrior offset | priest offset |
