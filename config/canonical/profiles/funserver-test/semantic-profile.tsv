@@ -5,9 +5,9 @@ mangosd	Rate.Talent	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-appro
 mangosd	Rate.Drop.Item.Poor	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-loot-rate
 mangosd	Rate.Drop.Item.Normal	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-loot-rate
 mangosd	Rate.Drop.Item.Uncommon	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-loot-rate
-mangosd	Rate.Drop.Item.Rare	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-loot-rate
-mangosd	Rate.Drop.Item.Epic	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-loot-rate
-mangosd	Rate.Drop.Item.Legendary	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-loot-rate
+mangosd	Rate.Drop.Item.Rare	INTENTIONAL_CHANGE	mangosd.overlay.conf	owner-20261004-drop-rates-rare2-epic5-legendary10
+mangosd	Rate.Drop.Item.Epic	INTENTIONAL_CHANGE	mangosd.overlay.conf	owner-20261004-drop-rates-rare2-epic5-legendary10
+mangosd	Rate.Drop.Item.Legendary	INTENTIONAL_CHANGE	mangosd.overlay.conf	owner-20261004-drop-rates-rare2-epic5-legendary10
 mangosd	Rate.Drop.Item.Artifact	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-loot-rate
 mangosd	Rate.Drop.Item.Referenced	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-referenced-tables-only
 mangosd	Rate.Drop.Money	INTENTIONAL_CHANGE	mangosd.overlay.conf	funserver-test-approved-money-rate
