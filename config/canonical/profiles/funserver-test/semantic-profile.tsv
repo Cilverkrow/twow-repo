@@ -118,6 +118,7 @@ mangosd	Funserver.Loot.Units.Dungeon.Range	INTENTIONAL_CHANGE	mangosd.overlay.co
 mangosd	Funserver.Loot.Units.Raid.Range	INTENTIONAL_CHANGE	mangosd.overlay.conf	train7-3-owner-raid-loot-ranges
 mangosd	Funserver.Loot.Rules482.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-owner-482-loot-rules-v5
 mangosd	Loot.MaxItems	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-owner-482-loot-overflow-32
+mangosd	Funserver.Loot.Units.Weight.Dungeon.Epic	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-owner-482-dungeon-epic-weight-100
 mangosd	DynamicRespawn.PlayersThreshold	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
 mangosd	DynamicRespawn.PercentPerPlayer	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
 mangosd	DynamicRespawn.MaxReductionRate	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
