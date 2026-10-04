@@ -204,6 +204,13 @@ each role class by class (rarest first) over the guilds, then by 5-level band. `
 of the previous stage unchanged, so a new stage only fills the new guild. This is planning input for
 twow-core#281 (guild foundation).
 
+`--rare-spread` (core#309 `RareComboSpread`): every race x class pair at most ceil(count / guilds) per guild,
+over all roles; within a class the rarer pairs pick their guild first, and the pair count per guild is the
+second sort key after the class count. With `--keep` from stage 360 on, the old guilds are full, so a stage's
+new members fill the new guild; there the cap is a soft target (up to +1 in the dry run). The output
+`guilds.tsv` (`ordinal guid faction guild role class race`) is the core#309 `AiPlayerbot.RosterGuild.PlanFile`.
+Tests: `python3 -m unittest test_guild_plan`.
+
 ## Reproduction and tests
 
 ```sh
