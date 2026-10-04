@@ -180,6 +180,48 @@ class GeneratorTest(unittest.TestCase):
         self.assertFalse({o for o, *_ in moves} & set(changed), "a respec is no L1 reset")
         self.assertTrue({o for o, *_ in moves} <= set(a6), "A6 applies the respec")
 
+    def test_healer_min_every_healer_class(self):
+        # #518: one healer of every healer class per guild -> --healer-min = guilds per faction
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--healer-min", "4"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        heal_cls = {int(c) for c, _, role in gen.read_tsv(SPECS) if role == "HEALER"}
+        for races in (gen.ALLIANCE, gen.HORDE):
+            classes = {c for c in heal_cls if any((r, c) in catalog() for r in races)}
+            have = Counter(int(r["class"]) for r in rows if int(r["race"]) in races and r["role"] == "HEALER")
+            for c in classes:
+                self.assertGreaterEqual(have[c], 4, f"healer class {c}")
+
+    def test_healer_min_too_large_stops(self):
+        with self.assertRaises(SystemExit):
+            Run(self.tmp, target=360, per_faction="20,40,120", cap=7, extra=["--healer-min", "20"])
+
+    def test_class_role_max_limits_horde_paladins(self):
+        # #518 owner: not too many undead paladins (the only Horde paladins)
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--class-role-max", "H:2:TANK:2,H:2:DPS:0"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        base = Counter((r["class"], r["role"]) for r in base_rows() if int(r["race"]) in gen.HORDE)
+        horde = Counter((r["class"], r["role"]) for r in rows if int(r["race"]) in gen.HORDE)
+        self.assertLessEqual(horde[("2", "TANK")], max(2, base[("2", "TANK")]))
+        self.assertEqual(horde[("2", "DPS")], base[("2", "DPS")], "no new Horde paladin DPS")
+        self.assertEqual(sum(n for (c, role), n in horde.items() if role == "TANK"), 20, "other classes take over")
+
+    def test_female_share(self):
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=40),
+                  extra=["--female-share", "0.55"])
+        rows = run.rows()
+        for races in (gen.ALLIANCE, gen.HORDE):
+            mine = [r for r in rows if int(r["race"]) in races]
+            self.assertGreaterEqual(sum(r["gender"] == "1" for r in mine), 99, "55 % of 180")
+        self.assertIn("gender_fallback=0", run.stdout)
+
+    def test_capped_fill(self):
+        self.assertEqual(gen.capped_fill({1: 2}, 8, [1, 2, 11], {2: 1}), {1: 5, 2: 1, 11: 4})
+        self.assertEqual(gen.capped_fill({2: 3}, 3, [1, 2], {2: 1}), {1: 3, 2: 3}, "nobody shrinks")
+
     def test_healers_follow_healer_classes(self):
         run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20))
         rows = run.rows()

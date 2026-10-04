@@ -22,7 +22,8 @@ the train 7 pin.
 | `select_roster_v5.py` | deterministic generator (stdlib only), any size, EXPAND and REPLACE |
 | `race-class-catalog.tsv` | the 61 race × class pairs after train 7, with source (`live`, `new-178`, `new-165`) |
 | `spec-roles.tsv` | talent path → role; every path is in `../respec/premade-spec-index.tsv` |
-| `test_select_roster_v5.py` | 16 tests on the real 154 base with synthetic pools |
+| `test_select_roster_v5.py` | 22 tests on the real 154 base with synthetic pools |
+| `guild_plan.py` | guild split of a plan (#518): roles per guild, class by class, level bands, stable over stages |
 | `../expand-272/make_replace_request.py` | canonical REPLACE request (+ `test_make_replace_request.py`) |
 | `../reset-l1`, `../respec` | `--ordinals` now accepts lists such as `89,109,140,149,155-180` |
 
@@ -174,13 +175,33 @@ stage 1 or 2.
   reset-l1 only runs with `<CHANGED_ORDINALS>`. Final check: 4 tanks per class and faction;
   the respecced bots keep level, items and profession, and get specNo = new path.
 
+## Stages up to 810 and guilds (#518, owner 04.10.2026)
+
+Roles per guild of 45: **7 tanks / 10 healers / 28 DPS** (owner direction, #366). Each stage adds one
+guild per faction (+90 bots): 270, 360, 450, …, 810 (810 instead of 800, so guilds stay complete).
+
+| Option | Effect |
+|---|---|
+| `--healer-min N` | at least N healers of every healer class of the faction (N = guilds per faction), so every guild can get each healer class (buffs, dispels) |
+| `--class-role-max FA:CLS:ROLE:N,…` | hard limit per faction, e.g. `H:2:TANK:<guilds>,H:2:DPS:0` (Horde paladins are undead only); capped tank classes hand their share to the others |
+| `--female-share 0.55` | owner: more women than men; new slots are women until the faction reaches the share |
+
+Per stage with g guilds per faction:
+`--target 90g --per-faction 7g,10g,28g --cap max(5,2g) --healer-min g --female-share 0.55 --class-role-max H:2:TANK:g,H:2:DPS:0`,
+with `--base` = the plan of the previous stage.
+
+`guild_plan.py plan.csv --per-guild 7,10,28 [--levels guid-level.tsv] [--keep previous-guilds.tsv]` deals
+each role class by class (rarest first) over the guilds, then by 5-level band. `--keep` leaves the guilds
+of the previous stage unchanged, so a new stage only fills the new guild. This is planning input for
+twow-core#281 (guild foundation).
+
 ## Reproduction and tests
 
 ```sh
 python3 select_roster_v5.py --base ../plan-154/v4-154-roster-plan.csv --catalog race-class-catalog.tsv \
     --specs spec-roles.tsv --target 180 --per-faction 10,20,60 --cap 4 --replace-excess \
     --demand demand.tsv --slots-out slots.tsv --summary-out summary.md
-python3 -m unittest test_select_roster_v5.py          # 16 tests
+python3 -m unittest test_select_roster_v5.py          # 22 tests
 python3 -m unittest ../expand-272/test_make_replace_request.py ../expand-272/test_make_expand_request.py
 bash ../reset-l1/test-reset-l1-scope.sh --container <disposable> --csv ../plan-154/v4-154-roster-plan.csv --ordinals 101-130
 ```
