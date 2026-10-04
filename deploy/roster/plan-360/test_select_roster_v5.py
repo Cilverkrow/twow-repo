@@ -249,6 +249,32 @@ class GeneratorTest(unittest.TestCase):
             tanks = Counter(int(r["class"]) for r in rows if int(r["race"]) in races and r["role"] == "TANK")
             self.assertGreater(tanks[1], max(n for c, n in tanks.items() if c != 1), tanks)
 
+    def test_rare_pairs_capped_but_in_every_role(self):
+        # #518 owner: rare pairs stay rare (cap per faction), still healer, tank and DPS
+        run = Run(self.tmp, target=360, per_faction="28,40,112", cap=8, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--cell-min", "1", "--healer-min", "4", "--rare-pairs", "3:7,5:2", "--rare-share", "0.025"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (28, 40, 112), 8)
+        base = Counter((r["race"], r["class"]) for r in base_rows())
+        for race, cls in (("3", "7"), ("5", "2")):
+            mine = [r for r in rows if (r["race"], r["class"]) == (race, cls)]
+            self.assertLessEqual(len(mine), max(base[(race, cls)], 3 + 3, 5), (race, cls))
+            self.assertEqual({r["role"] for r in mine}, {"TANK", "HEALER", "DPS"}, (race, cls))
+        horde_pal_heal = sum(1 for r in rows if r["class"] == "2" and r["role"] == "HEALER" and int(r["race"]) in gen.HORDE)
+        self.assertGreaterEqual(horde_pal_heal, 4, "the rare-only Horde paladin still meets --healer-min")
+
+    def test_profession_shares(self):
+        shares = ("Herbalism/Alchemy=22,Tailoring/Enchanting=18,Skinning/Leatherworking=14,Mining/Blacksmithing=16,"
+                  "Mining/Engineering=12,Mining/Jewelcrafting=10,Herbalism/Mining=8")
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--profession-shares", shares])
+        pairs = Counter(r["profession_pair"] for r in run.rows())
+        self.assertGreater(pairs["Herbalism/Alchemy"], pairs["Mining/Jewelcrafting"])
+        tail = [r for r in run.rows()[154:] if r["profession_pair"] == "Tailoring/Enchanting"]
+        self.assertGreater(sum(r["class"] in ("5", "8", "9") for r in tail), len(tail) * 0.6, "mainly cloth wearers")
+        with self.assertRaises(SystemExit):
+            Run(self.tmp, target=360, per_faction="20,40,120", cap=7, extra=["--profession-shares", "Fishing=10"])
+
     def test_capped_fill(self):
         self.assertEqual(gen.capped_fill({1: 2}, 8, [1, 2, 11], {2: 1}), {1: 5, 2: 1, 11: 4})
         self.assertEqual(gen.capped_fill({2: 3}, 3, [1, 2], {2: 1}), {1: 3, 2: 3}, "nobody shrinks")
