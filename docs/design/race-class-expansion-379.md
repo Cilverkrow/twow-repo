@@ -875,10 +875,10 @@ already contains the train-10 pairs.
   trainers and client are ready), D2 4/10/20/30, D4, D5a/D5b (free riding as parity),
   D7 (one rule for all Alliance shamans), D10, D11 (OB-20 table, **earlier**), D12 ((b),
   floors may exceed 2.5 %), D13 (re-grant); D3, D14, D15, D18 as in the OB-20 review.
-- **D7 follow-up [open, OB-00]:** "one rule" leaves open whether that rule is *all three
-  racials* (continuation of the 2026-09-27 decision) or *none* for dwarf, night elf and
-  high elf shamans. Phase B assumes **all three** (no change for the dwarf) unless the
-  owner says otherwise.
+- **D7 decided (owner, verbatim "yes wie beim zwerg", via OB-00 04.10):** every Alliance
+  shaman (dwarf, night elf, high elf) gets the three Horde shaman racials Hex 45504,
+  Feral Spirit 45505/45514 and Ethereal Form 45502, like the dwarf shaman since core#179
+  (B5 extends `IsDwarfShamanHordeRacial` to races 4 and 10).
 - Bugs 47262 and `IsAlliance`/high elf: hotfix 8.21 (OB-20).
 
 The table below keeps the options for reference.
@@ -892,7 +892,7 @@ The table below keeps the options for reference.
 | D5a | Paladin class mounts for Horde paladins | (a) Warhorse 40 / Charger 60 as is; (b) tauren get normal kodos 18990 / 23249 instead; (c) new "sunwalker kodo" (Spell.dbc + creature, client work) | (a) for train 10; (c) not in train 10 |
 | D5b | **Free riding with the class mount** (33388 at 40, 33391 at 60; after #295 the trainer value is only 50 s / 5 g) | yes, parity with Alliance paladins and warlocks / no (needs a core change in `UpdateOldRidingSkillToNew` and a grant of 13819/23214 without the teach spell) | **yes (parity)**, OB-20 agrees (5979966747): small value after #295, warlocks already have it, no special rule for mount speed; owner confirms |
 | D6 | Gear rewards: 9607 Bastion of Stormwind, 6953 Verigan's Fist, 8418 Mightstone choices 20504/20505/20512, 41939 Vortalus choices, 8413 Da Voodoo choices; chain items 7083, 6993, 18746 (quest items, no grant needed) | none / playable / by mail | **decided 04.10: by mail only**, once per character with a marker, no replacement quest, no re-delivery (§3.7); D6b open: choice rewards one by spec (recommended) or all three |
-| D7 | **Shaman racials.** Owner 2026-09-27, verbatim: "Zwergen-Schamane bekommt alle drei Horde-Rassenfähigkeiten der Schamanen: Hex (Troll, 45504), Feral Spirit (Ork, 45505/45514), Ethereal Form (Tauren, 45502) („weil er alleine für die Allianz steht“)". With NE and HE shamans the dwarf is no longer alone. | Q1: does the 09-27 decision still apply? Q2: if yes, NE/HE also all three, or none? Q3 **answered (OB-20 5979966747): the tauren racial is Ethereal Form 45502** (client SLA 6187 race 0x20, quest wording "spiritwalking"); `GetShamanSpellForRace` → 45500 is inconsistent and moves to 45502 in B5. Q4: script fix and Table B rows for Horde bots (troll 47263, tauren 47341) in any case; the script fix ships as **hotfix 8.21 (OB-20)** | owner for Q1/Q2; OB-20 recommends one rule for all Alliance shamans (all three or none) |
+| D7 | **Shaman racials.** Owner 2026-09-27, verbatim: "Zwergen-Schamane bekommt alle drei Horde-Rassenfähigkeiten der Schamanen: Hex (Troll, 45504), Feral Spirit (Ork, 45505/45514), Ethereal Form (Tauren, 45502) („weil er alleine für die Allianz steht“)". With NE and HE shamans the dwarf is no longer alone. | **Decided 04.10: all three for every Alliance shaman ("yes wie beim zwerg").** Q3 **answered (OB-20 5979966747): the tauren racial is Ethereal Form 45502** (client SLA 6187 race 0x20, quest wording "spiritwalking"); `GetShamanSpellForRace` → 45500 is inconsistent and moves to 45502 in B5. Q4: script fix and Table B rows for Horde bots (troll 47263, tauren 47341) in any case; the script fix ships as **hotfix 8.21 (OB-20)** | decided: all three (dwarf, night elf, high elf) |
 | D8 | High elf shaman stats | A human offset / B orc copy / C A + 10/2 spirit delta | A (C if the owner wants the HE spirit flavour) |
 | D9 | Tauren paladin stats | human paladin + priest offset / dwarf paladin + warrior offset | priest offset |
 | D10 | Start outfits and food | class kit of the template; tauren 4540 or 4604; NE 4536 or 117; HE Primitive or Initiate set; tauren paladin preview without boots | class kit; 4540; 4536; Primitive; no boots in the preview |
@@ -931,8 +931,14 @@ confirms them in the client (GPS) before the migration leaves draft.
 1. `GetClassesForRace()` ← CharBaseInfo [A]: one-row probe (OB-15).
 2. Spellbook / trainer display of a spell whose client SLA row excludes the race
    (dwarf shaman racials) [A]: probe.
-3. Live values of `AutoLearnTrainerSpells`, `AutoLearnQuestSpells`,
-   `ClassGrant.Enabled` equal the canonical config [A].
+3. **Partly answered:** `AiPlayerbot.ClassGrant.Enabled = 1` is **live checked 04.10.**
+   (OB-30: v31 `aiplayerbot.conf` l.772, v33 render identical; grant lines in the log,
+   e.g. bot 92, quests 6103/6102). Totem grants seen in the gameplay logs: 2 lines in 35
+   log folders, bot 4531 on 2026-09-28 (`source=totem`, item 5175 at L4, 5176 at L10).
+   The live roster v6/180 has **no dwarf shaman bots** (#518), so "do 3/7 bots carry their
+   totems" cannot be shown live yet; an item count for race 3 / class 7 (5175-5178) can
+   come from OB-40 once 3/7 bots exist. `AutoLearnTrainerSpells`,
+   `AutoLearnQuestSpells` live values [A].
 4. **Answered:** tauren have no working path to Ethereal Form; the quest script
    teaches the non-existent 47262 (§3.4; fix in hotfix 8.21, OB-20). Open: what live tauren shamans actually have
    (read-only `character_spell` count by OB-40) [A].
