@@ -121,6 +121,7 @@ mangosd	Loot.MaxItems	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-owner-482-l
 mangosd	Funserver.Loot.Units.Weight.Dungeon.Epic	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-owner-482-dungeon-epic-weight-100
 mangosd	Funserver.Loot.Rules482.DungeonEpicMaxChance	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-owner-482-dungeon-epic-cap-35
 mangosd	Funserver.Loot.Rules482.LegendaryPreset	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-owner-482-legendary-preset-a
+mangosd	Funserver.Loot.Rules482.LegendaryChance	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-482-other-legendaries-keep-today
 mangosd	Funserver.Loot.Units.BoePool.EpicShare	INTENTIONAL_CHANGE	mangosd.overlay.conf	train9-owner-482-boe-epics-like-blues
 mangosd	DynamicRespawn.PlayersThreshold	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
 mangosd	DynamicRespawn.PercentPerPlayer	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-338-owner-dynamic-respawn-train8
