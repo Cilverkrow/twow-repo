@@ -503,6 +503,9 @@ and the factory creates nothing [V]. Without F3 and with F1, `Player::Create` fa
 - Add `6 2 new-379`, `4 7 new-379`, `10 7 new-379` to
   `deploy/roster/plan-360/race-class-catalog.tsv` (61 rows, none of the three) and
   `new-379` to the sources; `NEW_PAIRS` in `test_select_roster_v5.py:24` [V].
+- **`--rare-pairs` must be extended explicitly** to `3:7,3:9,5:2,6:2,4:7,10:7`. The
+  list is a parameter, not derived from the catalog, so new pairs are **not** capped
+  automatically (OB-40 review of this PR, comment 5979961572) [V].
 - **Cap rule as coded** (`select_roster_v5.py:266-289`) [V]: per rare pair
   `limit = max(ceil(rare_share × half), floor, pair_count)`, where the floor covers
   every role (`cell_min × roles`) and, for a healer class only rare pairs provide,
@@ -512,26 +515,52 @@ and the factory creates nothing [V]. Without F3 and with F1, `Player::Create` fa
   shaman comes from a capped pair. The floors (healer minimum, `--healer-min-new 1`,
   a paladin and a shaman tank per guild, #518) then set the class size, not the
   2.5 %. OB-40's simulation with the train-10 pairs (`finalsim\`, #518 comment
-  5979151114) gives 2.7-3.5 % per rare pair, above the cap. At class level that is
-  roughly **Horde paladins 5-7 %** (2 pairs) and **Alliance shamans 8-10 %**
-  (3 pairs) of their faction [derived from the 2.7-3.5 % band].
+  5979151114) gives 2.7-3.5 % per rare pair, above the cap.
+- **Per-pair split with the train-10 pairs and cap** (OB-40 dry run
+  `evidence\ws-60\ob40-518-roster-800\finalsim\`: `--rare-share 0.025`,
+  `--cell-min 1`, `--healer-min g`, `--healer-min-new 1`, warriors ×2; OB-40 review
+  comment 5979961572):
+
+  | Stage | Undead paladins (share of undead) | Tauren paladins | Horde paladins (share of Horde) | Alliance shamans (share of Alliance) |
+  |---|---|---|---|---|
+  | 270 | 4 / 27 (15 %) | 4 | 8 (5.9 %) | 12 (8.9 %) |
+  | 810 | 14 / 81 (17 %) | 11 | 25 (6.2 %) | 34 (8.4 %) |
+
+  Per role at 810: undead paladin T 9 / H 2 / D 3, tauren paladin T 2 / H 7 / D 2.
+  Paladin healers come mainly from the tauren, paladin tanks mainly from the undead
+  (tank class weighting + healer floor).
 - **Undead paladins (owner question "zu viele untote Paladine?", #518):** uncapped,
   the share among undead is 30 % today and 22 % with the new pairs at 270, 31 % at
   810 (comment 5978827314). With the cap on 3:7, 3:9, 5:2 only: 19 % at 270, 14 % at
-  810 (comment 5979151114). With the train-10 pairs and cap the tauren paladin takes
-  part of the Horde paladin floor; the per-pair split was not published [A].
+  810 (comment 5979151114). With the train-10 pairs and cap: **15 % at 270, 17 % at
+  810** (table above).
+- **Factory volume** for the three new pairs (from `demand-p1` per stage, incl. the
+  gender margin): 270: 36, 360: 18, 450: 18, 540: 18, 630: 18, 720: 20, 810: 20.
+  Recommendation (OB-40): one factory run per main train, covering the stages up to
+  the next main train, instead of a maintenance factory start per stage.
+- **Professions:** no generator change. Leatherworking is allowed for 4/7 and 10/7
+  (shaman = leather class); 6/2 takes the paladin preferences (Herbalism/Alchemy,
+  Mining/Jewelcrafting).
 - Owner wording "durch horde stärkere vertretene kombinationen den vorrang zu
   gewähren" is ambiguous → D12.
 - **Names** come from OB-40 as an extension of the #518 list before the factory run
-  (#518 comment 5979464139).
+  (#518 comment 5979464139), under the #518 rule (unique against all first and last
+  names in `deploy/roster/names-518/rp-names-810.tsv`, English "of <place>"). The 90
+  new bots of stage 270 already have planned names per ordinal / race / class /
+  gender; with the train-10 pairs the race/class of some ordinals changes, so the
+  extension replaces exactly those rows. The owner sees the list first.
 - `guild_plan.py` (`HORDE={"2","5","6","8","9"}`) is correct for race 10 [V].
 
 ### 4.5 Guild fill (CLI-485, core#281 open draft)
 
 Faction via `Player::TeamForRace`, correct for race 10; the guild note uses class,
-spec tab and tank flag - no pair logic, no change [V diff]. If the proposed
-`RareComboSpread` switch (#518 comment 5978751604) is built, its rare-pair set must
-be a config list that includes 6/2, 4/7, 10/7 [A, not in code yet].
+spec tab and tank flag - no pair logic, no change [V diff]. **RareComboSpread needs
+no pair list:** `guild_plan.py --rare-spread` (repo PR #525) works over **all**
+race/class pairs with at most ceil(count / guilds) per guild and is harmless for
+common pairs, matching the core#309 description ("every race-class combination at
+most ceil(count / guilds) per guild"). The new pairs are therefore covered without a
+config change, as long as core#309 stays as described (OB-40 review comment
+5979961572).
 
 ### 4.6 Factory run
 
@@ -545,16 +574,43 @@ AiPlayerbot.RandomBotAutologin = 0
 AiPlayerbot.RandomBotAutoCreate = 1
 AiPlayerbot.DeleteRandomBotAccounts = 0
 AiPlayerbot.RandomBotRandomPassword = 1
-AiPlayerbot.RandomBotAccountCount = <current + ceil(sum FACTORY / 9)>
+AiPlayerbot.RandomBotAccountCount = <base + ceil(sum FACTORY / 9)>   # base: see below
 AiPlayerbot.ClassRace.UseFixedClassRaceCounts = 1
 AiPlayerbot.ClassRaceProb.2.6 / 7.4 / 7.10 = <FACTORY>   # every other ClassRaceProb key removed
 ```
 
 The factory fills only accounts with fewer than 9 characters, and it deletes
 temporary bots and empty rndbot accounts: pre-check (read-only) no `bot_delete` and
-no `temporary` events. Order: world migration → image with F1 → factory window → A5
-rename (names) → A6 respec → reset-l1. Non-roster random bots: keep the three keys
-absent so the pairs stay rare [A].
+no `temporary` events. Non-roster random bots: keep the three keys absent so the pairs
+stay rare [A].
+
+**`RandomBotAccountCount` base (OB-40 review 5979961572):** the README says
+"current"; in train 7 the base was the **profile value** (500 in the example
+profiles, `500 + ceil(sum / 9)`), not the live account count. To avoid a factory that
+creates too few or no accounts, the base is
+`max(profile value, live number of RNDBOT accounts from the OB-40 snapshot pre)`; OB-40
+fills in the number from the `pre` snapshot and confirms the formula before the window
+[D].
+
+**Gender:** the factory picks the gender at random. `demand.tsv` therefore asks for
+twice the larger gap + 4 (generator rule); the female share (`--female-share 0.55`)
+comes from the pool selection, not from the factory [V OB-40].
+
+**Order** (as in train 7, `ob40-train7-wave1/gen.sh`; OB-40 review 5979961572):
+
+1. world migration (B1) → image with F1/F2;
+2. **rollback preparation:** ROLLBACK request to the previous roster version + cold
+   backup (as in train 7);
+3. **OB-40 snapshot `pre`**;
+4. factory window (overrides above, individual approval);
+5. **OB-40 snapshot `post-factory`** (real GUIDs of the new characters; the factory
+   characters stay offline and untouched);
+6. **generator phase 2** (final plan, hashes);
+7. **REPLACE / EXPAND / ROLLBACK requests** (`make_*_request.py`), applied in the
+   maintenance window;
+8. A5 rename (name extension, own hash) → A6 respec → reset-l1;
+9. **`guilds.tsv`** for the core#309 PlanFile;
+10. start.
 
 ## 5. Client for players
 
@@ -759,7 +815,7 @@ train-10 pairs.
 | D9 | Tauren paladin stats | human paladin + priest offset / dwarf paladin + warrior offset | priest offset |
 | D10 | Start outfits and food | class kit of the template; tauren 4540 or 4604; NE 4536 or 117; HE Primitive or Initiate set; tauren paladin preview without boots | class kit; 4540; 4536; Primitive; no boots in the preview |
 | D11 | Player trainers | new `creature_template` + list + spawns in Thunder Bluff, Undercity (paladin); Ironforge, Darnassus, Alah'Thalas (shaman) + start areas | as listed; OB-20 places and names them; main train |
-| D12 | Rare cap | Q1: what does "Vorrang" mean: (a) established undead paladin before the tauren paladin, or (b) the more common Horde pairs before all rare pairs (= the cap as coded)? Q2: may a floor (healer/tank per guild) lift a pair above 2.5 % (sim: 2.7-3.5 %; Horde paladins ~5-7 %, Alliance shamans ~8-10 % of the faction)? Q3: undead paladin share 14-19 % with cap enough? | (b) and floors may exceed the cap, as #521 does |
+| D12 | Rare cap | Q1: what does "Vorrang" mean: (a) established undead paladin before the tauren paladin, or (b) the more common Horde pairs before all rare pairs (= the cap as coded)? Q2: may a floor (healer/tank per guild) lift a pair above 2.5 % (finalsim: 2.7-3.5 % per pair; Horde paladins 5.9 % / 6.2 %, Alliance shamans 8.9 % / 8.4 % of the faction at 270 / 810)? Q3: undead paladin share **15 % (270) / 17 % (810)** with the train-10 pairs and cap enough? (a) would need an asymmetric limit (`--class-role-max` or a per-pair share), not built | (b) and floors may exceed the cap, as #521 does |
 | D13 | Lost totem for off-faction shamans | re-grant when missing / NPC or vendor / nothing | **re-grant when missing** (same as bots); "nothing" soft-locks them |
 | D14 | Endgame gaps (§3.1, §3.2 tables): T0.5 upgrades, AQ20, AQ40, Darkreaver/Ossuary, PvP insignia | race-mask data fix (434/589 → 0 or wider) / accept / train 11 with raids | OB-20 rule question; recommend train 11 with the raid content |
 | D15 | Race change into or out of the new pairs | allow / block until reviewed | block until reviewed |
