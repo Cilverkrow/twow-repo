@@ -207,7 +207,7 @@ Strongest and most stamina-heavy paladin (L60 human 105/65/100/70/75, undead
 | S7 | `skill_race_class_info_mod` | **none** (as 4/7) | [V] |
 | S8 | Class skills, race-masked spells, totems | as 4/7 (S8-S10) | [V] |
 | S9 | Factory allow-list | `availableRaces[CLASS_SHAMAN].push_back(RACE_HIGH_ELF)`; high elf bots are relocated to Northshire with that homebind (`RandomPlayerbotFactory.cpp:586-592`) | [V] |
-| S10 | **Pre-existing bug** | `IsAlliance(uint8)` (`PlayerbotAI.cpp:6561-6567`) lists human, dwarf, night elf, gnome but **not high elf**. Callers: `IsOpposing()` (`:7066-7068`) → `PlayerbotSecurity.cpp:46/165` refuses commands from ungrouped Alliance players; `AhBot.cpp:1173` wrong AH; `RandomPlayerbotMgr.cpp:4823`, `SayAction.cpp:36` wrong faction; `RandomPlayerbotMgr.cpp:2799` log letter only. Affects every high elf bot | [V] code, impact [A] |
+| S10 | **Pre-existing bug** | `IsAlliance(uint8)` (`PlayerbotAI.cpp:6561-6567`) lists human, dwarf, night elf, gnome but **not high elf**. Callers: `IsOpposing()` (`:7066-7068`) → `PlayerbotSecurity.cpp:46/165` refuses commands from ungrouped Alliance players; `AhBot.cpp:1173` wrong AH; `RandomPlayerbotMgr.cpp:4823`, `SayAction.cpp:36` wrong faction; `RandomPlayerbotMgr.cpp:2799` log letter only. Affects every high elf bot. **Fix: hotfix 8.21 (OB-20)** | [V] code, impact [A] |
 | C1 | CharBaseInfo | + `10:7`; high elf goes to 7 classes | [V] |
 | C2 | CharStartOutfit | + 2 rows, copy of orc shaman rows 21/22, RaceID 10; swap both food slots: 117 → **80251** (display 1483), 159 → **80250** (display 29439), display ids from `item_template.display_id` | [V] |
 | C3 | Everything else | as 4/7; model prefix `BloodElf` (Turtle custom model); HE warriors/paladins/hunters already show shields, maces, mail | [V] / [A] |
@@ -265,10 +265,15 @@ effects (36, 36, 44) → 13819 and **33388 Apprentice Riding**; 23215 → 23214 
 `Player::UpdateOldRidingSkillToNew` (called at every login, `Player.cpp:17398`;
 body `:17443-17513`) teaches 33388 to any character without riding skill that knows
 13819, and 33391 if it knows 23214. So **granting 13819/23214 directly does not avoid
-free riding**; only a code change there would. Normal price: `npc_trainer_template`
+free riding**; only a code change there would. Price before train 9: `npc_trainer_template`
 1 sells 33389 for 900000 copper (90 g) at L40 and 33392 for 9000000 copper (900 g)
-at L60 [V]. Alliance paladins get the same through their quests, so the grant is
-parity, but it is an economy/riding rule (#295, #488) → D5b.
+at L60 [V main]. **After #295 (train 9, core#275) riding 75 costs 50 silver and 150
+costs 5 gold** (OB-20 review 5979966747), so the free part is small. Warlocks already
+get the same today: `UpdateOldRidingSkillToNew` also teaches 33388 for Felsteed 5784
+and 33391 for Dreadsteed 23161. Class mounts are spells, not items, so the #295 item
+criterion (`required_skill_rank 225`) does not apply: the Charger rides at +100 % with
+33391 as for Alliance paladins; +140/+180 % only with bought 225/300 as for everyone.
+Alliance paladins get the same through their quests, so the grant is parity → D5b.
 
 Intermediate quest items in the chains (bonding 4, used inside the chain, not gear):
 1442 → 7083 Purified Kor Gem, 1655 → 6993 Jordan's Refined Ore Shipment (Verigan's
@@ -334,7 +339,7 @@ Turtle has three race-locked L40 chains [V `quest_template`, scripts]:
 |---|---|---|---|
 | Orc | 40534 (race 2) | `RewSpellCast` 45519 = LEARN_SPELL → **Feral Spirit r1 45505** | works (players and bots) |
 | Troll | 40353 (race 128) | script `QuestRewarded_npc_nribbi` calls `LearnSpell(45504)` (`src/scripts/miscellaneous/random_scripts_3.cpp:2390-2397`); `RewSpellCast` 45504 is the Hex aura itself (effects 6/6/6), not a teach spell | players: works by script; **bots: never** (bot quest path only learns LEARN_SPELL effects, `AutoLearnSpellAction.cpp:263-266`, `:487-510`) |
-| Tauren | 40348 (race 32) | `RewSpellCast` 45500 Totemic Slam is a damage spell (effects 2/64), teaches nothing; script `QuestRewarded_npc_ancestor_of_wisdom` calls `LearnSpell(47262)` (`random_scripts_3.cpp:2274-2286`) | **47262 exists neither in `spell_template` nor in base Spell.dbc** → no working learn path for tauren either [V data; live effect A] |
+| Tauren | 40348 (race 32) | `RewSpellCast` 45500 Totemic Slam is a damage spell (effects 2/64), teaches nothing; script `QuestRewarded_npc_ancestor_of_wisdom` calls `LearnSpell(47262)` (`random_scripts_3.cpp:2274-2286`) | **47262 exists neither in `spell_template` nor in base Spell.dbc** → no working learn path for tauren either. **Fix 47262 → 47341 (LEARN_SPELL → 45502): hotfix 8.21 (OB-20)** [V data; live effect A] |
 
 Further facts [V]: teach spell 47341 → Ethereal Form 45502 and 47263 → Hex 45504
 exist but are on no trainer and no quest; the only trainer row is 45520 Feral Spirit
@@ -704,13 +709,13 @@ acceptance accordingly.
 | R3 | Factory window creates wrong pairs, deletes bots or accounts, or runs out of account slots | README l.86-111 binding (§4.6): only the three `ClassRaceProb` keys, `DeleteRandomBotAccounts = 0`, `RandomBotAutologin = 0`, account count + 9-per-account limit, pre-check for delete/temporary events; count created bots against FACTORY; 0 lost bots (ADR-0031) |
 | R4 | Silent capability gap: Horde paladins without Redemption/mounts, Alliance shamans without totems or racials look healthy in logs | acceptance checks `character_spell` and `[ClassGrant]` lines (§6.4) |
 | R5 | ClassGrant only for persistent-roster bots | acceptable, only the roster is live [A] |
-| R6 | High elf faction bug (`IsAlliance`) | separate small PR B4 before the factory run |
+| R6 | High elf faction bug (`IsAlliance`) | hotfix 8.21 (OB-20), before the factory run |
 | R7 | Changing earth 4 → 5 shifts all shaman bots | prefer 4; else test update in B3 |
 | R8 | CharBaseInfo before server rows → create error | R-CBI-1, order rule §5.4 |
 | R9 | Rollback after bots exist | before the factory run: delete the new pair rows (additive migration); after: never remove `playercreateinfo` of pairs with characters [A]; disable only the allow-list and keep data. Character deletion = individual approval |
 | R10 | Race change: `GetShamanSpellForRace` maps dwarf/NE/HE shamans to 0, so their racials are neither removed nor converted; `ChangeSpellsForRace` (`Player.cpp:~23856`) is untested for the new pairs | block race change into/out of the new pairs until reviewed (D15) |
 | R11 | Dwarf at 8 classes = glue limit | no further dwarf class without glue override |
-| R12 | Free riding with the paladin class mount (90 g / 900 g value) collides with the #295/#488 riding rework | D5b; `UpdateOldRidingSkillToNew` gives riding even for a direct 13819/23214 grant |
+| R12 | Free riding with the paladin class mount (after #295 only 50 s / 5 g value; warlocks already get it) | D5b; `UpdateOldRidingSkillToNew` gives riding even for a direct 13819/23214 grant |
 | R13 | Patch collides with other train-10 client work (own maps #427) | one builder (OB-15), append-only README/config rows |
 | R14 | Off-faction shaman destroys a BoP totem → element lost for good | re-grant when missing (D13) |
 | R15 | Player characters of bot-only pairs created with a modified client (no trainer, no grants) | D18 |
@@ -785,19 +790,23 @@ Sizes: S ≤ 0.5 day, M 1-2 days, L ≥ 3 days of agent work, excluding review w
 | B1 | world migration 6/2, 4/7, 10/7 + contract (F3) | core, CLI-379 | M | train 9 assembled; main train 10 (Ä15) |
 | B2 | factory allow-list + availability contract (F1, F2), same PR as B1 | core | S | B1 |
 | B3 | Table A for bots (paladin rows, + earth level if D2 = 5) | core | S-M | D2-D5 |
-| B4 | `IsAlliance` + high elf (pre-existing bug) | core, OB-10/OB-60 | S | none; no DB, can ride a hotfix 9.x |
-| B5 | Table B racials for bots; tauren script fix (47262) if decided; optional `skill_line_ability` race-mask migration | core | S-M | D7 |
+| B4 | `IsAlliance` + high elf (pre-existing bug) | **hotfix 8.21, OB-20** (not in this work) | S | none; no DB |
+| B5 | Table B racials for bots; `GetShamanSpellForRace` tauren 45500 → 45502; optional `skill_line_ability` race-mask migration (tauren script fix 47262 → 47341: hotfix 8.21, OB-20) | core | S-M | D7 |
 | B6 | roster: catalog rows, `--rare-pairs`, names extension, factory window, A5/A6 | repo, OB-40 / OB-00 | M | B1+B2 deployed, names approved, D12 |
 | B7 | player grant hook (level-up + login, deferred full-bag case), optional D18 creation gate | core | M | D3, D4, D5b, D13, D18 |
-| B8 | off-faction trainers: `creature_template`, `npc_trainer`(_template), `creature` spawns | core world SQL, OB-20 | M | D4, D11; main train |
+| B8 | off-faction trainers (D11 table): `creature_template`, `npc_trainer`(_template), `creature` spawns; **also closes the gap of 5/2 and 3/7 today** | core world SQL, OB-20 | M | D4, D11 (owner GPS check); first main train with approval, not "players last" |
 | B9 | client deltas + R-CBI-1 tool extension (numeric key) + probe build + pipeline Stage 3 edit | repo, OB-15 | M | train-9 client patch (#488/#512/#514) merged; B1 in the export DB; D1, D10 |
 | B10 | acceptance §6.4, release notes | OB-30 / OB-00 | S-M | all |
 
-**Bots first:** B1+B2+B3 (+B4, B5) in train 10, then B6. **Players second,
-collectively:** B7+B8+B9 together, because each alone is useless for players. B7/B8
-are server changes and may ship in train 10 inactive for players until the client
-patch is released; B9 is built last against a world export that already contains the
-train-10 pairs.
+**Bots first:** B1+B2+B3 (+B5) in train 10, then B6. B4 (`IsAlliance` + high elf) and
+the tauren script fix (47262 → 47341) are **not** part of this work: OB-20 ships them
+as **hotfix 8.21** (OB-00, 04.10). **B8 trainers earlier** (OB-20 review 5979966747):
+the existing pairs 5/2 and 3/7 have no player trainer today either (§3.5), so B8 closes
+an existing gap and should not wait for "players last"; it can ship with the first main
+train that has the D11 approval. **Players, collectively:** B7+B9 together (+B8 if not
+shipped earlier). B7/B8 are server changes and may ship in train 10 inactive for players
+until the client patch is released; B9 is built last against a world export that
+already contains the train-10 pairs.
 
 ## 8. Owner and OB decisions
 
@@ -808,13 +817,13 @@ train-10 pairs.
 | D3 | Grant scope | only pairs that cannot take the quest / all races of the class | only off-faction pairs |
 | D4 | Paladin rewards | auto-grant 12/20/40/60 / spells at new Horde trainers (fee) | grant Redemption 12, Sense Undead 20; mounts per D5 |
 | D5a | Paladin class mounts for Horde paladins | (a) Warhorse 40 / Charger 60 as is; (b) tauren get normal kodos 18990 / 23249 instead; (c) new "sunwalker kodo" (Spell.dbc + creature, client work) | (a) for train 10; (c) not in train 10 |
-| D5b | **Free riding with the class mount** (33388 at 40 = 90 g, 33391 at 60 = 900 g trainer value) | yes, parity with Alliance paladins / no (needs a core change in `UpdateOldRidingSkillToNew` and a grant of 13819/23214 without the teach spell) | owner + OB-20 with #295; recommendation: yes (parity), riding/economy is an individual-approval topic |
+| D5b | **Free riding with the class mount** (33388 at 40, 33391 at 60; after #295 the trainer value is only 50 s / 5 g) | yes, parity with Alliance paladins and warlocks / no (needs a core change in `UpdateOldRidingSkillToNew` and a grant of 13819/23214 without the teach spell) | **yes (parity)**, OB-20 agrees (5979966747): small value after #295, warlocks already have it, no special rule for mount speed; owner confirms |
 | D6 | Gear rewards: 9607 Bastion of Stormwind, 6953 Verigan's Fist, 8418 Mightstone choices 20504/20505/20512, 41939 Vortalus choices, 8413 Da Voodoo choices; chain items 7083, 6993, 18746 (quest items, no grant needed) | none / some | none. **Deviation from the owner's wording** ("quest gegenstände und spells gibt es für horde paladine und schamanen allianz"): we grant the spells and the totems, not the gear rewards; owner to confirm |
-| D7 | **Shaman racials.** Owner 2026-09-27, verbatim: "Zwergen-Schamane bekommt alle drei Horde-Rassenfähigkeiten der Schamanen: Hex (Troll, 45504), Feral Spirit (Ork, 45505/45514), Ethereal Form (Tauren, 45502) („weil er alleine für die Allianz steht“)". With NE and HE shamans the dwarf is no longer alone. | Q1: does the 09-27 decision still apply? Q2: if yes, NE/HE also all three, or none? Q3: which is the tauren racial, Totemic Slam 45500 (core race change) or Ethereal Form 45502 (client SLA, core#179)? Q4: fix the tauren script (47262 does not exist) and give Horde troll/tauren bots their own racial (Table B)? | owner; OB-20 recommends one rule for all Alliance shamans (all three or none) and the Horde bot/script fix in any case |
+| D7 | **Shaman racials.** Owner 2026-09-27, verbatim: "Zwergen-Schamane bekommt alle drei Horde-Rassenfähigkeiten der Schamanen: Hex (Troll, 45504), Feral Spirit (Ork, 45505/45514), Ethereal Form (Tauren, 45502) („weil er alleine für die Allianz steht“)". With NE and HE shamans the dwarf is no longer alone. | Q1: does the 09-27 decision still apply? Q2: if yes, NE/HE also all three, or none? Q3 **answered (OB-20 5979966747): the tauren racial is Ethereal Form 45502** (client SLA 6187 race 0x20, quest wording "spiritwalking"); `GetShamanSpellForRace` → 45500 is inconsistent and moves to 45502 in B5. Q4: script fix and Table B rows for Horde bots (troll 47263, tauren 47341) in any case; the script fix ships as **hotfix 8.21 (OB-20)** | owner for Q1/Q2; OB-20 recommends one rule for all Alliance shamans (all three or none) |
 | D8 | High elf shaman stats | A human offset / B orc copy / C A + 10/2 spirit delta | A (C if the owner wants the HE spirit flavour) |
 | D9 | Tauren paladin stats | human paladin + priest offset / dwarf paladin + warrior offset | priest offset |
 | D10 | Start outfits and food | class kit of the template; tauren 4540 or 4604; NE 4536 or 117; HE Primitive or Initiate set; tauren paladin preview without boots | class kit; 4540; 4536; Primitive; no boots in the preview |
-| D11 | Player trainers | new `creature_template` + list + spawns in Thunder Bluff, Undercity (paladin); Ironforge, Darnassus, Alah'Thalas (shaman) + start areas | as listed; OB-20 places and names them; main train |
+| D11 | Player trainers | placement per OB-20 (table D11 below) | as proposed by OB-20; coordinates derived from neighbouring trainers, owner confirms them in the client (GPS) before the migration leaves draft; main train |
 | D12 | Rare cap | Q1: what does "Vorrang" mean: (a) established undead paladin before the tauren paladin, or (b) the more common Horde pairs before all rare pairs (= the cap as coded)? Q2: may a floor (healer/tank per guild) lift a pair above 2.5 % (finalsim: 2.7-3.5 % per pair; Horde paladins 5.9 % / 6.2 %, Alliance shamans 8.9 % / 8.4 % of the faction at 270 / 810)? Q3: undead paladin share **15 % (270) / 17 % (810)** with the train-10 pairs and cap enough? (a) would need an asymmetric limit (`--class-role-max` or a per-pair share), not built | (b) and floors may exceed the cap, as #521 does |
 | D13 | Lost totem for off-faction shamans | re-grant when missing / NPC or vendor / nothing | **re-grant when missing** (same as bots); "nothing" soft-locks them |
 | D14 | Endgame gaps (§3.1, §3.2 tables): T0.5 upgrades, AQ20, AQ40, Darkreaver/Ossuary, PvP insignia | race-mask data fix (434/589 → 0 or wider) / accept / train 11 with raids | OB-20 rule question; recommend train 11 with the raid content |
@@ -822,6 +831,27 @@ train-10 pairs.
 | D16 | Fix the #379 wording | dwarf warlock is a player pair already | OB-00 |
 | D17 | Shaman as TANK in `isAvailableRole` (group fill only) | yes / no | optional, low priority (OB-10) |
 | D18 | Player creation of client-unknown pairs before the client patch (modified client) | allow / gate in `HandleCharCreateOpcode` for `SEC_PLAYER` until the patch | owner/OB-20; gate is a small core change |
+
+**D11 trainer placement (OB-20 proposal, review 5979966747; implemented in B8):**
+
+| Class | City / start | Place | Faction template |
+|---|---|---|---|
+| Paladin | Thunder Bluff | Spirit Rise, near the priest and mage trainers (sun theme, An'she) | as the TB trainers (104) |
+| Paladin | Camp Narache | with the class trainers at the longhouse | 104 |
+| Paladin | Undercity | War Quarter, next to the warrior trainers | as the UC trainers (68) |
+| Paladin | Deathknell | in the church with the class trainers | 68 |
+| Shaman | Ironforge | Mystic Ward, near the priest and mage trainers | as the IF trainers (55) |
+| Shaman | Coldridge Valley | Anvilmar, with the class trainers | 55 |
+| Shaman | Darnassus | Cenarion Enclave, near the druids | as the Darnassus trainers |
+| Shaman | Shadowglen | Aldrassil, with the class trainers | as Darnassus |
+| Shaman | Alah'Thalas / high elf start | with the class trainers | 371 (as the high elf paladin trainers) |
+
+Own NPC names (not lore names), titles "Paladin Trainer" / "Shaman Trainer" (tauren
+paladin trainers e.g. a "Sunwalker …" first name), existing displays of the race; one
+shared `npc_trainer_template` list per class (§3.5); rank-1 teach spells only at these
+new trainers ("spell at the trainer" variant), not at the existing ones. Coordinates:
+OB-20 derives them from neighbouring trainer spawns in the disposable DB; the owner
+confirms them in the client (GPS) before the migration leaves draft.
 
 ## 9. Open questions (not resolved by data)
 
@@ -831,7 +861,7 @@ train-10 pairs.
 3. Live values of `AutoLearnTrainerSpells`, `AutoLearnQuestSpells`,
    `ClassGrant.Enabled` equal the canonical config [A].
 4. **Answered:** tauren have no working path to Ethereal Form; the quest script
-   teaches the non-existent 47262 (§3.4). Open: what live tauren shamans actually have
+   teaches the non-existent 47262 (§3.4; fix in hotfix 8.21, OB-20). Open: what live tauren shamans actually have
    (read-only `character_spell` count by OB-40) [A].
 5. Faction 1698 of the Turtle shaman trainers is Horde [A].
 6. Tauren ChrRaces flag bit 0x2 = no feet geoset [A].
