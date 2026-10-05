@@ -55,7 +55,7 @@ above is unchanged.
   vendors (reputation, PvP and others) keep their prices.
 - **A client patch is required** now: the new rank spells 61300-61303, their skill
   line rows, SkillRaceClassInfo row 890 (MinLevel 10, a server DBC as well) and the
-  riding and mount texts ship with client patch v7 in the same window.
+  riding and mount texts ship with client patch 8 in the same window.
 - Existing characters keep 75/150; there is no character migration.
 - Still valid: the coordinated rollout (core, bots, config, migration, client) and
   the item changes from a complete mount manifest instead of a broad

@@ -90,6 +90,6 @@ stages for players and bots (`Funserver.Riding.Stages.Enabled = 1`: riding
 75/150/225/300 from level 10/20/40/60, mount speed by rank and mount family) and
 makes slows of player-controlled casters 40 % stronger (cap 90 %) and their roots
 40 % longer. NPC spells stay unchanged. The keys need the train-9 core pin with
-its migrations and client patch v7.
+its migrations and client patch 8.
 
 All one hundred and twenty-five deviations are classified in `semantic-profile.tsv`.

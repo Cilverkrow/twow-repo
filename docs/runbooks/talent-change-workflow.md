@@ -1,6 +1,6 @@
 # Runbook: change talents (new talents, new spells, trainer spells)
 
-Status: 2026-10-02, from trains 8, 8b, 9 and patches v4/v5/v7 (#295, #357, #367, #409, #455).
+Status: 2026-10-02, from trains 8, 8b, 9 and patches v4/v5/7 ("v6.1")/8 (#295, #357, #367, #409, #455).
 Owner decision 2026-10-01 (#409): talent trees will keep growing; this is the
 fixed workflow. Server part: OB-10; client part: OB-15; data/roster: OB-40;
 deploy: OB-30; release and approvals: OB-00.
@@ -87,7 +87,7 @@ confirmed by OB-50's ID range list (#455 issuecomment-5926452548).
 - Talents: `tools/inputs/<issue>-talents.csv` → `tools/talentdelta.py`
   (`--check`, and `--core <core checkout> --class <id>` against the core PR).
 - SkillLineAbility / SpellItemEnchantment deltas by hand, values `sql:`.
-- **v7 (#295), before building:** diff the key set of
+- **Patch 8 (#295, train 9), before building:** diff the key set of
   `changes/Spell/0295_mount_spells.csv` against the W2b IN list of the core
   migration `sql/database_updates/20261002212000_world.sql` (core commit of
   the dry-run clone and the train-9 pin, mounted read-only into the tools
