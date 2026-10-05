@@ -53,7 +53,7 @@ aiplayerbot	AiPlayerbot.DeadWaitForRealMasterSeconds	INTENTIONAL_CHANGE	aiplayer
 aiplayerbot	AiPlayerbot.DeadWaitForRealMasterInstanceSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-instance-pinned-default
 aiplayerbot	AiPlayerbot.EquipDiagnostics.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-equip-trace-measurement-window
 aiplayerbot	AiPlayerbot.AuctionHouse.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-owner-no-bot-auction-house
-aiplayerbot	AiPlayerbot.QuestFirstProgression.MinLevelForCrossMapQuestRoute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-no-cross-map-route-below-10-pinned-default
+aiplayerbot	AiPlayerbot.QuestFirstProgression.MinLevelForCrossMapQuestRoute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-487-train9-crossmap-continents-until-61
 aiplayerbot	AiPlayerbot.QuestFirstProgression.QuestAreaLevelMargin	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-335-quest-area-level-margin-pinned-default
 aiplayerbot	AiPlayerbot.QuestFirstProgression.ProgressAwareObjectives	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-329-progress-aware-objectives-pinned-default
 aiplayerbot	AiPlayerbot.DestinationDeaths.Max	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-destination-death-cap-pinned-default
@@ -125,3 +125,10 @@ mangosd	Rogue.KeepComboPointsOnSelect	INTENTIONAL_CHANGE	mangosd.overlay.conf	is
 mangosd	Rogue.ProcComboPointsToCurrentTarget	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-484-owner-combo-switches-20261004
 aiplayerbot	AiPlayerbot.SpecAura.TalentClasses	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-409-357-367-train8-real-talents
 aiplayerbot	AiPlayerbot.QuestRescue.IdleMinutes	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-421-owner-quest-rescue-30min
+aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkFailures	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-park-3
+aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkWindowSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-park-window-3600-pinned-default
+aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-park-3600-pinned-default
+aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkCountsRouteDanger	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-park-route-danger
+aiplayerbot	AiPlayerbot.QuestFirstProgression.SkipScriptOnlyQuestTakers	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-skip-script-only-takers
+aiplayerbot	AiPlayerbot.QuestFirstProgression.CrossMapContinentsOnly	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-crossmap-continents-only
+aiplayerbot	AiPlayerbot.ProfessionUse.ClearCorpseForSkinning	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-owner-clear-corpse-for-skinning
