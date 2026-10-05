@@ -76,4 +76,34 @@ expect ok   "identical    :" "core copy identical" --compare "$TMP/same.sh=.gith
 expect fail "differs from" "core copy differs" --compare "$TMP/other.sh=.github/policy/copy.sh"
 expect ok   "comparison skipped" "core copy absent (skip)" --compare "$TMP/same.sh=.github/policy/missing.sh"
 
+# ---------------------------------------------------------------- cleanup (#515)
+# A late write by git's background gc/maintenance made `rm -rf "$WORK"` fail with
+# "Directory not empty" after a PASSED check, and the exit trap turned that into a
+# failed step. Auto gc and maintenance must be off in the clone, and a failing
+# cleanup must never decide the result - in either direction.
+work="$TMP/keep-work"
+expect ok "trusted      :" "explicit --work dir" --work "$work"
+[ "$(git -C "$work" config --get gc.auto)" = 0 ] || { echo "FAIL : gc.auto is not 0 in the work clone"; exit 1; }
+[ "$(git -C "$work" config --get maintenance.auto)" = false ] || { echo "FAIL : maintenance.auto is not false in the work clone"; exit 1; }
+echo "ok   : work clone has gc.auto=0 and maintenance.auto=false"
+pass=$((pass + 1))
+# Every git call on the clone goes through the helper that passes both -c options.
+if grep -v '^ *#' "$CHECK" | grep -E 'git -C "\$WORK"' | grep -vE 'config (gc\.auto 0|maintenance\.auto false)$' | grep -q .; then
+    echo "FAIL : check-core-gitlink-trust.sh calls git on \$WORK without the gc/maintenance guard"
+    exit 1
+fi
+echo "ok   : no unguarded git call on the work clone"
+pass=$((pass + 1))
+
+# A cleanup that always fails: a fake rm ahead of PATH, used only by the script
+# under test (the default --work is a temporary directory, so the trap runs).
+fakebin="$TMP/fakebin"
+mkdir -p "$fakebin"
+printf '#!/bin/sh\necho "rm: cannot remove (simulated): Directory not empty" >&2\nexit 1\n' > "$fakebin/rm"
+chmod +x "$fakebin/rm"
+pin "$main1" "$url"
+PATH="$fakebin:$PATH" expect ok   "trusted      :" "trusted gitlink survives a failing cleanup"
+pin "$feat1" "$url"
+PATH="$fakebin:$PATH" expect fail "is not contained in core main" "untrusted gitlink stays a failure when cleanup fails too"
+
 echo "core gitlink trust contract: $pass case(s) passed"
