@@ -180,6 +180,105 @@ class GeneratorTest(unittest.TestCase):
         self.assertFalse({o for o, *_ in moves} & set(changed), "a respec is no L1 reset")
         self.assertTrue({o for o, *_ in moves} <= set(a6), "A6 applies the respec")
 
+    def test_healer_min_every_healer_class(self):
+        # #518: one healer of every healer class per guild -> --healer-min = guilds per faction
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--healer-min", "4"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        heal_cls = {int(c) for c, _, role in gen.read_tsv(SPECS) if role == "HEALER"}
+        for races in (gen.ALLIANCE, gen.HORDE):
+            classes = {c for c in heal_cls if any((r, c) in catalog() for r in races)}
+            have = Counter(int(r["class"]) for r in rows if int(r["race"]) in races and r["role"] == "HEALER")
+            for c in classes:
+                self.assertGreaterEqual(have[c], 4, f"healer class {c}")
+
+    def test_healer_min_too_large_stops(self):
+        with self.assertRaises(SystemExit):
+            Run(self.tmp, target=360, per_faction="20,40,120", cap=7, extra=["--healer-min", "20"])
+
+    def test_class_role_max_limits_horde_paladins(self):
+        # #518 owner: not too many undead paladins (the only Horde paladins)
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--class-role-max", "H:2:TANK:2,H:2:DPS:0"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        base = Counter((r["class"], r["role"]) for r in base_rows() if int(r["race"]) in gen.HORDE)
+        horde = Counter((r["class"], r["role"]) for r in rows if int(r["race"]) in gen.HORDE)
+        self.assertLessEqual(horde[("2", "TANK")], max(2, base[("2", "TANK")]))
+        self.assertEqual(horde[("2", "DPS")], base[("2", "DPS")], "no new Horde paladin DPS")
+        self.assertEqual(sum(n for (c, role), n in horde.items() if role == "TANK"), 20, "other classes take over")
+
+    def test_female_share(self):
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=40),
+                  extra=["--female-share", "0.55"])
+        rows = run.rows()
+        for races in (gen.ALLIANCE, gen.HORDE):
+            mine = [r for r in rows if int(r["race"]) in races]
+            self.assertGreaterEqual(sum(r["gender"] == "1" for r in mine), 99, "55 % of 180")
+        self.assertIn("gender_fallback=0", run.stdout)
+
+    def test_leatherworking_only_leather_classes_but_not_all(self):
+        # #518 owner: Leatherworking only for leather classes, but leather classes also take other pairs
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20))
+        new = run.rows()[154:]
+        lw = [r for r in new if r["profession_pair"] == gen.LEATHER_PAIR]
+        self.assertTrue(lw)
+        self.assertEqual({int(r["class"]) for r in lw} - gen.LEATHER_CLASSES, set())
+        leather_new = [r for r in new if int(r["class"]) in gen.LEATHER_CLASSES]
+        self.assertGreater(len({r["profession_pair"] for r in leather_new}), 3, "leather classes keep other pairs")
+        self.assertLess(len(lw), len(leather_new) * 0.7)
+
+    def test_cell_min_rare_pairs_in_every_role(self):
+        # #518 owner: rare pairs (dwarf shaman, undead paladin, druids) appear in every role
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--cell-min", "1"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        have = Counter((int(r["race"]), int(r["class"]), r["role"]) for r in rows)
+        for race, cls, role in [(3, 7, "HEALER"), (3, 7, "TANK"), (3, 7, "DPS"), (5, 2, "HEALER"), (5, 2, "TANK"),
+                                (5, 2, "DPS"), (4, 11, "HEALER"), (4, 11, "TANK"), (6, 11, "HEALER"), (6, 11, "TANK")]:
+            self.assertGreaterEqual(have[(race, cls, role)], 1, (race, cls, role))
+
+    def test_tank_class_weight_more_warriors(self):
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--tank-class-weight", "1=2"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (20, 40, 120), 7)
+        for races in (gen.ALLIANCE, gen.HORDE):
+            tanks = Counter(int(r["class"]) for r in rows if int(r["race"]) in races and r["role"] == "TANK")
+            self.assertGreater(tanks[1], max(n for c, n in tanks.items() if c != 1), tanks)
+
+    def test_rare_pairs_capped_but_in_every_role(self):
+        # #518 owner: rare pairs stay rare (cap per faction), still healer, tank and DPS
+        run = Run(self.tmp, target=360, per_faction="28,40,112", cap=8, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--cell-min", "1", "--healer-min", "4", "--rare-pairs", "3:7,5:2", "--rare-share", "0.025"])
+        rows = run.rows()
+        self.assert_hard_rules(rows, (28, 40, 112), 8)
+        base = Counter((r["race"], r["class"]) for r in base_rows())
+        for race, cls in (("3", "7"), ("5", "2")):
+            mine = [r for r in rows if (r["race"], r["class"]) == (race, cls)]
+            self.assertLessEqual(len(mine), max(base[(race, cls)], 3 + 3, 5), (race, cls))
+            self.assertEqual({r["role"] for r in mine}, {"TANK", "HEALER", "DPS"}, (race, cls))
+        horde_pal_heal = sum(1 for r in rows if r["class"] == "2" and r["role"] == "HEALER" and int(r["race"]) in gen.HORDE)
+        self.assertGreaterEqual(horde_pal_heal, 4, "the rare-only Horde paladin still meets --healer-min")
+
+    def test_profession_shares(self):
+        shares = ("Herbalism/Alchemy=22,Tailoring/Enchanting=18,Skinning/Leatherworking=14,Mining/Blacksmithing=16,"
+                  "Mining/Engineering=12,Mining/Jewelcrafting=10,Herbalism/Mining=8")
+        run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20),
+                  extra=["--profession-shares", shares])
+        pairs = Counter(r["profession_pair"] for r in run.rows())
+        self.assertGreater(pairs["Herbalism/Alchemy"], pairs["Mining/Jewelcrafting"])
+        tail = [r for r in run.rows()[154:] if r["profession_pair"] == "Tailoring/Enchanting"]
+        self.assertGreater(sum(r["class"] in ("5", "8", "9") for r in tail), len(tail) * 0.6, "mainly cloth wearers")
+        with self.assertRaises(SystemExit):
+            Run(self.tmp, target=360, per_faction="20,40,120", cap=7, extra=["--profession-shares", "Fishing=10"])
+
+    def test_capped_fill(self):
+        self.assertEqual(gen.capped_fill({1: 2}, 8, [1, 2, 11], {2: 1}), {1: 5, 2: 1, 11: 4})
+        self.assertEqual(gen.capped_fill({2: 3}, 3, [1, 2], {2: 1}), {1: 3, 2: 3}, "nobody shrinks")
+
     def test_healers_follow_healer_classes(self):
         run = Run(self.tmp, target=360, per_faction="20,40,120", cap=7, pool=write_pool(self.tmp, per_gender=20))
         rows = run.rows()

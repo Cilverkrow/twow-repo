@@ -39,6 +39,7 @@ import argparse
 import csv
 import hashlib
 import itertools
+import math
 import sys
 from collections import Counter
 
@@ -57,6 +58,9 @@ PROFESSIONS = [
     ("Mining/Jewelcrafting", 8, [2, 5]),
     ("Herbalism/Mining", 14, []),
 ]
+LEATHER_PAIR = "Skinning/Leatherworking"
+LEATHER_CLASSES = {3, 4, 7, 11}  # #485/#518: only hunter, rogue, shaman and druid wear leather
+PREFER_BOOST = 1.5  # #518: how much more urgent a pair is for a class that prefers it
 
 
 def faction(race):
@@ -96,9 +100,37 @@ def water_fill(have, extra, keys):
     return target
 
 
-def max_flow_ok(race_rem, role_rem, cell_free, tank_class_rem):
+def weighted_fill(have, extra, keys, weights):
+    """water_fill where a key with weight w aims at w times the share of a key with weight 1
+    (#518 owner: warriors may tank clearly more often)."""
+    target = {k: have.get(k, 0) for k in keys}
+    for _ in range(extra):
+        k = min(keys, key=lambda k: (target[k] / weights.get(k, 1), keys.index(k)))
+        target[k] += 1
+    return target
+
+
+def capped_fill(have, extra, keys, caps, weights=None):
+    """weighted_fill, but no key goes above caps[key] (or its current count, if already higher);
+    what a capped key cannot take goes to the others (#518: e.g. fewer Horde paladin tanks)."""
+    fixed = {}
+    while True:
+        free = [k for k in keys if k not in fixed]
+        rest = extra - sum(fixed[k] - have.get(k, 0) for k in fixed)
+        target = weighted_fill(have, rest, free, weights or {})
+        over = [k for k in free if caps.get(k) is not None and target[k] > max(caps[k], have.get(k, 0))]
+        if not over or len(over) == len(free):
+            target.update(fixed)
+            return target
+        for k in over:
+            fixed[k] = max(caps[k], have.get(k, 0))
+
+
+def max_flow_ok(race_rem, role_rem, cell_free, tank_class_rem, pair_free=None):
     """Can the remaining race counts be spread over cells (free capacity) onto the roles,
-    with the tanks split by class as tank_class_rem says?"""
+    with the tanks split by class as tank_class_rem says? pair_free (#518) limits a whole
+    race x class pair over all its roles (rare pairs)."""
+    pair_free = pair_free or {}
     total = sum(race_rem.values())
     if total != sum(role_rem.values()):
         return False
@@ -112,7 +144,12 @@ def max_flow_ok(race_rem, role_rem, cell_free, tank_class_rem):
         edge("s", ("r", race), n)
     for (race, cls, role), free in cell_free.items():
         if race in race_rem and free > 0:
-            edge(("r", race), ("c", race, cls, role), free)
+            if (race, cls) in pair_free:
+                if ("p", race, cls) not in {v for _, v in cap}:
+                    edge(("r", race), ("p", race, cls), pair_free[(race, cls)])
+                edge(("p", race, cls), ("c", race, cls, role), free)
+            else:
+                edge(("r", race), ("c", race, cls, role), free)
             edge(("c", race, cls, role), ("q", cls) if role == "TANK" else ("o", role), free)
     for cls, n in tank_class_rem.items():
         edge(("q", cls), ("o", "TANK"), n)
@@ -144,9 +181,18 @@ def max_flow_ok(race_rem, role_rem, cell_free, tank_class_rem):
 
 
 def plan_slots(base, catalog, known, specs, target, per_faction, cell_cap, replace_excess=False, levels=None,
-               respec_tanks=False, respecs=None):
+               respec_tanks=False, respecs=None, healer_min=0, class_role_max=None, female_share=None,
+               cell_min=0, tank_weights=None, rare_pairs=frozenset(), rare_share=1.0, healer_new_min=0):
     """Return the new slots: dicts race, cls, gender, path, role; a slot with "replace" takes
-    over that base ordinal (REPLACE), the others are appended in order (EXPAND)."""
+    over that base ordinal (REPLACE), the others are appended in order (EXPAND).
+
+    #518 options: healer_min = at least that many healers of every healer class of the faction
+    (one per guild); class_role_max = {(faction, class, role): n} hard limit per faction (e.g.
+    Horde paladins = undead only); female_share = target share of women per faction;
+    cell_min = at least that many bots in every usable race x class x role cell (owner: rare
+    pairs such as dwarf shaman or undead paladin may stay rare but appear in every role, healer
+    first, then tank, then DPS); tank_weights = {class: weight} for the tank class shares."""
+    class_role_max = class_role_max or {}
     if target % 2:
         fail("target must be even (50/50 factions)")
     half = target // 2
@@ -217,48 +263,126 @@ def plan_slots(base, catalog, known, specs, target, per_faction, cell_cap, repla
             if n < 0:
                 fail(f"faction {fa} already has {have_role[r]} {r}, above {role_target[r]}")
         have_tank = Counter(b["cls"] for b in mine if b["role"] == "TANK")
-        tank_target = water_fill(have_tank, role_rem["TANK"], tank_classes)
+        # #518 owner: rare race x class pairs (dwarf shaman, undead paladin, ...) stay rare: at most
+        # rare_share of the faction per pair, but never below what every role (cell_min) and, for a
+        # pair that is the faction's only source of a healer class, --healer-min need.
+        healer_classes = sorted({cls for _, cls, role in usable if role == "HEALER"})
+        pair_count = Counter((b["race"], b["cls"]) for b in mine)
+        def sources(cls, role):
+            return {r for r, c, o in usable if c == cls and o == role}
+
+        def rare_only(cls, role):
+            src = sources(cls, role)
+            return bool(src) and all((r, cls) in rare_pairs for r in src)
+
+        rare_limit = {}
+        for race, cls in {(r, c) for r, c, _ in usable if (r, c) in rare_pairs}:
+            roles = {o for r, c, o in usable if (r, c) == (race, cls)}
+            floor = cell_min * len(roles)
+            if "HEALER" in roles and cls in healer_classes and rare_only(cls, "HEALER"):
+                # the rare sources of this healer class share --healer-min between them
+                src = sources(cls, "HEALER")
+                floor += math.ceil(max(0, healer_min - cell_min * len(src)) / len(src))
+                # tanks/DPS of this pair from earlier stages must not crowd out its healers
+                non_heal = sum(1 for b in mine if (b["race"], b["cls"]) == (race, cls) and b["role"] != "HEALER")
+                floor = max(floor, non_heal + math.ceil(max(healer_min, healer_new_min) / len(src)))
+            rare_limit[(race, cls)] = max(math.ceil(rare_share * half), floor, pair_count[(race, cls)])
+        tank_caps = {c: class_role_max.get((fa, c, "TANK")) for c in tank_classes}
+        for cls in tank_classes:
+            if not rare_only(cls, "TANK"):
+                continue
+            # a tank class that only rare pairs provide keeps room for their other roles
+            src = sources(cls, "TANK")
+            total = sum(rare_limit[(r, cls)] for r in src)
+            reserve = cell_min * len(sources(cls, "DPS") & src)
+            if cls in healer_classes:
+                heal_src = sources(cls, "HEALER") & src
+                reserve += max(healer_min if rare_only(cls, "HEALER") else 0, cell_min * len(heal_src))
+            room = max(cell_min * len(src), total - reserve)
+            tank_caps[cls] = room if tank_caps[cls] is None else min(room, tank_caps[cls])
+        tank_target = capped_fill(have_tank, role_rem["TANK"], tank_classes, tank_caps, tank_weights)
         tank_class_rem = {c: tank_target[c] - have_tank[c] for c in tank_classes}
         cell_count = Counter((b["race"], b["cls"], b["role"]) for b in mine)
+        class_role_count = Counter((b["cls"], b["role"]) for b in mine)
+        # --healer-min-new: every stage adds that many healers of each class (the new guild gets each
+        # healer class even when the kept guilds already hold more than one of a class)
+        healer_rem = {c: max(healer_min - class_role_count[(c, "HEALER")], healer_new_min) for c in healer_classes}
+        if sum(healer_rem.values()) > role_rem["HEALER"]:
+            fail(f"faction {fa}: --healer-min {healer_min} x {len(healer_classes)} healer classes "
+                 f"does not fit into {role_rem['HEALER']} new healer slots")
+        female_target = math.ceil(female_share * half) if female_share is not None else None
         slots = []
 
         def free():
             return {c: max(0, cell_cap - cell_count[c]) for c in usable}
-        if not max_flow_ok(race_rem, role_rem, free(), tank_class_rem):
+
+        def pfree():
+            return {p: max(0, n - pair_count[p]) for p, n in rare_limit.items()}
+        if not max_flow_ok(race_rem, role_rem, free(), tank_class_rem, pfree()):
             fail(f"faction {fa}: races, roles {per_faction}, tank classes and cap {cell_cap} cannot all be met")
         room = {(race, role): sum(cell_cap for c in usable if c[0] == race and c[2] == role) or 1
                 for race in races for role in ROLES}
         total_new = {r: max(role_rem[r], 1) for r in ROLES}
         while sum(role_rem.values()):
-            for role in sorted(ROLES, key=lambda r: (-role_rem[r] / total_new[r], ROLES.index(r))):
+            # #518: open --healer-min classes go first, before the race quotas fill with other classes
+            heal_first = any(n > 0 for n in healer_rem.values()) and role_rem["HEALER"] > 0
+            for role in sorted(ROLES, key=lambda r: (not (heal_first and r == "HEALER"),
+                                                     -role_rem[r] / total_new[r], ROLES.index(r))):
                 if role_rem[role] == 0:
                     continue
                 options = []
-                for race in races:
-                    if race_rem[race] == 0:
-                        continue
-                    for cls in sorted({c for r, c, o in usable if r == race and o == role}):
-                        cell = (race, cls, role)
-                        if cell_count[cell] >= cell_cap or (role == "TANK" and tank_class_rem[cls] == 0):
+                # #518, in this order while reachable: healer classes below --healer-min, then
+                # race x class x role cells below --cell-min, then everything
+                passes = []
+                needy_cls = {c for c, n in healer_rem.items() if n > 0} if role == "HEALER" else set()
+                if needy_cls:
+                    passes.append(lambda race, cls: cls in needy_cls)
+                if any(cell_count[c] < cell_min for c in usable if c[2] == role):
+                    passes.append(lambda race, cls: cell_count[(race, cls, role)] < cell_min)
+                passes.append(None)
+                for allowed in passes:
+                    for race in races:
+                        if race_rem[race] == 0:
                             continue
-                        race_rem[race] -= 1
-                        role_rem[role] -= 1
-                        cell_count[cell] += 1
-                        if role == "TANK":
-                            tank_class_rem[cls] -= 1
-                        ok = max_flow_ok(race_rem, role_rem, free(), tank_class_rem)
-                        race_rem[race] += 1
-                        role_rem[role] += 1
-                        cell_count[cell] -= 1
-                        if role == "TANK":
-                            tank_class_rem[cls] += 1
-                        if ok:
-                            have = sum(1 for b in mine if b["race"] == race)
-                            in_role = sum(1 for b in mine if b["race"] == race and b["role"] == role)
-                            in_class = sum(1 for b in mine if b["race"] == race and b["cls"] == cls)
-                            # a race with more classes for the role takes a larger share of it
-                            options.append(((in_role / room[(race, role)], have / race_target[race], race,
-                                             cell_count[cell], in_class, cls), race, cls))
+                        for cls in sorted({c for r, c, o in usable if r == race and o == role}):
+                            cell = (race, cls, role)
+                            if cell_count[cell] >= cell_cap or (role == "TANK" and tank_class_rem[cls] == 0):
+                                continue
+                            if allowed is not None and not allowed(race, cls):
+                                continue
+                            limit = class_role_max.get((fa, cls, role))
+                            if limit is not None and class_role_count[(cls, role)] >= limit:
+                                continue
+                            if (race, cls) in rare_limit and pair_count[(race, cls)] >= rare_limit[(race, cls)]:
+                                continue
+                            if (role != "HEALER" and healer_rem.get(cls, 0) > 0 and rare_only(cls, "HEALER")
+                                    and (race, cls) in rare_limit):
+                                # keep the capped room of a rare-only healer class for its open healers
+                                room_left = sum(rare_limit[(r, cls)] - pair_count[(r, cls)] for r in sources(cls, "HEALER"))
+                                if room_left - 1 < healer_rem[cls]:
+                                    continue
+                            race_rem[race] -= 1
+                            role_rem[role] -= 1
+                            cell_count[cell] += 1
+                            pair_count[(race, cls)] += 1
+                            if role == "TANK":
+                                tank_class_rem[cls] -= 1
+                            ok = max_flow_ok(race_rem, role_rem, free(), tank_class_rem, pfree())
+                            race_rem[race] += 1
+                            role_rem[role] += 1
+                            cell_count[cell] -= 1
+                            pair_count[(race, cls)] -= 1
+                            if role == "TANK":
+                                tank_class_rem[cls] += 1
+                            if ok:
+                                have = sum(1 for b in mine if b["race"] == race)
+                                in_role = sum(1 for b in mine if b["race"] == race and b["role"] == role)
+                                in_class = sum(1 for b in mine if b["race"] == race and b["cls"] == cls)
+                                # a race with more classes for the role takes a larger share of it
+                                options.append(((in_role / room[(race, role)], have / race_target[race], race,
+                                                 cell_count[cell], in_class, cls), race, cls))
+                    if options:
+                        break
                 if options:
                     break
             else:
@@ -270,12 +394,20 @@ def plan_slots(base, catalog, known, specs, target, per_faction, cell_cap, repla
             rg = Counter(b["gender"] for b in in_race if b["cls"] == cls and b["path"] == path)
             g_all = Counter(b["gender"] for b in in_race)
             gender = min((0, 1), key=lambda g: (rg[g], g_all[g], g))
+            if female_target is not None:
+                # #518 owner: more women than men; women until the faction reaches its share
+                women = sum(1 for b in mine if b["gender"] == 1)
+                gender = 1 if women < female_target else gender
             s = dict(race=race, cls=cls, gender=gender, path=path, role=role)
             slots.append(s)
             mine.append(s)
             race_rem[race] -= 1
             role_rem[role] -= 1
             cell_count[(race, cls, role)] += 1
+            class_role_count[(cls, role)] += 1
+            pair_count[(race, cls)] += 1
+            if role == "HEALER" and cls in healer_rem and healer_rem[cls] > 0:
+                healer_rem[cls] -= 1
             if role == "TANK":
                 tank_class_rem[cls] -= 1
         # each replaced ordinal takes the first planned slot of its role
@@ -294,30 +426,46 @@ def plan_slots(base, catalog, known, specs, target, per_faction, cell_cap, repla
     return out
 
 
-def assign_professions(base, slots, target):
+def assign_professions(base, slots, target, professions=None):
+    professions = professions or PROFESSIONS
     have = Counter(r["profession_pair"] for r in base)
-    want = largest_remainder(target, [p for _, p, _ in PROFESSIONS])
-    need = {label: max(0, w - have[label]) for (label, _, _), w in zip(PROFESSIONS, want)}
+    want = largest_remainder(target, [p for _, p, _ in professions])
+    need = {label: max(0, w - have[label]) for (label, _, _), w in zip(professions, want)}
     # base rows above a share shrink the others: trim from the end of the list
     surplus = sum(need.values()) - len(slots)
-    for label, _, _ in reversed(PROFESSIONS):
+    for label, _, _ in reversed(professions):
         cut = min(surplus, need[label]) if surplus > 0 else 0
         need[label] -= cut
         surplus -= cut
     short = len(slots) - sum(need.values())
     need["Herbalism/Mining"] += short  # can only happen when the base is far below the shares
-    for label, _, prefer in PROFESSIONS:
-        n = need[label]
-        for pass_class in list(prefer) + [None]:
-            for s in slots:
-                if n == 0:
-                    break
-                if "pair" in s or (pass_class is not None and s["cls"] != pass_class):
-                    continue
-                s["pair"] = label
-                n -= 1
-        if n:
-            fail(f"could not place {label}")
+    # #518 owner: Leatherworking ONLY for leather classes, but leather classes are not all
+    # leatherworkers. Each slot takes the pair furthest below its share; ties: a pair its class
+    # prefers, then the pair its class has least of so far (spread within the class).
+    want_of = dict(zip((label for label, _, _ in professions), want))
+    prefer_of = {label: prefer for label, _, prefer in professions}
+    class_pair = Counter((int(r["class"]), r["profession_pair"]) for r in base)
+    leather_left = sum(1 for s in slots if s["cls"] in LEATHER_CLASSES)
+    if need[LEATHER_PAIR] > leather_left:
+        fail(f"{need[LEATHER_PAIR]} {LEATHER_PAIR} slots but only {leather_left} new leather-class slots")
+    for s in slots:
+        leather = s["cls"] in LEATHER_CLASSES
+        if leather and need[LEATHER_PAIR] >= leather_left:
+            label = LEATHER_PAIR
+        else:
+            options = [l for l, n in need.items() if n > 0 and (l != LEATHER_PAIR or leather)]
+            if not options:
+                fail(f"no profession pair left for slot class {s['cls']}")
+            # a pair the class prefers counts 1.5x as urgent (owner: Tailoring/Enchanting mainly for
+            # cloth wearers, Alchemy for priests/paladins/druids/shamans, ...)
+            label = min(options, key=lambda l: (-need[l] / max(want_of[l], 1) * (PREFER_BOOST if s["cls"] in prefer_of[l] else 1),
+                                                s["cls"] not in prefer_of[l],
+                                                class_pair[(s["cls"], l)], l))
+        s["pair"] = label
+        need[label] -= 1
+        class_pair[(s["cls"], label)] += 1
+        if leather:
+            leather_left -= 1
 
 
 # Group templates (tanks, healers, dps) for the capacity table: 5-man dungeon, 20-man raid
@@ -463,6 +611,24 @@ def main(argv=None):
     ap.add_argument("--respec-tanks", action="store_true",
                     help="respec tanks of a class above its equal share to DPS (owner decision, wave 2)")
     ap.add_argument("--respec-out", help="output: TSV ordinal guid old_path new_path for A6")
+    ap.add_argument("--healer-min", type=int, default=0,
+                    help="#518: at least N healers of every healer class per faction (N = guilds)")
+    ap.add_argument("--class-role-max", default="",
+                    help="#518: hard limits per faction, e.g. 'H:2:TANK:3,H:2:DPS:0' (faction:class:role:n)")
+    ap.add_argument("--female-share", type=float,
+                    help="#518 owner: target share of women per faction, e.g. 0.55")
+    ap.add_argument("--cell-min", type=int, default=0,
+                    help="#518 owner: at least N bots in every usable race x class x role cell (rare pairs in every role)")
+    ap.add_argument("--tank-class-weight", default="",
+                    help="#518 owner: tank class weights, e.g. '1=2' (warriors twice the share of the other tank classes)")
+    ap.add_argument("--healer-min-new", type=int, default=0,
+                    help="#518: every stage adds at least N healers of each healer class (N = new guilds per faction)")
+    ap.add_argument("--rare-pairs", default="",
+                    help="#518 owner: rare race:class pairs, e.g. '3:7,3:9,5:2' (dwarf shaman/warlock, undead paladin)")
+    ap.add_argument("--rare-share", type=float, default=1.0,
+                    help="#518 owner: max share of the faction per rare pair (floor: every role + --healer-min)")
+    ap.add_argument("--profession-shares", default="",
+                    help="#518 owner: overall pair shares, e.g. 'Herbalism/Alchemy=16,Tailoring/Enchanting=16,...'")
     ap.add_argument("--summary-out", help="output: markdown summary with the group capacity table")
     ap.add_argument("--demand", required=True, help="output: candidate demand TSV")
     ap.add_argument("--slots-out", help="output: the planned slots before the fill (review)")
@@ -492,15 +658,35 @@ def main(argv=None):
 
     levels = {int(g): int(l) for g, l, *_ in read_tsv(args.levels)} if args.levels else {}
     respecs = []
+    class_role_max = {}
+    for item in filter(None, args.class_role_max.split(",")):
+        fa, cls, role, n = item.split(":")
+        if fa not in ("A", "H") or role not in ROLES:
+            fail(f"bad --class-role-max item {item}")
+        class_role_max[(fa, int(cls), role)] = int(n)
+    if args.female_share is not None and not 0 <= args.female_share <= 1:
+        fail("--female-share must be between 0 and 1")
+    rare_pairs = frozenset(tuple(map(int, p.split(":"))) for p in filter(None, args.rare_pairs.split(",")))
+    professions = PROFESSIONS
+    if args.profession_shares:
+
+        shares = dict((k, int(v)) for k, v in (i.split("=") for i in args.profession_shares.split(",")))
+        known_pairs = [label for label, _, _ in PROFESSIONS]
+        if set(shares) - set(known_pairs) or sum(shares.values()) <= 0:
+            fail(f"--profession-shares: unknown pair or empty ({sorted(set(shares) - set(known_pairs))})")
+        professions = [(label, shares.get(label, 0), prefer) for label, _, prefer in PROFESSIONS]
     slots = plan_slots(base, catalog, set(known), specs, args.target, per_faction, args.cap,
-                       args.replace_excess, levels, args.respec_tanks, respecs)
+                       args.replace_excess, levels, args.respec_tanks, respecs,
+                       args.healer_min, class_role_max, args.female_share, args.cell_min,
+                       {int(c): float(w) for c, w in (i.split("=") for i in filter(None, args.tank_class_weight.split(",")))},
+                       rare_pairs, args.rare_share, args.healer_min_new)
     replaced = {s["replace"] for s in slots if "replace" in s}
     by_ordinal = {r["ordinal"]: r for r in respecs}
     base = [dict(r, talent_path=by_ordinal[int(r["ordinal"])]["path"], role="DPS",
                  selection_reason=r["selection_reason"] + "; respec TANK->DPS (owner 20 % tank classes)")
             if int(r["ordinal"]) in by_ordinal else r for r in base]
     kept = [r for r in base if int(r["ordinal"]) not in replaced]
-    assign_professions(kept, slots, args.target)
+    assign_professions(kept, slots, args.target, professions)
     ordinal = len(base)
     for s in slots:
         if "replace" in s:

@@ -62,14 +62,24 @@ declared="$(git -C "$REPO" config --blob HEAD:.gitmodules --get submodule.core.u
 
 if [ -z "$WORK" ]; then
     WORK="$(mktemp -d)"
-    trap 'rm -rf "$WORK"' EXIT
+    # Cleanup must never decide the result (#515): a late write into the directory
+    # makes rm fail with "Directory not empty", and under set -e that would turn a
+    # passed check into a failed step. The verdict comes from fail() alone.
+    trap 'rm -rf "$WORK" 2>/dev/null || true' EXIT
 fi
 mkdir -p "$WORK"
 
 git init -q --bare "$WORK"
-git -C "$WORK" remote add origin "$CORE_URL"
+# No background gc or maintenance in the throwaway clone (#515): git can start one
+# after a fetch (including the lazy fetches of --compare) and keep writing into
+# $WORK while the exit trap removes it. Set in the repo config, which the lazy
+# fetches read too, and again on every call by G.
+git -C "$WORK" config gc.auto 0
+git -C "$WORK" config maintenance.auto false
+G() { git -c gc.auto=0 -c maintenance.auto=false -C "$WORK" "$@"; }
+G remote add origin "$CORE_URL"
 # A refspec that matches no branch (no release/* yet) is not an error.
-git -C "$WORK" -c protocol.version=2 fetch -q --no-tags --filter=tree:0 origin \
+G -c protocol.version=2 fetch -q --no-tags --filter=tree:0 origin \
     '+refs/heads/main:refs/remotes/origin/main' \
     '+refs/heads/release/*:refs/remotes/origin/release/*' \
     || fail "cannot fetch main and release/* from $CORE_URL"
@@ -77,17 +87,17 @@ git -C "$WORK" -c protocol.version=2 fetch -q --no-tags --filter=tree:0 origin \
 echo "core gitlink : $gitlink"
 echo "core url     : $CORE_URL"
 echo "trusted refs :"
-git -C "$WORK" for-each-ref --format='  %(refname:short) %(objectname)' \
+G for-each-ref --format='  %(refname:short) %(objectname)' \
     refs/remotes/origin/main 'refs/remotes/origin/release/*'
 
 trusted=""
-if git -C "$WORK" cat-file -e "${gitlink}^{commit}" 2>/dev/null; then
+if G cat-file -e "${gitlink}^{commit}" 2>/dev/null; then
     while IFS= read -r ref; do
-        if git -C "$WORK" merge-base --is-ancestor "$gitlink" "$ref"; then
+        if G merge-base --is-ancestor "$gitlink" "$ref"; then
             trusted="$ref"
             break
         fi
-    done < <(git -C "$WORK" for-each-ref --format='%(refname:short)' \
+    done < <(G for-each-ref --format='%(refname:short)' \
                  refs/remotes/origin/main 'refs/remotes/origin/release/*')
 fi
 
@@ -99,10 +109,10 @@ if [ -n "$COMPARE" ]; then
     core_path="${COMPARE#*=}"
     [ -f "$local_file" ] || fail "--compare: local file $local_file missing"
     # tree:0 is a partial clone: trees and the blob are fetched on demand here.
-    if ! git -C "$WORK" cat-file -e "$gitlink:$core_path" 2>/dev/null; then
+    if ! G cat-file -e "$gitlink:$core_path" 2>/dev/null; then
         echo "::notice::core $gitlink has no $core_path - comparison skipped"
     else
-        core_sha="$(git -C "$WORK" cat-file blob "$gitlink:$core_path" | sha256sum | cut -d' ' -f1)"
+        core_sha="$(G cat-file blob "$gitlink:$core_path" | sha256sum | cut -d' ' -f1)"
         local_sha="$(sha256sum < "$local_file" | cut -d' ' -f1)"
         [ "$core_sha" = "$local_sha" ] \
             || fail "core copy $core_path ($core_sha) differs from $local_file ($local_sha)"
