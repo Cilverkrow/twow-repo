@@ -1,0 +1,15 @@
+# expect: R1
+# Dispatch inputs may not choose the runner.
+name: bad
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        type: string
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - run: echo x

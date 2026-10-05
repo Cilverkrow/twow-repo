@@ -12,6 +12,7 @@
 #          +----> build-and-test ---> smoke
 #   lint -----------------------+
 #
+#   core-gitlink-trust     (seconds; the core pin is on core main/release/*)
 #   windows-compile        (DISABLED 2026-09-02 - manual dispatch only)
 #
 # Six job entries. ONE full server compile per push, in the build-and-test job,
@@ -32,6 +33,10 @@
 #   * publish.yml stays a separate file: different triggers (main and tags only)
 #     and far broader permissions (packages/id-token/attestations write). Folding
 #     it in here would hand those permissions to every pull request.
+#   * the promotion of this pipeline's image to the registry (#486 B5, owner
+#     decision 3b): promote.yml, triggered by workflow_run after a green push
+#     run on main, for the same reason. This file only uploads the image and
+#     its record (core-image, debug-symbols, image-record).
 #
 # Platform split (ADR-0028): Linux is the complete gate, Windows is compile-only.
 # A clean clone CANNOT link on Windows - dep/windows/lib and mangosd.ico are
@@ -44,11 +49,19 @@
 # hosted runners are free and the billing block that forced a self-hosted
 # runner no longer applies.
 #
-#     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+#     runs-on: ubuntu-latest
 #
-# The repository variable is still the override: set CI_RUNNER to `self-hosted`
-# (the implicit label every self-hosted runner carries) and every Linux job in
-# ci.yml, nightly.yml and publish.yml moves in one edit with no commit.
+# A LITERAL, deliberately, in every workflow (#486). This used to read
+# `${{ vars.CI_RUNNER || 'ubuntu-latest' }}`, with the variable as a one-edit
+# switch onto a self-hosted runner. That switch was a hole: repository
+# variables are visible to fork pull requests, so setting it would have sent
+# every fork PR onto the self-hosted machine without the PR changing a line.
+# ops/ci/test-workflow-runner-policy.sh (run in the lint job) now rejects
+# runs-on built from vars./inputs./fromJSON, any label outside ubuntu-latest,
+# ubuntu-24.04, windows-latest and windows-2022, and self-hosted labels unless
+# ops/ci/workflow-policy-allowlist.txt names the file - and never for a
+# pull_request workflow. Moving a job off GitHub-hosted runners is therefore a
+# reviewed commit, not a variable.
 #
 # History worth keeping, because it explains code elsewhere in this file. While
 # the Linux jobs ran on `k8s-twow-repo` they failed in ways that had nothing to
@@ -217,7 +230,7 @@ jobs:
   # Docker runtime, a database, a realmd/mangosd start, a production
   # configuration, or a full C++ build.
   config-provenance:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: config provenance
     timeout-minutes: 10
     steps:
@@ -253,7 +266,7 @@ jobs:
   # The MPQ packing tests need the pinned mpqcli and are skipped here; they run
   # in the tool's container (ops/clientpatch/Dockerfile) and locally.
   clientpatch:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: clientpatch tools
     timeout-minutes: 5
     steps:
@@ -273,7 +286,7 @@ jobs:
   # World database checks (ops/dbcheck, #437). Pure Python standard library on a
   # synthetic SQLite mini database: no MariaDB, no game data, no Docker.
   dbcheck:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: dbcheck tools
     timeout-minutes: 5
     steps:
@@ -293,7 +306,7 @@ jobs:
   # Client/server inventory tool (ops/clientinventory, #455). Pure Python standard
   # library on synthetic archives and tables: no client files, no database, no Docker.
   clientinventory:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: clientinventory tools
     timeout-minutes: 5
     steps:
@@ -357,7 +370,7 @@ jobs:
   # other run restores its compiler cache from, and a main commit that was never
   # fully built is a cache poisoned for everyone.
   scope:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: scope
     timeout-minutes: 5
     outputs:
@@ -405,11 +418,11 @@ jobs:
           fi
 
   capacity:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: capacity preflight
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
 
@@ -449,7 +462,7 @@ jobs:
   # Each runs regardless of what failed before it, and the job still reports
   # failure, because a failed step fails its job even when later steps succeed.
   lint:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: lint
     timeout-minutes: 20
     steps:
@@ -616,6 +629,24 @@ jobs:
           shellcheck --severity=warning test/contract/live-smoke-triage.contract.sh
           bash test/contract/live-smoke-triage.contract.sh
 
+      # ops/build/local-maintrain-image.sh (owner decision 13, #486) is only run
+      # by hand in a main-train window. Its guards and command line are checked
+      # here against a fake docker and a throw-away repository, so the script
+      # cannot rot between trains.
+      - name: local main-train image build contract
+        if: always()
+        run: |
+          shellcheck --severity=warning test/contract/local-maintrain-image.contract.sh
+          bash test/contract/local-maintrain-image.contract.sh
+      # ops/live/release-digest.sh is the deploy rule of #486 decision 4. Its
+      # decisions are a function of publish-digest.json and the GitHub API, so
+      # it is tested against synthetic files and a stub gh.
+      - name: release-digest deploy rule contract
+        if: always()
+        run: |
+          shellcheck --severity=warning test/contract/release-digest.contract.sh
+          bash test/contract/release-digest.contract.sh
+
       # The issue importer has created duplicates or silently no-opped four
       # times: title matching (27 duplicates), `--state open` in the existence
       # check (REF-001/REF-002 refiled as #85/#86 after #79/#80 were closed),
@@ -627,6 +658,26 @@ jobs:
       - name: Issue tooling guard
         if: always()
         run: bash ops/audit/issue-tooling-guard.sh
+
+      # Runner and trigger policy (#486, B1). Every workflow stays on literal
+      # GitHub-hosted labels, pull_request workflows never name a self-hosted
+      # label, runs-on is never built from vars./inputs./fromJSON, and
+      # pull_request_target / issue_comment / unguarded workflow_run cannot get
+      # in. The self-test first proves each rule still fires on its fixture
+      # (ops/ci/fixtures/workflow-policy), then the real workflows are checked.
+      # This guards the merged state; a PR's own copy is guarded by the
+      # rulesets and CODEOWNERS (docs/runbooks/github-settings-486.md).
+      - name: Workflow runner policy
+        if: always()
+        run: |
+          bash ops/ci/test-workflow-runner-policy.sh --self-test
+          bash ops/ci/test-workflow-runner-policy.sh
+
+      # Offline contract for the core-gitlink-trust job below: throwaway git
+      # repositories, no network.
+      - name: Core gitlink trust contract
+        if: always()
+        run: bash ops/ci/test-core-gitlink-trust.sh
 
       # The platform used to carry sql/ at the root: a near-duplicate of
       # core/sql that nothing kept in step, that db-init.sh read in preference
@@ -655,6 +706,31 @@ jobs:
           # the pinned Alpine image has no entrypoint on this daemon.
           docker run --rm -i hadolint/hadolint:v2.12.0-alpine \
             hadolint --ignore DL3008 - < deploy/docker/Dockerfile.core
+
+      # The CI image and the published image must stay the same build (#486
+      # B4): same configure for what ships, the same split-debug step, debug
+      # symbols never in a runtime layer, matching labels, and a read-only
+      # parity workflow. No container and no server compile, which is why
+      # they run here, before anything is built: the first reads the files,
+      # the second runs the parity comparison script against synthetic trees,
+      # the third splits a one-line -g1 program for real (the hosted runner
+      # has gcc and binutils).
+      - name: Image build parity contracts
+        if: always()
+        run: |
+          bash ops/ci/test-image-build-parity.sh
+          bash ops/ci/test-image-parity.sh
+          bash ops/ci/test-split-debug.sh
+
+      # The promotion path (#486 B5/B6): promote.yml's trigger, guard,
+      # permissions, SHA pins and step order, the artifacts this file hands it,
+      # publish.yml as tag re-tag and dispatch-only from-source fallback; and
+      # the build-input key B5a reuses images by (throwaway git repositories).
+      - name: Promotion contracts
+        if: always()
+        run: |
+          bash ops/ci/test-promote-workflow.sh
+          bash ops/ci/test-build-input-key.sh
 
       # pipx is preinstalled on ubuntu-24.04 and is NOT on a plain Debian
       # runner image, so this cannot assume it. Order: an already-installed
@@ -787,6 +863,37 @@ jobs:
           fi
           echo "checked $(echo "$added" | wc -w) new .sql file(s), none use 'manual'"
 
+  # --------------------------------------------------------- core gitlink trust
+  #
+  # The `core` gitlink must name a commit that is already on twow-core main or a
+  # release/* branch (#486, B1). Without this a pin PR could point core at an
+  # unreviewed fork PR head (refs/pull/N/head) and CI, promote and publish would
+  # build and ship it. The fetch goes to the fixed twow-core URL, never to what
+  # .gitmodules says, and is commit-only (--filter=tree:0), so the job takes
+  # seconds and needs no secret: core is public.
+  #
+  # It also compares the core copy of the runner policy script
+  # (.github/policy/test-workflow-runner-policy.sh at the pinned commit) with
+  # ops/ci/, skipped with a notice while core does not carry the copy yet.
+  #
+  # Required status check: `core-gitlink-trust` (see
+  # docs/runbooks/github-settings-486.md).
+  core-gitlink-trust:
+    runs-on: ubuntu-latest
+    name: core-gitlink-trust
+    timeout-minutes: 10
+    steps:
+      # No submodules: the gitlink is read from the tree, the core history is
+      # fetched by the script into a temporary bare repository.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Core gitlink is on core main or release/*
+        run: |
+          bash ops/ci/check-core-gitlink-trust.sh \
+            --compare ops/ci/test-workflow-runner-policy.sh=.github/policy/test-workflow-runner-policy.sh
+
   # ---------------------------------------------------------------- integration
   #
   # The database bootstrap, from empty, against a real MariaDB.
@@ -816,7 +923,7 @@ jobs:
   # No submodules or live database: the service's dependencies are pinned by
   # services/bot-brain/go.sum and unit tests do not talk to MariaDB.
   go:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: go (bot-brain)
     timeout-minutes: 10
 
@@ -919,7 +1026,7 @@ jobs:
   # bot_brain_wire_tests only ever needed that one header directory.
   bot-brain-integration:
     needs: capacity
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: bot-brain live integration
     timeout-minutes: 15
 
@@ -976,7 +1083,7 @@ jobs:
 
   integration:
     needs: capacity
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: bootstrap from empty
     timeout-minutes: 90
 
@@ -1612,14 +1719,16 @@ jobs:
   # in-Dockerfile build are not exercised on a push any more, so a change that
   # breaks only them - a .dockerignore entry that removes a needed file, a
   # build-arg default, an apt package the builder stage needs - would get past
-  # this pipeline. publish.yml builds `--target runtime` from source on every
-  # push to main and every tag, so nothing is ever released without that path
-  # having worked, and nightly.yml compiles the same tree from a clean checkout
-  # twice (clang and all-features-off) so a source-level break is found within a
-  # day. Be precise about where the hole is: a Dockerfile-only change made on a
-  # topic branch is not proven by this pipeline. It is proven the moment it
-  # merges, by publish.yml, which is the last gate before a registry push -
-  # that is the trade, and it is a Dockerfile edit's author who should know it.
+  # this pipeline. Since #486 B5/B6 the image released is THIS job's image,
+  # promoted by promote.yml, and publish.yml builds from source only on a
+  # manual dispatch; the from-source path is proven by nightly.yml's
+  # docker-from-source job, once a day, and nightly.yml also compiles the same
+  # tree from a clean checkout twice (clang and all-features-off). Be precise
+  # about where the hole is: a Dockerfile change that breaks only `--target
+  # runtime` can reach main and is found within a day, not at merge. It cannot
+  # reach a deploy that way - what ships is `ci-staged`, which this job builds
+  # and the smoke job runs - but it would break the dispatch fallback until
+  # fixed, and it is a Dockerfile edit's author who should know it.
   #
   # Ordering: configure and header contracts first, then the complete default
   # build graph, then every registered CTest plus the disposable-DB adapter.
@@ -1641,7 +1750,7 @@ jobs:
       ${{ !cancelled()
           && needs.capacity.result == 'success'
           && (needs.scope.result != 'success' || needs.scope.outputs.cpp == 'true') }}
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: build + test
     permissions:
       contents: read
@@ -1664,7 +1773,15 @@ jobs:
       # would leave a multi-gigabyte volume behind on a shared daemon every run.
       BUILD_VOLUME: twow-build
       # Keep main and pull-request objects in one compatible ccache population.
-      # This is CI-only debug information; production images are built elsewhere.
+      #
+      # The configure below is the SAME build configuration as Dockerfile.core's
+      # builder stage, because the image assembled from it is the one that gets
+      # promoted (#486 B4): DEBUG_SYMBOLS=OFF plus -g1 in CMAKE_C_FLAGS and
+      # CMAKE_CXX_FLAGS, then split-debug.sh after the install. DEBUG_SYMBOLS
+      # must stay OFF: the core's switch appends a plain -g after -g1, and the
+      # last -g level wins. Why -g1 and not -g, and why the debug info is split
+      # out: note 4 at the top of Dockerfile.core.
+      # ops/ci/test-image-build-parity.sh holds the two configures together.
       CI_CACHE_DEBUG_SYMBOLS: 'OFF'
       CI_CACHE_ARCH: x86-64-v2
       # This is a throwaway credential for the per-run container below. It is
@@ -1708,16 +1825,25 @@ jobs:
       # stops at the root CMakeLists' FATAL_ERROR about an empty core/; with
       # only one level it stops at the core's own FATAL_ERROR about a missing
       # Eluna. `submodules: recursive` covers both.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           submodules: recursive
           # Shallow is fine for building; the revision header only needs HEAD.
+          # publish.yml checks out the same way (#486 B4). The depth does not
+          # change revision.h anyway: the core's CMakeLists asks git only for
+          # `rev-parse --short=20 HEAD` and `show -s --format=%ci` of the core
+          # submodule's HEAD, both properties of that one commit. Measured for
+          # core 441d62e7 while publish still used fetch-depth 0: both
+          # pipelines configured
+          # "Core revision: 441d62e771be7269d580 2026-10-02 19:13:36 +0200"
+          # (runs 37044803296 and 37044803023).
           fetch-depth: 1
 
       # Moved ahead of the build rather than sitting just before the image step,
       # because the build tree is now on the runner's disk instead of inside
-      # BuildKit and it is the biggest thing here. Pull-request builds explicitly
-      # disable DEBUG_SYMBOLS below; main keeps them for diagnostic parity. The
+      # BuildKit and it is the biggest thing here. Every build here, pull
+      # request or main, configures DEBUG_SYMBOLS=OFF with -g1 (see the env
+      # block of this job), the same as Dockerfile.core. The
       # runner ships with ~25 GB of toolchains this build never touches.
       # Without the room the run dies deep in the compile with "{standard
       # input}: Fatal error: <object>: No such file or directory", which is the
@@ -1773,7 +1899,7 @@ jobs:
           docker volume rm -f "$BUILD_VOLUME" 2>/dev/null || true
           df -h .
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Validate compiler cache key contract
         run: bash ops/ci/test-compiler-cache-key.sh
@@ -1786,7 +1912,7 @@ jobs:
       # spending it on; exporting a gigabyte of Debian packages to buy back
       # sixty seconds would evict the cache that buys back an hour.
       - name: Build the toolchain image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: deploy/docker/Dockerfile.core
@@ -1816,6 +1942,8 @@ jobs:
           cache_cmake_flags=$(printf '%s' \
             'CMAKE_BUILD_TYPE=Release;' \
             'DEBUG_SYMBOLS=OFF;' \
+            'CMAKE_C_FLAGS=-g1;' \
+            'CMAKE_CXX_FLAGS=-g1;' \
             'CMAKE_INSTALL_PREFIX=/opt/turtle;' \
             'TW_ARCH=x86-64-v2;' \
             'MODULES=static;' \
@@ -1844,7 +1972,7 @@ jobs:
       # intentionally keeps PRs from consuming the shared 10 GB cache budget.
       - name: Restore the compiler cache
         id: compiler-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .ccache
           key: ci-gcc-v2-${{ steps.compiler-cache-contract.outputs.fingerprint }}-${{ github.run_id }}
@@ -1925,6 +2053,8 @@ jobs:
           bash ops/ci/in-builder.sh 'cmake -S /src -B /build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DDEBUG_SYMBOLS=${{ env.CI_CACHE_DEBUG_SYMBOLS }} \
+            -DCMAKE_C_FLAGS=-g1 \
+            -DCMAKE_CXX_FLAGS=-g1 \
             -DCMAKE_INSTALL_PREFIX=/opt/turtle \
             -DTW_ARCH=x86-64-v2 \
             -DMODULES=static \
@@ -2168,7 +2298,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: test-results
           path: test-results/
@@ -2234,12 +2364,23 @@ jobs:
       # that. An OOM here does not print the words "out of memory" - it shows up
       # as ninja reporting a signal, or as the assembler failing to write an
       # object file, which reads exactly like running out of disk.
+      #
+      # split-debug.sh runs right after the install, exactly as in
+      # Dockerfile.core's builder stage: the staged binaries lose their DWARF
+      # (kept: code, .symtab, a .gnu_debuglink) and the debug files land in
+      # ./debug-symbols, which is outside ./stage and therefore outside the
+      # image. Both pipelines must do this the same way or the CI image is not
+      # the build publish ships (#486 B4).
+      #
+      # No test binary reaches ./stage although BUILD_TESTING=ON: no test
+      # target has an install() rule (see note 3 in Dockerfile.core).
       - name: Stage the verified install
         run: |
           date +%s > "$RUNNER_TEMP/twow-image-assembly.started"
           bash ops/ci/in-builder.sh "cmake --install /build \
+            && bash deploy/docker/split-debug.sh /opt/turtle /src/debug-symbols \
             && ccache --show-stats"
-          du -sh stage
+          du -sh stage debug-symbols
           ls -la stage/bin
 
       # Only the default branch writes a cache, for the reason spelled out at the
@@ -2256,7 +2397,7 @@ jobs:
       # is no main-scoped cache to inherit yet. It is the run that creates one.
       - name: Save the compiler cache
         if: success() && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .ccache
           key: ci-gcc-v2-${{ steps.compiler-cache-contract.outputs.fingerprint }}-${{ github.run_id }}
@@ -2348,12 +2489,49 @@ jobs:
           docker run --rm --pull=missing alpine:3.22 df -h / || true
           docker system df || true
 
+      # The core commit this image was built from: the gitlink of core/ in the
+      # tested tree. On a pull request that is the merge ref's tree, which is
+      # what was compiled.
+      #
+      # Also the tested tree and the build-input key (#486 B5/B5a): promote.yml
+      # compares a squash merge's tree with the tree its pin PR tested, and the
+      # key labels the image so a later commit with the same build inputs can
+      # be given this image without a compile (ops/ci/build-input-key.sh).
+      - name: Record the core revision
+        id: core-revision
+        run: |
+          set -eu
+          core_sha=$(git ls-tree HEAD core | awk '$2 == "commit" { print $3 }')
+          printf '%s' "$core_sha" | grep -Eqx '[0-9a-f]{40}' || {
+            echo "::error::could not read the core gitlink from HEAD"
+            exit 1
+          }
+          build_input=$(bash ops/ci/build-input-key.sh HEAD)
+          tree=$(git rev-parse 'HEAD^{tree}')
+          {
+            echo "sha=$core_sha"
+            echo "build_input=$build_input"
+            echo "tree=$tree"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "- **Core revision:** \`$core_sha\`"
+            echo "- **Tested tree:** \`$tree\`"
+            echo "- **Build-input key:** \`$build_input\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # `ci-staged` is `runtime-base` plus a COPY of ./stage - the same base
       # image, apt list, entrypoint, user and directory layout as the `runtime`
-      # target publish.yml ships. See the long comment at the top of this job
-      # for what that does and does not prove.
+      # target publish.yml ships, built from the same configuration (note 3 in
+      # Dockerfile.core). See the long comment at the top of this job for what
+      # that does and does not prove.
+      #
+      # Labels: Dockerfile.core has no LABEL, so without these the image says
+      # nothing about where it came from. They are the ones promote.yml checks
+      # before pushing (#486 B5) and the ones publish.yml sets as well:
+      # revision/source/version through docker/metadata-action there, and
+      # io.twow.core.revision and io.twow.build-input explicitly in both.
       - name: Assemble the core image from the staged install
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: deploy/docker/Dockerfile.core
@@ -2363,6 +2541,12 @@ jobs:
           # and `docker save` it for the smoke job.
           load: true
           tags: ${{ env.CORE_IMAGE }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=sha-${{ github.sha }}
+            io.twow.core.revision=${{ steps.core-revision.outputs.sha }}
+            io.twow.build-input=${{ steps.core-revision.outputs.build_input }}
           # No cache-to for the same reason as the toolchain image, and one
           # sharper one: the only substantial layer here is the COPY of the
           # staged install, which is 2.5 GB and different on every run by
@@ -2437,13 +2621,79 @@ jobs:
           docker save "$CORE_IMAGE" | gzip -1 > image/core.tar.gz
           ls -lh image/core.tar.gz
 
-      - uses: actions/upload-artifact@v4
+      # On a push to main, promote.yml (#486 B5, owner decision 3b) pushes this
+      # very tar to the registry after the whole run is green; on a pin PR, its
+      # tree is what promote compares the squash merge against. Both read this
+      # record from the run: the tested commit and tree, the image's labels,
+      # and sha256 sums of the core-image tar and of every debug-symbols file,
+      # which promote checks before `docker load`. Written under $RUNNER_TEMP,
+      # never into the checkout.
+      - name: Record the image for promotion
+        env:
+          CORE_SHA: ${{ steps.core-revision.outputs.sha }}
+          TREE: ${{ steps.core-revision.outputs.tree }}
+          BUILD_INPUT: ${{ steps.core-revision.outputs.build_input }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          out="$RUNNER_TEMP/image-record"
+          mkdir -p "$out"
+          image_sha256=$(sha256sum image/core.tar.gz | cut -d' ' -f1)
+          (cd debug-symbols && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum) \
+            > "$out/debug-symbols.sha256"
+          jq -n \
+            --arg commit "$GITHUB_SHA" \
+            --arg tree "$TREE" \
+            --arg event "$GITHUB_EVENT_NAME" \
+            --arg ref "$GITHUB_REF" \
+            --arg pr_head_sha "$PR_HEAD_SHA" \
+            --arg core_sha "$CORE_SHA" \
+            --arg build_input "$BUILD_INPUT" \
+            --arg core_image_sha256 "$image_sha256" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            '{commit: $commit, tree: $tree, event: $event, ref: $ref,
+              pr_head_sha: $pr_head_sha, core_sha: $core_sha,
+              build_input: $build_input, core_image_sha256: $core_image_sha256,
+              run_id: $run_id, run_attempt: $run_attempt}' \
+            > "$out/image-record.json"
+          cat "$out/image-record.json"
+          echo "- **core-image sha256:** \`$image_sha256\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: core-image
           path: image/core.tar.gz
-          # One day is plenty: its only consumer is the smoke job in this run.
-          retention-days: 1
+          # The smoke job in this run reads it within the hour. On main,
+          # promote.yml reads it after the whole run, and a promotion that
+          # failed for an outside reason (registry, attestation API) must be
+          # re-runnable over a weekend: three days there (#486 B5).
+          retention-days: ${{ github.ref == 'refs/heads/main' && 3 || 1 }}
           compression-level: 0
+          if-no-files-found: error
+
+      # A few hundred bytes; seven days so a pin PR's record is still there
+      # when its squash merge is promoted.
+      - name: Upload the image record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-record
+          path: ${{ runner.temp }}/image-record/
+          retention-days: 7
+          if-no-files-found: error
+
+      # The debug information split out of the binaries in this image (owner
+      # decision 2b): a separate artifact, never a layer of the image. Matched
+      # to a binary by the GNU build id listed in BUILD-IDS, so these files
+      # belong to THIS run's image and to no other build of the same commit.
+      # Kept longer on main, whose image is the one that will be promoted and
+      # deployed; a pull request's are only of interest while it is open.
+      - name: Upload the split debug symbols
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: debug-symbols
+          path: debug-symbols/
+          retention-days: ${{ github.ref == 'refs/heads/main' && 90 || 3 }}
           if-no-files-found: error
 
   # ---------------------------------------------------------------- smoke
@@ -2476,11 +2726,11 @@ jobs:
   # naming rather than papering over.
   smoke:
     needs: build-and-test
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: compose up + smoke
     # Minutes, not hours: the compile already happened upstream in the DAG. The
     # old 150-minute budget existed only to cover `up --build`.
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     # packages: read is for the private client-data image below. The workflow's
     # default is contents: read only, and a job cannot inherit a permission the
@@ -2749,10 +2999,14 @@ jobs:
         run: |
           set -eu
           C="docker compose -f $TWOW_COMPOSE_FILE --env-file $TWOW_ENV_FILE"
+          # Deadline by wall clock, not by loop count: each pass also pays for two
+          # `docker inspect` calls, so a counter drifts well past its nominal limit
+          # (twow-repo#310). Hosted runners vary from 11 to 21 minutes here.
+          deadline_s=1800
           started=$(date +%s)
           $C up -d mangosd
           h=starting
-          for _ in $(seq 1 600); do
+          while [ $(( $(date +%s) - started )) -lt "$deadline_s" ]; do
             h=$(docker inspect -f '{{.State.Health.Status}}' "$($C ps -aq mangosd)" 2>/dev/null || echo starting)
             [ "$h" = "healthy" ] && break
             # An exited container will never become healthy; stop waiting for it.
@@ -2763,13 +3017,20 @@ jobs:
             sleep 2
           done
           [ "$h" = "healthy" ] || {
-            echo "::error::mangosd did not become healthy within 1200s"
+            echo "::error::mangosd did not become healthy within ${deadline_s}s"
             $C logs --tail 200 mangosd
             exit 1
           }
           elapsed=$(( $(date +%s) - started ))
           printf -- '- **mangosd / world-ready:** %dm %02ds\n' \
             "$((elapsed / 60))" "$((elapsed % 60))" >> "$GITHUB_STEP_SUMMARY"
+          # One greppable log line per run (`gh run view --log`), so the start
+          # time can be tracked across trains without opening the summary.
+          echo "::notice::world_ready_seconds=${elapsed}"
+          # mangosd's own load time, to tell server load apart from runner and
+          # health-check overhead. Informational: a missing line must not fail.
+          lt=$($C logs mangosd 2>&1 | grep -m1 'Loading time' || true)
+          echo "mangosd: ${lt:-no 'Loading time' line in the mangosd log}"
           $C ps -a
 
       # bot-brain and the stub model, for test/smoke/60-bot-dialogue.sh.

@@ -26,7 +26,7 @@ this register until 2026-09-02:
 | ADR-0020 | Split upstream and project code across two repositories (`twow-core` + `twow-repo`) | Proposed; amended 2026-09-02, and its *module-free core* rationale superseded |
 | ADR-0021 | Module boundaries and per-module schema ownership; one module system, `modules/` | Proposed; amended 2026-09-02 |
 | ADR-0022 | Test strategy: five levels, all registered with CTest | Proposed; amended 2026-09-02 |
-| ADR-0023 | Containerization and the one-command contract (`make up` / `smoke` / `test`) | Proposed; amended 2026-09-02 |
+| ADR-0023 | Containerization and the one-command contract (`make up` / `smoke` / `test`); images promoted, not rebuilt | Proposed; amended 2026-09-02 and 2026-10-03 (promote instead of rebuild, #486) |
 | ADR-0024 | Project invariants 1-6, binding on every module, service, migration and script | Proposed; amended 2026-09-02 |
 | ADR-0025 | Repository and project structure; folder structure is module structure | Proposed; amended 2026-09-02 |
 | ADR-0026 | **Project lineage and provenance -- the single authority for the fork point, the upstream of record, and which repository may merge from upstream** | **Accepted 2026-09-02** |

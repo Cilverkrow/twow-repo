@@ -18,15 +18,17 @@ key() {
     bash "$KEY_SCRIPT" | sed -n 's/^fingerprint=//p'
 }
 
-flags='CMAKE_BUILD_TYPE=Release;DEBUG_SYMBOLS=OFF;CMAKE_INSTALL_PREFIX=/opt/turtle;TW_ARCH=x86-64-v2;MODULES=static;BUILD_TESTING=ON;BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON'
+flags='CMAKE_BUILD_TYPE=Release;DEBUG_SYMBOLS=OFF;CMAKE_C_FLAGS=-g1;CMAKE_CXX_FLAGS=-g1;CMAKE_INSTALL_PREFIX=/opt/turtle;TW_ARCH=x86-64-v2;MODULES=static;BUILD_TESTING=ON;BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON'
 same_a=$(key 14.2.0 "$flags")
 same_b=$(key 14.2.0 "$flags")
 changed_compiler=$(key 15.1.0 "$flags")
 changed_abi=$(key 14.2.0 "${flags/TW_ARCH=x86-64-v2/TW_ARCH=native}")
+changed_debug=$(key 14.2.0 "${flags/CMAKE_CXX_FLAGS=-g1/CMAKE_CXX_FLAGS=-g}")
 
 [[ "$same_a" == "$same_b" ]] || { echo 'ERROR: identical contract is unstable' >&2; exit 1; }
 [[ "$same_a" != "$changed_compiler" ]] || { echo 'ERROR: compiler change reused a cache contract' >&2; exit 1; }
 [[ "$same_a" != "$changed_abi" ]] || { echo 'ERROR: ABI flag change reused a cache contract' >&2; exit 1; }
+[[ "$same_a" != "$changed_debug" ]] || { echo 'ERROR: debug-info flag change reused a cache contract' >&2; exit 1; }
 
 # A source commit/Core gitlink is intentionally absent above. ccache validates
 # changed source content per translation unit, while unchanged units retain this
@@ -34,6 +36,8 @@ changed_abi=$(key 14.2.0 "${flags/TW_ARCH=x86-64-v2/TW_ARCH=native}")
 grep -Fqx "      CI_CACHE_DEBUG_SYMBOLS: 'OFF'" "$WORKFLOW"
 grep -Fqx '            -DCMAKE_BUILD_TYPE=Release \' "$WORKFLOW"
 grep -Fqx '            -DDEBUG_SYMBOLS=${{ env.CI_CACHE_DEBUG_SYMBOLS }} \' "$WORKFLOW"
+grep -Fqx '            -DCMAKE_C_FLAGS=-g1 \' "$WORKFLOW"
+grep -Fqx '            -DCMAKE_CXX_FLAGS=-g1 \' "$WORKFLOW"
 grep -Fqx '            -DCMAKE_INSTALL_PREFIX=/opt/turtle \' "$WORKFLOW"
 grep -Fqx '            -DTW_ARCH=x86-64-v2 \' "$WORKFLOW"
 grep -Fqx '            -DMODULES=static \' "$WORKFLOW"
@@ -41,6 +45,7 @@ grep -Fqx '            -DBUILD_TESTING=ON \' "$WORKFLOW"
 grep -Fqx '            -DBUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON \' "$WORKFLOW"
 cache_contract=$(sed -n '/cache_cmake_flags=/,/contract=/p' "$WORKFLOW")
 for component in CMAKE_BUILD_TYPE=Release DEBUG_SYMBOLS=OFF \
+                 CMAKE_C_FLAGS=-g1 CMAKE_CXX_FLAGS=-g1 \
                  CMAKE_INSTALL_PREFIX=/opt/turtle TW_ARCH=x86-64-v2 \
                  MODULES=static BUILD_TESTING=ON \
                  BUILD_PERSISTENT_ROSTER_ADAPTER_TESTS=ON; do
@@ -59,8 +64,15 @@ if grep -Fq 'CCACHE_COMPILERCHECK=' "$ROOT/ops/ci/in-builder.sh"; then
     echo 'ERROR: ccache compiler validation must retain its safe default' >&2
     exit 1
 fi
+# The -g1 objects need the larger cache; the budget arithmetic is beside this
+# line in in-builder.sh. Moving it is a measured decision, not a drive-by.
+grep -Fq -- '--env CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-5G}"' "$ROOT/ops/ci/in-builder.sh" || {
+    echo 'ERROR: in-builder.sh CCACHE_MAXSIZE default is not the budgeted 5G' >&2
+    exit 1
+}
 
 printf '%s\n' 'same_toolchain_new_commit=compatible_restore'
 printf '%s\n' 'changed_compiler=no_compatible_restore'
 printf '%s\n' 'changed_abi_flag=no_compatible_restore'
+printf '%s\n' 'changed_debug_info_flag=no_compatible_restore'
 printf '%s\n' 'changed_core_source=compatible_namespace_ccache_validates_content'

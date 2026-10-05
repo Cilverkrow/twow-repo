@@ -1,0 +1,13 @@
+# expect: R3
+# Runner groups are not standard hosted runners.
+name: bad
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on:
+      group: my-runners
+    steps:
+      - run: echo x

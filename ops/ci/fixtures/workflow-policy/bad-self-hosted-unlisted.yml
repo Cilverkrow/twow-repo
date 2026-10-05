@@ -1,0 +1,12 @@
+# expect: R3
+# self-hosted without an allowlist entry, push only.
+name: bad
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: [self-hosted, linux]
+    steps:
+      - run: echo x

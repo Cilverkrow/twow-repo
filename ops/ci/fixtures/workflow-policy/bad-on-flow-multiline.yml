@@ -1,0 +1,11 @@
+# expect: R2
+# A flow sequence of triggers split over lines.
+name: bad
+on: [push,
+  pull_request_target]
+permissions: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo x

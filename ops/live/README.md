@@ -70,3 +70,43 @@ integrity reports while loading), `known-runtime` (content after world-up) or
 fails the smoke. Classify a new pattern only after looking at it, and give a
 bot finding an issue first. `ops/live/live-smoke.sh --classify <server.log>`
 runs the triage alone; `test/contract/live-smoke-triage.contract.sh` tests it.
+
+# Release digest: which image may be deployed (#486, owner decision 4)
+
+Since #486 B5/B6 the core image a deploy pulls is the image `ci.yml` built and
+tested on `main`, pushed and signed by `.github/workflows/promote.yml` after the
+whole ci run was green. `publish.yml` no longer builds on a push to `main`; a
+`v*` tag only re-tags the promoted digest, and a from-source build exists only
+as a manual, environment-protected dispatch.
+
+`release-digest.sh` is the deploy rule as a script. Run it before every core
+deploy and fill the train's override from its output, never from a tag:
+
+```sh
+gh run download <promote run id> -R Cilverkrow/twow-repo -n publish-digest
+ops/live/release-digest.sh publish-digest.json            # decision + verification
+bash fill-digest.sh $(ops/live/release-digest.sh --fill-args publish-digest.json)
+```
+
+| Step | What it checks |
+|---|---|
+| digest | taken from `publish-digest.json` (or the attestation subject), never by resolving `sha-<40>` or a version tag - anyone who can push can move a tag |
+| signer | `promote.yml@refs/heads/main` (normal case, also for a version tag, which re-tags the promoted digest); `publish.yml@refs/tags/v…` only with `--fallback-tag` (from-source dispatch on a tag); anything else is refused |
+| release rule | main `build + test` green **and** (squash tree identical to the tree the pin PR tested **and** that PR's smoke green **or** the main smoke green). Re-read from the GitHub API for the built commit, not trusted from the file; only `tree_identical` comes from the file |
+| attestation | `gh attestation verify oci://ghcr.io/cilverkrow/mangosd@<digest> --repo Cilverkrow/twow-repo --signer-workflow Cilverkrow/twow-repo/.github/workflows/promote.yml --source-ref refs/heads/main --deny-self-hosted-runners` |
+| binding | the attestation names promote.yml on `main`, not the built commit, so it alone would pass for any digest promote ever pushed. The script therefore reads the attested run ids (`invocationId`), downloads `publish-digest` of the file's `run_id` and requires it to be byte-identical to the given file, and requires that run to be an attested one (for a version tag: an attested promote run whose own record names the same digest and the built commit). Any mismatch exits `4` |
+
+Exit codes: `0` release and verified, `3` the rule says no, `4` attestation
+failed, `5` a GitHub lookup failed, `2` usage or malformed file. `--offline`
+evaluates the file alone and skips the attestation: preparation only, never the
+deploy decision (and refused together with `--fill-args`).
+
+A record with `source: reused` (B5a, no C++ change, image of an earlier commit
+with the same build-input key) is refused on purpose: deploy the record of the
+commit named in `reused_from`, which has the same digest. If the main smoke
+turns red after a deploy that was released through the pin-PR branch of the
+rule: stop the deploy or roll back.
+
+After the pull the image's `org.opencontainers.image.revision` label must be the
+built commit; the script prints the `docker image inspect` line for it.
+`test/contract/release-digest.contract.sh` tests every branch with a stub `gh`.

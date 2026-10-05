@@ -169,6 +169,20 @@ class Table:
         self.rows = [self.rows[p] for p in order]
         self._rebuild_index()
 
+    def move_behind_group(self, column: str, keys: set) -> None:
+        """Move only the rows with these keys directly behind the last other row
+        that shares their value in `column` (in their original order); every
+        other row keeps its position. A group of the base that is already split
+        stays as it is (#455: Turtle's SkillRaceClassInfo has skill 137 twice)."""
+        i = self.binding.index(column)
+        moving = [r for r in self.rows if self._key_of(r.values) in keys]
+        out = [r for r in self.rows if self._key_of(r.values) not in keys]
+        for row in moving:
+            last = max((p for p, other in enumerate(out) if other.values[i] == row.values[i]), default=None)
+            out.insert(len(out) if last is None else last + 1, row)
+        self.rows = out
+        self._rebuild_index()
+
     def split_groups(self, column: str) -> dict:
         """{value: number of separate blocks} for every value of `column` whose
         rows are not one contiguous block."""

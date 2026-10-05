@@ -1,0 +1,12 @@
+# expect: R1
+# Allowlisted for self-hosted, but callable: a pull_request caller passes its
+# event on, so fork code would reach the self-hosted runner.
+name: bad
+on:
+  workflow_call:
+permissions: {}
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - run: echo x

@@ -33,10 +33,10 @@ concurrency:
 permissions:
   contents: read
 
-# Every job here is Linux, so every job here follows ci.yml onto the self-hosted
-# runner while GitHub-hosted runners are billing-blocked. The full rationale, and
-# the one-variable way back, are in the header of ci.yml: set the repository
-# variable CI_RUNNER to `ubuntu-24.04` and all three workflows move at once.
+# Every job here runs on a GitHub-hosted ubuntu-latest runner, written as a
+# literal. The former CI_RUNNER repository variable is gone because variables are
+# visible to fork PRs; the header of ci.yml and
+# ops/ci/test-workflow-runner-policy.sh explain the rule (#486).
 env:
   # An EXPLICIT number, for the reason spelled out at length in ci.yml: on the
   # self-hosted runner nproc reports 20 and free reports 31Gi, and both are the
@@ -56,7 +56,7 @@ jobs:
   # variables, out-of-line template definitions, the shadowing warnings - that a
   # tree building under only one of them is a tree that will surprise someone.
   clang:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: clang full build
     timeout-minutes: 120
     env:
@@ -149,7 +149,7 @@ jobs:
   # compiled out - and the cheapest is still a full compile, which is why it is
   # here rather than on the push path.
   no-modules:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: all features off
     timeout-minutes: 120
     steps:
@@ -226,7 +226,7 @@ jobs:
   # When ADR-0020's split lands and UPSTREAM.lock exists, the recorded base below
   # should be read from that file instead of being spelled here.
   upstream-drift:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: upstream drift
     timeout-minutes: 30
     env:
@@ -344,7 +344,7 @@ jobs:
   # build does.
   docker-from-source:
     name: docker image builds from source
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
       # recursive, and it has to reach two levels: the server core is the core/

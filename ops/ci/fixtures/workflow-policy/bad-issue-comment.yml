@@ -1,0 +1,13 @@
+# expect: R2
+# issue_comment lets any commenter trigger a run.
+name: bad
+on:
+  issue_comment:
+    types: [created]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo x

@@ -1,0 +1,13 @@
+# expect: R3
+# Block-list form of runs-on.
+name: bad
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on:
+      - self-hosted
+    steps:
+      - run: echo x
