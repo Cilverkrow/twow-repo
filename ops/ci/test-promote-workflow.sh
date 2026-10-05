@@ -106,6 +106,51 @@ if [ "$failures" -eq 0 ]; then
     last_attest=$(grep -nF 'uses: actions/attest-' "$PROMOTE" | tail -1 | cut -d: -f1)
     [ "$last_attest" -lt "$record" ] || fail "publish-digest.json must be written after every attestation"
 fi
+# ---------------------------------------------------------------- skip branch (#507)
+# A commit from before the promote tooling (#500) is not an alarm: promote.yml
+# runs from main but checks out the triggering commit, so it ends green with a
+# notice. The skip branch must be the ONLY successful exit before the trust step
+# and must not weaken the fail-closed path of a commit that has the tooling.
+for tool in ops/ci/build-input-key.sh ops/ci/check-core-gitlink-trust.sh ops/live/release-digest.sh; do
+    grep -Fq "$tool" <(code "$PROMOTE" | grep -F 'for f in') \
+        || fail "promote.yml skip check does not test for $tool"
+    [ -f "$ROOT/$tool" ] || fail "$tool is named by the promote skip check but does not exist"
+done
+skip_writes=$(code "$PROMOTE" | grep -Fc 'echo "skip=true" >> "$GITHUB_OUTPUT"' || true)
+[ "$skip_writes" -eq 1 ] || fail "promote.yml must write skip=true exactly once (found $skip_writes)"
+skip_line=$(line_of 'echo "skip=true" >> "$GITHUB_OUTPUT"' || true)
+notice_line=$(line_of "predates promote tooling" || true)
+mode_line=$(line_of 'echo "mode=$mode"' || true)
+api_line=$(line_of 'actions/runs/$CI_RUN_ID" \' || true)
+for v in skip_line notice_line mode_line api_line; do
+    [ -n "${!v}" ] || fail "promote.yml lacks the skip branch marker for '$v' (#507)"
+done
+if [ "$failures" -eq 0 ]; then
+    grep -Fq '::notice::commit' <(sed -n "${notice_line}p" "$PROMOTE") || fail "promote.yml skip branch does not print a ::notice::"
+    [ "$notice_line" -lt "$skip_line" ] && [ "$skip_line" -lt "$api_line" ] \
+        || fail "promote.yml skip branch must come before any API check of the ci run"
+    [ "$skip_line" -lt "$mode_line" ] || fail "promote.yml must not set mode on the skip path"
+    [ "$(sed -n "$((skip_line + 1))p" "$PROMOTE" | sed 's/^ *//')" = 'exit 0' ] \
+        || fail "promote.yml skip branch must exit 0 right after writing skip=true"
+    # The only `exit 0` ahead of the trust step is the skip branch's.
+    exits_before_trust=$(sed -n "1,$((trust - 1))p" "$PROMOTE" | grep -v '^ *#' | grep -cE '(^|[^a-z])exit 0( |$)' || true)
+    [ "$exits_before_trust" -eq 1 ] \
+        || fail "promote.yml has $exits_before_trust successful exits before the trust step; only the skip branch may have one"
+    # Every step with side effects or checks behind it honours the skip.
+    for step in '- name: Core gitlink is on core main or release/*' '- name: Compare with the tested pin PR'; do
+        n=$(line_of "$step")
+        [ -n "$n" ] && [ "$(sed -n "$((n + 1))p" "$PROMOTE" | sed 's/^ *//')" = "if: steps.run.outputs.skip != 'true'" ] \
+            || fail "promote.yml step '${step#- name: }' does not honour skip"
+    done
+    for action in docker/setup-buildx-action@ docker/login-action@; do
+        n=$(line_of "uses: $action")
+        [ -n "$n" ] && [ "$(sed -n "$((n - 1))p" "$PROMOTE" | sed 's/^ *- *//')" = "if: steps.run.outputs.skip != 'true'" ] \
+            || fail "promote.yml step using $action does not honour skip"
+    done
+    # Behind the skip `mode` is empty, so every promote/reuse step is off by its own condition.
+    gated=$(code "$PROMOTE" | grep -cE "^ +if: steps\.run\.outputs\.mode == '(promote|reuse)'" || true)
+    [ "$gated" -ge 12 ] || fail "promote.yml promote/reuse steps lost their mode condition (found $gated)"
+fi
 grep -Fq "head_sha" <(sed -n '/- uses: actions\/checkout@/,/persist-credentials/p' "$PROMOTE") \
     || fail "promote.yml does not check out workflow_run.head_sha"
 grep -Eq '^ +persist-credentials: false$' "$PROMOTE" || fail "promote.yml checkout keeps credentials"
