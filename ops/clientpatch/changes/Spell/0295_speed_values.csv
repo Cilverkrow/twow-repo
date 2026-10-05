@@ -1,0 +1,48 @@
+op,key,field,value,note
+# #295 train 9 (twow-core 20261002213000, W3): player speed bonuses doubled (+100 % of the bonus),
+# only on IDs that no NPC uses. EffectBasePoints from spell_template, the server is the source of
+# truth (amount = basepoints + 1); the tooltips read them through $s1/$s2. Quickness doubles only
+# its movement part, so its text names $s2 now. Blink: the new passive 61310 is in
+# 0295_new_spells.csv; Blink 1953 itself stays unchanged (NPCs use it).
+# Class spells, talents and racials (run speed):
+set,2645,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Ghost Wolf: +40 -> +80 %
+set,2983,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Sprint r1: +50 -> +100 %
+set,8696,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Sprint r2: +60 -> +120 %
+set,11305,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Sprint r3: +70 -> +140 %
+set,1850,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Dash r1: +50 -> +100 %
+set,9821,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Dash r2: +60 -> +120 %
+set,5419,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Travel Form (Passive): +40 -> +80 %
+set,5118,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Aspect of the Cheetah: +30 -> +60 %
+set,13159,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Aspect of the Pack: +30 -> +60 %
+set,57108,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Emerald Blessing: +10 -> +20 %
+set,17002,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Feral Swiftness r1: +15 -> +30 %
+set,24866,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Feral Swiftness r2: +30 -> +60 %
+set,26022,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Pursuit of Justice r1: run +4 -> +8 %
+set,26022,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Pursuit of Justice r1: mounted +4 -> +8 %
+set,26023,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Pursuit of Justice r2: run +8 -> +16 %
+set,26023,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Pursuit of Justice r2: mounted +8 -> +16 %
+set,19559,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Pathfinding r1: aspects +3 -> +6 (spell mod)
+set,19559,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Pathfinding r1: pet +15 -> +30 %
+set,19560,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Pathfinding r2: aspects +6 -> +12 (spell mod)
+set,19560,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Pathfinding r2: pet +30 -> +60 %
+set,46097,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Ghostly Swiftness r1: +5 -> +10 %
+set,46097,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Ghostly Swiftness r1: +2 -> +4 %
+set,46098,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Ghostly Swiftness r2: +10 -> +20 %
+set,46098,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Ghostly Swiftness r2: +4 -> +8 %
+set,46099,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Ghostly Swiftness r3: +15 -> +30 %
+set,46099,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Ghostly Swiftness r3: +6 -> +12 %
+set,51670,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Thirst for Blood: +10 -> +20 %
+set,52737,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Sinister Pursuit r1 (demon): +5 -> +10 %
+set,52739,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Sinister Pursuit r2 (demon): +10 -> +20 %
+set,20582,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Quickness (night elf): movement +1 -> +2 %
+set,20582,Description_lang_enUS,sql:spell_template.description,Quickness: the text names the movement part $s2
+set,46240,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Exit Strategy (goblin): +40 -> +80 %
+# Swim speed:
+set,5421,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Aquatic Form (Passive): +50 -> +100 %
+set,8747,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Swimming Speed (items): +15 -> +30 %
+set,48015,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Swimming Speed (items): +5 -> +10 %
+set,7840,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Swim Speed Potion: +100 -> +200 %
+set,49370,EffectBasePoints[0],sql:spell_template.effectBasePoints1,Fluidity Potion: +100 -> +200 %
+set,24347,EffectBasePoints[2],sql:spell_template.effectBasePoints3,Master Angler: swim +25 -> +50 %
+set,24090,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Minor Movement Speed: swim +8 -> +16 % (run part stays)
+set,24926,EffectBasePoints[1],sql:spell_template.effectBasePoints2,Hallow's End Candy: swim +50 -> +100 %

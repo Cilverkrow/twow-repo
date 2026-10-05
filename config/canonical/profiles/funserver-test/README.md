@@ -85,4 +85,11 @@ quest groups of up to 5 bots, skipping quest objectives that keep timing out, an
 talent auras for the shaman and rogue tank paths. Zone escape retries after 600 s.
 The `[AutoLearn]`, `[VendorGear]` and `[BotGroup]` traces are for the first 24 hours.
 
-All one hundred and fourteen deviations are classified in `semantic-profile.tsv`.
+Release train 9 (#295, owner decisions 2026-10-02) switches on riding in four
+stages for players and bots (`Funserver.Riding.Stages.Enabled = 1`: riding
+75/150/225/300 from level 10/20/40/60, mount speed by rank and mount family) and
+makes slows of player-controlled casters 40 % stronger (cap 90 %) and their roots
+40 % longer. NPC spells stay unchanged. The keys need the train-9 core pin with
+its migrations and client patch 8.
+
+All one hundred and twenty-five deviations are classified in `semantic-profile.tsv`.

@@ -16,13 +16,17 @@ held.
 | homebind = `playercreateinfo` (race's starting area) | `specNo` and `profession_pair` events (`cv_bots`) |
 | inventory + bank + mail items → canonical starter outfit | BotBrain identity/personality (`cv_brain`) |
 | quests, auras, cooldowns, action bars, group membership, corpses | other `cv_bots` events (trade discounts, multipliers) |
-| profession skills deleted; level-range skills clamped to 5/5 | |
+| profession skills and riding (762) deleted; level-range skills clamped to 5/5 | |
 | pets (+ pet spells/cooldowns), mail, reputation, forgotten skills, `ai_playerbot_db_store` | |
 | spells and talents: `at_login |= 6`, the core resets them at next login | |
 
 Level-range skills (weapons, defence, class schools) need the clamp because the core
 only lowers their **max** to the level on login (`Player::_LoadSkills`,
 `SKILL_RANGE_LEVEL`), never the value.
+
+Riding is deleted with the professions (#295): it is trained from level 10 now, so a
+reset bot starts without it. Before, the clamp skipped riding 300/300 (max 300) and left
+75/150 at 5/5. The riding and mount spells go with the spell reset at the next login.
 
 ## Safety model
 
