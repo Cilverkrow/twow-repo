@@ -131,4 +131,5 @@ aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkSeconds	INTENTIONAL_CHAN
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkCountsRouteDanger	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-park-route-danger
 aiplayerbot	AiPlayerbot.QuestFirstProgression.SkipScriptOnlyQuestTakers	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-skip-script-only-takers
 aiplayerbot	AiPlayerbot.QuestFirstProgression.CrossMapContinentsOnly	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-crossmap-continents-only
+aiplayerbot	AiPlayerbot.QuestFirstProgression.GrindFallbackFailures	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-train9-grind-fallback-2
 aiplayerbot	AiPlayerbot.ProfessionUse.ClearCorpseForSkinning	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-owner-clear-corpse-for-skinning
