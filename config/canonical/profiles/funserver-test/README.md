@@ -90,4 +90,10 @@ damage, at least one healer class each, tank classes and rare class/race pairs s
 come only from the plan file `/opt/turtle/etc/roster-guilds.tsv`, built and mounted read-only
 in the train-9 window; bots found no random guilds (`AiPlayerbot.RandomBotFormGuild = 0`, #495).
 
-All one hundred and fifty-five deviations are classified in `semantic-profile.tsv`.
+Bot chat and guild charters (#485, owner decision 2026-10-02): bots no longer /say to other
+bots (`AiPlayerbot.InviteChat = 0`, `AiPlayerbot.RandomBotSayWithoutMaster = 0`, no
+`custom::say` in the non-combat strategies); guild chat while a real member is online follows
+with #478. Roster bots stop buying, offering and turning in guild charters
+(`AiPlayerbot.RandomBotFormGuild = 0`) until the core roster guild founding is live.
+
+All one hundred and sixty deviations are classified in `semantic-profile.tsv`.
