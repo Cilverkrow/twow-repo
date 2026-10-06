@@ -85,8 +85,19 @@ quest groups of up to 5 bots, skipping quest objectives that keep timing out, an
 talent auras for the shaman and rogue tank paths. Zone escape retries after 600 s.
 The `[AutoLearn]`, `[VendorGear]` and `[BotGroup]` traces are for the first 24 hours.
 
+Roster guilds (train 9, #485, core#281/#309): guilds of 45 bots, 7 tanks / 10 healers / 28
+damage, at least one healer class each, tank classes and rare class/race pairs spread. Members
+come only from the plan file `/opt/turtle/etc/roster-guilds.tsv`, built and mounted read-only
+in the train-9 window (founding needs `AiPlayerbot.RandomBotFormGuild = 1`, see below).
+
+Bot chat and guild charters (#485, owner decision 2026-10-02): bots no longer /say to other
+bots (`AiPlayerbot.InviteChat = 0`, `AiPlayerbot.RandomBotSayWithoutMaster = 0`, no
+`custom::say` in the non-combat strategies); guild chat while a real member is online follows
+with #478. Roster bots buy guild charters only on the roster path (names and plan below);
+random guild founding outside the plan stays off.
+
 Roster guild names (train 9, #485 point 3, owner 2026-10-03): the 24 proposed names form the pool
 roster bots found their guilds from (`AiPlayerbot.RosterGuild.NamesAlliance`, `NamesHorde`); the
 roster path also needs `AiPlayerbot.RandomBotFormGuild = 1`.
 
-All one hundred and thirty-nine deviations are classified in `semantic-profile.tsv`.
+All one hundred and sixty-two deviations are classified in `semantic-profile.tsv`.
