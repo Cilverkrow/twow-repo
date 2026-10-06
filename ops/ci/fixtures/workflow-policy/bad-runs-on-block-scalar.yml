@@ -1,0 +1,11 @@
+# expect: R3
+# A block scalar hides the label from a line-based reader; it is not a literal.
+name: bad
+on: push
+permissions: {}
+jobs:
+  build:
+    runs-on: >-
+      self-hosted
+    steps:
+      - run: echo x

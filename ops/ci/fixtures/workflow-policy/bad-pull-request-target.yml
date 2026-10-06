@@ -1,0 +1,13 @@
+# expect: R2
+# pull_request_target runs with base privileges.
+name: bad
+on:
+  pull_request_target:
+    types: [opened]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo x

@@ -1,0 +1,7 @@
+# expect: R3
+# A job written as a flow mapping cannot be checked line by line.
+name: bad
+on: pull_request
+permissions: {}
+jobs:
+  build: {runs-on: self-hosted, steps: [{run: echo x}]}

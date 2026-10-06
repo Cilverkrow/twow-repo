@@ -1,0 +1,12 @@
+# expect: R1
+# pull_request plus self-hosted fails even when allowlisted.
+name: bad
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - run: echo x

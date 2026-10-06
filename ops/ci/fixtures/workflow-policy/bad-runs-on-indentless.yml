@@ -1,0 +1,11 @@
+# expect: R1
+# An indentless block sequence: the item sits at the indent of the key.
+name: bad
+on: pull_request
+permissions: {}
+jobs:
+  build:
+    runs-on:
+    - self-hosted
+    steps:
+      - run: echo x

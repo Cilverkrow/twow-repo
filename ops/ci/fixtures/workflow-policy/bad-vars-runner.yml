@@ -1,0 +1,12 @@
+# expect: R1
+# Repository variables are visible to fork PRs.
+name: bad
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - run: echo x

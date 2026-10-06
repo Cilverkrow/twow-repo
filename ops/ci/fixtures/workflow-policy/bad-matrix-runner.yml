@@ -1,0 +1,15 @@
+# expect: R3
+# Any expression in runs-on is not a literal.
+name: bad
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: echo x

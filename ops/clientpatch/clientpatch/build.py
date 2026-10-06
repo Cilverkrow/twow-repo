@@ -276,8 +276,12 @@ def build(cfg: Config, base_dir: Path, sql_dir: Path, version: int, label: str,
         all_diffs += diffs
         group = cfg.data.get("record_order", {}).get(name)
         if group:
-            tables[name].group_by(group)
-            split = tables[name].split_groups(group)
+            # New rows go directly behind the base block of their group; base rows
+            # keep their order (a group the base itself splits is left alone).
+            tables[name].move_behind_group(group, t.inserted)
+            gi = tables[name].binding.index(group)
+            ours = {r.values[gi] for r in tables[name].rows if tables[name]._key_of(r.values) in t.inserted}
+            split = {v: n for v, n in tables[name].split_groups(group).items() if v in ours}
             if split:
                 raise DeltaError(f"{name}: rows of {group} {sorted(split)} are not one contiguous block "
                                  f"(the client reads only the last block of a group, #455)")

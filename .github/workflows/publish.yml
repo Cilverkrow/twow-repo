@@ -1,21 +1,35 @@
-# Build once, promote everywhere.
+# Release images: the tag fallback and the manual from-source build.
 #
-# Images are built here and never rebuilt per environment (ADR-0023): a tag and
-# a main commit produce the same artifact, and what moves between environments
-# is the digest. That is also why provenance and an SBOM are attached at build
-# time rather than generated later from a running container.
+# Build once, promote (ADR-0023, #486 B5/B6, owner decisions V3, 3b and 7). The
+# image a main commit ships is the one ci.yml built and tested; promote.yml
+# pushes and signs it after the whole ci run is green. This workflow no longer
+# compiles the core on a push to main. What it still does:
 #
-# Tagging: semver on a release tag, commit SHA on main. Nothing here publishes
-# `latest` for a main build - a floating tag is how an environment quietly
-# changes underneath you.
+#   * push to main        db-init image and Helm chart, as before. No core image:
+#                         that is promote.yml's (a second build here would push a
+#                         different digest under the same name).
+#   * tag v*              re-tags the PROMOTED digest of the tagged commit under
+#                         the version tags (`docker buildx imagetools create`, no
+#                         compile), after verifying its attestation; fails clearly
+#                         when that commit has no promoted image yet. Plus db-init
+#                         and the chart, as before.
+#   * workflow_dispatch   the from-source fallback: `--target runtime` built here,
+#                         only through the environment `release-publish` (required
+#                         reviewer; deployment refs main and v*). On main it is
+#                         tagged `src-sha-<40>`, never `sha-<40>` (which belongs to
+#                         the promoted image); dispatched on a v* tag it gets the
+#                         version tags and is the deploy fallback signed by this
+#                         file with --source-ref refs/tags/v... (decision 4).
 #
-# WHY THIS IS NOT PART OF ci.yml. Everything else that runs per push lives in one
-# file now, and this deliberately does not join it. Two reasons, both hard:
-# the triggers are narrower (main and release tags only, never a pull request or
-# a refactor branch), and the permissions are much broader - packages:write,
-# id-token:write, attestations:write. Merging the two would grant those to every
-# pull request run, including one from a fork. The trigger list below was audited
-# during that consolidation and is already as narrow as it should be.
+# Tagging: semver on a release tag, never `latest` for a main build - a floating
+# tag is how an environment quietly changes underneath you. Deploys pin digests
+# (ops/live/release-digest.sh), never tags.
+#
+# WHY THIS IS NOT PART OF ci.yml. The triggers are narrower (main, release tags
+# and dispatch, never a pull request or a refactor branch), and the permissions
+# are much broader - packages:write, id-token:write, attestations:write. Merging
+# the two would grant those to every pull request run, including one from a
+# fork. The same reasoning put the promotion into its own workflow_run file.
 name: publish
 
 on:
@@ -39,19 +53,20 @@ permissions:
   id-token: write
   attestations: write
 
-# Every job here is Linux, so every job here follows ci.yml onto the
-# self-hosted runner while GitHub-hosted runners are billing-blocked. The full
-# rationale and the one-variable way back are in the header of ci.yml: set the
-# repository variable CI_RUNNER to `ubuntu-24.04` and all three workflows move
-# back at once.
+# WHERE THIS RUNS: GitHub-hosted runners, and only there. The repository is
+# public, so hosted minutes are free; the billing block that once moved these
+# jobs onto the shared self-hosted pod `k8s-twow-repo` is over, and every
+# publish run since has run on a hosted VM (`vars.CI_RUNNER` is unset). The
+# variable fallback in the runs-on lines is being replaced by a literal
+# `ubuntu-latest` (#486 B1); a self-hosted runner is out of scope (#486,
+# owner decision 2026-10-03).
 #
-# This is the workflow with write credentials, so it is worth being explicit
-# about what moving it means: a self-hosted runner executes with the repository
-# GITHUB_TOKEN's packages:write and the workflow's OIDC identity on a machine
-# this project does not exclusively own. That is a real trust change from a
-# hosted ephemeral VM and it should be revisited when hosted billing returns -
-# it is not a reason to leave the release path unable to run at all, but it is a
-# reason not to leave it here permanently.
+# This is the workflow with write credentials, which is why that matters: a
+# self-hosted runner would execute with the repository GITHUB_TOKEN's
+# packages:write and the workflow's OIDC identity on a machine this project
+# does not exclusively own, and a persistent machine can leak or poison what
+# the next job signs. A hosted ephemeral VM cannot. Deploys verify that with
+# `gh attestation verify ... --deny-self-hosted-runners`.
 env:
   REGISTRY: ghcr.io
   OWNER: cilverkrow
@@ -61,7 +76,7 @@ jobs:
   # deploy/helm/twow). Rather than fail on their absence, the pipeline discovers
   # what exists and publishes that - and says in the log what it skipped.
   discover:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: what is publishable
     outputs:
       db_init: ${{ steps.check.outputs.db_init }}
@@ -90,6 +105,12 @@ jobs:
             echo "::notice::no deploy/helm/twow - skipping the chart"
           fi
 
+  # The from-source fallback (#486 B6): manual dispatch only, behind the
+  # environment `release-publish` (required reviewer Cilverkrow, deployment
+  # refs main and v*; set up per docs/runbooks/github-settings-486.md). The
+  # environment guards against a mis-click, not against a branch copy of this
+  # file - the deploy rule's --signer-workflow/--source-ref check does that.
+  #
   # mangosd and realmd come out of the same Dockerfile: Dockerfile.core installs
   # both binaries into one runtime image, and the entrypoint decides which runs.
   # They are published under two names anyway, because the Helm chart and the
@@ -97,8 +118,10 @@ jobs:
   # contract. The second build is a cache hit, not a second compile.
   core:
     needs: discover
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: core images (mangosd, realmd)
+    if: github.event_name == 'workflow_dispatch'
+    environment: release-publish
     # No matrix. mangosd and realmd were built as two matrix entries from the
     # SAME Dockerfile and the SAME `--target runtime`, differing only in the tag
     # pushed - and that target does `COPY --from=builder ${PREFIX} ${PREFIX}`,
@@ -112,8 +135,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          # Full history: the build stamps a revision header from git.
-          fetch-depth: 0
+          # Shallow, exactly like ci.yml's build-and-test (#486 B4). The
+          # revision header the build stamps needs only the core submodule's
+          # HEAD: `git rev-parse --short=20 HEAD` and `git show -s --format=%ci`
+          # read that one commit, so history does not change it. Measured
+          # before the switch, with fetch-depth 0 here and 1 in ci.yml, for core
+          # 441d62e7: both configured "Core revision: 441d62e771be7269d580
+          # 2026-10-02 19:13:36 +0200" (runs 37044803023 and 37044803296).
+          # Full history only made the `COPY . /src` context larger.
+          fetch-depth: 1
 
       # The self-hosted runner is a shared pod with ~28 GB free, not a fresh VM
       # with 70. A from-source build of this tree plus two published images does
@@ -136,6 +166,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # The core commit inside this image: the gitlink of core/ in the commit
+      # being published. Until now it was only implied by that gitlink and by
+      # the revision string compiled into the binary; it goes into an OCI label,
+      # the job summary and publish-digest.json below.
+      - name: Record the core revision
+        id: core-revision
+        run: |
+          set -eu
+          core_sha=$(git ls-tree HEAD core | awk '$2 == "commit" { print $3 }')
+          printf '%s' "$core_sha" | grep -Eqx '[0-9a-f]{40}' || {
+            echo "::error::could not read the core gitlink from HEAD"
+            exit 1
+          }
+          echo "sha=$core_sha" >> "$GITHUB_OUTPUT"
+          echo "build_input=$(bash ops/ci/build-input-key.sh HEAD)" >> "$GITHUB_OUTPUT"
+
+      # `src-sha-<40>` on main, NOT `sha-<40>`: that tag belongs to the image
+      # promote.yml pushed for the commit, and a from-source build is a
+      # different digest (#486 B5/B6). Version tags only when dispatched on a
+      # v* tag.
       - id: meta
         uses: docker/metadata-action@v5
         with:
@@ -145,8 +195,14 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=long,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=long,prefix=src-sha-,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          # Added to metadata-action's own OCI labels (created, revision,
+          # source, version, ...). ci.yml puts the same labels on the image it
+          # assembles, so a promotion (#486 B5) can compare the two.
+          labels: |
+            io.twow.core.revision=${{ steps.core-revision.outputs.sha }}
+            io.twow.build-input=${{ steps.core-revision.outputs.build_input }}
 
       - id: build
         uses: docker/build-push-action@v6
@@ -175,30 +231,94 @@ jobs:
           # part of the artifact, so a promoted digest carries them along.
           provenance: mode=max
           sbom: true
-          # This used to also read ci.yml's ci-core scope, on the theory that a
-          # release tag built after main had gone green could reuse its layers.
-          # ci.yml does not build `--target runtime` any more - it assembles the
-          # CI image from an install staged on the runner - so nothing writes
-          # ci-core and reading it was a guaranteed miss. Its own scope is the
-          # only one left that can hit.
-          # One scope, and mode=min rather than max.
-          #
-          # mode=max caches every intermediate layer. Across two matrix scopes
-          # that filled ~7 GB of the repository's 10 GB Actions cache - a single
-          # buildkit blob was 5.39 GiB - which evicted ci.yml's 2.2 GB ccache
-          # before the next run could restore it. The visible result was ccache
-          # reporting `Hits: 0 / 1517 (0.00%)` and `build + test` cold-compiling
-          # for 64 minutes on every push, forever.
-          #
-          # mode=min caches the final layers only, which is what a push needs.
-          # The expensive compile is kept warm by ccache on the runner, not by
-          # storing every intermediate image layer in the shared cache.
-          cache-from: type=gha,scope=core
-          cache-to: type=gha,mode=min,scope=core
+          # NO Actions (type=gha) cache for this image, deliberately (#486 B3).
+          # It used to read and write `type=gha,scope=core,mode=min`, and that
+          # could never hit: mode=min stores only the final layers, the payload
+          # layer changes on every build, and the compile happens behind a
+          # BuildKit cache mount (`--mount=type=cache,target=/ccache`) that
+          # type=gha does not export and that starts empty on every hosted VM.
+          # Measured in run 37044803023: all 1,507 targets compiled cold
+          # (3504.7 s), and the export then spent 110 s writing a ~950 MB blob
+          # that only evicted useful entries from the repository's 10 GB cache.
+          # (Before that, mode=max across two matrix scopes filled ~7 GB and
+          # evicted ci.yml's ccache, so `build + test` ran cold for weeks.)
+          # The way to stop compiling twice is to promote the image ci.yml
+          # already built (#486 B5), not to cache this build.
 
-      # The registry attestation above is buildkit's. This one is signed against
-      # the workflow's OIDC identity and lands in the repository's attestation
-      # store, which is what `gh attestation verify` checks. They answer
+      # The DWARF that split-debug.sh moved out of the pushed binaries (owner
+      # decision 2b): exported from Dockerfile.core's FROM-scratch
+      # `debug-symbols` stage into a directory on the runner and uploaded as an
+      # artifact - never pushed, never a layer of the runtime image.
+      #
+      # Same builder, same context, same build-args as the `build` step, so the
+      # builder stage is a cache hit inside this job's buildx builder and
+      # nothing compiles a second time. That holds ONLY while nothing has
+      # written into the checkout (the build context `.`) since `build`: any
+      # new file there changes the builder stage's `COPY . /src`, BuildKit
+      # rebuilds it, and the relink (revision header with a fresh __DATE__/
+      # __TIME__) yields binaries whose build ids no longer match the pushed
+      # ones. So this step and its upload come DIRECTLY after `build`, the
+      # digest record below is written under $RUNNER_TEMP, and the next step
+      # compares the build ids with the pushed image instead of trusting the
+      # cache.
+      - name: Export the split debug symbols
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.core
+          target: debug-symbols
+          push: false
+          outputs: type=local,dest=debug-symbols
+          provenance: false
+          sbom: false
+          build-args: |
+            BUILD_TYPE=Release
+            BUILD_JOBS=${{ vars.CI_BUILD_JOBS || '4' }}
+
+      # The symbols are only useful if they belong to the binaries that were
+      # pushed: every GNU build id in BUILD-IDS must equal the one readelf
+      # reads from the same file in the pushed image (by digest, not tag).
+      # A mismatch means the export was a second build - fail the run rather
+      # than leave symbols gdb would reject looking valid.
+      - name: Check the debug symbols match the pushed binaries
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          tree="$RUNNER_TEMP/pushed-tree"
+          rm -rf "$tree"
+          mkdir -p "$tree"
+          cid=$(docker create "$REGISTRY/$OWNER/mangosd@$DIGEST" /bin/true)
+          docker cp "$cid:/opt/turtle" "$tree/opt-turtle"
+          docker rm "$cid" >/dev/null
+          manifest=debug-symbols/BUILD-IDS
+          [ -s "$manifest" ] || { echo "::error::$manifest is missing or empty"; exit 1; }
+          bad=0
+          while read -r want rel; do
+            [ -n "$rel" ] || continue
+            have=$(readelf -n "$tree/opt-turtle/$rel" 2>/dev/null \
+              | awk '/Build ID:/ { print $3; exit }')
+            if [ "${have:-none}" != "$want" ]; then
+              echo "::error::$rel: symbols for build id $want, pushed binary has ${have:-none}"
+              bad=$((bad + 1))
+            fi
+          done < "$manifest"
+          [ "$bad" -eq 0 ] || exit 1
+          echo "build ids match for $(wc -l < "$manifest") file(s)"
+
+      # Retained for 90 days: the symbols are needed for as long as an image
+      # built here might still be running or be rolled back to.
+      - name: Upload the split debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-${{ github.sha }}
+          path: debug-symbols/
+          retention-days: 90
+          if-no-files-found: error
+
+      # The build step's registry attestation is buildkit's. This one is signed
+      # against the workflow's OIDC identity and lands in the repository's
+      # attestation store, which is what `gh attestation verify` checks. They answer
       # different questions and both are wanted.
       # One digest, two names, so one attestation per name. Both must be
       # attested: `gh attestation verify` resolves by the name the user pulled,
@@ -216,10 +336,259 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
+      # What a deploy pins, written down where a deploy can read it (#486 B3,
+      # owner decision 4): the digest comes from here or from the attestation
+      # subject, NEVER from resolving a tag - anyone who can push can move a
+      # tag. Written only after both attestations succeeded, so a
+      # publish-digest.json always names an attested digest.
+      #
+      # Schema: {repo_sha, core_sha, image, digest, workflow, run_id, built_at}.
+      # `image` is the mangosd name; `images` adds every name the same digest
+      # was pushed and attested under (realmd is byte-identical, see above).
+      # `workflow` is github.workflow_ref, i.e. the signer a deploy passes to
+      # `gh attestation verify --signer-workflow`. Since #486 B6 also
+      # `source: from-source` and `build_input`; promote.yml writes the same
+      # schema with the release-rule fields (ops/live/release-digest.sh).
+      #
+      # Written under $RUNNER_TEMP, never into the checkout: the checkout is
+      # the build context `.` (see the debug-symbols export above), and
+      # .dockerignore also excludes publish-digest/ in case that ever changes.
+      - name: Record the published digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          CORE_SHA: ${{ steps.core-revision.outputs.sha }}
+          BUILD_INPUT: ${{ steps.core-revision.outputs.build_input }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -eu
+          printf '%s' "$DIGEST" | grep -Eqx 'sha256:[0-9a-f]{64}' || {
+            echo "::error::build step returned no image digest"
+            exit 1
+          }
+          out="$RUNNER_TEMP/publish-digest"
+          mkdir -p "$out"
+          jq -n \
+            --arg repo_sha "$GITHUB_SHA" \
+            --arg core_sha "$CORE_SHA" \
+            --arg image "$REGISTRY/$OWNER/mangosd" \
+            --arg realmd "$REGISTRY/$OWNER/realmd" \
+            --arg digest "$DIGEST" \
+            --arg workflow "$WORKFLOW_REF" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg built_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg build_input "$BUILD_INPUT" \
+            '{repo_sha: $repo_sha, core_sha: $core_sha, image: $image,
+              digest: $digest, workflow: $workflow, run_id: $run_id,
+              built_at: $built_at, images: [$image, $realmd],
+              source: "from-source", build_input: $build_input}' \
+            > "$out/publish-digest.json"
+          cat "$out/publish-digest.json"
+          {
+            echo '## Published core image (from source, dispatch)'
+            echo
+            echo "- Digest: \`$DIGEST\`"
+            echo "- Names: \`$REGISTRY/$OWNER/mangosd\`, \`$REGISTRY/$OWNER/realmd\`"
+            echo "- Repo commit: \`$GITHUB_SHA\` (\`$GITHUB_REF\`)"
+            echo "- Core commit: \`$CORE_SHA\`"
+            echo "- Signer workflow: \`$WORKFLOW_REF\`"
+            echo
+            # Owner decision 4: a deploy takes the promoted image of main
+            # (signer promote.yml, refs/heads/main), or - as the fallback - an
+            # image this file built when dispatched on a v* tag (signer
+            # publish.yml, that tag's ref). The commands are spelled out per
+            # case, never with $GITHUB_REF, which for a dispatch from a branch
+            # would print a command that passes for an image the rule rejects.
+            case "$GITHUB_REF" in
+              refs/tags/v*)
+                echo "Deploy fallback (v* tag). Pin by digest only, verify first:"
+                echo
+                echo '```'
+                echo "gh attestation verify oci://$REGISTRY/$OWNER/mangosd@$DIGEST \\"
+                echo "  --repo $GITHUB_REPOSITORY \\"
+                echo "  --signer-workflow $GITHUB_REPOSITORY/.github/workflows/publish.yml \\"
+                echo "  --source-ref refs/tags/$GITHUB_REF_NAME --deny-self-hosted-runners"
+                echo '```'
+                ;;
+              *)
+                echo "**Not deployable under #486 decision 4:** a from-source build of \`$GITHUB_REF\`."
+                echo "Deploy the promoted image of the commit instead (promote.yml), verified with:"
+                echo
+                echo '```'
+                echo "gh attestation verify oci://$REGISTRY/$OWNER/mangosd@<digest from promote.yml> \\"
+                echo "  --repo $GITHUB_REPOSITORY \\"
+                echo "  --signer-workflow $GITHUB_REPOSITORY/.github/workflows/promote.yml \\"
+                echo "  --source-ref refs/heads/main --deny-self-hosted-runners"
+                echo '```'
+                ;;
+            esac
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload publish-digest.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-digest
+          path: ${{ runner.temp }}/publish-digest/publish-digest.json
+          if-no-files-found: error
+
+  # A v* tag (#486 B6, owner decision 7): no build. The tagged commit's image
+  # was promoted by promote.yml after its ci run; this re-tags that digest
+  # under the version tags and changes nothing else - same digest, same
+  # attestations, so a deploy of the version verifies exactly like the main
+  # promotion (signer promote.yml, refs/heads/main).
+  #
+  # The digest is looked up through the `sha-<40>` tag and trusted only after
+  #   * `gh attestation verify` (promote.yml, refs/heads/main, hosted runner),
+  #   * the image's revision label is the tagged commit, or (B5a reuse) its
+  #     io.twow.build-input label is the tagged commit's build-input key.
+  # No promoted image = a clear failure: re-run this job once promote.yml has
+  # finished, or dispatch this workflow on the tag (from-source fallback).
+  release-tag:
+    needs: discover
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    name: version tags on the promoted image
+    permissions:
+      contents: read
+      packages: write
+      # gh attestation verify reads the repository's attestation store
+      attestations: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find and verify the promoted image
+        id: promoted
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          m="$REGISTRY/$OWNER/mangosd"
+          digest=$(docker buildx imagetools inspect "$m:sha-$GITHUB_SHA" --format '{{json .Manifest}}' 2>/dev/null \
+            | jq -r '.digest // empty' || true)
+          if ! printf '%s' "$digest" | grep -Eqx 'sha256:[0-9a-f]{64}'; then
+            echo "::error::no promoted image for $GITHUB_SHA ($m:sha-$GITHUB_SHA). Wait for promote.yml on main and re-run this job, or dispatch publish.yml on $GITHUB_REF_NAME (environment release-publish) to build from source."
+            exit 1
+          fi
+          gh attestation verify "oci://$m@$digest" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/promote.yml" \
+            --source-ref refs/heads/main \
+            --deny-self-hosted-runners
+          labels=$(docker buildx imagetools inspect "$m@$digest" --format '{{json .Image}}' \
+            | jq -c 'if has("config") then .config.Labels
+                     else (to_entries | map(select(.key | startswith("linux/amd64"))) | .[0].value.config.Labels)
+                     end')
+          label() { printf '%s' "$labels" | jq -r --arg k "$1" '.[$k] // empty'; }
+          key=$(bash ops/ci/build-input-key.sh HEAD)
+          rev=$(label org.opencontainers.image.revision)
+          if [ "$rev" != "$GITHUB_SHA" ] && [ "$(label io.twow.build-input)" != "$key" ]; then
+            echo "::error::$m@$digest is labelled revision $rev / build input $(label io.twow.build-input); neither matches $GITHUB_SHA / $key"
+            exit 1
+          fi
+          {
+            echo "digest=$digest"
+            echo "core_sha=$(label io.twow.core.revision)"
+            echo "build_input=$key"
+            echo "built_from=$rev"
+          } >> "$GITHUB_OUTPUT"
+          echo "promoted image of $GITHUB_SHA: $digest (built from $rev)"
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/mangosd
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/realmd
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      # Carbon copies by digest (--prefer-index=false: one source is copied
+      # unchanged instead of being wrapped in a new index), read back.
+      - name: Re-tag the promoted digest
+        env:
+          DIGEST: ${{ steps.promoted.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$TAGS" | while IFS= read -r tag; do
+            [ -n "$tag" ] || continue
+            repo=${tag%:*}
+            docker buildx imagetools create --prefer-index=false --tag "$tag" "$repo@$DIGEST"
+            got=$(docker buildx imagetools inspect "$tag" --format '{{json .Manifest}}' | jq -r '.digest')
+            [ "$got" = "$DIGEST" ] || { echo "::error::$tag resolves to $got, expected $DIGEST"; exit 1; }
+            echo "$tag -> $DIGEST"
+          done
+
+      - name: Record the released digest
+        env:
+          DIGEST: ${{ steps.promoted.outputs.digest }}
+          CORE_SHA: ${{ steps.promoted.outputs.core_sha }}
+          BUILD_INPUT: ${{ steps.promoted.outputs.build_input }}
+          BUILT_FROM: ${{ steps.promoted.outputs.built_from }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -eu
+          out="$RUNNER_TEMP/publish-digest"
+          mkdir -p "$out"
+          jq -n \
+            --arg repo_sha "$GITHUB_SHA" \
+            --arg core_sha "$CORE_SHA" \
+            --arg image "$REGISTRY/$OWNER/mangosd" \
+            --arg realmd "$REGISTRY/$OWNER/realmd" \
+            --arg digest "$DIGEST" \
+            --arg workflow "$WORKFLOW_REF" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg built_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg build_input "$BUILD_INPUT" \
+            --arg built_from "$BUILT_FROM" \
+            --arg tag "$GITHUB_REF_NAME" \
+            '{repo_sha: $repo_sha, core_sha: $core_sha, image: $image,
+              digest: $digest, workflow: $workflow, run_id: $run_id,
+              built_at: $built_at, images: [$image, $realmd],
+              source: "retagged", tag: $tag, reused_from: $built_from,
+              build_input: $build_input,
+              signer: "promote.yml@refs/heads/main"}' \
+            > "$out/publish-digest.json"
+          cat "$out/publish-digest.json"
+          {
+            echo "## $GITHUB_REF_NAME = promoted image"
+            echo
+            echo "- Digest: \`$DIGEST\` (promoted for \`$BUILT_FROM\`, core \`$CORE_SHA\`)"
+            echo "- Names: \`$REGISTRY/$OWNER/mangosd\`, \`$REGISTRY/$OWNER/realmd\`"
+            echo
+            echo "Pin by digest only. The digest is signed by promote.yml on main:"
+            echo
+            echo '```'
+            echo "gh attestation verify oci://$REGISTRY/$OWNER/mangosd@$DIGEST \\"
+            echo "  --repo $GITHUB_REPOSITORY \\"
+            echo "  --signer-workflow $GITHUB_REPOSITORY/.github/workflows/promote.yml \\"
+            echo "  --source-ref refs/heads/main --deny-self-hosted-runners"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload publish-digest.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-digest
+          path: ${{ runner.temp }}/publish-digest/publish-digest.json
+          if-no-files-found: error
+
   db-init:
     needs: discover
     if: needs.discover.outputs.db_init == 'true'
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: db-init
     steps:
       # Recursive: the SQL this image ships is core/sql, in the submodule. A
@@ -341,7 +710,7 @@ jobs:
   helm:
     needs: discover
     if: needs.discover.outputs.helm == 'true'
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     name: helm chart
     steps:
       - uses: actions/checkout@v4
