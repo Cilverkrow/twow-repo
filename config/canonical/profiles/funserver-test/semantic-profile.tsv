@@ -136,6 +136,10 @@ mangosd	Rogue.KeepComboPointsOnSelect	INTENTIONAL_CHANGE	mangosd.overlay.conf	is
 mangosd	Rogue.ProcComboPointsToCurrentTarget	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-484-owner-combo-switches-20261004
 aiplayerbot	AiPlayerbot.SpecAura.TalentClasses	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-409-357-367-train8-real-talents
 aiplayerbot	AiPlayerbot.QuestRescue.IdleMinutes	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-421-owner-quest-rescue-30min
+aiplayerbot	AiPlayerbot.InviteChat	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
+aiplayerbot	AiPlayerbot.RandomBotSayWithoutMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
+aiplayerbot	AiPlayerbot.RandomBotNonCombatStrategies	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-ambient-say
+aiplayerbot	AiPlayerbot.RandomBotFormGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-guild-founding-off-until-roster-guild
 mangosd	Funserver.Riding.Stages.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-riding-stages-train9
 mangosd	Funserver.PlayerSnare.SlowPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-player-slows-x1-4
 mangosd	Funserver.PlayerSnare.MaxSlowPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-player-slow-cap-90-pinned-default
@@ -150,3 +154,12 @@ aiplayerbot	AiPlayerbot.QuestFirstProgression.GrindFallbackFailures	INTENTIONAL_
 aiplayerbot	AiPlayerbot.RosterFarMove	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-hotfix833-roster-far-move
 aiplayerbot	AiPlayerbot.GroupMemberGatheringDistanceWithActiveMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-owner-group-gather-20
 aiplayerbot	AiPlayerbot.GroupMemberGatheringDistance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-owner-group-gather-20
+aiplayerbot	AiPlayerbot.RosterGuild.BotsPerGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-owner-guild-size-45
+aiplayerbot	AiPlayerbot.RosterGuild.Tanks	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-owner-guild-7-tanks-pinned-default
+aiplayerbot	AiPlayerbot.RosterGuild.Healers	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-owner-guild-10-healers-pinned-default
+aiplayerbot	AiPlayerbot.RosterGuild.Dps	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-owner-guild-28-dps-pinned-default
+aiplayerbot	AiPlayerbot.RosterGuild.HealerClassMin	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-owner-healer-variety-pinned-default
+aiplayerbot	AiPlayerbot.RosterGuild.TankClassSpread	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-owner-tank-mix
+aiplayerbot	AiPlayerbot.RosterGuild.RareComboSpread	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-owner-rare-combos-spread
+aiplayerbot	AiPlayerbot.RosterGuild.PlanFile	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-train9-window-plan-file
+aiplayerbot	AiPlayerbot.ProfessionUse.ClearCorpseForSkinning	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-owner-clear-corpse-for-skinning
