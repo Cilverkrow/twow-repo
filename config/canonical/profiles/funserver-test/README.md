@@ -91,4 +91,4 @@ bots (`AiPlayerbot.InviteChat = 0`, `AiPlayerbot.RandomBotSayWithoutMaster = 0`,
 with #478. Roster bots stop buying, offering and turning in guild charters
 (`AiPlayerbot.RandomBotFormGuild = 0`) until the core roster guild founding is live.
 
-All one hundred and fifty-one deviations are classified in `semantic-profile.tsv`.
+All one hundred and fifty-two deviations are classified in `semantic-profile.tsv`.
