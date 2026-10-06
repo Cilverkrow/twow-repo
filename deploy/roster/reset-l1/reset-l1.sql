@@ -9,8 +9,8 @@
 -- Scope: the active roster version's members (ai_playerbot_roster_current). Kept:
 -- name, class, race, account, specNo and profession_pair events, BotBrain identity.
 -- Reset: level/XP/money, position and homebind (playercreateinfo), inventory to the
--- starter outfit, quests, profession skills, level-range skills clamped to level 1,
--- auras, cooldowns, action bars, pets, mail, reputation, forgotten skills, bot
+-- starter outfit, quests, profession and riding skills, level-range skills clamped to
+-- level 1, auras, cooldowns, action bars, pets, mail, reputation, forgotten skills, bot
 -- key/value store, group membership, corpses; spells and talents via at_login.
 --
 -- Target scope (#366): the wrapper sets @scope_from/@scope_to (ordinals, inclusive), for a
@@ -94,8 +94,10 @@ DELETE x FROM character_action x JOIN reset_targets t ON t.guid = x.guid;
 DELETE x FROM character_aura x JOIN reset_targets t ON t.guid = x.guid;
 DELETE x FROM character_spell_cooldown x JOIN reset_targets t ON t.guid = x.guid;
 DELETE x FROM character_queststatus x JOIN reset_targets t ON t.guid = x.guid;
+-- Profession skills and riding 762 (#295, trained from level 10): the clamp below skips
+-- max 300 and would leave any other riding value at 5/5.
 DELETE x FROM character_skills x JOIN reset_targets t ON t.guid = x.guid
-WHERE x.skill IN (129, 142, 164, 165, 171, 182, 185, 186, 197, 202, 333, 356, 393, 755);
+WHERE x.skill IN (129, 142, 164, 165, 171, 182, 185, 186, 197, 202, 333, 356, 393, 755, 762);
 -- Level-range skills (weapons, defence, class schools): the core clamps only max to
 -- the level on login (Player::_LoadSkills, SKILL_RANGE_LEVEL), never value.
 UPDATE character_skills x JOIN reset_targets t ON t.guid = x.guid
@@ -196,7 +198,7 @@ INSERT INTO reset_assert VALUES
     FROM character_inventory x JOIN reset_targets t ON t.guid = x.guid)),
  ('no_quests', (SELECT COUNT(*) = 0 FROM character_queststatus x JOIN reset_targets t ON t.guid = x.guid)),
  ('no_profession_skills', (SELECT COUNT(*) = 0 FROM character_skills x JOIN reset_targets t ON t.guid = x.guid
-    WHERE x.skill IN (129, 142, 164, 165, 171, 182, 185, 186, 197, 202, 333, 356, 393, 755))),
+    WHERE x.skill IN (129, 142, 164, 165, 171, 182, 185, 186, 197, 202, 333, 356, 393, 755, 762))),
  ('skills_level1', (SELECT COUNT(*) = 0 FROM character_skills x JOIN reset_targets t ON t.guid = x.guid
     WHERE x.max <> 300 AND (x.max > 5 OR x.value > 5))),
  ('no_pets_mail_reputation_store', (SELECT

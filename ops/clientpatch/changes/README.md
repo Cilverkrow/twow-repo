@@ -15,12 +15,29 @@ Stage 2 (#357/#367) adds the first deltas:
 | `SkillLineAbility/0367_rogue_trainer_and_recipes.csv` | spellbook rows for Spit and Shadow Dance (Combat), trade skill rows for the poison recipes I-IV (Poisons); every value from `sql:skill_line_ability` |
 | `Spell/0455_alterac_item_spells.csv` | client rows for the six Alterac item spells 61002-61007 (#455), so the items show their "Use:" and "Chance on hit:" lines; **generated** |
 
+Train 9 (#295, riding in four stages, doubled player speed) adds:
+
+| Delta | What |
+|---|---|
+| `Spell/0295_new_spells.csv` | client rows for the riding ranks 61300/61302 (225/300), their teach spells 61301/61303 and the hidden Blink cooldown passive 61310; **generated** from `tools/inputs/295-spells.csv` |
+| `Spell/0295_riding_texts.csv` | the texts of Apprentice and Journeyman Riding (33389, 33392) name their speed |
+| `Spell/0295_mount_spells.csv` | buff texts of the 465 player mount spells by mount family, aura-32 value 60 for the 11 family-1 spells that had 100, every value `sql:spell_template`; **generated** by `tools/gen_mount_spells.py` from `tools/inputs/295-mount-spells.csv` (`--core` compares the list with the core migration) |
+| `Spell/0295_speed_values.csv` | doubled speed and swim values (39 effects on 32 spells) and the Quickness text |
+| `SkillLineAbility/0295_riding_ranks.csv` | skill 762 rows 30300/30301 for the new ranks; every value from `sql:skill_line_ability` |
+| `SkillRaceClassInfo/0295_riding_minlevel.csv` | riding row 890 from level 10 (server-loaded DBC, coupled release) |
+
+The speeds themselves are code values: CV-14 (mount speed by rank and family),
+CV-15 and CV-16 (player slows and roots) in `code-values.md`.
+
 **Spell rows for server spells are generated**, never written by hand:
 `tools/gen_spell_mirror.py` turns a list `id,copy_from,class_mask,note`
 (`tools/inputs/*.csv`) into a delta that takes every mapped column from
 `sql:spell_template.<column>`, texts and icon included. The server stays the
-only place where a number or a tooltip text is written. A test fails when a
-committed generated delta no longer matches its input list.
+only place where a number or a tooltip text is written. The mount spells of
+#295 have their own generator, `tools/gen_mount_spells.py`
+(`id,section,family,name`: aura-32 value and buff text only, header
+included). A test fails when a committed generated delta no longer matches
+its input list.
 
 **Spell IDs must fit into 16 bits** (#455). The 1.12 protocol sends spell IDs
 as uint16 in `SMSG_INITIAL_SPELLS`, `SMSG_SUPERCEDED_SPELL` and
@@ -31,3 +48,36 @@ spells use the free block 61002-65535 behind the Turtle spells; train 8b moved
 the former 90001-90219 there (`tools/renumber_ids.py` with
 `tools/inputs/455-spell-renumber-8b.csv`, new = old - 28999) and the
 enchantments 90141-90144 to 3060-3063 (`455-enchant-renumber-8b.csv`).
+
+## Train 9 (#484)
+
+Patch 8 carries the owner's train-9 talent list (#484 issuecomment-5972156860)
+next to the riding change (#295). The server side is twow-core
+20261003200000 (rogue) and 20261003200500 (shaman); every delta below takes
+its values from the export of that state.
+
+| Delta | What |
+|---|---|
+| `Spell/0484_talent_spells.csv` | client rows for the Riposte Flow strikes 61221/61222 (clones of Riposte 14251) and Charged Stormstrike ranks 2-4 61223-61225 (clones of rank 1 61118); **generated** from `tools/inputs/484-spells.csv` |
+| `Spell/0484_backstab_front.csv` | Brazen Strike: `AttributesExB` of the nine Backstab ranks from the server, which drops 0x100000 so the client sends a frontal Backstab; the server keeps "behind the target" via `customFlags` 0x40 plus the below-60 % exception |
+| `Spell/0484_rushing_winds_stacks.csv` | Elemental Weapons, Windfury part: `CumulativeAura` of Rushing Winds 52967-52969 from `stackAmount` (3/4/5) |
+| `SpellItemEnchantment/0484_agitating_poison_names.csv` | names of the poison enchantments 3061-3063 ("Agitating Poison II-IV", deDE too); the buff bar showed rank I for every rank |
+| `Talent/0357_shaman_talents.csv` (regenerated) | Charged Stormstrike (talent 9005) gets ranks 2-4: `tools/inputs/357-shaman-talents.csv` changed, the delta regenerated with `tools/talentdelta.py` |
+
+These need **no delta edit**, only the new export, because the rows are
+already mirrored with `sql:` values:
+
+- 61194 Deep Wounds: name, texts, 5 stacks, own visual (`0367_rogue_spells.csv`).
+- 61143-61145 Shadow Dance: PASSIVE attribute (`0367_rogue_spells.csv`).
+- 61146 Shadow Dance dodge buff: spell family 0, so it no longer replaces Evasion (`0367_rogue_spells.csv`).
+- 61213-61220 trainer teach spells: visual 107 and interrupt flags 0 (`0367_rogue_spells.csv`).
+- 61101-61105 Attack Speed: the cloned effect 3 is gone (`0357_shaman_spells.csv`).
+- 61118 Charged Stormstrike rank 1: rank text (`0357_shaman_spells.csv`).
+- 61124/61126 Storm Wisdom buffs: text and icon (`0357_shaman_spells.csv`).
+- 29079/29080 Elemental Weapons: rank texts (`0357_shaman_elemental_weapons.csv`).
+- 61002, 61004, 61006, 61007 Alterac event item spells (#511, core migration 20261004080000): haste leftover, visuals, proc charges, family and aura texts (`0455_alterac_item_spells.csv`).
+
+Talent.dbc and SpellItemEnchantment.dbc are server-loaded. The server copies
+from the same build go live in the same window as the core change. Until the
+server Talent.dbc has the four ranks of 9005, Charged Stormstrike stays a
+one-rank talent with one charge.

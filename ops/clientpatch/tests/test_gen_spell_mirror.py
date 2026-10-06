@@ -67,6 +67,23 @@ class GenSpellMirror(unittest.TestCase):
         fresh = GEN.generate((ROOT / "tools" / "inputs" / "367-rogue-spells.csv").read_text(encoding="utf-8"))
         self.assertEqual(body, fresh.splitlines())
 
+    def test_committed_riding_delta_is_current(self):
+        # changes/Spell/0295_new_spells.csv (riding ranks, Blink passive, #295) is generated too.
+        committed = (ROOT / "changes" / "Spell" / "0295_new_spells.csv").read_text(encoding="utf-8")
+        body = [ln for ln in committed.splitlines() if not ln.startswith("#")]
+        fresh = GEN.generate((ROOT / "tools" / "inputs" / "295-spells.csv").read_text(encoding="utf-8"))
+        self.assertEqual(body, fresh.splitlines())
+
+    def test_committed_0484_delta_is_current(self):
+        # #484 train 9: Riposte Flow strikes and Charged Stormstrike ranks 2-4, a
+        # separate input so the #367 key set (test_stage2_rogue) stays unchanged.
+        committed = (ROOT / "changes" / "Spell" / "0484_talent_spells.csv").read_text(encoding="utf-8")
+        body = [ln for ln in committed.splitlines() if not ln.startswith("#")]
+        fresh = GEN.generate((ROOT / "tools" / "inputs" / "484-spells.csv").read_text(encoding="utf-8"))
+        self.assertEqual(body, fresh.splitlines())
+        inserted = {int(r["key"]) for r in ops(fresh) if r["op"] == "insert"}
+        self.assertEqual(inserted, set(range(61221, 61226)))
+
 
 if __name__ == "__main__":
     unittest.main()

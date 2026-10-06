@@ -37,3 +37,26 @@ Riding is a coordinated change: trainer rows use a new forward migration, Player
 - `runbooks/db-profession-riding-discovery-01-20260830-010856/report.md`
 - `runbooks/db-profession-riding-discovery-01-20260830-010856/proposed-migration-plan.md`
 - online decision history in `Bot-Persönlichkeiten`, cataloged in `SOURCES.md`
+
+## Update 2026-10-02 (twow-repo#295)
+
+The riding part of this decision is **superseded in part** by the owner's
+decisions of 2026-10-02 (#295), shipped with main train 9. The profession split
+above is unchanged.
+
+- **Four stages** instead of two: riding skill 762 = 75/150/225/300, trained from
+  level 10/20/40/60 for 50 s / 5 g / 50 g / 500 g (was level 5 for 5 silver and
+  level 30 for 1 gold).
+- **Mount speed** is chosen by the server, for players and bots only: slow mounts
+  (family 1) +60/+100/+100/+100 %, swift mounts (family 2) +60/+100/+140/+180 %.
+  NPCs are never affected. Switch `Funserver.Riding.Stages.Enabled`.
+- **Mount prices change** by owner decision: the racial vendors sell mount 1 for
+  1 g (riding 75, level 10) and mount 2 for 100 g (riding 225, level 40). Special
+  vendors (reputation, PvP and others) keep their prices.
+- **A client patch is required** now: the new rank spells 61300-61303, their skill
+  line rows, SkillRaceClassInfo row 890 (MinLevel 10, a server DBC as well) and the
+  riding and mount texts ship with client patch 8 in the same window.
+- Existing characters keep 75/150; there is no character migration.
+- Still valid: the coordinated rollout (core, bots, config, migration, client) and
+  the item changes from a complete mount manifest instead of a broad
+  `required_level IN (40,60)` update.

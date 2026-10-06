@@ -70,8 +70,8 @@ upstream of record or the merge rules. They link to it.
 | Master logout/group persistence | Deliberately excluded from minimal roster scope | separate design and test decision |
 | 50/100/500/1000 class-race allocation | Weighted models exist; exact 50 cannot evenly cover 52 combinations | approve a concrete allocation before config generation |
 | Seven schema-valid but factory-rejected race/class pairs | Verified technical mismatch | decide whether to extend the factory or retain the 52-pair boundary |
-| Profession/riding rollout | Target accepted, changes not applied | approve coordinated Core, Config, migration, item manifest, build, and rollback task |
-| Mount coverage | No broad migration allowed | complete and approve a spell/skill-derived mount manifest |
+| Profession/riding rollout | Professions: target accepted, changes not applied. Riding: superseded in part by #295 (owner decision 2026-10-02, see the [ADR-0017](ADR-0017-profession-and-riding-targets.md) update); implementation PRs pending | professions: approve coordinated Core, Config, migration, build, and rollback task; riding: approve merge and deploy of the #295 PRs with main train 9 and client patch 8 |
+| Mount coverage | Covered by #295 (owner decision 2026-10-02): a spell/skill-derived manifest of every mount item drives the item migration, still no broad migration; implementation PRs pending | approve the #295 item migration with main train 9; decide the open manifest items listed in #295 |
 | Donation award amount | Runtime-owned configuration policy | do not infer from the table migration; approve separately if changing |
 | Trainer money-loss remediation | Initial event was insufficient evidence; controlled normal-account purchase succeeded | no code or data change without a reproducible failure and new approval |
 | Historic `manual` migration hashes | Names/order can match while content provenance is absent | retain the limitation; never treat `manual` as a cryptographic file hash |
