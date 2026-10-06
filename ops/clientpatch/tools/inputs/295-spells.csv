@@ -1,0 +1,6 @@
+id,copy_from,class_mask,note
+61300,33391,0,"Riding rank Expert, skill 762 value 225 (core 20261002210000; #295), CV-14"
+61301,33392,0,"Expert Riding, trainer teach spell for 61300 (core 20261002210000; #295), CV-14"
+61302,33391,0,"Riding rank Artisan, skill 762 value 300 (core 20261002210000; #295), CV-14"
+61303,33392,0,"Artisan Riding, trainer teach spell for 61302 (core 20261002210000; #295), CV-14"
+61310,51979,0,"Blink Cooldown, hidden mage passive -50 % on Blink, learned with 1953 (core 20261002213000; #295)"

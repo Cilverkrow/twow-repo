@@ -140,6 +140,10 @@ aiplayerbot	AiPlayerbot.InviteChat	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	i
 aiplayerbot	AiPlayerbot.RandomBotSayWithoutMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
 aiplayerbot	AiPlayerbot.RandomBotNonCombatStrategies	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-ambient-say
 aiplayerbot	AiPlayerbot.RandomBotFormGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-guild-founding-off-until-roster-guild
+mangosd	Funserver.Riding.Stages.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-riding-stages-train9
+mangosd	Funserver.PlayerSnare.SlowPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-player-slows-x1-4
+mangosd	Funserver.PlayerSnare.MaxSlowPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-player-slow-cap-90-pinned-default
+mangosd	Funserver.PlayerSnare.RootDurationPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-player-roots-40
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkFailures	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-544-hotfix831-park-3
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkWindowSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-544-hotfix831-park-window-3600-pinned-default
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-544-hotfix831-park-3600-pinned-default

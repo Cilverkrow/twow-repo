@@ -1,0 +1,7 @@
+op,key,field,value,note
+# #295 train 9: the riding teach texts name their speed (twow-core 20261002210000). The trainer
+# rows (riding 75 from level 10 for 50 s, 150 from level 20 for 5 g) are server data and need no
+# client change; the speeds are code values (CV-14). Values from spell_template, the server is
+# the source of truth. The new ranks 225/300 (61300-61303) are in 0295_new_spells.csv.
+set,33389,Description_lang_enUS,sql:spell_template.description,"Apprentice Riding: riding 75, mounts +60 % (CV-14)"
+set,33392,Description_lang_enUS,sql:spell_template.description,"Journeyman Riding: riding 150, all mounts +100 % (CV-14)"

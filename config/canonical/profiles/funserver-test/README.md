@@ -96,4 +96,11 @@ bots (`AiPlayerbot.InviteChat = 0`, `AiPlayerbot.RandomBotSayWithoutMaster = 0`,
 with #478. Roster bots stop buying, offering and turning in guild charters
 (`AiPlayerbot.RandomBotFormGuild = 0`) until the core roster guild founding is live.
 
-All one hundred and sixty deviations are classified in `semantic-profile.tsv`.
+Release train 9 (#295, owner decisions 2026-10-02) switches on riding in four
+stages for players and bots (`Funserver.Riding.Stages.Enabled = 1`: riding
+75/150/225/300 from level 10/20/40/60, mount speed by rank and mount family) and
+makes slows of player-controlled casters 40 % stronger (cap 90 %) and their roots
+40 % longer. NPC spells stay unchanged. The keys need the train-9 core pin with
+its migrations and client patch 8.
+
+All one hundred and sixty-four deviations are classified in `semantic-profile.tsv`.
