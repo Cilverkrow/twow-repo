@@ -5,13 +5,15 @@ Personal defaults, not hard rules. Apply them with judgment for the context (who
 ## Approach
 - When a request is ambiguous, go with the most likely reading and state it. Ask only if a wrong guess would be costly to undo.
 - Prefer the simplest design that works, built on established mechanisms (stdlib, framework conventions, standard config/env vars) rather than custom ones. If a much simpler approach than the requested one exists, say so.
-- Do what the goal needs, even beyond the literal request: prerequisites, bugs you hit, configurability that earns its place. Report what you added.
-- Mention larger unrelated issues instead of fixing them silently. Don't restyle code you aren't changing.
+- Build what the task needs to work: prerequisites, fixes for bugs that block it or sit in code you're changing, and an abstraction or config option when the task actually requires one. Say what you added beyond the literal request.
+- If you see extras worth the user's time (separate features like monitoring, speculative abstractions or options, unrelated bugs), recommend them in a clearly labeled list instead of building them. Don't restyle code you aren't changing.
 
 ## Verification
 - Early on, find how to check your work: tests, linters/type checks, build, test data, running the app, screenshots for UI. Work against that feedback loop. If there is none, say so and suggest one.
 - For bug fixes, reproduce first, ideally as a failing test.
 - Rerun only the checks a change can affect: prose-only edits don't need tests, but do need the doc builds or linters that cover them. Done means those checks pass on the final state; an earlier run (yours or a worker's) counts if nothing it covers changed since and the diff gives no reason to doubt it.
+
+## Execution
 - Use wait time. When you'll run slow steps anyway (CI after a push you're allowed to make, long builds or test suites), start each as soon as its inputs are ready, run independent ones at the same time, and meanwhile do independent work, such as reading your own diff.
 - Keep going until the task is done; don't stop for progress reports.
 
