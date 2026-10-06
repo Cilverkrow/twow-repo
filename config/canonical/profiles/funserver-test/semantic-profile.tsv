@@ -136,6 +136,10 @@ mangosd	Rogue.KeepComboPointsOnSelect	INTENTIONAL_CHANGE	mangosd.overlay.conf	is
 mangosd	Rogue.ProcComboPointsToCurrentTarget	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-484-owner-combo-switches-20261004
 aiplayerbot	AiPlayerbot.SpecAura.TalentClasses	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-409-357-367-train8-real-talents
 aiplayerbot	AiPlayerbot.QuestRescue.IdleMinutes	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-421-owner-quest-rescue-30min
+aiplayerbot	AiPlayerbot.InviteChat	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
+aiplayerbot	AiPlayerbot.RandomBotSayWithoutMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
+aiplayerbot	AiPlayerbot.RandomBotNonCombatStrategies	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-ambient-say
+aiplayerbot	AiPlayerbot.RandomBotFormGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-guild-founding-off-until-roster-guild
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkFailures	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-544-hotfix831-park-3
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkWindowSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-544-hotfix831-park-window-3600-pinned-default
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-544-hotfix831-park-3600-pinned-default
