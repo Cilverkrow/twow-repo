@@ -132,5 +132,6 @@ aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInParkCountsRouteDanger	INTENT
 aiplayerbot	AiPlayerbot.QuestFirstProgression.SkipScriptOnlyQuestTakers	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-544-hotfix831-skip-script-only-takers
 aiplayerbot	AiPlayerbot.QuestFirstProgression.CrossMapContinentsOnly	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-544-hotfix831-crossmap-continents-only
 aiplayerbot	AiPlayerbot.QuestFirstProgression.GrindFallbackFailures	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-hotfix832-grind-fallback-2
+aiplayerbot	AiPlayerbot.RosterFarMove	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-hotfix833-roster-far-move
 aiplayerbot	AiPlayerbot.GroupMemberGatheringDistanceWithActiveMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-owner-group-gather-20
 aiplayerbot	AiPlayerbot.GroupMemberGatheringDistance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-owner-group-gather-20
