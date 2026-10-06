@@ -92,4 +92,4 @@ makes slows of player-controlled casters 40 % stronger (cap 90 %) and their root
 40 % longer. NPC spells stay unchanged. The keys need the train-9 core pin with
 its migrations and client patch 8.
 
-All one hundred and twenty-five deviations are classified in `semantic-profile.tsv`.
+All one hundred and thirty-eight deviations are classified in `semantic-profile.tsv`.
