@@ -90,4 +90,4 @@ damage, at least one healer class each, tank classes and rare class/race pairs s
 come only from the plan file `/opt/turtle/etc/roster-guilds.tsv`, built and mounted read-only
 in the train-9 window; bots found no random guilds (`AiPlayerbot.RandomBotFormGuild = 0`, #495).
 
-All one hundred and thirty-four deviations are classified in `semantic-profile.tsv`.
+All one hundred and fifty-five deviations are classified in `semantic-profile.tsv`.
