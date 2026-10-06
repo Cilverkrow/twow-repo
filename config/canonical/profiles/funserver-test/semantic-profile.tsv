@@ -135,3 +135,6 @@ aiplayerbot	AiPlayerbot.QuestFirstProgression.GrindFallbackFailures	INTENTIONAL_
 aiplayerbot	AiPlayerbot.RosterFarMove	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-hotfix833-roster-far-move
 aiplayerbot	AiPlayerbot.GroupMemberGatheringDistanceWithActiveMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-owner-group-gather-20
 aiplayerbot	AiPlayerbot.GroupMemberGatheringDistance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-owner-group-gather-20
+aiplayerbot	AiPlayerbot.RandomBotFormGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-537-roster-path-needs-form-guild
+aiplayerbot	AiPlayerbot.RosterGuild.NamesAlliance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-name-pool-20261003
+aiplayerbot	AiPlayerbot.RosterGuild.NamesHorde	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-name-pool-20261003

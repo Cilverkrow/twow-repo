@@ -85,4 +85,8 @@ quest groups of up to 5 bots, skipping quest objectives that keep timing out, an
 talent auras for the shaman and rogue tank paths. Zone escape retries after 600 s.
 The `[AutoLearn]`, `[VendorGear]` and `[BotGroup]` traces are for the first 24 hours.
 
-All one hundred and thirty-four deviations are classified in `semantic-profile.tsv`.
+Roster guild names (train 9, #485 point 3, owner 2026-10-03): the 24 proposed names form the pool
+roster bots found their guilds from (`AiPlayerbot.RosterGuild.NamesAlliance`, `NamesHorde`); the
+roster path also needs `AiPlayerbot.RandomBotFormGuild = 1`.
+
+All one hundred and thirty-nine deviations are classified in `semantic-profile.tsv`.
