@@ -146,3 +146,4 @@ aiplayerbot	AiPlayerbot.QuestFirstProgression.GrindFallbackFailures	INTENTIONAL_
 aiplayerbot	AiPlayerbot.RosterFarMove	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-hotfix833-roster-far-move
 aiplayerbot	AiPlayerbot.GroupMemberGatheringDistanceWithActiveMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-owner-group-gather-20
 aiplayerbot	AiPlayerbot.GroupMemberGatheringDistance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-owner-group-gather-20
+aiplayerbot	AiPlayerbot.ProfessionUse.ClearCorpseForSkinning	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-owner-clear-corpse-for-skinning
