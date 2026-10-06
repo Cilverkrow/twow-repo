@@ -88,13 +88,13 @@ The `[AutoLearn]`, `[VendorGear]` and `[BotGroup]` traces are for the first 24 h
 Roster guilds (train 9, #485, core#281/#309): guilds of 45 bots, 7 tanks / 10 healers / 28
 damage, at least one healer class each, tank classes and rare class/race pairs spread. Members
 come only from the plan file `/opt/turtle/etc/roster-guilds.tsv`, built and mounted read-only
-in the train-9 window; bots found no random guilds (`AiPlayerbot.RandomBotFormGuild = 0`, #495).
+in the train-9 window (founding needs `AiPlayerbot.RandomBotFormGuild = 1`, see below).
 
 Bot chat and guild charters (#485, owner decision 2026-10-02): bots no longer /say to other
 bots (`AiPlayerbot.InviteChat = 0`, `AiPlayerbot.RandomBotSayWithoutMaster = 0`, no
 `custom::say` in the non-combat strategies); guild chat while a real member is online follows
-with #478. Roster bots stop buying, offering and turning in guild charters
-(`AiPlayerbot.RandomBotFormGuild = 0`) until the core roster guild founding is live.
+with #478. Roster bots buy guild charters only on the roster path (names and plan below);
+random guild founding outside the plan stays off.
 
 Release train 9 (#295, owner decisions 2026-10-02) switches on riding in four
 stages for players and bots (`Funserver.Riding.Stages.Enabled = 1`: riding
@@ -103,4 +103,8 @@ makes slows of player-controlled casters 40 % stronger (cap 90 %) and their root
 40 % longer. NPC spells stay unchanged. The keys need the train-9 core pin with
 its migrations and client patch 8.
 
-All one hundred and sixty-four deviations are classified in `semantic-profile.tsv`.
+Roster guild names (train 9, #485 point 3, owner 2026-10-03): the 24 proposed names form the pool
+roster bots found their guilds from (`AiPlayerbot.RosterGuild.NamesAlliance`, `NamesHorde`); the
+roster path also needs `AiPlayerbot.RandomBotFormGuild = 1`.
+
+All one hundred and sixty-six deviations are classified in `semantic-profile.tsv`.

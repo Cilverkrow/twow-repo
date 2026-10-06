@@ -139,7 +139,6 @@ aiplayerbot	AiPlayerbot.QuestRescue.IdleMinutes	INTENTIONAL_CHANGE	aiplayerbot.o
 aiplayerbot	AiPlayerbot.InviteChat	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
 aiplayerbot	AiPlayerbot.RandomBotSayWithoutMaster	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-bot-bot-chat
 aiplayerbot	AiPlayerbot.RandomBotNonCombatStrategies	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-no-ambient-say
-aiplayerbot	AiPlayerbot.RandomBotFormGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-guild-founding-off-until-roster-guild
 mangosd	Funserver.Riding.Stages.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-riding-stages-train9
 mangosd	Funserver.PlayerSnare.SlowPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-owner-player-slows-x1-4
 mangosd	Funserver.PlayerSnare.MaxSlowPct	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-295-player-slow-cap-90-pinned-default
@@ -163,3 +162,6 @@ aiplayerbot	AiPlayerbot.RosterGuild.TankClassSpread	INTENTIONAL_CHANGE	aiplayerb
 aiplayerbot	AiPlayerbot.RosterGuild.RareComboSpread	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-owner-rare-combos-spread
 aiplayerbot	AiPlayerbot.RosterGuild.PlanFile	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-roster-guilds-train9-window-plan-file
 aiplayerbot	AiPlayerbot.ProfessionUse.ClearCorpseForSkinning	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-train9-owner-clear-corpse-for-skinning
+aiplayerbot	AiPlayerbot.RandomBotFormGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-537-roster-path-needs-form-guild
+aiplayerbot	AiPlayerbot.RosterGuild.NamesAlliance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-name-pool-20261003
+aiplayerbot	AiPlayerbot.RosterGuild.NamesHorde	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-name-pool-20261003
