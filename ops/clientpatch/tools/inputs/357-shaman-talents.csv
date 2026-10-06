@@ -3,7 +3,7 @@ ID,TabID,TierID,ColumnIndex,SpellRank_0,SpellRank_1,SpellRank_2,SpellRank_3,Spel
 9002,263,0,3,61106,61107,61108,61109,61110,0,0,0,0,0,0,0,0,0,0,0,0,R1/C4 Earthen Guard (+6 defense per rank)
 9003,263,3,0,61112,61113,61114,0,0,0,0,0,0,0,0,0,0,0,0,0,0,R4/C1 Imbue Mastery (+3 % imbue effects per rank)
 9004,263,3,3,61115,61116,61117,0,0,0,0,0,0,0,0,0,0,0,0,0,0,R4/C4 Retaliation (30/60/90 % on dodge/parry/block)
-9005,263,4,3,61118,0,0,0,0,0,0,0,0,264,0,0,0,0,0,0,0,R5/C4 Charged Stormstrike (arrow from Stormstrike R5/C3)
+9005,263,4,3,61118,61223,61224,61225,0,0,0,0,0,264,0,0,0,0,0,0,0,"R5/C4 Charged Stormstrike, 4 ranks: 1/2/3/4 charges (#484; arrow from Stormstrike R5/C3)"
 9006,263,5,0,61119,61120,61121,61122,61123,0,0,0,0,0,0,0,0,0,0,0,0,R6/C1 Storm Wisdom (20..100 % on melee crit)
 9007,263,5,3,61127,61128,61129,0,0,0,0,0,0,0,0,0,0,0,0,0,0,R6/C4 Shield Constitution (+1/2/3 % stamina per charge)
 9008,263,6,0,61125,0,0,0,0,0,0,0,0,9006,0,0,4,0,0,0,0,R7/C1 Chain Storm (needs Storm Wisdom 5/5)

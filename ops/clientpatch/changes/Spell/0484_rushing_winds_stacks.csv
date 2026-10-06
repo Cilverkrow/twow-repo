@@ -1,0 +1,9 @@
+op,key,field,value,note
+# #484 train 9, owner test 03.10.2026 (issuecomment-5972156860): Elemental Weapons (Windfury part, Rushing Winds
+# 52967-52969) should stack to 5. twow-core 20261003200500 sets stackAmount 2/4/6 -> 3/4/5 (rank progression kept,
+# 5 at 3/3; owner decision point, variant B would be 5/5/5) and fixes "$52967u" in the rank 2/3 texts 29079/29080.
+# The texts already follow via sql: in 0357_shaman_elemental_weapons.csv; 0357_shaman_talent_values.csv touches
+# these rows, so spell-matches-server compares CumulativeAura and the client value has to follow the server.
+set,52967,CumulativeAura,sql:spell_template.stackAmount,Rushing Winds r1 (3 stacks)
+set,52968,CumulativeAura,sql:spell_template.stackAmount,Rushing Winds r2 (4 stacks)
+set,52969,CumulativeAura,sql:spell_template.stackAmount,Rushing Winds r3 (5 stacks)
