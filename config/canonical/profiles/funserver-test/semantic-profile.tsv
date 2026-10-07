@@ -169,3 +169,4 @@ aiplayerbot	AiPlayerbot.RosterGuild.FoundTravel	INTENTIONAL_CHANGE	aiplayerbot.o
 aiplayerbot	AiPlayerbot.DangerMap.CountEnvironmentDeaths	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-hotfix835-environment-deaths
 aiplayerbot	AiPlayerbot.RandomBotsMaxLoginsPerInterval	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-540-owner-login-pacing-1
 mangosd	Eluna.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-541-eluna-off-no-scripts
+mangosd	Funserver.BotSurnames.File	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-518-owner-hotfix93-bot-surnames-file

@@ -107,4 +107,9 @@ Roster guild names (train 9, #485 point 3, owner 2026-10-03): the 24 proposed na
 roster bots found their guilds from (`AiPlayerbot.RosterGuild.NamesAlliance`, `NamesHorde`); the
 roster path also needs `AiPlayerbot.RandomBotFormGuild = 1`.
 
-All one hundred and seventy deviations are classified in `semantic-profile.tsv`.
+Hotfix 9.3 (#518, owner 2026-10-07): bot surnames, display only (`Funserver.BotSurnames.File`). The
+name query shows "Name Surname" from the roster table `deploy/roster/names-518/addon-surnames-810.tsv`,
+mounted read-only as `/opt/turtle/etc/bot-surnames.tsv` and read once at startup (no DB change);
+the full display name maps back on whispers, `/r`, invites and mail.
+
+All one hundred and seventy-one deviations are classified in `semantic-profile.tsv`.
