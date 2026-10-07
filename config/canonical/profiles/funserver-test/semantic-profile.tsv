@@ -165,3 +165,4 @@ aiplayerbot	AiPlayerbot.ProfessionUse.ClearCorpseForSkinning	INTENTIONAL_CHANGE	
 aiplayerbot	AiPlayerbot.RandomBotFormGuild	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-537-roster-path-needs-form-guild
 aiplayerbot	AiPlayerbot.RosterGuild.NamesAlliance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-name-pool-20261003
 aiplayerbot	AiPlayerbot.RosterGuild.NamesHorde	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-name-pool-20261003
+aiplayerbot	AiPlayerbot.RosterGuild.FoundTravel	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-hotfix91-roster-guild-found-travel
