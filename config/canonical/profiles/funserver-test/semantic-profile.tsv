@@ -170,3 +170,4 @@ aiplayerbot	AiPlayerbot.DangerMap.CountEnvironmentDeaths	INTENTIONAL_CHANGE	aipl
 aiplayerbot	AiPlayerbot.RandomBotsMaxLoginsPerInterval	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-540-owner-login-pacing-1
 mangosd	Eluna.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-541-eluna-off-no-scripts
 mangosd	Funserver.BotSurnames.File	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-518-owner-hotfix93-bot-surnames-file
+aiplayerbot	AiPlayerbot.RandomBotJoinBG	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-517-race-guard-until-train10
