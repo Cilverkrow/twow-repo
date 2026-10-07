@@ -107,4 +107,4 @@ Roster guild names (train 9, #485 point 3, owner 2026-10-03): the 24 proposed na
 roster bots found their guilds from (`AiPlayerbot.RosterGuild.NamesAlliance`, `NamesHorde`); the
 roster path also needs `AiPlayerbot.RandomBotFormGuild = 1`.
 
-All one hundred and sixty-seven deviations are classified in `semantic-profile.tsv`.
+All one hundred and sixty-eight deviations are classified in `semantic-profile.tsv`.
