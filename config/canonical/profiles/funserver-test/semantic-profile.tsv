@@ -167,3 +167,4 @@ aiplayerbot	AiPlayerbot.RosterGuild.NamesAlliance	INTENTIONAL_CHANGE	aiplayerbot
 aiplayerbot	AiPlayerbot.RosterGuild.NamesHorde	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-owner-name-pool-20261003
 aiplayerbot	AiPlayerbot.RosterGuild.FoundTravel	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-hotfix91-roster-guild-found-travel
 aiplayerbot	AiPlayerbot.DangerMap.CountEnvironmentDeaths	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-544-hotfix835-environment-deaths
+aiplayerbot	AiPlayerbot.RandomBotsMaxLoginsPerInterval	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-540-owner-login-pacing-1
