@@ -1,5 +1,10 @@
 # What this platform is built on top of, and where that came from.
 #
+# HISTORICAL since 2026-10-08 (owner decision, twow-repo#565): the upstream below
+# (Shyalya/tortoise-wow) is no longer reachable and drift tracking has ended; the
+# nightly upstream-drift job is skipped. The values stay as the provenance record
+# of where the core came from (ADR-0026). Nothing measures against them anymore.
+#
 # ADR-0020 splits the tree in two: this repository is the platform (modules,
 # deploy, docs, tests, project SQL, ops) and the server core is the `core/`
 # submodule. Three questions have to have written answers, and this file is
