@@ -11,6 +11,7 @@
 #     it guards against is introduced by module work, not by every commit.
 #   * upstream drift. Nothing in this repository changes it at all; it changes
 #     when somebody else pushes to a repository we do not control.
+#     RETIRED 2026-10-08 (owner, #565): upstream unreachable, job skipped.
 #
 # Running them here keeps the per-push pipeline at one compile while nothing is
 # actually lost - the worst case is that one of these is found a day late, and
@@ -225,9 +226,17 @@ jobs:
   #
   # When ADR-0020's split lands and UPSTREAM.lock exists, the recorded base below
   # should be read from that file instead of being spelled here.
+  #
+  # RETIRED (owner 2026-10-08, twow-repo#565): upstream Shyalya/tortoise-wow is no
+  # longer reachable anonymously since at least 2026-10-03 and the owner ended
+  # drift tracking - the project carries the core on its own from here. The job
+  # stays in the file so its history and the recorded base remain readable, but
+  # it no longer runs; Actions shows it as skipped, not red. UPSTREAM.lock keeps
+  # the values as a historical provenance record.
   upstream-drift:
+    if: false # skipped: upstream retired (owner 2026-10-08) - Refs #565
     runs-on: ubuntu-latest
-    name: upstream drift
+    name: upstream drift (retired, #565)
     timeout-minutes: 30
     env:
       UPSTREAM_URL: https://github.com/Shyalya/tortoise-wow.git
