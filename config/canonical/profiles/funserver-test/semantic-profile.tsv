@@ -172,3 +172,4 @@ mangosd	Eluna.Enabled	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-541-eluna-of
 mangosd	Funserver.BotSurnames.File	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-518-owner-hotfix93-bot-surnames-file
 aiplayerbot	AiPlayerbot.RandomBotJoinBG	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-517-race-guard-until-train10
 mangosd	Anticrash.Options	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-541-owner-anticrash-no-coredump
+aiplayerbot	AiPlayerbot.AiDelayJitterPct	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-ai-jitter-15
