@@ -208,3 +208,7 @@ aiplayerbot	AiPlayerbot.Perf.AttackersSingleList	INTENTIONAL_CHANGE	aiplayerbot.
 aiplayerbot	AiPlayerbot.Perf.PartyTargetMemo	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-audit2-406
 aiplayerbot	AiPlayerbot.PossibleTargetsSharedSearch	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-audit2-406
 aiplayerbot	AiPlayerbot.SoloOwnAttackersOnly	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-383-owner-r2b-solo-own-attackers
+mangosd	Continents.Instanciate	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-541-owner-regions-layout20
+mangosd	Continents.Layout	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-541-owner-regions-layout20
+aiplayerbot	AiPlayerbot.BotSave.IntervalSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-botsave-300
+aiplayerbot	AiPlayerbot.BotSave.MaxPerTick	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-botsave-300
