@@ -190,8 +190,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
       libace-8.0.2 libmariadb3 libssl3 zlib1g libbz2-1.0 \
       libboost-system1.83.0 libboost-thread1.83.0 libboost-filesystem1.83.0 \
-      mariadb-client tini \
+      mariadb-client tini libjemalloc2 \
     && rm -rf /var/lib/apt/lists/*
+# libjemalloc2 (owner 2026-10-11, #541): installed but inert. The live runtime
+# override switches it on per service with
+# LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2 (MALLOC_ARENA_MAX stays 2).
+# Test realm: +18 % ticks at HERE:1600, RSS plateau like glibc over 60 min.
+# Removing the LD_PRELOAD line in the override is the rollback; no rebuild.
 
 COPY deploy/docker/entrypoint-mangosd.sh /usr/local/bin/entrypoint-mangosd.sh
 # The uid and the gid are pinned, and that is load-bearing rather than tidiness.
