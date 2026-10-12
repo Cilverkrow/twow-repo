@@ -112,4 +112,4 @@ name query shows "Name Surname" from the roster table `deploy/roster/names-518/a
 mounted read-only as `/opt/turtle/etc/bot-surnames.tsv` and read once at startup (no DB change);
 the full display name maps back on whispers, `/r`, invites and mail.
 
-All two hundred and thirteen deviations are classified in `semantic-profile.tsv`.
+All two hundred and twenty-two deviations are classified in `semantic-profile.tsv`.

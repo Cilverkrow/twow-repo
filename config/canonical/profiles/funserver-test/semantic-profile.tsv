@@ -212,3 +212,12 @@ mangosd	Continents.Instanciate	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-541
 mangosd	Continents.Layout	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-541-owner-regions-layout20
 aiplayerbot	AiPlayerbot.BotSave.IntervalSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-botsave-300
 aiplayerbot	AiPlayerbot.BotSave.MaxPerTick	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-botsave-300
+aiplayerbot	AiPlayerbot.Path.HonestRouteFail	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
+aiplayerbot	AiPlayerbot.Path.StartZoneExactBounds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
+aiplayerbot	AiPlayerbot.Path.RpgTargetSnap	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
+aiplayerbot	AiPlayerbot.Path.RouteFailDetail	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
+aiplayerbot	AiPlayerbot.Path.RouteFailDetail.LinesPerMinute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
+aiplayerbot	AiPlayerbot.Path.TaxiTrace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
+aiplayerbot	AiPlayerbot.PacketTrace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
+aiplayerbot	AiPlayerbot.Perf.NearestSkipHiddenBots	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
+aiplayerbot	AiPlayerbot.Shaman.ImbueBySpec	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
