@@ -4,6 +4,13 @@ Stand: 03.10.2026, Phase B von #486, Schritt B0 (Plan `final.md` Abschnitt 4,
 Inhaberentscheide vom 03.10.2026: Punkt 5 „ja mit Admin-Bypass“, Punkt 6 „ja“,
 Punkt 12 „lhns bleibt write“).
 
+**Aktualisiert 14.10.2026 (Inhaber, „merge freigabe bei grün immer zulassen“; Overlay Ä16):** In beiden
+Branch-Rulesets ist die Regel `pull_request` entfernt (kein Pflicht-Review, keine PR-Pflicht, keine
+Code-Owner-Prüfung). Das Merge-Tor sind die Required Status Checks. `creation`, `deletion`,
+`non_fast_forward` und `release-tags` sind unverändert. Die JSON-Nutzlasten und die Beschreibung unten
+entsprechen dem API-Stand vom 14.10.2026 (`gh api repos/Cilverkrow/<repo>/rulesets/<id>`: twow-core 24422501
+`main-und-release`, twow-repo 24418335 `main-und-release-` mit Bindestrich am Ende). Abschnitte, die ausdrücklich den Stand vom 03.10. nennen (Ausgangslage), beschreiben den früheren Zustand.
+
 **Ausführen nur durch den Inhaber (Cilverkrow).** Agenten bereiten vor und prüfen
 lesend (Abschnitt 6); sie ändern keine Repo-Einstellungen. Jeder Schritt hat einen
 Klickpfad (GitHub-Oberfläche, englische Beschriftung) und einen gleichwertigen
@@ -41,9 +48,10 @@ Ein Branch-Ruleset für `main` und `release/**` und ein Tag-Ruleset für `v*`:
 
 - kein Force-Push (`non_fast_forward`), kein Löschen (`deletion`);
 - neue `release/**`-Branches legt nur an, wer den Bypass hat (`creation`);
-- Änderungen nur per PR mit 1 Approval und Code-Owner-Review
-  (`require_code_owner_review`; `.github/CODEOWNERS` nennt @Cilverkrow für
-  `.github/`, `ops/ci/` und `deploy/docker/`);
+- **seit 14.10.2026 keine `pull_request`-Regel mehr:** weder Pflicht-Approval noch Code-Owner-Review
+  noch PR-Pflicht. Vom 03. bis 14.10. galt hier „1 Approval und Code-Owner-Review“. `.github/CODEOWNERS`
+  (@Cilverkrow für `.github/`, `ops/ci/`, `deploy/docker/`) bleibt als Hinweis liegen, wird aber
+  nicht mehr erzwungen;
 - Required Status Checks, gebunden an die App **GitHub Actions** (`integration_id`
   15368). Ein gleichnamiger Status aus einer anderen Quelle zählt damit nicht;
 - `v*`-Tags anlegen, verschieben, löschen darf nur der Admin.
@@ -51,19 +59,19 @@ Ein Branch-Ruleset für `main` und `release/**` und ein Tag-Ruleset für `v*`:
 **Warum Bypass für die Admin-Rolle** (`actor_type: RepositoryRole`, `actor_id: 5` =
 Repository-Admin, `bypass_mode: always`):
 
-1. GitHub lässt niemanden den eigenen PR approven. Alle PRs der Agenten laufen über
-   das Konto Cilverkrow, und Cilverkrow ist zugleich der einzige Code Owner. Ohne
-   Bypass wäre kein solcher PR je mergebar.
+1. (bis 14.10.) GitHub lässt niemanden den eigenen PR approven; alle PRs der Agenten laufen über
+   das Konto Cilverkrow, den einzigen Code Owner. Ohne Bypass wäre kein solcher PR mergebar gewesen.
+   Seit 14.10. gibt es keine Approval-Pflicht mehr, dieser Grund entfällt.
 2. Hotfix-Züge (Ä15) brauchen den Merge sofort, wenn die CI grün ist, auch ohne
    zweite Person.
 3. Release-Branches in twow-core (`release/<zug>.x`) werden vom Inhaber bzw. OB-00
    angelegt; die `creation`-Regel lässt das nur mit Bypass zu.
 
-Folge für den Ablauf: Ein PR von Cilverkrow wird mit
-**„Merge without waiting for requirements to be met (bypass rules)“** bzw.
-`gh pr merge <nr> --squash --admin` gemergt. **OB-00 muss sein Merge-Kommando um
-`--admin` ergänzen**, sonst lehnt GitHub den Merge ab. Der Bypass erscheint im
-Audit-Log und auf der Ruleset-Seite unter „Insights“.
+Folge für den Ablauf (seit 14.10.): Ein PR wird gemergt, sobald alle Required Status Checks
+grün sind (`gh pr merge <nr> --squash`); `--admin` ist dafür nicht mehr nötig. Der Bypass der
+Admin-Rolle bleibt für `creation` neuer `release/**`-Branches und für Notfälle; er erscheint im
+Audit-Log und auf der Ruleset-Seite unter „Insights“. Bis 14.10. musste das Merge-Kommando
+`--admin` enthalten.
 
 Was die Rulesets **nicht** leisten (Grenze aus Phase A):
 
@@ -75,8 +83,8 @@ Was die Rulesets **nicht** leisten (Grenze aus Phase A):
   ausführen. Die wirksame Grenze für ausgelieferte Images ist die ref-gebundene
   Attestierungsprüfung im Deploy (B5).
 - Weil die Agenten mit dem Konto des Inhabers arbeiten, haben sie technisch denselben
-  Bypass. Die Grenze dort ist die Freigaberegel im Overlay (Merge = Einzelfreigabe),
-  nicht GitHub.
+  Bypass. Die Grenze dort ist die Freigaberegel im Overlay (seit Ä16 vom 13.10.:
+  Merge bei grüner CI ist Dauerfreigabe, alles andere bleibt Einzelfreigabe), nicht GitHub.
 
 ### 1.2 Required Checks
 
@@ -115,7 +123,8 @@ Nicht required: `msvc compile-only` (nur per Dispatch).
 Nicht required: `Build core (MSVC, windows-latest)` (bei PRs übersprungen) und
 `POSIX-only-Aufrufe in den Modulen` (`msvc-portability.yml` hat einen Pfadfilter;
 ein Pfad-gefilterter Required Check bliebe bei anderen PRs ewig „Expected“).
-`require_code_owner_review` wirkt im Core erst, wenn dort `.github/CODEOWNERS` liegt (Core-PR zu B0/B1).
+Die Code-Owner-Prüfung ist seit 14.10. abgeschaltet (keine `pull_request`-Regel); `.github/CODEOWNERS`
+bleibt ohne Wirkung liegen.
 
 `strict_required_status_checks_policy: false`: der PR muss nicht auf dem neuesten
 `main` stehen (sonst wäre nach jedem Merge ein neuer Voll-Lauf nötig).
@@ -137,9 +146,8 @@ Für jedes Repo (`Cilverkrow/twow-repo`, `Cilverkrow/twow-core`):
 5. **Rules** anhaken:
    - **Restrict creations**
    - **Restrict deletions**
-   - **Require a pull request before merging** → **Required approvals** `1`,
-     **Dismiss stale pull request approvals when new commits are pushed** an,
-     **Require review from Code Owners** an, die übrigen aus.
+   - **Require a pull request before merging** bleibt **aus** (seit 14.10.2026; bis dahin: Required
+     approvals `1`, Dismiss stale approvals an, Require review from Code Owners an).
    - **Require status checks to pass** → **Do not require status checks on creation**
      an, **Require branches to be up to date before merging** aus → **Add checks**:
      jeden Namen aus 1.2 eintippen und als Quelle **GitHub Actions** wählen.
@@ -299,7 +307,7 @@ gh api repos/Cilverkrow/twow-repo/environments/release-publish/deployment-branch
 
 Erwartet: je Repo 2 Rulesets (`main-und-release` Branch, `release-tags` Tag, beide
 `active`); auf `main` die Typen `creation`, `deletion`, `non_fast_forward`,
-`pull_request`, `required_status_checks` mit den Checks aus 1.2 und
+`required_status_checks` (seit 14.10. ohne `pull_request`) mit den Checks aus 1.2 und
 `integration_id` 15368; Freigabe `all_external_contributors`; `total_count` 0;
 keine Variablen; Environment mit Reviewer Cilverkrow und den Regeln `main` (branch)
 und `v*` (tag).
