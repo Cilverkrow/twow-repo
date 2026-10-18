@@ -54,6 +54,8 @@ grep -q 'UNKNOWN key Made.Up.Key' "$T/err" || fail "unknown key message"
 mkdir "$T/dupbase"; cp "$T/base/"*.conf "$T/dupbase/"; echo 'RealmID = 2' >> "$T/dupbase/mangosd.conf"
 bash "$TR/run-config.sh" render --base "$T/dupbase" --out "$T/r-dup" 2> "$T/err" && fail "duplicate accepted"
 grep -q 'DUPLICATE key in mangosd.conf: RealmID' "$T/err" || fail "duplicate message"
+printf 'PerformanceLog.TickStats = 1\n' > "$T/append.overlay"
+bash "$TR/run-config.sh" render --base "$T/ref" --out "$T/r-from-ro" "${K[@]}" "$T/append.overlay" > /dev/null 2> "$T/err" || { cat "$T/err" >&2; fail "render from a read-only base must work (append)"; }
 ok "render rejects unknown and duplicate keys"
 printf 'Fine.Key = 1\n"db;3306;user;pw-leak-111;tw_world" broken line\n' > "$T/badline.overlay"
 bash "$TR/run-config.sh" render --base "$T/base" --out "$T/r-badline" "$T/badline.overlay" 2> "$T/err" && fail "bad overlay line accepted"
