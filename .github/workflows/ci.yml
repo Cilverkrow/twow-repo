@@ -629,6 +629,15 @@ jobs:
           shellcheck --severity=warning test/contract/live-smoke-triage.contract.sh
           bash test/contract/live-smoke-triage.contract.sh
 
+      # ops/testrun (R07a): one rendered, hashed config per test arm and live
+      # start, declared-diff gate, read-only override and the measurement and
+      # report lines. Pure text on fixtures; verify needs Docker and is not here.
+      - name: test-run harness contract
+        if: always()
+        run: |
+          shellcheck --severity=warning test/contract/testrun-harness.contract.sh
+          bash test/contract/testrun-harness.contract.sh
+
       # ops/build/local-maintrain-image.sh (owner decision 13, #486) is only run
       # by hand in a main-train window. Its guards and command line are checked
       # here against a fake docker and a throw-away repository, so the script
