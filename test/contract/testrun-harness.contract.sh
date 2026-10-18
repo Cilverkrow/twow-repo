@@ -63,6 +63,11 @@ grep -q 'bad overlay line 2 in badline.overlay' "$T/err" || fail "bad line messa
 m=$(bash -c '. "$1/arm-lib.sh"; printf "%s" "render failed: x WorldDatabase.Info = \"db;3306;user;pw-leak-222;tw_world\" y" | rt_clean' _ "$TR")
 echo "$m" | grep -q 'pw-leak' && fail "rt_clean leaves a connection string"
 echo "$m" | grep -q '<secret>' || fail "rt_clean marks the mask"
+mkdir "$T/mbase"; cp "$T/base/"*.conf "$T/mbase/"; echo 'BotBrain.Enable = 1' >> "$T/mbase/mangosd.conf"; echo 'BotBrain.Enable = 1' > "$T/mbase/mod_bot_brain.conf"
+printf 'BotBrain.Enable = 0\n' > "$T/bb.overlay"
+bash "$TR/run-config.sh" render --base "$T/mbase" --out "$T/r-multi" "$T/bb.overlay" > /dev/null 2> "$T/err" || fail "multi-file key render"
+grep -qx 'BotBrain.Enable = 0' "$T/r-multi/mangosd.conf" && grep -qx 'BotBrain.Enable = 0' "$T/r-multi/mod_bot_brain.conf" || fail "multi-file key set in both"
+grep -q 'set in 2 files' "$T/err" || fail "multi-file note"
 ok "no secret in error paths"
 
 # 3 diff: declared vs UNDECLARED, secret values never printed
