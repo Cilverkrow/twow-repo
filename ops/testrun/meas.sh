@@ -59,6 +59,7 @@ meas_end() {
         case $crc in 0) ;; 5) valid=0; reason=container-down;; *) valid=0; reason=config-changed;; esac
     fi
     [ -n "${RT_RUNCFG:-}" ] || { valid=0; reason=no-runcfg; }
+    [ "${RT_EFFECT_OK:-1}" = 0 ] && [ $valid = 1 ] && { valid=0; reason=effect-missing; }
     [ "$dl" -gt 0 ] && [ $valid = 1 ] && { valid=0; reason=diskload; }
     [ "$RT_CLASS" = perf ] && [ $iso = no ] && [ $valid = 1 ] && { valid=0; reason=not-isolated; }
     if [ "${1:-}" = complete ]; then [ $valid = 1 ] && [ "$min" -lt $(( MEAS_PLAN * 9 / 10 )) ] && reason=done-early
