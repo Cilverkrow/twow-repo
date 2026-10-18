@@ -3,7 +3,8 @@
 #   RT_CLASS   perf|behav (perf windows are only valid when isolated)
 #   RT_PSI_DIR host PSI logs (psi-YYYYMMDD.log, one line per 10 s: "<ISO>Z cpu[some avg10=…] … io[some avg10=…]")
 #   meas_start <planned-minutes> [reset-id] [roster-version]
-#   meas_end                     -> MEAS end line with min=, isolated=, valid=; window.txt in the run folder
+#   meas_end [complete]            -> MEAS end line with min=, isolated=, valid=; window.txt in the run folder
+#                                   "complete": the arm finished its workload early by design (e.g. all maps done) -> no "short" check, reason=done-early
 # Other tools read only these lines:
 #   MEAS start slot=S arm=A class=C reset=R roster=V img=I cfg=H from=ISO plan=N
 #   MEAS end slot=S arm=A class=C reset=R roster=V img=I cfg=H from=ISO to=ISO min=N isolated=yes|no valid=1|0 reason=…
@@ -58,7 +59,8 @@ meas_end() {
     fi
     [ -n "${RT_RUNCFG:-}" ] || { valid=0; reason=no-runcfg; }
     [ "$RT_CLASS" = perf ] && [ $iso = no ] && [ $valid = 1 ] && { valid=0; reason=not-isolated; }
-    [ "$min" -lt $(( MEAS_PLAN * 9 / 10 )) ] && [ $valid = 1 ] && { valid=0; reason=short; }
+    if [ "${1:-}" = complete ]; then [ $valid = 1 ] && [ "$min" -lt $(( MEAS_PLAN * 9 / 10 )) ] && reason=done-early
+    else [ "$min" -lt $(( MEAS_PLAN * 9 / 10 )) ] && [ $valid = 1 ] && { valid=0; reason=short; }; fi
     local line="MEAS end $MEAS_HEAD from=$MEAS_FROM to=$to min=$min isolated=$iso valid=$valid reason=$reason"
     echo "$line" >> "$RT_ROOT/threads.out"
     if [ -n "${RT_RUN:-}" ]; then { echo "$line"; [ -n "$conf" ] && printf '%s\n' "$conf"; } >> "$RT_RUN/window.txt"; fi
