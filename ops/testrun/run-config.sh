@@ -69,6 +69,7 @@ cmd_render() {
     mkdir -p "$out"
     find "$base" -maxdepth 1 -type f \( -name '*.conf' -o -name '*.tsv' \) ! -name 'keys.tsv' -exec cp -p {} "$out/" \;
     local a; for a in "${addf[@]}"; do [ -f "$a" ] || die "render: --add-file $a missing"; cp -p "$a" "$out/"; done
+    chmod -R u+w "$out"   # a read-only base (e.g. a frozen reference render) must not make the run copy read-only before the overlays
     local kf; kf=$(mktemp); trap 'rm -f "$kf"' RETURN
     [ ${#known[@]} -gt 0 ] && known_keys "${known[@]}" | LC_ALL=C sort -u > "$kf"
     local ov line k v f n err=0
