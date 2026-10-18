@@ -281,3 +281,4 @@ aiplayerbot	AiPlayerbot.QuestLoop.MaxFailures	INTENTIONAL_CHANGE	aiplayerbot.ove
 aiplayerbot	AiPlayerbot.WarnUnknownNames	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
 aiplayerbot	AiPlayerbot.X3b.PublishedConditions	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
 aiplayerbot	AiPlayerbot.X3b.PublishedTargets	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
+aiplayerbot	AiPlayerbot.Path.TaxiCancelForm	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-575-flight-ab-20261018-fix-on
