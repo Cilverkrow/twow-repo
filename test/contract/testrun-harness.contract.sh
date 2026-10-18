@@ -111,9 +111,11 @@ RT_SLOT=202610211415-demo; RT_ARM=ctl; RT_RUNCFG=$h1; RT_IMG=abc123; export RT_S
 meas_start 0 125 v8; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=$RT_ARM class=perf reset=125 roster=v8 img=abc123 cfg=${h1:0:12}"
 echo "DISKLOAD cli-x $(date -u -d '-20 min' +%FT%H:%M)-$(date -u -d '-10 min' +%FT%H:%M)" >> "$RT_ROOT/threads.out"
 RT_CLASS=perf; export RT_CLASS MEAS_FROM MEAS_HEAD; meas_end && fail "perf window with DISKLOAD must be invalid"
-grep -q '^MEAS end .*isolated=no valid=0 reason=not-isolated' "$RT_ROOT/threads.out" || fail "perf end line"
+grep -q '^MEAS end .*isolated=no valid=0 reason=diskload' "$RT_ROOT/threads.out" || fail "perf end line"
 RT_ARM=abc; RT_CLASS=behav; meas_start 0; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=abc class=behav reset=126 roster=v8 img=abc123 cfg=${h1:0:12}"; export RT_CLASS MEAS_FROM MEAS_HEAD
-meas_end || fail "behaviour window stays valid"
+meas_end && fail "behaviour window with DISKLOAD must be invalid too (owner 18.10.)"
+grep -q "^MEAS end .*arm=abc .*valid=0 reason=diskload" "$RT_ROOT/threads.out" || fail "behav diskload line"
+sed -i "/^DISKLOAD /d" "$RT_ROOT/threads.out"   # later windows without disk load
 RT_ARM=p5; meas_start 200; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=p5 class=behav reset=127 roster=v8 img=abc123 cfg=${h1:0:12}"; export RT_ARM MEAS_FROM MEAS_HEAD
 meas_end && fail "30 of 200 min without done must be short"
 grep -q '^MEAS end .*arm=p5 .*valid=0 reason=short' "$RT_ROOT/threads.out" || fail "short line"
@@ -122,8 +124,8 @@ meas_end complete || fail "done-early stays valid"
 grep -q '^MEAS end .*arm=p5d .*valid=1 reason=done-early' "$RT_ROOT/threads.out" || fail "done-early line"
 printf '%s 60\n' "$RT_SLOT" > "$T/planned.tsv"
 r=$(bash "$TR/report.sh" --threads "$RT_ROOT/threads.out" --planned "$T/planned.tsv")
-echo "$r" | grep -q $'^SLOT	202610211415-demo	60	120	60	100%	4	4	2$' || fail "slot line: $(echo "$r" | grep SLOT)"
-echo "$r" | grep -q $'^WEEK	2026-W43	60	60	100%$' || fail "week line: $(echo "$r" | grep WEEK)"
+echo "$r" | grep -q $'^SLOT\t202610211415-demo\t60\t120\t30\t50%\t4\t4\t1$' || fail "slot line: $(echo "$r" | grep SLOT)"
+echo "$r" | grep -q $'^WEEK\t2026-W43\t60\t30\t50%$' || fail "week line: $(echo "$r" | grep WEEK)"
 echo "$r" | grep -q $'^A2\t4/4 ' || fail "A2"
 ok "meas + report"
 echo "testrun-harness contract: all ok"
