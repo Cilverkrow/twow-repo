@@ -83,7 +83,8 @@ cmd_render() {
             k=${BASH_REMATCH[1]}; v=${BASH_REMATCH[2]}
             f=$(grep -lE "^[[:space:]]*${k//./\\.}[[:space:]]*=" "$out"/*.conf 2>/dev/null || true)
             n=$(printf '%s' "$f" | grep -c . || true)
-            if [ "$n" -gt 1 ]; then echo "render: key $k in several files" >&2; err=1; continue; fi
+            # A key some files share (e.g. BotBrain.Enable in mangosd.conf and mod_bot_brain.conf) is set to the same value in all of them.
+            [ "$n" -gt 1 ] && echo "render: note: key $k set in $n files" >&2
             if [ "$n" -eq 0 ]; then
                 if [ -s "$kf" ] && grep -qxF "$k" "$kf"; then
                     case $k in AiPlayerbot.*) f=$out/aiplayerbot.conf;; BotBrain.*) f=$out/mod_bot_brain.conf;; *) f=$out/mangosd.conf;; esac
@@ -92,10 +93,13 @@ cmd_render() {
                 fi
                 echo "render: UNKNOWN key $k (overlay $(basename "$ov"))" >&2; err=1; continue
             fi
-            K=$k V=$v awk 'BEGIN { k = ENVIRON["K"]; v = ENVIRON["V"] }
-                { line = $0; t = line; sub(/^[[:space:]]*/, "", t)
-                  if (index(t, k) == 1 && substr(t, length(k) + 1) ~ /^[[:space:]]*=/) { print k " = " v; next }
-                  print line }' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+            local tf
+            while IFS= read -r tf; do
+                K=$k V=$v awk 'BEGIN { k = ENVIRON["K"]; v = ENVIRON["V"] }
+                    { line = $0; t = line; sub(/^[[:space:]]*/, "", t)
+                      if (index(t, k) == 1 && substr(t, length(k) + 1) ~ /^[[:space:]]*=/) { print k " = " v; next }
+                      print line }' "$tf" > "$tf.tmp" && mv "$tf.tmp" "$tf"
+            done <<< "$f"
         done < "$ov"
     done
     local c
