@@ -52,7 +52,10 @@ meas_end() {
     local conf iso=yes valid=1 reason=ok
     conf=$(meas_confound "$MEAS_FROM" "$to" || true)
     [ -n "$conf" ] && iso=no
-    if [ -n "${RT_RUN:-}" ] && declare -F rt_arm_check > /dev/null; then rt_arm_check || { valid=0; reason=config-changed; }; fi
+    if [ -n "${RT_RUN:-}" ] && declare -F rt_arm_check > /dev/null; then
+        local crc=0; rt_arm_check || crc=$?
+        case $crc in 0) ;; 5) valid=0; reason=container-down;; *) valid=0; reason=config-changed;; esac
+    fi
     [ -n "${RT_RUNCFG:-}" ] || { valid=0; reason=no-runcfg; }
     [ "$RT_CLASS" = perf ] && [ $iso = no ] && [ $valid = 1 ] && { valid=0; reason=not-isolated; }
     [ "$min" -lt $(( MEAS_PLAN * 9 / 10 )) ] && [ $valid = 1 ] && { valid=0; reason=short; }

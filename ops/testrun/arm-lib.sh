@@ -16,7 +16,9 @@ RT_LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 RT_TOOL="$RT_LIB_DIR/run-config.sh"
 
 rt_log() { echo "RT $* $(date -u +%TZ)" >> "$RT_ROOT/threads.out"; }
-rt_fail() { echo "$(date -u +%FT%TZ) $2" > "$RT_ROOT/flags/RT-FAIL-$1"; rt_log "FAIL $1: $2"; return 1; }
+# Messages may quote tool output; anything shaped like a connection string is masked before it reaches flags or threads.out.
+rt_clean() { sed -E 's/"?[^";[:space:]]*;[0-9]*;[^;[:space:]]*;[^;[:space:]]*;[^"[:space:]]*"?/<secret>/g'; }
+rt_fail() { local m; m=$(printf '%s' "$2" | rt_clean); echo "$(date -u +%FT%TZ) $m" > "$RT_ROOT/flags/RT-FAIL-$1"; rt_log "FAIL $1: $m"; return 1; }
 
 rt_arm_begin() {
     : "${RT_ROOT:?}" "${RT_REF:?}" "${RT_ENV:?}"
@@ -55,8 +57,13 @@ rt_arm_up() {
     rt_log "arm $RT_SLOT/$RT_ARM up cfg=${RT_RUNCFG:0:12} img=$RT_IMG $(tail -1 "$RT_RUN/diff.tsv") run=$RT_RUN ($r)"
 }
 
+# 0 = config unchanged; 1 = mounted config changed/not read-only (arm INVALID); 5 = container not running at the end.
 rt_arm_check() {
-    bash "$RT_TOOL" verify --container "$RT_C" --run "$RT_RUN/config" --base "$RT_ROOT/runtime-config" > "$RT_RUN/verify-end.txt" 2>&1 \
-        || { rt_fail "$RT_ARM" "verify at end - arm INVALID"; return 1; }
-    rt_log "arm $RT_SLOT/$RT_ARM verify end OK cfg=${RT_RUNCFG:0:12}"
+    local rc=0
+    bash "$RT_TOOL" verify --container "$RT_C" --run "$RT_RUN/config" --base "$RT_ROOT/runtime-config" > "$RT_RUN/verify-end.txt" 2>&1 || rc=$?
+    case $rc in
+        0) rt_log "arm $RT_SLOT/$RT_ARM verify end OK cfg=${RT_RUNCFG:0:12}"; return 0;;
+        5) rt_fail "$RT_ARM" "container not running at measurement end - arm INVALID (crash/stop, not a config change)"; return 5;;
+        *) rt_fail "$RT_ARM" "verify at end - mounted config changed or not read-only - arm INVALID"; return 1;;
+    esac
 }
