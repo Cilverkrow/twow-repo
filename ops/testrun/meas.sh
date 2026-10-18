@@ -8,8 +8,8 @@
 # Other tools read only these lines:
 #   MEAS start slot=S arm=A class=C reset=R roster=V img=I cfg=H from=ISO plan=N
 #   MEAS end slot=S arm=A class=C reset=R roster=V img=I cfg=H from=ISO to=ISO min=N isolated=yes|no valid=1|0 reason=…
-# DISKLOAD lines ("DISKLOAD <who> <from>-<to>", ISO or HH:MM UTC) and PSI peaks (io some avg10 >= 20,
-# cpu some avg10 >= 40) inside the window make it isolated=no.
+# DISKLOAD and BUILD lines ("DISKLOAD|BUILD <who> <from>-<to>", ISO or HH:MM UTC) inside the window make the arm INVALID (owner 18.10.:
+# no disk/build jobs in measurement windows), any class. PSI peaks (io some avg10 >= 20, cpu some avg10 >= 40) make it isolated=no (perf invalid).
 RT_PSI_DIR=${RT_PSI_DIR:-/y/tw/evidence/ws-40/ob30-psi-host}
 RT_CLASS=${RT_CLASS:-behav}
 
@@ -29,7 +29,7 @@ meas_confound() {
         [ ${#ts[@]} -ge 2 ] || continue
         a=$(date -u -d "${ts[0]/T/ }Z" +%s 2>/dev/null) || continue; b=$(date -u -d "${ts[1]/T/ }Z" +%s 2>/dev/null) || continue
         if [ "$a" -lt "$t" ] && [ "$b" -gt "$f" ]; then echo "CONFOUNDED diskload: $l"; n=$((n + 1)); fi
-    done < <(grep -E '^DISKLOAD ' "$RT_ROOT/threads.out")
+    done < <(grep -E '^(DISKLOAD|BUILD) ' "$RT_ROOT/threads.out")
     local p d
     for d in $(date -u -d @"$f" +%Y%m%d) $(date -u -d @"$t" +%Y%m%d); do echo "$RT_PSI_DIR/psi-$d.log"; done | sort -u | while read -r p; do
         [ -f "$p" ] || continue
@@ -53,11 +53,13 @@ meas_end() {
     local conf iso=yes valid=1 reason=ok
     conf=$(meas_confound "$MEAS_FROM" "$to" || true)
     [ -n "$conf" ] && iso=no
+    local dl; dl=$(printf '%s\n' "$conf" | grep -c '^CONFOUNDED diskload' || true)
     if [ -n "${RT_RUN:-}" ] && declare -F rt_arm_check > /dev/null; then
         local crc=0; rt_arm_check || crc=$?
         case $crc in 0) ;; 5) valid=0; reason=container-down;; *) valid=0; reason=config-changed;; esac
     fi
     [ -n "${RT_RUNCFG:-}" ] || { valid=0; reason=no-runcfg; }
+    [ "$dl" -gt 0 ] && [ $valid = 1 ] && { valid=0; reason=diskload; }
     [ "$RT_CLASS" = perf ] && [ $iso = no ] && [ $valid = 1 ] && { valid=0; reason=not-isolated; }
     if [ "${1:-}" = complete ]; then [ $valid = 1 ] && [ "$min" -lt $(( MEAS_PLAN * 9 / 10 )) ] && reason=done-early
     else [ "$min" -lt $(( MEAS_PLAN * 9 / 10 )) ] && [ $valid = 1 ] && { valid=0; reason=short; }; fi
