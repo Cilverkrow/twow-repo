@@ -55,6 +55,15 @@ mkdir "$T/dupbase"; cp "$T/base/"*.conf "$T/dupbase/"; echo 'RealmID = 2' >> "$T
 bash "$TR/run-config.sh" render --base "$T/dupbase" --out "$T/r-dup" 2> "$T/err" && fail "duplicate accepted"
 grep -q 'DUPLICATE key in mangosd.conf: RealmID' "$T/err" || fail "duplicate message"
 ok "render rejects unknown and duplicate keys"
+printf 'Fine.Key = 1\n"db;3306;user;pw-leak-111;tw_world" broken line\n' > "$T/badline.overlay"
+bash "$TR/run-config.sh" render --base "$T/base" --out "$T/r-badline" "$T/badline.overlay" 2> "$T/err" && fail "bad overlay line accepted"
+grep -q 'pw-leak' "$T/err" && fail "bad overlay line content echoed"
+grep -q 'bad overlay line 2 in badline.overlay' "$T/err" || fail "bad line message with line number"
+# shellcheck source=../../ops/testrun/arm-lib.sh
+m=$(bash -c '. "$1/arm-lib.sh"; printf "%s" "render failed: x WorldDatabase.Info = \"db;3306;user;pw-leak-222;tw_world\" y" | rt_clean' _ "$TR")
+echo "$m" | grep -q 'pw-leak' && fail "rt_clean leaves a connection string"
+echo "$m" | grep -q '<secret>' || fail "rt_clean marks the mask"
+ok "no secret in error paths"
 
 # 3 diff: declared vs UNDECLARED, secret values never printed
 printf 'RealmID = 2\nWorldDatabase.Info = "db2;3306;user;pw-test-789;tw_world"\nLoginDatabaseInfo = "db2;3306;user;pw-test-000;tw_logon"\n' > "$T/env.overlay"

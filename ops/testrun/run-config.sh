@@ -3,7 +3,7 @@
 #
 #   run-config.sh render   --base DIR --out DIR [--known FILE]... [--add-file FILE]... [OVERLAY]...
 #   run-config.sh diff     --ref DIR --run DIR [--declared OVERLAY]...
-#   run-config.sh verify   --container NAME --run DIR [--base DIR]
+#   run-config.sh verify   --container NAME --run DIR [--base DIR]      (exit 4 mismatch, 5 container not running)
 #   run-config.sh override --run DIR --target-dir PATH [--service NAME] [--file NAME=TARGET]... -o FILE
 #   run-config.sh hash     DIR
 #
@@ -74,10 +74,12 @@ cmd_render() {
     local ov line k v f n err=0
     for ov in "${overlays[@]}"; do
         [ -f "$ov" ] || die "render: overlay $ov missing"
+        local ln=0
         while IFS= read -r line || [ -n "$line" ]; do
-            line=${line%$'\r'}
+            line=${line%$'\r'}; ln=$((ln + 1))
             [[ $line =~ ^[[:space:]]*($|#|\;) ]] && continue
-            [[ $line =~ ^[[:space:]]*([A-Za-z0-9_.]+)[[:space:]]*=[[:space:]]*(.*)$ ]] || { echo "render: bad overlay line in $(basename "$ov"): $line" >&2; err=1; continue; }
+            # line number only: an environment overlay holds connection strings, never echo its content
+            [[ $line =~ ^[[:space:]]*([A-Za-z0-9_.]+)[[:space:]]*=[[:space:]]*(.*)$ ]] || { echo "render: bad overlay line $ln in $(basename "$ov")" >&2; err=1; continue; }
             k=${BASH_REMATCH[1]}; v=${BASH_REMATCH[2]}
             f=$(grep -lE "^[[:space:]]*${k//./\\.}[[:space:]]*=" "$out"/*.conf 2>/dev/null || true)
             n=$(printf '%s' "$f" | grep -c . || true)
@@ -139,6 +141,8 @@ cmd_verify() {
         --container) c=$2; shift 2;; --run) run=$2; shift 2;; --base) base=$2; shift 2;;
         *) die "verify: unknown argument $1";; esac; done
     [ -n "$c" ] && [ -d "$run" ] || die "verify: --container and --run needed"
+    # A dead container is not a config change: own message and exit 5.
+    [ "$(docker inspect -f '{{.State.Running}}' "$c" 2>/dev/null)" = true ] || { echo "VERIFY DOWN container=$c not running"; exit 5; }
     local norm_run norm_base; norm_run=$(norm "$run"); norm_base=$([ -n "$base" ] && norm "$base" || true)
     local bad=0 seen=0 src dst rw h1 h2 ns
     while IFS=$'\t' read -r src dst rw; do
