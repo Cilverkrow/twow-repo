@@ -122,10 +122,14 @@ grep -q '^MEAS end .*arm=p5 .*valid=0 reason=short' "$RT_ROOT/threads.out" || fa
 RT_ARM=p5d; meas_start 200; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=p5d class=behav reset=128 roster=v8 img=abc123 cfg=${h1:0:12}"; export RT_ARM MEAS_FROM MEAS_HEAD
 meas_end complete || fail "done-early stays valid"
 grep -q '^MEAS end .*arm=p5d .*valid=1 reason=done-early' "$RT_ROOT/threads.out" || fail "done-early line"
+RT_ARM=eff; meas_start 30; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=eff class=behav reset=129 roster=v8 img=abc123 cfg=${h1:0:12}"; RT_EFFECT_OK=0; export RT_ARM MEAS_FROM MEAS_HEAD RT_EFFECT_OK
+meas_end && fail "arm without proven switch effect must be invalid"
+grep -q '^MEAS end .*arm=eff .*valid=0 reason=effect-missing' "$RT_ROOT/threads.out" || fail "effect-missing line"
+RT_EFFECT_OK=1; export RT_EFFECT_OK
 printf '%s 60\n' "$RT_SLOT" > "$T/planned.tsv"
 r=$(bash "$TR/report.sh" --threads "$RT_ROOT/threads.out" --planned "$T/planned.tsv")
-echo "$r" | grep -q $'^SLOT\t202610211415-demo\t60\t120\t30\t50%\t4\t4\t1$' || fail "slot line: $(echo "$r" | grep SLOT)"
+echo "$r" | grep -q $'^SLOT\t202610211415-demo\t60\t150\t30\t50%\t5\t5\t1$' || fail "slot line: $(echo "$r" | grep SLOT)"
 echo "$r" | grep -q $'^WEEK\t2026-W43\t60\t30\t50%$' || fail "week line: $(echo "$r" | grep WEEK)"
-echo "$r" | grep -q $'^A2\t4/4 ' || fail "A2"
+echo "$r" | grep -q $'^A2\t5/5 ' || fail "A2"
 ok "meas + report"
 echo "testrun-harness contract: all ok"

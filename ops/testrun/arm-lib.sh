@@ -54,10 +54,38 @@ rt_arm_up() {
         || { rt_fail "$RT_ARM" "verify at start: $(tr '\n' ' ' < "$RT_RUN/verify-start.txt" | cut -c1-200)"; return 1; }
     RT_RUNCFG=$(awk '$2=="RUNCFG"{print $1}' "$RT_RUN/config/RUNCFG.sha256"); export RT_RUNCFG
     RT_IMG=$(docker inspect "$RT_C" --format '{{.Image}}' | sed 's/^sha256://' | cut -c1-12); export RT_IMG
-    rt_log "arm $RT_SLOT/$RT_ARM up cfg=${RT_RUNCFG:0:12} img=$RT_IMG $(tail -1 "$RT_RUN/diff.tsv") run=$RT_RUN ($r)"
+    # R07 rule 1a (owner 18.10.): the running image must carry the planned core. RT_IMAGE_EXPECT = core sha (8+ hex) or image tag.
+    RT_CORE=$(rt_image_core); export RT_CORE
+    if [ -n "${RT_IMAGE_EXPECT:-}" ] && [ "${RT_CORE:0:8}" != "${RT_IMAGE_EXPECT:0:8}" ]; then
+        rt_alert "$RT_ARM" "image core ${RT_CORE:-unknown} != expected ${RT_IMAGE_EXPECT} - arm ABORTED, not measured"; return 1
+    fi
+    RT_EFFECT_OK=1; RT_T0=$(date -u +%FT%TZ); export RT_EFFECT_OK RT_T0
+    rt_log "arm $RT_SLOT/$RT_ARM up cfg=${RT_RUNCFG:0:12} img=$RT_IMG core=${RT_CORE:-?} $(tail -1 "$RT_RUN/diff.tsv") run=$RT_RUN ($r)"
 }
 
 # 0 = config unchanged; 1 = mounted config changed/not read-only (arm INVALID); 5 = container not running at the end.
+# Core of the running container: image label twow.core, else the tag after ':' (ob30-limit/mangosd:<sha8>).
+rt_image_core() {
+    local l; l=$(docker inspect "$RT_C" --format '{{index .Config.Labels "twow.core"}}' 2>/dev/null)
+    [ -n "$l" ] && [ "$l" != "<no value>" ] && { echo "$l"; return; }
+    docker inspect "$RT_C" --format '{{.Config.Image}}' 2>/dev/null | sed 's/.*://'
+}
+rt_alert() { echo "$(date -u +%FT%TZ) $2" > "$RT_ROOT/flags/ALERT-rt-$1"; rt_fail "$1" "$2" || true; }
+
+# R07 rule 1b: every A/B switch must be proven in the RUNNING process, not only in the rendered file.
+#   rt_effect_check <timeout-s> <regex>...  waits after boot until each regex matched a log line since rt_arm_up;
+#   a missing proof sets RT_EFFECT_OK=0 (meas_end -> valid=0 reason=effect-missing) and writes an ALERT flag.
+rt_effect_check() {
+    local to=$1 rx miss=(); shift
+    for rx in "$@"; do
+        for _ in $(seq 0 10 "$to"); do docker logs --since "$RT_T0" "$RT_C" 2>&1 | grep -qE -- "$rx" && continue 2; sleep 10; done
+        miss+=("$rx")
+    done
+    if [ ${#miss[@]} -gt 0 ]; then RT_EFFECT_OK=0; export RT_EFFECT_OK
+        rt_alert "$RT_ARM" "switch effect not proven in the running process: ${miss[*]} - arm INVALID"; return 1; fi
+    rt_log "arm $RT_SLOT/$RT_ARM effect proven: $# line(s)"
+}
+
 rt_arm_check() {
     local rc=0
     bash "$RT_TOOL" verify --container "$RT_C" --run "$RT_RUN/config" --base "$RT_ROOT/runtime-config" > "$RT_RUN/verify-end.txt" 2>&1 || rc=$?
