@@ -34,7 +34,7 @@ class CommittedCatalog(unittest.TestCase):
     def test_counts_and_freeze(self):
         cat = catalog.load_catalog(CAT_DIR / "quest-feasibility.toml", FACTS)
         self.assertEqual(len(cat.quests), 94)
-        self.assertEqual(sum(q.basis == "rule" for q in cat.quests), 47)   # strict split, OB-00 2026-10-19
+        self.assertEqual(sum(q.basis == "rule" for q in cat.quests), 46)   # strict split, OB-00 2026-10-19; 2242 override (CI #621)
         self.assertEqual(len(cat.ids("blocklist")), 87)
         self.assertEqual(len(cat.ids("no_custom_starts")), 7)
         self.assertEqual(set(cat.ids()), set(cat.baseline))

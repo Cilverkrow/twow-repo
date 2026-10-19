@@ -383,13 +383,12 @@ evidence = "blmap.psv:29"
 [[quest]]
 entry = 2242
 list = "blocklist"
-basis = "rule"
-rule = "ITEM_NO_SOURCE"
+basis = "override"
 class = "impossible"
-category = "ITEM_NO_SOURCE"
+category = "PICKPOCKET_ONLY"
 title = "Destiny Calls"
-reason = "item 7737 no loot source"
-evidence = "blmap.psv:42"
+reason = "item 7737 only from pickpocketing Sethir the Ancient (6909, quest drop): rogue only, needs stealth; not ITEM_NO_SOURCE (CI #621)"
+evidence = "blmap.psv:42; core sql/base pickpocketing_loot_template (6909,7737)"
 
 [[quest]]
 entry = 2561

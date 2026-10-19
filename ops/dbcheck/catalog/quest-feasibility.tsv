@@ -33,7 +33,7 @@ id	list	basis	rule	class	category	title	reason	evidence
 1699	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Rethban Gauntlet	AT482 (not seen in the windows)	blmap.psv:12
 1960	blocklist	override		impossible	ITEM_NO_SOURCE	Investigate the Alchemist Shop	item 7292 no loot source	blmap.psv:41
 2118	blocklist	override		impossible	EVENT_SUMMON+ITEM_USE	Plagued Lands	credit 11836 Captured Rabid Thistle Bear 0 spawns (trap item use); soak 4/0	blmap.psv:29
-2242	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_NO_SOURCE	Destiny Calls	item 7737 no loot source	blmap.psv:42
+2242	blocklist	override		impossible	PICKPOCKET_ONLY	Destiny Calls	item 7737 only from pickpocketing Sethir the Ancient (6909, quest drop): rogue only, needs stealth; not ITEM_NO_SOURCE (CI #621)	blmap.psv:42; core sql/base pickpocketing_loot_template (6909,7737)
 2561	blocklist	override		impossible	ESCORT_EVENT+ITEM_USE	Druid of the Claw	Druid of the Claw (src item use + event); soak 5/0	blmap.psv:55
 4740	blocklist	override		impossible	EVENT_SUMMON	WANTED: Murkdeep!	Murkdeep 10323 0 static spawns (wave event)	blmap.psv:31
 4811	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Red Crystal	AT2486 exploration only	blmap.psv:8
