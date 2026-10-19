@@ -1,5 +1,6 @@
 """Quest feasibility catalog (twow-repo#601 R08a): loading, rendering, lint and the database check on a synthetic world."""
 
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -47,6 +48,16 @@ class CommittedCatalog(unittest.TestCase):
         for f in FACTS.values():
             catalog.fact_sql(f, BINDING, MACROS, cat.ids())
             catalog.fact_sql(f, BINDING, MACROS, None)
+
+    def test_no_derived_table_uses_the_outer_quest(self):
+        # MariaDB has no LATERAL (ERROR 1109 "Unknown table 'q'"), SQLite accepts it: guard what the synthetic world cannot.
+        for f in FACTS.values():
+            for m in re.finditer(r"\bFROM\s*\(", f.predicate):
+                depth, i = 1, m.end()
+                while depth:
+                    depth += {"(": 1, ")": -1}.get(f.predicate[i], 0)
+                    i += 1
+                self.assertIsNone(re.search(r"\bq\.", f.predicate[m.end():i]), f.name)
 
 
 class Loading(unittest.TestCase):

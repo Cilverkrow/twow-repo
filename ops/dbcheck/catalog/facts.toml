@@ -4,6 +4,9 @@
 #     SELECT q.<entry> AS quest FROM <quest> q WHERE <scope> AND (<predicate>)
 # with <scope> = the catalog ids (check) or every quest whose title is not retired (candidates, report only).
 # Strict rule set (OB-00 2026-10-19): a rule names the documented cause of an id, not any predicate that happens to hold.
+# MariaDB has no LATERAL: a derived table (FROM (SELECT ...)) must not use `q` (ERROR 1109 "Unknown table 'q'"; SQLite
+# allows it, so only CI's integration step sees it). Unpivots therefore read the quest table themselves and correlate
+# in the WHERE clause, like the quest_not_ignored macro.
 
 [fact.PVP_BG]
 title = "Battleground quest (Type 41)"
@@ -45,10 +48,12 @@ title = "A creature kill or cast credit target (ReqCreatureOrGOId > 0) that is n
 predicate = """
 EXISTS (
   SELECT 1 FROM (
-    SELECT q.{quest.req_npc_1} AS target UNION ALL SELECT q.{quest.req_npc_2}
-    UNION ALL SELECT q.{quest.req_npc_3} UNION ALL SELECT q.{quest.req_npc_4}
+    SELECT u.{quest.entry} AS quest, u.{quest.req_npc_1} AS target FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_npc_2} FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_npc_3} FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_npc_4} FROM {quest} u
   ) t
-  WHERE t.target > 0 AND t.target NOT IN ({%spawned_ids})
+  WHERE t.quest = q.{quest.entry} AND t.target > 0 AND t.target NOT IN ({%spawned_ids})
 )
 """
 
@@ -57,10 +62,12 @@ title = "A required item (not the start item) that no loot table and no vendor p
 predicate = """
 EXISTS (
   SELECT 1 FROM (
-    SELECT q.{quest.req_item_1} AS item UNION ALL SELECT q.{quest.req_item_2}
-    UNION ALL SELECT q.{quest.req_item_3} UNION ALL SELECT q.{quest.req_item_4}
+    SELECT u.{quest.entry} AS quest, u.{quest.req_item_1} AS item FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_item_2} FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_item_3} FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_item_4} FROM {quest} u
   ) r
-  WHERE r.item > 0 AND r.item <> COALESCE(q.{quest.src_item}, 0)
+  WHERE r.quest = q.{quest.entry} AND r.item > 0 AND r.item <> COALESCE(q.{quest.src_item}, 0)
     AND NOT EXISTS (SELECT 1 FROM {creature_loot} x WHERE x.{creature_loot.item} = r.item)
     AND NOT EXISTS (SELECT 1 FROM {reference_loot} x WHERE x.{reference_loot.item} = r.item)
     AND NOT EXISTS (SELECT 1 FROM {gameobject_loot} x WHERE x.{gameobject_loot.item} = r.item)
