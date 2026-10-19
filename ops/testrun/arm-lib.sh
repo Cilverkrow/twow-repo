@@ -8,6 +8,7 @@
 #   RT_ENV_FILES optional: extra files of the track copied into every render (e.g. roster-guilds.tsv), space separated, no spaces in paths
 # Usage in a job:
 #   rt_arm_begin <slot> <arm-label>      new arm overlay (empty)
+#   rt_reset <prefix> <n> [max-wait-s]   fixed DB state before the arm (R07 rule: required for class perf)
 #   setb KEY VALUE / setk KEY VALUE      write into the arm overlay (not into runtime-config any more)
 #   rt_arm_up [extra compose -f files…]  render -> diff -> override -> compose up -> verify; exports RT_RUNCFG
 #   rt_arm_check                         verify again (call at measurement end); 0 = still identical
@@ -23,8 +24,24 @@ rt_fail() { local m; m=$(printf '%s' "$2" | rt_clean); echo "$(date -u +%FT%TZ) 
 rt_arm_begin() {
     : "${RT_ROOT:?}" "${RT_REF:?}" "${RT_ENV:?}"
     RT_SLOT=$1; RT_ARM=$2; RT_RUN="$RT_ROOT/runs/$1-$2-$(date -u +%Y%m%dT%H%M%SZ)"
-    mkdir -p "$RT_RUN"; : > "$RT_RUN/arm.overlay"; RT_RUNCFG=""
-    export RT_SLOT RT_ARM RT_RUN RT_RUNCFG
+    mkdir -p "$RT_RUN"; : > "$RT_RUN/arm.overlay"; RT_RUNCFG=""; RT_RESET_ID=""
+    export RT_SLOT RT_ARM RT_RUN RT_RUNCFG RT_RESET_ID
+}
+
+# R07 rule (owner 19.10.2026 via OB-00): every perf arm starts from a fixed DB state. rt_reset <prefix> <n> [max-wait-s]
+# writes flags/<prefix>-REQ-<n> for the DB-reset watcher and waits for DONE/FAIL (default 2400 s). A used number, a FAIL or a
+# timeout fails the arm (the REQ is left in place: removing it needs an owner OK). meas_end marks a perf arm without a reset
+# valid=0 reason=no-reset.
+rt_reset() {
+    local pre=$1 n=$2 to=${3:-2400} fl="$RT_ROOT/flags" i
+    for i in REQ DONE FAIL; do [ -e "$fl/$pre-$i-$n" ] && { rt_fail "$RT_ARM" "reset $pre-$n already used ($i)"; return 1; }; done
+    touch "$fl/$pre-REQ-$n"; rt_log "arm $RT_SLOT/$RT_ARM reset $pre-REQ-$n requested"
+    for _ in $(seq 0 10 "$to"); do
+        [ -f "$fl/$pre-DONE-$n" ] && { RT_RESET_ID="$pre-$n"; export RT_RESET_ID; rt_log "arm $RT_SLOT/$RT_ARM reset $pre-$n done"; return 0; }
+        [ -f "$fl/$pre-FAIL-$n" ] && { rt_fail "$RT_ARM" "reset $pre-$n FAILED"; return 1; }
+        sleep 10
+    done
+    rt_fail "$RT_ARM" "reset $pre-$n not done within $to s"; return 1
 }
 
 # Replace-or-append KEY in the arm overlay; the target file is resolved at render time.

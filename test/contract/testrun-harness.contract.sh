@@ -112,12 +112,16 @@ export RT_ROOT RT_PSI_DIR
 RT_SLOT=202610211415-demo; RT_ARM=ctl; RT_RUNCFG=$h1; RT_IMG=abc123; export RT_SLOT RT_ARM RT_RUNCFG RT_IMG
 meas_start 0 125 v8; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=$RT_ARM class=perf reset=125 roster=v8 img=abc123 cfg=${h1:0:12}"
 echo "DISKLOAD cli-x $(date -u -d '-20 min' +%FT%H:%M)-$(date -u -d '-10 min' +%FT%H:%M)" >> "$RT_ROOT/threads.out"
-RT_CLASS=perf; export RT_CLASS MEAS_FROM MEAS_HEAD; meas_end && fail "perf window with DISKLOAD must be invalid"
+RT_CLASS=perf; RT_RESET_ID=SOAK-LIVE540-125; export RT_CLASS MEAS_FROM MEAS_HEAD RT_RESET_ID; meas_end && fail "perf window with DISKLOAD must be invalid"
 grep -q '^MEAS end .*isolated=no valid=0 reason=diskload' "$RT_ROOT/threads.out" || fail "perf end line"
 RT_ARM=abc; RT_CLASS=behav; meas_start 0; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=abc class=behav reset=126 roster=v8 img=abc123 cfg=${h1:0:12}"; export RT_CLASS MEAS_FROM MEAS_HEAD
 meas_end && fail "behaviour window with DISKLOAD must be invalid too (owner 18.10.)"
 grep -q "^MEAS end .*arm=abc .*valid=0 reason=diskload" "$RT_ROOT/threads.out" || fail "behav diskload line"
 sed -i "/^DISKLOAD /d" "$RT_ROOT/threads.out"   # later windows without disk load
+RT_ARM=nores; RT_CLASS=perf; RT_RESET_ID=""; meas_start 30; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=nores class=perf reset=- roster=v8 img=abc123 cfg=${h1:0:12}"; export RT_ARM RT_CLASS RT_RESET_ID MEAS_FROM MEAS_HEAD
+meas_end && fail "perf arm without a reset must be invalid (R07 rule)"
+grep -q '^MEAS end .*arm=nores .*valid=0 reason=no-reset' "$RT_ROOT/threads.out" || fail "no-reset line"
+RT_CLASS=behav; export RT_CLASS
 RT_ARM=p5; meas_start 200; MEAS_FROM=$(date -u -d '-30 min' +%FT%TZ); MEAS_HEAD="slot=$RT_SLOT arm=p5 class=behav reset=127 roster=v8 img=abc123 cfg=${h1:0:12}"; export RT_ARM MEAS_FROM MEAS_HEAD
 meas_end && fail "30 of 200 min without done must be short"
 grep -q '^MEAS end .*arm=p5 .*valid=0 reason=short' "$RT_ROOT/threads.out" || fail "short line"
@@ -130,8 +134,8 @@ grep -q '^MEAS end .*arm=eff .*valid=0 reason=effect-missing' "$RT_ROOT/threads.
 RT_EFFECT_OK=1; export RT_EFFECT_OK
 printf '%s 60\n' "$RT_SLOT" > "$T/planned.tsv"
 r=$(bash "$TR/report.sh" --threads "$RT_ROOT/threads.out" --planned "$T/planned.tsv")
-echo "$r" | grep -q $'^SLOT\t202610211415-demo\t60\t150\t30\t50%\t5\t5\t1$' || fail "slot line: $(echo "$r" | grep SLOT)"
+echo "$r" | grep -q $'^SLOT\t202610211415-demo\t60\t180\t30\t50%\t6\t6\t1$' || fail "slot line: $(echo "$r" | grep SLOT)"
 echo "$r" | grep -q $'^WEEK\t2026-W43\t60\t30\t50%$' || fail "week line: $(echo "$r" | grep WEEK)"
-echo "$r" | grep -q $'^A2\t5/5 ' || fail "A2"
+echo "$r" | grep -q $'^A2\t6/6 ' || fail "A2"
 ok "meas + report"
 echo "testrun-harness contract: all ok"
