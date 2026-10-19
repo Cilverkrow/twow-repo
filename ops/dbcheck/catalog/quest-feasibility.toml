@@ -1,0 +1,1012 @@
+# Quest feasibility catalog (twow-repo#601 R08a, OB-00 decisions 2026-10-19): the ONLY hand-edited input.
+# `python3 -m dbcheck catalog generate` renders quest-feasibility.tsv and quest-feasibility.keys from it; the CI lint checks
+# that both are up to date and that the two key lines in config/canonical/profiles/funserver-test/aiplayerbot.overlay.conf
+# equal the rendered .keys; the integration job checks every `basis = "rule"` quest against the core-pin world
+# (`dbcheck catalog check --disposable`).
+#
+# basis = "rule": the quest must still match `rule` (facts.toml) on the world data, else CI fails - the reason is gone
+#                 (e.g. the taker got its spawn) and the id should leave the list.
+# basis = "override": a reason the data cannot show (escort/event scripts, spell or item use, config-dependent legs);
+#                 CI only checks that the quest exists.
+# class: impossible | needs_group (S7 group help; owner decision 2026-10-18) | config (only while CustomRaceStartZones = 0).
+# Freeze (OB-00 2026-10-19): an id outside [catalog].frozen_baseline needs `approved = "OB-00 YYYY-MM-DD <link>"`.
+
+[catalog]
+issue = "twow-repo#601 R08a"
+frozen_baseline = [
+  25, 28, 62, 76, 155, 255, 256, 273, 287, 409, 437, 455,
+  498, 731, 746, 754, 812, 851, 870, 881, 898, 921, 924, 938,
+  944, 953, 954, 959, 984, 1149, 1195, 1699, 1960, 2118, 2242, 2561,
+  4740, 4811, 5441, 5621, 5625, 5648, 5650, 5713, 5727, 5930, 6395, 6421,
+  6523, 6543, 6621, 8290, 8295, 8368, 8372, 9263, 9264, 9265, 40003, 40084,
+  40099, 40536, 40670, 40820, 40821, 41169, 41170, 41201, 41235, 41259, 41363, 41367,
+  41640, 41747, 41905, 42006, 42045, 42055, 42056, 55048, 60050, 60114, 60124, 60131,
+  60163, 80306, 80315, 80330, 80340, 80395, 80396, 80407, 80408, 80409,
+]
+
+[[quest]]
+entry = 25
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "Stonetalon Standstill"
+reason = "AT2926 (not seen in the windows)"
+evidence = "blmap.psv:13"
+
+[[quest]]
+entry = 28
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT+TIMED"
+title = "Trial of the Lake"
+reason = "Trial of the Lake (druid, timed event)"
+evidence = "blmap.psv:54"
+
+[[quest]]
+entry = 62
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "The Fargodeep Mine"
+reason = "AT88/197 exploration only; 0 QuestCommit rows in soak; soak 39 bots/0 tin, avg open 7.7 h"
+evidence = "blmap.psv:2"
+
+[[quest]]
+entry = 76
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "The Jasperlode Mine"
+reason = "AT87/342 exploration only (not accepted in the windows)"
+evidence = "blmap.psv:3"
+
+[[quest]]
+entry = 155
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "ESCORT_EVENT+EXPLORE_AT"
+title = "The Defias Brotherhood"
+reason = "escort of the Defias Traitor (StartScript) + AT78, Type group; soak 84 accepts / 82 drops (accept-drop churn)"
+evidence = "blmap.psv:18"
+
+[[quest]]
+entry = 255
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "Mercenaries"
+reason = "Mo'grosh elites; soak 15/0, 8 drops"
+evidence = "blmap.psv:72"
+
+[[quest]]
+entry = 256
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "WANTED: Chok'sul"
+reason = "Chok'sul elite; soak 6/0"
+evidence = "blmap.psv:74"
+
+[[quest]]
+entry = 273
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT"
+title = "Resupplying the Excavation"
+reason = "Resupplying the Excavation (ambush event); soak 4 drops, live 3/0"
+evidence = "blmap.psv:61"
+
+[[quest]]
+entry = 287
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "Frostmane Hold"
+reason = "areatrigger_involvedrelation AT97 + 5 Frostmane Headhunter; bots send CMSG_AREATRIGGER only as master relay (AreaTriggerAction.cpp:54-80); QuestVal"
+evidence = "blmap.psv:1"
+
+[[quest]]
+entry = 409
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EVENT_SUMMON"
+title = "Proving Allegiance"
+reason = "Lillith Nefara 1946 0 static spawns"
+evidence = "blmap.psv:32"
+
+[[quest]]
+entry = 437
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "The Dead Fields"
+reason = "AT173 + item 3622 from Nightlash (creature 1983, 0 static spawns, event summon)"
+evidence = "blmap.psv:6"
+
+[[quest]]
+entry = 455
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "The Algaz Gauntlet"
+reason = "AT175 + kill objectives; soak 4/0"
+evidence = "blmap.psv:7"
+
+[[quest]]
+entry = 498
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "SPELL_ON_GO"
+title = "The Rescue"
+reason = "ReqSpellCast 3366 on Locked ball and chain"
+evidence = "blmap.psv:63"
+
+[[quest]]
+entry = 731
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT"
+title = "The Absent Minded Prospector"
+reason = "escort Absent Minded Prospector, group; soak 4/0, 7 drops"
+evidence = "blmap.psv:52"
+
+[[quest]]
+entry = 746
+list = "blocklist"
+basis = "rule"
+rule = "ITEM_NO_SOURCE"
+class = "impossible"
+category = "ITEM_NO_SOURCE"
+title = "Dwarven Digging"
+reason = "item 4703 Broken Tools in no creature/gameobject/item/reference loot, no vendor; soak 34 bots/0 tin, avg open 5.9 h"
+evidence = "blmap.psv:36; ob50/quest-intent.tsv:2"
+
+[[quest]]
+entry = 754
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT+ITEM_USE"
+title = "Winterhoof Cleansing"
+reason = "Winterhoof Cleansing: use src item at the well (event); soak 20 bots/0 tin, avg open 5.3 h, 0 QuestCommit rows"
+evidence = "blmap.psv:56"
+
+[[quest]]
+entry = 812
+list = "blocklist"
+basis = "rule"
+rule = "ITEM_NO_SOURCE"
+class = "impossible"
+category = "ITEM_NO_SOURCE+TIMED"
+title = "Need for a Cure"
+reason = "item 4904 no loot source, timed; soak 6/0, 7 drops"
+evidence = "blmap.psv:38"
+
+[[quest]]
+entry = 851
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EVENT_SUMMON"
+title = "Verog the Dervish"
+reason = "item 5023 from Verog (0 static spawns, summoned)"
+evidence = "blmap.psv:33"
+
+[[quest]]
+entry = 870
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "The Forgotten Pools"
+reason = "AT216 exploration only; soak 7/0, 11 drops"
+evidence = "blmap.psv:5"
+
+[[quest]]
+entry = 881
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EVENT_SUMMON+ITEM_USE"
+title = "Echeyakee"
+reason = "item 5100 from Echeyakee (0 spawns, summoned by horn item)"
+evidence = "blmap.psv:34"
+
+[[quest]]
+entry = 898
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT"
+title = "Free From the Hold"
+reason = "SpecialFlags 2 escort; soak 11 bots/0 tin/35 drops (accept-drop churn)"
+evidence = "blmap.psv:49"
+
+[[quest]]
+entry = 921
+list = "blocklist"
+basis = "rule"
+rule = "ITEM_NO_SOURCE"
+class = "impossible"
+category = "ITEM_USE_AT_GO"
+title = "Crown of the Earth"
+reason = "item 5184 Filled Crystal Phial has no loot source (made by using src item at the moonwell); soak 10/0"
+evidence = "blmap.psv:37"
+
+[[quest]]
+entry = 924
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT+USE_GO"
+title = "The Demon Seed"
+reason = "goober 3525 The Altar of Fire starts DB event 510; soak 3/0"
+evidence = "blmap.psv:57"
+
+[[quest]]
+entry = 938
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT+TIMED"
+title = "Mist"
+reason = "escort, timed; soak 9 bots/0 tin/26 drops"
+evidence = "blmap.psv:50"
+
+[[quest]]
+entry = 944
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "The Master's Glaive"
+reason = "AT223 (not seen in the windows)"
+evidence = "blmap.psv:10"
+
+[[quest]]
+entry = 953
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "USE_GO"
+title = "The Fall of Ameth'Aran"
+reason = "two goober reads 17188/17189; soak 4/0"
+evidence = "blmap.psv:69; map-data.md:42 (decision open)"
+
+[[quest]]
+entry = 954
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "Bashal'Aran"
+reason = "AT230 exploration only"
+evidence = "blmap.psv:9"
+
+[[quest]]
+entry = 959
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "Trouble at the Docks"
+reason = "group quest; soak 3/0, live 3/0"
+evidence = "blmap.psv:78"
+
+[[quest]]
+entry = 984
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "How Big a Threat?"
+reason = "AT231/232/235 exploration only; soak 12/0"
+evidence = "blmap.psv:4"
+
+[[quest]]
+entry = 1149
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "Test of Faith"
+reason = "AT246 (not seen in the windows)"
+evidence = "blmap.psv:14"
+
+[[quest]]
+entry = 1195
+list = "blocklist"
+basis = "rule"
+rule = "ITEM_NO_SOURCE"
+class = "impossible"
+category = "ITEM_NO_SOURCE"
+title = "The Sacred Flame"
+reason = "item 5868 no loot source"
+evidence = "blmap.psv:40"
+
+[[quest]]
+entry = 1699
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "The Rethban Gauntlet"
+reason = "AT482 (not seen in the windows)"
+evidence = "blmap.psv:12"
+
+[[quest]]
+entry = 1960
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ITEM_NO_SOURCE"
+title = "Investigate the Alchemist Shop"
+reason = "item 7292 no loot source"
+evidence = "blmap.psv:41"
+
+[[quest]]
+entry = 2118
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EVENT_SUMMON+ITEM_USE"
+title = "Plagued Lands"
+reason = "credit 11836 Captured Rabid Thistle Bear 0 spawns (trap item use); soak 4/0"
+evidence = "blmap.psv:29"
+
+[[quest]]
+entry = 2242
+list = "blocklist"
+basis = "rule"
+rule = "ITEM_NO_SOURCE"
+class = "impossible"
+category = "ITEM_NO_SOURCE"
+title = "Destiny Calls"
+reason = "item 7737 no loot source"
+evidence = "blmap.psv:42"
+
+[[quest]]
+entry = 2561
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT+ITEM_USE"
+title = "Druid of the Claw"
+reason = "Druid of the Claw (src item use + event); soak 5/0"
+evidence = "blmap.psv:55"
+
+[[quest]]
+entry = 4740
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EVENT_SUMMON"
+title = "WANTED: Murkdeep!"
+reason = "Murkdeep 10323 0 static spawns (wave event)"
+evidence = "blmap.psv:31"
+
+[[quest]]
+entry = 4811
+list = "blocklist"
+basis = "rule"
+rule = "AT_ONLY"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "The Red Crystal"
+reason = "AT2486 exploration only"
+evidence = "blmap.psv:8"
+
+[[quest]]
+entry = 5441
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ITEM_USE_ON_FRIENDLY"
+title = "Lazy Peons"
+reason = "Foreman's Blackjack 16114 (spell 19938) on non-hostile Lazy Peon 10556; soak 33/0, live 19/0; QuestCommit 339 commits, 454 destination_inactive, 12"
+evidence = "blmap.psv:64"
+
+[[quest]]
+entry = 5621
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "CLASS_SPELL_ON_NPC"
+title = "Garments of the Moon"
+reason = "priest Garments: heal+buff NPC 12429 (script credit); soak 7/0"
+evidence = "blmap.psv:65"
+
+[[quest]]
+entry = 5625
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "CLASS_SPELL_ON_NPC"
+title = "Garments of the Light"
+reason = "priest Garments: NPC 12427; soak 5/0"
+evidence = "blmap.psv:66"
+
+[[quest]]
+entry = 5648
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "CLASS_SPELL_ON_NPC"
+title = "Garments of Spirituality"
+reason = "priest Garments: NPC 12430; soak 6/0"
+evidence = "blmap.psv:67"
+
+[[quest]]
+entry = 5650
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "CLASS_SPELL_ON_NPC"
+title = "Garments of Darkness"
+reason = "priest Garments: NPC 12428; soak 7/0"
+evidence = "blmap.psv:68"
+
+[[quest]]
+entry = 5713
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT"
+title = "One Shot. One Kill."
+reason = "event One Shot One Kill; soak 3/0, 11 drops"
+evidence = "blmap.psv:53"
+
+[[quest]]
+entry = 5727
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT"
+title = "Hidden Enemies"
+reason = "Hidden Enemies event; live 3/0"
+evidence = "blmap.psv:58"
+
+[[quest]]
+entry = 5930
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT"
+title = "Great Bear Spirit"
+reason = "Great Bear Spirit (druid talk event)"
+evidence = "blmap.psv:59"
+
+[[quest]]
+entry = 6395
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "SPELL_ON_GO"
+title = "Marla's Last Wish"
+reason = "ReqSpellCast 20364 on goober 178090 Marla's Grave; live 27 bots/0 tin, soak 10/0; QuestLoop suppressed 72x"
+evidence = "blmap.psv:62"
+
+[[quest]]
+entry = 6421
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "Boulderslide Ravine"
+reason = "AT2946 (not seen in the windows)"
+evidence = "blmap.psv:11"
+
+[[quest]]
+entry = 6523
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT"
+title = "Protect Kaya"
+reason = "escort Protect Kaya; soak 4/0, 11 drops"
+evidence = "blmap.psv:51"
+
+[[quest]]
+entry = 6543
+list = "blocklist"
+basis = "rule"
+rule = "ITEM_NO_SOURCE"
+class = "impossible"
+category = "ITEM_NO_SOURCE"
+title = "The Warsong Reports"
+reason = "reports 16763-16765 come from gossip, no loot source; live 4/0"
+evidence = "blmap.psv:39"
+
+[[quest]]
+entry = 6621
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EVENT_SUMMON+ITEM_USE"
+title = "King of the Foulweald"
+reason = "item 16976 no loot source (summon via src item)"
+evidence = "blmap.psv:35"
+
+[[quest]]
+entry = 8290
+list = "blocklist"
+basis = "rule"
+rule = "PVP_BG"
+class = "impossible"
+category = "PVP_BG"
+title = "Vanquish the Invaders!"
+reason = "WSG marks 20558 (battleground only)"
+evidence = "blmap.psv:46"
+
+[[quest]]
+entry = 8295
+list = "blocklist"
+basis = "rule"
+rule = "PVP_BG"
+class = "impossible"
+category = "PVP_BG"
+title = "Quell the Silverwing Usurpers"
+reason = "WSG marks 20558 (battleground only)"
+evidence = "blmap.psv:47"
+
+[[quest]]
+entry = 8368
+list = "blocklist"
+basis = "rule"
+rule = "PVP_BG"
+class = "impossible"
+category = "PVP_BG"
+title = "Battle of Warsong Gulch"
+reason = "WSG marks 20558 (battleground only); live 3/0"
+evidence = "blmap.psv:48"
+
+[[quest]]
+entry = 8372
+list = "blocklist"
+basis = "rule"
+rule = "PVP_BG"
+class = "impossible"
+category = "PVP_BG"
+title = "Fight for Warsong Gulch"
+reason = "WSG marks 20558 (battleground only)"
+evidence = "blmap.psv:45"
+
+[[quest]]
+entry = 9263
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "Investigate the Scourge of Orgrimmar"
+reason = "AT4101 Scourge-invasion event quest"
+evidence = "blmap.psv:16"
+
+[[quest]]
+entry = 9264
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "Investigate the Scourge of Thunder Bluff"
+reason = "AT4103 Scourge-invasion event quest"
+evidence = "blmap.psv:17"
+
+[[quest]]
+entry = 9265
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EXPLORE_AT"
+title = "Investigate the Scourge of the Undercity"
+reason = "AT4100 Scourge-invasion event quest"
+evidence = "blmap.psv:15"
+
+[[quest]]
+entry = 40003
+list = "blocklist"
+basis = "rule"
+rule = "CREDIT_UNSPAWNED"
+class = "impossible"
+category = "DUMMY_CREDIT"
+title = "Hookah for Your Troubles"
+reason = "credit 60301 dummy trigger 0 spawns; soak 7/0"
+evidence = "blmap.psv:24; cpp-credit-helpers.toml:234"
+
+[[quest]]
+entry = 40084
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "Magical Interference"
+reason = "Turtle group quest; soak 3/0"
+evidence = "blmap.psv:77"
+
+[[quest]]
+entry = 40099
+list = "blocklist"
+basis = "rule"
+rule = "CREDIT_UNSPAWNED"
+class = "impossible"
+category = "DUMMY_CREDIT"
+title = "Attack from the Inside"
+reason = "objective 60323 dummy trigger x5 (0 spawns); item 5438 no loot source"
+evidence = "blmap.psv:28; cpp-credit-helpers.toml:259"
+
+[[quest]]
+entry = 40536
+list = "blocklist"
+basis = "rule"
+rule = "CREDIT_UNSPAWNED"
+class = "impossible"
+category = "DUMMY_CREDIT"
+title = "Bond Through Battle"
+reason = "credit 60382 quest_40536_dummy_triger 0 spawns; soak 14/0"
+evidence = "blmap.psv:23; cpp-credit-helpers.toml:449"
+
+[[quest]]
+entry = 40670
+list = "blocklist"
+basis = "rule"
+rule = "CREDIT_UNSPAWNED"
+class = "impossible"
+category = "DUMMY_CREDIT"
+title = "Information for Thrall"
+reason = "credit 60398 dummy trigger 0 spawns"
+evidence = "blmap.psv:26; cpp-credit-helpers.toml:524"
+
+[[quest]]
+entry = 40820
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "CHAIN_ORPHAN"
+title = "The Key to Karazhan IV"
+reason = "Karazhan key IV duplicate of 41136 (same giver 2543, same ender 60731, ExclusiveGroup 0); NextQuestInChain 40821"
+evidence = "blmap.psv:83; check-feasibility.md:188-194; ob50/quest-intent.tsv:6-7"
+
+[[quest]]
+entry = 40821
+list = "blocklist"
+basis = "rule"
+rule = "NO_GIVER_NO_ENDER"
+class = "impossible"
+category = "CHAIN_ORPHAN"
+title = "The Key to Karazhan V"
+reason = "Karazhan key V duplicate of 41137 with no creature/GO giver or ender; NextQuestId 0 so not a prev of 40825; dead end"
+evidence = "blmap.psv:84; check-feasibility.md:188-194; ob50/quest-intent.tsv:6-7"
+
+[[quest]]
+entry = 41363
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "Rampant Weeds"
+reason = "Turtle group quest; soak 4/0"
+evidence = "blmap.psv:75"
+
+[[quest]]
+entry = 41367
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "Against the Kolkar Dream"
+reason = "Turtle group quest; soak 3/0"
+evidence = "blmap.psv:76"
+
+[[quest]]
+entry = 41640
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "Restless"
+reason = "Turtle elite; soak 21/0"
+evidence = "blmap.psv:71"
+
+[[quest]]
+entry = 41747
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "TURNIN_UNREACHABLE"
+title = "The Tower of Azora"
+reason = "delivery to 62634 Antonas Riftgaze (Tower of Azora); soak 159 QuestFirstRoute selected, 5 arrived, 3 turn-ins; 44 bots, avg open 7.6 h"
+evidence = "blmap.psv:79; map-data.md:48"
+
+[[quest]]
+entry = 41905
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ITEM_NO_SOURCE"
+title = "Dark Iron Aggression"
+reason = "item 42072 no loot source (Turtle)"
+evidence = "blmap.psv:44"
+
+[[quest]]
+entry = 42006
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_DUNGEON"
+title = "Searching for Archaeologist Evenpike"
+reason = "Turtle dungeon quest, ender 63182 inside Frostmane Hollow (map 822), Type 81"
+evidence = "map-data.md:45; ob50/quest-intent.tsv:12; STATUS.md:60"
+
+[[quest]]
+entry = 42045
+list = "blocklist"
+basis = "rule"
+rule = "ENDER_UNSPAWNED"
+class = "impossible"
+category = "ENDER_UNSPAWNED"
+title = "Tainted Rune"
+reason = "ender unspawned; item 42337 no loot source; live 3/0"
+evidence = "blmap.psv:21; ob50/quest-intent.tsv:4"
+
+[[quest]]
+entry = 42055
+list = "blocklist"
+basis = "rule"
+rule = "ENDER_UNSPAWNED"
+class = "impossible"
+category = "ENDER_UNSPAWNED"
+title = "In Favor of the Three Siblings"
+reason = "ender 63099 Pargan Starstrider has 0 creature rows; talk-only class quest; soak 7/0"
+evidence = "blmap.psv:19; ob50/quest-intent.tsv:3"
+
+[[quest]]
+entry = 42056
+list = "blocklist"
+basis = "rule"
+rule = "ENDER_UNSPAWNED"
+class = "impossible"
+category = "ENDER_UNSPAWNED"
+title = "Garments of the Three Siblings"
+reason = "follow-up of 42055; giver and ender 63099 Pargan Starstrider 0 spawns, credit 63199 0 spawns; until data fix (core#459 / train 10)"
+evidence = "map-data.md:54; STATUS.md:56"
+
+[[quest]]
+entry = 55048
+list = "blocklist"
+basis = "rule"
+rule = "CREDIT_UNSPAWNED"
+class = "impossible"
+category = "DUMMY_CREDIT"
+title = "WANTED: Hole Escapee"
+reason = "credit 91296 custom objective trigger 0 spawns; soak 4/0"
+evidence = "blmap.psv:25"
+
+[[quest]]
+entry = 60050
+list = "blocklist"
+basis = "rule"
+rule = "CREDIT_UNSPAWNED"
+class = "impossible"
+category = "DUMMY_CREDIT+ITEM_USE"
+title = "Lucky Coin"
+reason = "credit 51301 DUMMY_STORMWIND_FOUNTAIN 0 spawns, needs src item use; soak 44 bots/0 tin, avg open 6.8 h"
+evidence = "blmap.psv:22"
+
+[[quest]]
+entry = 60114
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "The Terror of Chill Breeze"
+reason = "Old Icebeard elite (Turtle); soak 32 bots/0 tin, avg open 4.0 h"
+evidence = "blmap.psv:70"
+
+[[quest]]
+entry = 60124
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "EVENT_SUMMON+DUNGEON"
+title = "Trapped in the Nightmare"
+reason = "Mutanus 3654 0 static spawns (WC escort finale), group quest"
+evidence = "blmap.psv:30"
+
+[[quest]]
+entry = 60131
+list = "blocklist"
+basis = "rule"
+rule = "GROUP"
+class = "needs_group"
+category = "GROUP_ELITE"
+title = "Deep Blue Sea"
+reason = "Sand Shark elite; soak 7/0"
+evidence = "blmap.psv:73"
+
+[[quest]]
+entry = 80306
+list = "blocklist"
+basis = "rule"
+rule = "CREDIT_UNSPAWNED"
+class = "impossible"
+category = "DUMMY_CREDIT"
+title = "What's Yours is Ours"
+reason = "credit 80600 custom objective 0 spawns"
+evidence = "blmap.psv:27"
+
+[[quest]]
+entry = 80315
+list = "blocklist"
+basis = "rule"
+rule = "ITEM_NO_SOURCE"
+class = "impossible"
+category = "ITEM_NO_SOURCE"
+title = "Apple a Day"
+reason = "item 80865 no loot source (Turtle)"
+evidence = "blmap.psv:43"
+
+[[quest]]
+entry = 80340
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "ESCORT_EVENT+ITEM_USE"
+title = "Taming the Beast"
+reason = "Taming the Beast (hunter, Turtle)"
+evidence = "blmap.psv:60"
+
+[[quest]]
+entry = 80395
+list = "blocklist"
+basis = "rule"
+rule = "ENDER_UNSPAWNED"
+class = "impossible"
+category = "ENDER_UNSPAWNED+DUMMY_CREDIT"
+title = "A Glittering Opportunity"
+reason = "ender 81041 Kheyna Spinpistol 0 spawns; credit 80007 custom trigger 0 spawns; soak 9 bots/0 tin/15 drops"
+evidence = "blmap.psv:20; cpp-credit-helpers.toml:534; ob50/quest-intent.tsv:5"
+
+[[quest]]
+entry = 80396
+list = "blocklist"
+basis = "rule"
+rule = "ENDER_UNSPAWNED"
+class = "impossible"
+category = "ENDER_UNSPAWNED"
+title = "A Bloody Good Deed"
+reason = "Ratchet/Chromie chain after 80395; giver and ender 81041 Kheyna Spinpistol 0 spawns"
+evidence = "map-data.md:46; STATUS.md:57; ob50/quest-intent.tsv:5"
+
+[[quest]]
+entry = 80407
+list = "blocklist"
+basis = "rule"
+rule = "ENDER_UNSPAWNED"
+class = "impossible"
+category = "ENDER_UNSPAWNED"
+title = "A Letter From a Friend"
+reason = "Chromie chain (L46); ender 81041 0 spawns; credit 81252 is a C++-credited trigger"
+evidence = "map-data.md:46; STATUS.md:57; cpp-credit-helpers.toml:559"
+
+[[quest]]
+entry = 80408
+list = "blocklist"
+basis = "rule"
+rule = "GIVER_UNSPAWNED"
+class = "impossible"
+category = "GIVER_UNSPAWNED"
+title = "A Slaughter for Brains"
+reason = "Chromie chain (L46); giver 81041 Kheyna Spinpistol 0 spawns"
+evidence = "map-data.md:46; STATUS.md:57"
+
+[[quest]]
+entry = 80409
+list = "blocklist"
+basis = "rule"
+rule = "ENDER_UNSPAWNED"
+class = "impossible"
+category = "ENDER_UNSPAWNED"
+title = "Return to Kheyna"
+reason = "Chromie chain end; ender 65019 Chromie 0 spawns"
+evidence = "map-data.md:46; STATUS.md:57"
+
+[[quest]]
+entry = 41169
+list = "no_custom_starts"
+basis = "override"
+class = "config"
+category = "STARTZONE_LEG"
+title = "Bearer Of Bad News"
+reason = "goblin start: giver Taxxlo (island) -> taker Nert (Sparkwater Port); off-island leg"
+evidence = "map-data.md:63; STATUS.md:66; s3-design.md:156"
+
+[[quest]]
+entry = 41170
+list = "no_custom_starts"
+basis = "override"
+class = "config"
+category = "STARTZONE_LEG"
+title = "Solutions On Their Way"
+reason = "goblin start: giver Nert (Sparkwater) -> taker Taxxlo (island)"
+evidence = "map-data.md:64; STATUS.md:66; s3-design.md:156"
+
+[[quest]]
+entry = 41201
+list = "no_custom_starts"
+basis = "override"
+class = "config"
+category = "STARTZONE_LEG"
+title = "Dabbling In Darkness"
+reason = "goblin warlock: giver Amri (island) -> taker Gan'rul (Orgrimmar)"
+evidence = "map-data.md:72; s3-design.md:156"
+
+[[quest]]
+entry = 41235
+list = "no_custom_starts"
+basis = "override"
+class = "config"
+category = "STARTZONE_LEG"
+title = "To Staghelm"
+reason = "high-elf start: taker Fandral, Darnassus (map 1), needs the ship"
+evidence = "map-data.md:73; s3-design.md:156"
+
+[[quest]]
+entry = 41259
+list = "no_custom_starts"
+basis = "override"
+class = "config"
+category = "STARTZONE_LEG"
+title = "Journey to Auberdine"
+reason = "high-elf start: taker Glynda, Auberdine; ship 176250 not linked"
+evidence = "map-data.md:74; s3-design.md:156"
+
+[[quest]]
+entry = 60163
+list = "no_custom_starts"
+basis = "override"
+class = "config"
+category = "STARTZONE_LEG"
+title = "Training the Beast"
+reason = "goblin hunter: giver Mayten (island) -> taker Ormak Grimshot (Orgrimmar)"
+evidence = "map-data.md:71; s3-design.md:156"
+
+[[quest]]
+entry = 80330
+list = "no_custom_starts"
+basis = "override"
+class = "config"
+category = "STARTZONE_LEG"
+title = "The Hunter's Path"
+reason = "goblin hunter: givers TB/Razor Hill/Org -> taker Mayten 80105 (island)"
+evidence = "map-data.md:70; s3-design.md:156"

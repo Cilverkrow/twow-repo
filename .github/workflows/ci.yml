@@ -655,6 +655,14 @@ jobs:
         run: |
           shellcheck --severity=warning test/contract/release-digest.contract.sh
           bash test/contract/release-digest.contract.sh
+      # ops/dbcheck/catalog (twow-repo#601 R08a, OB-00 2026-10-19): the quest
+      # feasibility catalog is current, the test profile's two QuestFeasibility
+      # lines equal the rendered keys, and the freeze holds. No database.
+      - name: quest feasibility catalog contract
+        if: always()
+        run: |
+          shellcheck --severity=warning test/contract/quest-feasibility-catalog.contract.sh
+          bash test/contract/quest-feasibility-catalog.contract.sh
 
       # The issue importer has created duplicates or silently no-opped four
       # times: title matching (27 duplicates), `--state open` in the existence
@@ -1310,6 +1318,26 @@ jobs:
             "SELECT COUNT(*) FROM tw_world.creature;")
           [ "$creatures" -gt 0 ] || { echo "::error::tw_world.creature is empty - sql/base did not load"; exit 1; }
           echo "tw_world.creature rows: $creatures"
+
+      # twow-repo#601 R08a: every rule-based quest of ops/dbcheck/catalog must
+      # still match its rule on this world (core pin), every override must
+      # exist. A read-only user lives only in this job's throw-away database;
+      # its password is generated here, masked and never printed. Whole-world
+      # rule hits outside the catalog are a report (frozen lists).
+      - name: Quest feasibility catalog against the world
+        run: |
+          set -euo pipefail
+          pw=$(openssl rand -hex 16)
+          echo "::add-mask::$pw"
+          mariadb -h "$DB_HOST" -P "$DB_PORT" -u root -e \
+            "CREATE USER 'catalog_ro'@'%' IDENTIFIED BY '$pw'; GRANT SELECT ON tw_world.* TO 'catalog_ro'@'%';"
+          cnf="$RUNNER_TEMP/catalog-ro.cnf"
+          ( umask 077; printf '[client]\nuser=catalog_ro\npassword=%s\n' "$pw" > "$cnf" )
+          mkdir -p integration-results/catalog
+          cd ops/dbcheck
+          env -u MYSQL_PWD python3 -m dbcheck catalog check --disposable \
+            --mysql-cmd "mariadb --defaults-extra-file=$cnf -h $DB_HOST -P $DB_PORT tw_world" \
+            --out "$GITHUB_WORKSPACE/integration-results/catalog"
 
       # One step, one accumulator: every gap is reported in a single run rather
       # than one per re-run.
