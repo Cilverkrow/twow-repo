@@ -632,11 +632,14 @@ jobs:
       # ops/testrun (R07a): one rendered, hashed config per test arm and live
       # start, declared-diff gate, read-only override and the measurement and
       # report lines. Pure text on fixtures; verify needs Docker and is not here.
+      # PATH-02 tools (tickmed.sh, routetime.awk) on fixtures, mawk and gawk.
       - name: test-run harness contract
         if: always()
         run: |
           shellcheck --severity=warning test/contract/testrun-harness.contract.sh
           bash test/contract/testrun-harness.contract.sh
+          shellcheck --severity=warning ops/testrun/tickmed.sh test/contract/testrun-tools.contract.sh
+          bash test/contract/testrun-tools.contract.sh
 
       # ops/build/local-maintrain-image.sh (owner decision 13, #486) is only run
       # by hand in a main-train window. Its guards and command line are checked
