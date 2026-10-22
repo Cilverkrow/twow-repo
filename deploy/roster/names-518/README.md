@@ -7,7 +7,8 @@ Planning data: nothing here changes a database by itself.
 |---|---|
 | `rp-names-810.tsv` | the approved list for all stages up to 810: ordinal, guid (planned), race, class, gender, role, current name, **first name**, **surname (addon only)**, surname source, status (KEEP/NEW) |
 | `rename-train9-v6-180.tsv` | **A5 mapping for train 9**: the 132 existing roster bots (v6, ordinals 1–180) whose name changes; format `ordinal guid old_name race class gender new_name`, no header; sha256 `f67e003519c9ceb190fb61e74a0def0c43f7a6990562fab01791b8667ed88cf9` |
-| `addon-surnames-810.tsv` | first name → surname for the BotMenu addon (OB-15); the surname never goes into `characters.name` |
+| `addon-surnames-810.tsv` | first name → surname, source of the server surname file (hotfix 9.3, `Funserver.BotSurnames.File`; BotMenu 1.9 has no table of its own); the surname never goes into `characters.name` |
+| `addon-surnames-owner.tsv` | owner-chosen surnames for live bots outside the approved list (2026-10-14: Ezmo „Loázôan“, Hylea „Hyaenas“); same columns, `ordinal` is the **live** roster ordinal (v8), not a plan ordinal; surnames UTF-8. OB-40 builds the filtered server file from both tables |
 | `make_rp_names2.py` | generator of the list (deterministic) |
 | `npc_surnames.py` | surname candidates from NPC names of each race (race via the NPC display in the client DBCs) |
 | `origin_places.py` | "of <place>" origins from AreaTable.dbc (English client names) |
