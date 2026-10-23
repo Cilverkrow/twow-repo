@@ -30,6 +30,7 @@ This repository is a source-controlled project view, not a self-contained server
 - [Client patch pipeline](design/client-patch-pipeline.md) — design for #409 (rev. 2): Nostalgia Launcher as the distribution route (assets/mods/addons catalogues over HTTPS on the Radmin host), WoW-Spell-Editor DBC ↔ SQL build with an independent diff check, `patch-X.mpq`, client vs. server DBCs, version check, graphics, staged plan; owner decisions in section 9.
 - [Bot-bot groups](design/bot-groups.md) — #365: ad-hoc quest groups (step 2, owner contract), optional leader-driven group quest log (step 3), config keys, diagnostics, acceptance.
 - [Map and dungeon tooling](design/map-tooling.md) — research and design for #412/#427: 1.12 vs 3.3.5 map formats, editors/converters (no 1.12 Noggit), extractor limits and silent failure in our core, login guard, pilot path for the Scarlet Citadel on map 45 (reuse vs new terrain, decided at train 10), tools M1–M9 inside the #409 toolchain; decisions in section 8.
+- [Fast hotfix and patch builds](design/fast-hotfix-builds.md) — #486 phase A draft (German): where CI/publish time goes, self-hosted runner vs local GHCR push vs GitHub-side "build once, promote", recommendation V3 (no self-hosted runner on the live host), phase B steps B0–B7, phase C measurement; owner decisions in section 5.
 
 ## Authority warning
 
