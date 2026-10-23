@@ -124,9 +124,12 @@ Consequences for game rules (funserver profile only; the default profile stays u
 - **A world full of exciting rares.** Rares spawn reliably, respawn on a shortened, configurable
   scale, and carry special loot, including a level-banded bind-on-equip pool. They are also an
   observation point for bot behaviour. Tracked in #298 and #322.
-- **Bots first play competently alone.** Grouping between bots stays off until groups are
-  level-coherent and bots can leave on their own (#324). Test-phase XP rates are 1x so that
-  behavioural fixes are measured, not masked.
+- **Bots first play competently alone, then in small groups.** Since release train 7 the roster
+  runs small ad-hoc bot-bot quest groups (#365 step 2: level window, size cap, own leave path).
+  Groups that are level-coherent and that bots leave on their own remain the goal (#324); open
+  bot-bot grouping beyond that stays off. Test-phase XP rates are 1x so that behavioural fixes are
+  measured, not masked. (Amended 2026-10-02 per OB-00 decision 1 in #485: the live state takes
+  precedence over the earlier "grouping stays off until #324" wording.)
 - **Professions are part of progression**, first opportunistically from level 1 (#306), later as a
   deliberate phase in which a bot crafts its own equipment (#318).
 
