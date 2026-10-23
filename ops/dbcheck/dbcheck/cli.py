@@ -7,7 +7,8 @@ import os
 import sys
 from pathlib import Path
 
-from . import __version__, engine, report
+from . import __version__, catalog, engine, report
+from .binding import check_schema
 from .binding import load_binding
 from .errors import ConfigError, DbCheckError
 from .expected import load_all
@@ -95,6 +96,64 @@ def cmd_run(a):
     return 1 if run.failing() else 0
 
 
+CATALOG = ROOT / "catalog"
+
+
+def _catalog_paths(a):
+    facts = catalog.load_facts(a.catalog_dir / "facts.toml")
+    cat = catalog.load_catalog(a.catalog_dir / "quest-feasibility.toml", facts)
+    return facts, cat
+
+
+def _runner(a):
+    """The same database guards as `run`: --disposable, read-only grants, statement time limit."""
+    cmd = a.mysql_cmd or os.environ.get("DBCHECK_MYSQL")
+    if a.sqlite:
+        return SqliteRunner(a.sqlite)
+    if not cmd:
+        raise ConfigError("no database: pass --mysql-cmd (or DBCHECK_MYSQL) or --sqlite")
+    if not a.disposable:
+        raise ConfigError("refusing to run against a database without --disposable (never the live database)")
+    runner = MysqlRunner(cmd, statement_seconds=a.statement_seconds)
+    extra = runner.check_grants()
+    if extra and not a.skip_grant_check:
+        raise ConfigError("the database user holds more than SELECT/SHOW VIEW (" + ", ".join(extra) + "); use a read-only user")
+    return runner
+
+
+def cmd_catalog(a):
+    facts, cat = _catalog_paths(a)
+    tsv, keys = a.catalog_dir / "quest-feasibility.tsv", a.catalog_dir / "quest-feasibility.keys"
+    if a.action == "generate":
+        tsv.write_text(catalog.render_tsv(cat), encoding="utf-8", newline="\n")
+        keys.write_text(catalog.render_keys(cat), encoding="utf-8", newline="\n")
+        print(f"wrote {tsv.name} ({len(cat.quests)} quests) and {keys.name}")
+        return 0
+    if a.action == "lint":
+        binding = load_binding(a.binding)
+        _, macros = load_rules(a.rules)
+        for f in facts.values():
+            catalog.fact_sql(f, binding, macros, cat.ids())   # every rule expands to one read-only SELECT
+        problems = catalog.lint(cat, tsv, keys, a.profile)
+        for p in problems:
+            print(f"catalog: {p}", file=sys.stderr)
+        rules = sum(1 for q in cat.quests if q.basis == "rule")
+        print(f"catalog: {len(cat.quests)} quests ({rules} rule, {len(cat.quests) - rules} override), "
+              f"{len(problems)} problem(s)")
+        return 1 if problems else 0
+    binding = load_binding(a.binding)
+    _, macros = load_rules(a.rules)
+    runner = _runner(a)
+    check_schema(binding, runner.schema())
+    res = catalog.check(runner, binding, macros, cat, facts, candidates=not a.no_candidates)
+    if a.out:
+        catalog.write_check(res, a.out)
+    for p in res.problems:
+        print(f"catalog: {p}", file=sys.stderr)
+    print(f"catalog check: {len(res.rows)} quests, {len(res.problems)} problem(s), {len(res.candidates)} candidate hit(s) (report only)")
+    return 1 if res.failing() else 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="dbcheck", description="Expected-vs-actual checks of the world database.")
     ap.add_argument("--version", action="version", version=f"dbcheck {__version__}")
@@ -116,6 +175,19 @@ def main(argv=None) -> int:
     p.add_argument("--max-rows", type=int, default=50, help="rows per finding in report.md (JSON has all)")
     p.add_argument("--out", type=Path, help="write report.md, report.json, SHA256SUMS here")
     p.set_defaults(fn=cmd_run)
+    p = sub.add_parser("catalog", help="quest feasibility catalog: generate | lint | check (twow-repo#601 R08a)")
+    p.add_argument("action", choices=("generate", "lint", "check"))
+    _common(p)
+    p.add_argument("--catalog-dir", type=Path, default=CATALOG)
+    p.add_argument("--profile", type=Path, help="lint: profile overlay whose QuestFeasibility lines must equal the .keys")
+    p.add_argument("--mysql-cmd", help="check: client command reading SQL from stdin (or env DBCHECK_MYSQL)")
+    p.add_argument("--sqlite", help="check: SQLite file (test fixtures only)")
+    p.add_argument("--disposable", action="store_true", help="check: required with --mysql-cmd (a disposable copy, not live)")
+    p.add_argument("--skip-grant-check", action="store_true")
+    p.add_argument("--statement-seconds", type=int, default=120)
+    p.add_argument("--no-candidates", action="store_true", help="check: skip the whole-database candidates report")
+    p.add_argument("--out", type=Path, help="check: write catalog-check.tsv, catalog-candidates.tsv, catalog-summary.txt")
+    p.set_defaults(fn=cmd_catalog)
     a = ap.parse_args(argv)
     try:
         return a.fn(a)

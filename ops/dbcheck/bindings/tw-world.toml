@@ -127,6 +127,17 @@ rew_choice_3 = "RewChoiceItemId3"
 rew_choice_4 = "RewChoiceItemId4"
 rew_choice_5 = "RewChoiceItemId5"
 rew_choice_6 = "RewChoiceItemId6"
+# twow-repo#601 R08a (catalog/facts.toml): group criterion, required items and spells
+type = "Type"               # 1 elite, 41 PvP, 62 raid, 81 dungeon (core QuestFeasibilityPolicy.h)
+suggested_players = "SuggestedPlayers"
+req_item_1 = "ReqItemId1"
+req_item_2 = "ReqItemId2"
+req_item_3 = "ReqItemId3"
+req_item_4 = "ReqItemId4"
+req_spell_1 = "ReqSpellCast1"
+req_spell_2 = "ReqSpellCast2"
+req_spell_3 = "ReqSpellCast3"
+req_spell_4 = "ReqSpellCast4"
 
 [table.creature_start]
 name = "creature_questrelation"
@@ -149,6 +160,12 @@ quest = "quest"
 [table.object_end]
 name = "gameobject_involvedrelation"
 [table.object_end.columns]
+id = "id"
+quest = "quest"
+
+[table.areatrigger_end]
+name = "areatrigger_involvedrelation"   # twow-repo#601 R08a: an area trigger is the exploration goal (rule AT_ONLY)
+[table.areatrigger_end.columns]
 id = "id"
 quest = "quest"
 

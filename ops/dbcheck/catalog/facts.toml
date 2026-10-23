@@ -1,0 +1,103 @@
+# Data rules of the quest feasibility catalog (twow-repo#601 R08a). Each [fact.<RULE>] is a boolean SQL predicate over
+# the quest row `q` (logical names of bindings/tw-world.toml; the macros of rules/*.toml can be used). `dbcheck catalog`
+# wraps it as
+#     SELECT q.<entry> AS quest FROM <quest> q WHERE <scope> AND (<predicate>)
+# with <scope> = the catalog ids (check) or every quest whose title is not retired (candidates, report only).
+# Strict rule set (OB-00 2026-10-19): a rule names the documented cause of an id, not any predicate that happens to hold.
+# MariaDB has no LATERAL: a derived table (FROM (SELECT ...)) must not use `q` (ERROR 1109 "Unknown table 'q'"; SQLite
+# allows it, so only CI's integration step sees it). Unpivots therefore read the quest table themselves. Heavy sets
+# (spawned_ids, the item sources) stay uncorrelated - an IN/NOT IN subquery on q or a derived table - so MariaDB builds
+# them once: `x IN ({%spawned_ids})` inside a correlated subquery rescans creature (2.5M rows, id2-id4 unindexed) per
+# row and runs past max_statement_time.
+
+[fact.PVP_BG]
+title = "Battleground quest (Type 41)"
+predicate = "COALESCE(q.{quest.type}, 0) = 41"
+
+[fact.NO_GIVER_NO_ENDER]
+title = "No starter (creature, object or start item) and no turn-in row"
+predicate = """
+NOT {%quest_has_starter}
+AND NOT EXISTS (SELECT 1 FROM {creature_end} e WHERE e.{creature_end.quest} = q.{quest.entry})
+AND NOT EXISTS (SELECT 1 FROM {object_end} e WHERE e.{object_end.quest} = q.{quest.entry})
+"""
+
+[fact.ENDER_UNSPAWNED]
+title = "Turn-in rows exist, but no turn-in creature or object is spawned"
+predicate = """
+(EXISTS (SELECT 1 FROM {creature_end} e WHERE e.{creature_end.quest} = q.{quest.entry})
+ OR EXISTS (SELECT 1 FROM {object_end} e WHERE e.{object_end.quest} = q.{quest.entry}))
+AND q.{quest.entry} NOT IN (SELECT e.{creature_end.quest} FROM {creature_end} e
+                           JOIN ({%spawned_ids}) sp ON sp.sid = e.{creature_end.id})
+AND NOT EXISTS (SELECT 1 FROM {object_end} e JOIN {gameobject} g ON g.{gameobject.id} = e.{object_end.id}
+                WHERE e.{object_end.quest} = q.{quest.entry})
+"""
+
+[fact.GIVER_UNSPAWNED]
+title = "Giver rows exist, but no giver creature or object is spawned and no item starts the quest"
+predicate = """
+(EXISTS (SELECT 1 FROM {creature_start} s WHERE s.{creature_start.quest} = q.{quest.entry})
+ OR EXISTS (SELECT 1 FROM {object_start} s WHERE s.{object_start.quest} = q.{quest.entry}))
+AND q.{quest.entry} NOT IN (SELECT s.{creature_start.quest} FROM {creature_start} s
+                           JOIN ({%spawned_ids}) sp ON sp.sid = s.{creature_start.id})
+AND NOT EXISTS (SELECT 1 FROM {object_start} s JOIN {gameobject} g ON g.{gameobject.id} = s.{object_start.id}
+                WHERE s.{object_start.quest} = q.{quest.entry})
+AND NOT EXISTS (SELECT 1 FROM {item} i WHERE i.{item.start_quest} = q.{quest.entry})
+"""
+
+[fact.CREDIT_UNSPAWNED]
+title = "A creature kill or cast credit target (ReqCreatureOrGOId > 0) that is never spawned"
+predicate = """
+q.{quest.entry} IN (
+  SELECT t.quest FROM (
+    SELECT u.{quest.entry} AS quest, u.{quest.req_npc_1} AS target FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_npc_2} FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_npc_3} FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_npc_4} FROM {quest} u
+  ) t
+  LEFT JOIN ({%spawned_ids}) sp ON sp.sid = t.target
+  WHERE t.target > 0 AND sp.sid IS NULL
+)
+"""
+
+[fact.ITEM_NO_SOURCE]
+title = "A required item (not the start item) that no loot table and no vendor provides"
+predicate = """
+q.{quest.entry} IN (
+  SELECT r.quest FROM (
+    SELECT u.{quest.entry} AS quest, u.{quest.req_item_1} AS item, u.{quest.src_item} AS start_item FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_item_2}, u.{quest.src_item} FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_item_3}, u.{quest.src_item} FROM {quest} u
+    UNION ALL SELECT u.{quest.entry}, u.{quest.req_item_4}, u.{quest.src_item} FROM {quest} u
+  ) r
+  LEFT JOIN (
+    SELECT x.{creature_loot.item} AS item FROM {creature_loot} x
+    UNION SELECT x.{reference_loot.item} FROM {reference_loot} x
+    UNION SELECT x.{gameobject_loot.item} FROM {gameobject_loot} x
+    UNION SELECT x.{item_loot.item} FROM {item_loot} x
+    UNION SELECT x.{pickpocket_loot.item} FROM {pickpocket_loot} x
+    UNION SELECT x.{skinning_loot.item} FROM {skinning_loot} x
+    UNION SELECT x.{fishing_loot.item} FROM {fishing_loot} x
+    UNION SELECT x.{mail_loot.item} FROM {mail_loot} x
+    UNION SELECT x.{vendor.item} FROM {vendor} x
+    UNION SELECT x.{vendor_template.item} FROM {vendor_template} x
+  ) p ON p.item = r.item
+  WHERE r.item > 0 AND r.item <> COALESCE(r.start_item, 0) AND p.item IS NULL
+)
+"""
+
+[fact.AT_ONLY]
+title = "Exploration only: an area trigger completes it and there is no creature, object, item or spell objective"
+predicate = """
+EXISTS (SELECT 1 FROM {areatrigger_end} a WHERE a.{areatrigger_end.quest} = q.{quest.entry})
+AND COALESCE(q.{quest.req_npc_1}, 0) = 0 AND COALESCE(q.{quest.req_npc_2}, 0) = 0
+AND COALESCE(q.{quest.req_npc_3}, 0) = 0 AND COALESCE(q.{quest.req_npc_4}, 0) = 0
+AND COALESCE(q.{quest.req_item_1}, 0) = 0 AND COALESCE(q.{quest.req_item_2}, 0) = 0
+AND COALESCE(q.{quest.req_item_3}, 0) = 0 AND COALESCE(q.{quest.req_item_4}, 0) = 0
+AND COALESCE(q.{quest.req_spell_1}, 0) = 0 AND COALESCE(q.{quest.req_spell_2}, 0) = 0
+AND COALESCE(q.{quest.req_spell_3}, 0) = 0 AND COALESCE(q.{quest.req_spell_4}, 0) = 0
+"""
+
+[fact.GROUP]
+title = "Needs a group: Type 1 (elite), 62 (raid) or 81 (dungeon), or SuggestedPlayers >= 2 (core QuestFeasibilityPolicy.h IsGroupQuest)"
+predicate = "(COALESCE(q.{quest.type}, 0) IN (1, 62, 81) OR COALESCE(q.{quest.suggested_players}, 0) >= 2)"
