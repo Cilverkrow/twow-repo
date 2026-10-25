@@ -73,6 +73,7 @@ class Loading(unittest.TestCase):
             entry(1, rule="NO_SUCH_RULE"),                         # unknown rule
             entry(1, basis="override", extra='rule = "PVP_BG"\n'),  # override with a rule
             entry(1, klass="hard"),                                # unknown class
+            entry(1, rule="GROUP", klass="needs_group"),           # needs_group outside the S7 scope rule (GROUP_HELP)
             entry(11),                                             # outside the frozen baseline, no approval
             entry(11, extra='approved = "maybe later"\n'),         # approval without the OB-00 form
             entry(1).replace('reason = "because"', 'reason = ""'),  # no reason
@@ -152,6 +153,8 @@ def world():
     insert(con, "creature_involvedrelation", id=501, quest=3)
     insert(con, "areatrigger_involvedrelation", id=88, quest=7)
     insert(con, "quest_template", entry=20, Title="Another PvP", Method=2, Type=41)   # a candidate
+    insert(con, "quest_template", entry=21, Title="A dungeon quest", Method=2, Type=81)   # GROUP, but no S7 help
+    insert(con, "quest_template", entry=22, Title="An elite quest", Method=2, Type=1)     # GROUP and GROUP_HELP
     con.commit()
     return SqliteRunner.from_connection(con)
 
@@ -167,6 +170,15 @@ class Check(unittest.TestCase):
             _, rows = runner.query(catalog.fact_sql(FACTS[rule], BINDING, MACROS, list(range(1, 10))))
             self.assertIn((str(i),), rows, rule)
             self.assertNotIn(("9",), rows, rule)
+
+    def test_group_help_is_the_s7_scope(self):
+        # CLI-Deep 25.10.: GROUP_HELP = core QuestGroupPolicy.h IsGroupHelpQuest - elite or SuggestedPlayers, never pvp / raid / dungeon.
+        runner = world()
+        _, help_rows = runner.query(catalog.fact_sql(FACTS["GROUP_HELP"], BINDING, MACROS, [1, 8, 21, 22]))
+        _, group_rows = runner.query(catalog.fact_sql(FACTS["GROUP"], BINDING, MACROS, [1, 8, 21, 22]))
+        self.assertEqual(sorted(r[0] for r in help_rows), ["22", "8"])
+        self.assertIn(("21",), group_rows)
+        self.assertNotIn(("21",), help_rows)
 
     def test_pass_and_candidates(self):
         text = HEAD + "".join(entry(i, rule=r) for i, r in enumerate(RULES, start=1)) + entry(9, basis="override")

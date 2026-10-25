@@ -113,6 +113,10 @@ def load_catalog(path: Path, facts: dict[str, Fact] | None = None) -> Catalog:
             raise ConfigError(f"{path}: quest {entry}: an override names no 'rule'")
         if facts is not None and q.rule and q.rule not in facts:
             raise ConfigError(f"{path}: quest {entry}: unknown rule '{q.rule}' (catalog/facts.toml)")
+        # CLI-Deep 25.10. (S7 alignment, OB-00): needs_group means "S7 group help" - the S7 managers help only elite / SuggestedPlayers
+        # quests, never dungeon, raid or pvp quests (core QuestGroupPolicy.h IsGroupHelpQuest); a rule-based entry proves it with GROUP_HELP.
+        if q.klass == "needs_group" and q.basis == "rule" and q.rule != "GROUP_HELP":
+            raise ConfigError(f"{path}: quest {entry}: a rule-based needs_group entry must use rule 'GROUP_HELP' (S7 scope)")
         for key in ("category", "title", "reason", "evidence"):
             if not getattr(q, key):
                 raise ConfigError(f"{path}: quest {entry}: '{key}' is required")

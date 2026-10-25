@@ -8,7 +8,8 @@
 #                 (e.g. the taker got its spawn) and the id should leave the list.
 # basis = "override": a reason the data cannot show (escort/event scripts, spell or item use, config-dependent legs);
 #                 CI only checks that the quest exists.
-# class: impossible | needs_group (S7 group help; owner decision 2026-10-18) | config (only while CustomRaceStartZones = 0).
+# class: impossible | needs_group (S7 group help; owner decision 2026-10-18; a rule-based entry uses GROUP_HELP = the S7 scope, so dungeon /
+#        raid quests are impossible for solo bots, CLI-Deep 25.10.) | config (only while CustomRaceStartZones = 0).
 # Freeze (OB-00 2026-10-19): an id outside [catalog].frozen_baseline needs `approved = "OB-00 YYYY-MM-DD <link>"`.
 
 [catalog]
@@ -81,7 +82,7 @@ evidence = "blmap.psv:18"
 entry = 255
 list = "blocklist"
 basis = "rule"
-rule = "GROUP"
+rule = "GROUP_HELP"
 class = "needs_group"
 category = "GROUP_ELITE"
 title = "Mercenaries"
@@ -92,7 +93,7 @@ evidence = "blmap.psv:72"
 entry = 256
 list = "blocklist"
 basis = "rule"
-rule = "GROUP"
+rule = "GROUP_HELP"
 class = "needs_group"
 category = "GROUP_ELITE"
 title = "WANTED: Chok'sul"
@@ -310,10 +311,10 @@ entry = 959
 list = "blocklist"
 basis = "rule"
 rule = "GROUP"
-class = "needs_group"
-category = "GROUP_ELITE"
+class = "impossible"
+category = "GROUP_DUNGEON"
 title = "Trouble at the Docks"
-reason = "group quest; soak 3/0, live 3/0"
+reason = "group quest; soak 3/0, live 3/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)"
 evidence = "blmap.psv:78"
 
 [[quest]]
@@ -641,7 +642,7 @@ evidence = "blmap.psv:24; cpp-credit-helpers.toml:234"
 entry = 40084
 list = "blocklist"
 basis = "rule"
-rule = "GROUP"
+rule = "GROUP_HELP"
 class = "needs_group"
 category = "GROUP_ELITE"
 title = "Magical Interference"
@@ -707,10 +708,10 @@ entry = 41363
 list = "blocklist"
 basis = "rule"
 rule = "GROUP"
-class = "needs_group"
-category = "GROUP_ELITE"
+class = "impossible"
+category = "GROUP_DUNGEON"
 title = "Rampant Weeds"
-reason = "Turtle group quest; soak 4/0"
+reason = "Turtle group quest; soak 4/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)"
 evidence = "blmap.psv:75"
 
 [[quest]]
@@ -718,17 +719,17 @@ entry = 41367
 list = "blocklist"
 basis = "rule"
 rule = "GROUP"
-class = "needs_group"
-category = "GROUP_ELITE"
+class = "impossible"
+category = "GROUP_DUNGEON"
 title = "Against the Kolkar Dream"
-reason = "Turtle group quest; soak 3/0"
+reason = "Turtle group quest; soak 3/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)"
 evidence = "blmap.psv:76"
 
 [[quest]]
 entry = 41640
 list = "blocklist"
 basis = "rule"
-rule = "GROUP"
+rule = "GROUP_HELP"
 class = "needs_group"
 category = "GROUP_ELITE"
 title = "Restless"
@@ -760,10 +761,10 @@ entry = 42006
 list = "blocklist"
 basis = "rule"
 rule = "GROUP"
-class = "needs_group"
+class = "impossible"
 category = "GROUP_DUNGEON"
 title = "Searching for Archaeologist Evenpike"
-reason = "Turtle dungeon quest, ender 63182 inside Frostmane Hollow (map 822), Type 81"
+reason = "Turtle dungeon quest, ender 63182 inside Frostmane Hollow (map 822), Type 81; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)"
 evidence = "map-data.md:45; ob50/quest-intent.tsv:12; STATUS.md:60"
 
 [[quest]]
@@ -825,7 +826,7 @@ evidence = "blmap.psv:22"
 entry = 60114
 list = "blocklist"
 basis = "rule"
-rule = "GROUP"
+rule = "GROUP_HELP"
 class = "needs_group"
 category = "GROUP_ELITE"
 title = "The Terror of Chill Breeze"
@@ -846,7 +847,7 @@ evidence = "blmap.psv:30"
 entry = 60131
 list = "blocklist"
 basis = "rule"
-rule = "GROUP"
+rule = "GROUP_HELP"
 class = "needs_group"
 category = "GROUP_ELITE"
 title = "Deep Blue Sea"

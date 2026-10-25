@@ -101,3 +101,7 @@ AND COALESCE(q.{quest.req_spell_3}, 0) = 0 AND COALESCE(q.{quest.req_spell_4}, 0
 [fact.GROUP]
 title = "Needs a group: Type 1 (elite), 62 (raid) or 81 (dungeon), or SuggestedPlayers >= 2 (core QuestFeasibilityPolicy.h IsGroupQuest)"
 predicate = "(COALESCE(q.{quest.type}, 0) IN (1, 62, 81) OR COALESCE(q.{quest.suggested_players}, 0) >= 2)"
+
+[fact.GROUP_HELP]
+title = "S7 group help: Type 1 (elite) or SuggestedPlayers >= 2, but not Type 41 (pvp), 62 (raid) or 81 (dungeon) (core QuestGroupPolicy.h IsGroupHelpQuest with QuestGroups.SuggestedPlayers = 1); the rule of every rule-based needs_group entry"
+predicate = "((COALESCE(q.{quest.type}, 0) = 1 OR COALESCE(q.{quest.suggested_players}, 0) >= 2) AND COALESCE(q.{quest.type}, 0) NOT IN (41, 62, 81))"

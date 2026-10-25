@@ -4,8 +4,8 @@ id	list	basis	rule	class	category	title	reason	evidence
 62	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Fargodeep Mine	AT88/197 exploration only; 0 QuestCommit rows in soak; soak 39 bots/0 tin, avg open 7.7 h	blmap.psv:2
 76	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Jasperlode Mine	AT87/342 exploration only (not accepted in the windows)	blmap.psv:3
 155	blocklist	rule	AT_ONLY	impossible	ESCORT_EVENT+EXPLORE_AT	The Defias Brotherhood	escort of the Defias Traitor (StartScript) + AT78, Type group; soak 84 accepts / 82 drops (accept-drop churn)	blmap.psv:18
-255	blocklist	rule	GROUP	needs_group	GROUP_ELITE	Mercenaries	Mo'grosh elites; soak 15/0, 8 drops	blmap.psv:72
-256	blocklist	rule	GROUP	needs_group	GROUP_ELITE	WANTED: Chok'sul	Chok'sul elite; soak 6/0	blmap.psv:74
+255	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Mercenaries	Mo'grosh elites; soak 15/0, 8 drops	blmap.psv:72
+256	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	WANTED: Chok'sul	Chok'sul elite; soak 6/0	blmap.psv:74
 273	blocklist	override		impossible	ESCORT_EVENT	Resupplying the Excavation	Resupplying the Excavation (ambush event); soak 4 drops, live 3/0	blmap.psv:61
 287	blocklist	override		impossible	EXPLORE_AT	Frostmane Hold	areatrigger_involvedrelation AT97 + 5 Frostmane Headhunter; bots send CMSG_AREATRIGGER only as master relay (AreaTriggerAction.cpp:54-80); QuestVal	blmap.psv:1
 409	blocklist	override		impossible	EVENT_SUMMON	Proving Allegiance	Lillith Nefara 1946 0 static spawns	blmap.psv:32
@@ -26,7 +26,7 @@ id	list	basis	rule	class	category	title	reason	evidence
 944	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Master's Glaive	AT223 (not seen in the windows)	blmap.psv:10
 953	blocklist	override		impossible	USE_GO	The Fall of Ameth'Aran	two goober reads 17188/17189; soak 4/0	blmap.psv:69; map-data.md:42 (decision open)
 954	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	Bashal'Aran	AT230 exploration only	blmap.psv:9
-959	blocklist	rule	GROUP	needs_group	GROUP_ELITE	Trouble at the Docks	group quest; soak 3/0, live 3/0	blmap.psv:78
+959	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Trouble at the Docks	group quest; soak 3/0, live 3/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	blmap.psv:78
 984	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	How Big a Threat?	AT231/232/235 exploration only; soak 12/0	blmap.psv:4
 1149	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	Test of Faith	AT246 (not seen in the windows)	blmap.psv:14
 1195	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_NO_SOURCE	The Sacred Flame	item 5868 no loot source	blmap.psv:40
@@ -58,26 +58,26 @@ id	list	basis	rule	class	category	title	reason	evidence
 9264	blocklist	override		impossible	EXPLORE_AT	Investigate the Scourge of Thunder Bluff	AT4103 Scourge-invasion event quest	blmap.psv:17
 9265	blocklist	override		impossible	EXPLORE_AT	Investigate the Scourge of the Undercity	AT4100 Scourge-invasion event quest	blmap.psv:15
 40003	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	Hookah for Your Troubles	credit 60301 dummy trigger 0 spawns; soak 7/0	blmap.psv:24; cpp-credit-helpers.toml:234
-40084	blocklist	rule	GROUP	needs_group	GROUP_ELITE	Magical Interference	Turtle group quest; soak 3/0	blmap.psv:77
+40084	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Magical Interference	Turtle group quest; soak 3/0	blmap.psv:77
 40099	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	Attack from the Inside	objective 60323 dummy trigger x5 (0 spawns); item 5438 no loot source	blmap.psv:28; cpp-credit-helpers.toml:259
 40536	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	Bond Through Battle	credit 60382 quest_40536_dummy_triger 0 spawns; soak 14/0	blmap.psv:23; cpp-credit-helpers.toml:449
 40670	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	Information for Thrall	credit 60398 dummy trigger 0 spawns	blmap.psv:26; cpp-credit-helpers.toml:524
 40820	blocklist	override		impossible	CHAIN_ORPHAN	The Key to Karazhan IV	Karazhan key IV duplicate of 41136 (same giver 2543, same ender 60731, ExclusiveGroup 0); NextQuestInChain 40821	blmap.psv:83; check-feasibility.md:188-194; ob50/quest-intent.tsv:6-7
 40821	blocklist	rule	NO_GIVER_NO_ENDER	impossible	CHAIN_ORPHAN	The Key to Karazhan V	Karazhan key V duplicate of 41137 with no creature/GO giver or ender; NextQuestId 0 so not a prev of 40825; dead end	blmap.psv:84; check-feasibility.md:188-194; ob50/quest-intent.tsv:6-7
-41363	blocklist	rule	GROUP	needs_group	GROUP_ELITE	Rampant Weeds	Turtle group quest; soak 4/0	blmap.psv:75
-41367	blocklist	rule	GROUP	needs_group	GROUP_ELITE	Against the Kolkar Dream	Turtle group quest; soak 3/0	blmap.psv:76
-41640	blocklist	rule	GROUP	needs_group	GROUP_ELITE	Restless	Turtle elite; soak 21/0	blmap.psv:71
+41363	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Rampant Weeds	Turtle group quest; soak 4/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	blmap.psv:75
+41367	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Against the Kolkar Dream	Turtle group quest; soak 3/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	blmap.psv:76
+41640	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Restless	Turtle elite; soak 21/0	blmap.psv:71
 41747	blocklist	override		impossible	TURNIN_UNREACHABLE	The Tower of Azora	delivery to 62634 Antonas Riftgaze (Tower of Azora); soak 159 QuestFirstRoute selected, 5 arrived, 3 turn-ins; 44 bots, avg open 7.6 h	blmap.psv:79; map-data.md:48
 41905	blocklist	override		impossible	ITEM_NO_SOURCE	Dark Iron Aggression	item 42072 no loot source (Turtle)	blmap.psv:44
-42006	blocklist	rule	GROUP	needs_group	GROUP_DUNGEON	Searching for Archaeologist Evenpike	Turtle dungeon quest, ender 63182 inside Frostmane Hollow (map 822), Type 81	map-data.md:45; ob50/quest-intent.tsv:12; STATUS.md:60
+42006	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Searching for Archaeologist Evenpike	Turtle dungeon quest, ender 63182 inside Frostmane Hollow (map 822), Type 81; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	map-data.md:45; ob50/quest-intent.tsv:12; STATUS.md:60
 42045	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	Tainted Rune	ender unspawned; item 42337 no loot source; live 3/0	blmap.psv:21; ob50/quest-intent.tsv:4
 42055	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	In Favor of the Three Siblings	ender 63099 Pargan Starstrider has 0 creature rows; talk-only class quest; soak 7/0	blmap.psv:19; ob50/quest-intent.tsv:3
 42056	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	Garments of the Three Siblings	follow-up of 42055; giver and ender 63099 Pargan Starstrider 0 spawns, credit 63199 0 spawns; until data fix (core#459 / train 10)	map-data.md:54; STATUS.md:56
 55048	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	WANTED: Hole Escapee	credit 91296 custom objective trigger 0 spawns; soak 4/0	blmap.psv:25
 60050	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT+ITEM_USE	Lucky Coin	credit 51301 DUMMY_STORMWIND_FOUNTAIN 0 spawns, needs src item use; soak 44 bots/0 tin, avg open 6.8 h	blmap.psv:22
-60114	blocklist	rule	GROUP	needs_group	GROUP_ELITE	The Terror of Chill Breeze	Old Icebeard elite (Turtle); soak 32 bots/0 tin, avg open 4.0 h	blmap.psv:70
+60114	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	The Terror of Chill Breeze	Old Icebeard elite (Turtle); soak 32 bots/0 tin, avg open 4.0 h	blmap.psv:70
 60124	blocklist	override		impossible	EVENT_SUMMON+DUNGEON	Trapped in the Nightmare	Mutanus 3654 0 static spawns (WC escort finale), group quest	blmap.psv:30
-60131	blocklist	rule	GROUP	needs_group	GROUP_ELITE	Deep Blue Sea	Sand Shark elite; soak 7/0	blmap.psv:73
+60131	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Deep Blue Sea	Sand Shark elite; soak 7/0	blmap.psv:73
 80306	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	What's Yours is Ours	credit 80600 custom objective 0 spawns	blmap.psv:27
 80315	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_NO_SOURCE	Apple a Day	item 80865 no loot source (Turtle)	blmap.psv:43
 80340	blocklist	override		impossible	ESCORT_EVENT+ITEM_USE	Taming the Beast	Taming the Beast (hunter, Turtle)	blmap.psv:60
