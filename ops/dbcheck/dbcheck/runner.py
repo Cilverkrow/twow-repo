@@ -90,7 +90,10 @@ class MysqlRunner(Runner):
         except (OSError, subprocess.TimeoutExpired) as e:
             raise RunnerError(f"database client failed: {e}") from e
         if p.returncode != 0:
-            raise RunnerError(f"database client exited {p.returncode}: {p.stderr.strip()[:300]}")
+            # The client may echo the failing statement first (a catalog id list runs past any cut): report its ERROR line.
+            err = p.stderr.strip()
+            errors = [ln for ln in err.splitlines() if ln.startswith("ERROR")]
+            raise RunnerError(f"database client exited {p.returncode}: {(errors[-1] if errors else err)[:300]}")
         return parse_tsv(p.stdout)
 
     def check_grants(self):

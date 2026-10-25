@@ -35,6 +35,7 @@ Python 3.11+ **standard library only**, like `ops/clientpatch`.
 | `bindings/<id>.toml` | logical names -> physical tables and columns of one schema, plus constants |
 | `rules/*.toml` | the SQL rules, written against the logical names |
 | `expected/*.toml` | expected lists (Soll-Listen), one per instance or topic |
+| `catalog/` | the quest feasibility catalog: `quest-feasibility.toml` (by hand), `facts.toml` (its data rules), the rendered `quest-feasibility.tsv` / `.keys` (twow-repo#601 R08a) |
 | `tools/scan_summons.py` | scans a twow-core checkout for `SummonCreature`/`SpawnCreature` calls and writes `expected/cpp-summoned-bosses.toml` |
 | `tests/` | unit and end-to-end tests on a **synthetic** mini database |
 | `Dockerfile` | Python + the MariaDB command-line client |
@@ -218,6 +219,36 @@ it protects against regressions, it does not prove the data right.
   The scan finds direct calls with a number or a constant (enum, `constexpr`,
   `#define`). Forms it cannot see (a form change, a spell that carries the entry,
   a table) go into `expected/cpp-summoned-bosses-manual.toml`, each with file and line.
+
+
+## Quest feasibility catalog (twow-repo#601 R08a)
+
+`catalog/quest-feasibility.toml` replaces the hand-kept quest id lists of the test profile
+(`AiPlayerbot.QuestFeasibility.Blocklist` and `...BlocklistWhileNoCustomStarts`). It holds one `[[quest]]` per id, with
+the list, a reason and the evidence. It is the only file edited by hand.
+
+| `basis` | Meaning | What CI checks |
+|---|---|---|
+| `rule` | the documented cause is a data rule of `catalog/facts.toml` (`PVP_BG`, `NO_GIVER_NO_ENDER`, `ENDER_UNSPAWNED`, `GIVER_UNSPAWNED`, `CREDIT_UNSPAWNED`, `ITEM_NO_SOURCE`, `AT_ONLY`, `GROUP`) | the quest still matches the rule on the core-pin world. If it no longer matches, the reason is gone (e.g. the taker got its spawn): take the id out |
+| `override` | a reason the data cannot show (escort or event scripts, spell or item use, legs that depend on `CustomRaceStartZones`) | the quest exists |
+
+`class` separates `impossible` from `needs_group` (S7 group help, owner decision 2026-10-18) and `config`.
+
+```sh
+python3 -m dbcheck catalog generate    # render catalog/quest-feasibility.tsv and .keys after editing the TOML
+python3 -m dbcheck catalog lint --profile ../../config/canonical/profiles/funserver-test/aiplayerbot.overlay.conf
+python3 -m dbcheck catalog check --disposable --mysql-cmd "mariadb ... tw_world" --out /tmp/catalog
+```
+
+- **lint** (CI lint job, `test/contract/quest-feasibility-catalog.contract.sh`, no database) fails when:
+  - the rendered files are stale;
+  - the profile's two key lines differ from `quest-feasibility.keys`;
+  - a reason is missing;
+  - a list has more than 512 ids (the core reads no more);
+  - the freeze is broken.
+- **check** (CI integration job, on the world built from the core pin) uses the same guards as `run`: `--disposable`, a read-only user and a statement time limit. It writes `catalog-check.tsv`, `catalog-candidates.tsv` and `catalog-summary.txt`.
+  - **Candidates** are whole-world rule hits outside the catalog. They are a report only and never fail.
+- **Freeze (OB-00 2026-10-19):** an id outside `[catalog].frozen_baseline` needs `approved = "OB-00 YYYY-MM-DD <link>"`. Removing an id needs no approval when CI shows its reason is gone.
 
 ## Limits
 

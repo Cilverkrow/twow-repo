@@ -1,0 +1,96 @@
+id	list	basis	rule	class	category	title	reason	evidence
+25	blocklist	override		impossible	EXPLORE_AT	Stonetalon Standstill	AT2926 (not seen in the windows)	blmap.psv:13
+28	blocklist	override		impossible	ESCORT_EVENT+TIMED	Trial of the Lake	Trial of the Lake (druid, timed event)	blmap.psv:54
+62	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Fargodeep Mine	AT88/197 exploration only; 0 QuestCommit rows in soak; soak 39 bots/0 tin, avg open 7.7 h	blmap.psv:2
+76	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Jasperlode Mine	AT87/342 exploration only (not accepted in the windows)	blmap.psv:3
+155	blocklist	rule	AT_ONLY	impossible	ESCORT_EVENT+EXPLORE_AT	The Defias Brotherhood	escort of the Defias Traitor (StartScript) + AT78, Type group; soak 84 accepts / 82 drops (accept-drop churn)	blmap.psv:18
+255	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Mercenaries	Mo'grosh elites; soak 15/0, 8 drops	blmap.psv:72
+256	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	WANTED: Chok'sul	Chok'sul elite; soak 6/0	blmap.psv:74
+273	blocklist	override		impossible	ESCORT_EVENT	Resupplying the Excavation	Resupplying the Excavation (ambush event); soak 4 drops, live 3/0	blmap.psv:61
+287	blocklist	override		impossible	EXPLORE_AT	Frostmane Hold	areatrigger_involvedrelation AT97 + 5 Frostmane Headhunter; bots send CMSG_AREATRIGGER only as master relay (AreaTriggerAction.cpp:54-80); QuestVal	blmap.psv:1
+310	blocklist	override		impossible	TURNIN_UNREACHABLE	Bitter Rivals	turn-in at GO 270 Unguarded Thunder Ale Barrel (1 spawn) runs a scripted event; quest outcome aggregator 25.10.: 99 bots, 0 turn-ins, 152 structural_no_destination parks, 74 abandons; v24: 510 work timeouts (#485)	evidence/ws-10/cli-quest-organic/r08a/outcome/test-20261025/quest-outcome-candidates.tsv
+409	blocklist	override		impossible	EVENT_SUMMON	Proving Allegiance	Lillith Nefara 1946 0 static spawns	blmap.psv:32
+437	blocklist	override		impossible	EXPLORE_AT	The Dead Fields	AT173 + item 3622 from Nightlash (creature 1983, 0 static spawns, event summon)	blmap.psv:6
+455	blocklist	override		impossible	EXPLORE_AT	The Algaz Gauntlet	AT175 + kill objectives; soak 4/0	blmap.psv:7
+498	blocklist	override		impossible	SPELL_ON_GO	The Rescue	ReqSpellCast 3366 on Locked ball and chain	blmap.psv:63
+731	blocklist	override		impossible	ESCORT_EVENT	The Absent Minded Prospector	escort Absent Minded Prospector, group; soak 4/0, 7 drops	blmap.psv:52
+746	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_NO_SOURCE	Dwarven Digging	item 4703 Broken Tools in no creature/gameobject/item/reference loot, no vendor; soak 34 bots/0 tin, avg open 5.9 h	blmap.psv:36; ob50/quest-intent.tsv:2
+754	blocklist	override		impossible	ESCORT_EVENT+ITEM_USE	Winterhoof Cleansing	Winterhoof Cleansing: use src item at the well (event); soak 20 bots/0 tin, avg open 5.3 h, 0 QuestCommit rows	blmap.psv:56
+812	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_NO_SOURCE+TIMED	Need for a Cure	item 4904 no loot source, timed; soak 6/0, 7 drops	blmap.psv:38
+851	blocklist	override		impossible	EVENT_SUMMON	Verog the Dervish	item 5023 from Verog (0 static spawns, summoned)	blmap.psv:33
+870	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Forgotten Pools	AT216 exploration only; soak 7/0, 11 drops	blmap.psv:5
+881	blocklist	override		impossible	EVENT_SUMMON+ITEM_USE	Echeyakee	item 5100 from Echeyakee (0 spawns, summoned by horn item)	blmap.psv:34
+898	blocklist	override		impossible	ESCORT_EVENT	Free From the Hold	SpecialFlags 2 escort; soak 11 bots/0 tin/35 drops (accept-drop churn)	blmap.psv:49
+921	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_USE_AT_GO	Crown of the Earth	item 5184 Filled Crystal Phial has no loot source (made by using src item at the moonwell); soak 10/0	blmap.psv:37
+924	blocklist	override		impossible	ESCORT_EVENT+USE_GO	The Demon Seed	goober 3525 The Altar of Fire starts DB event 510; soak 3/0	blmap.psv:57
+938	blocklist	override		impossible	ESCORT_EVENT+TIMED	Mist	escort, timed; soak 9 bots/0 tin/26 drops	blmap.psv:50
+944	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Master's Glaive	AT223 (not seen in the windows)	blmap.psv:10
+953	blocklist	override		impossible	USE_GO	The Fall of Ameth'Aran	two goober reads 17188/17189; soak 4/0	blmap.psv:69; map-data.md:42 (decision open)
+954	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	Bashal'Aran	AT230 exploration only	blmap.psv:9
+959	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Trouble at the Docks	group quest; soak 3/0, live 3/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	blmap.psv:78
+984	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	How Big a Threat?	AT231/232/235 exploration only; soak 12/0	blmap.psv:4
+1149	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	Test of Faith	AT246 (not seen in the windows)	blmap.psv:14
+1195	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_NO_SOURCE	The Sacred Flame	item 5868 no loot source	blmap.psv:40
+1699	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Rethban Gauntlet	AT482 (not seen in the windows)	blmap.psv:12
+1960	blocklist	override		impossible	ITEM_NO_SOURCE	Investigate the Alchemist Shop	item 7292 no loot source	blmap.psv:41
+2118	blocklist	override		impossible	EVENT_SUMMON+ITEM_USE	Plagued Lands	credit 11836 Captured Rabid Thistle Bear 0 spawns (trap item use); soak 4/0	blmap.psv:29
+2242	blocklist	override		impossible	PICKPOCKET_ONLY	Destiny Calls	item 7737 only from pickpocketing Sethir the Ancient (6909, quest drop): rogue only, needs stealth; not ITEM_NO_SOURCE (CI #621)	blmap.psv:42; core sql/base pickpocketing_loot_template (6909,7737)
+2561	blocklist	override		impossible	ESCORT_EVENT+ITEM_USE	Druid of the Claw	Druid of the Claw (src item use + event); soak 5/0	blmap.psv:55
+4740	blocklist	override		impossible	EVENT_SUMMON	WANTED: Murkdeep!	Murkdeep 10323 0 static spawns (wave event)	blmap.psv:31
+4811	blocklist	rule	AT_ONLY	impossible	EXPLORE_AT	The Red Crystal	AT2486 exploration only	blmap.psv:8
+5441	blocklist	override		impossible	ITEM_USE_ON_FRIENDLY	Lazy Peons	Foreman's Blackjack 16114 (spell 19938) on non-hostile Lazy Peon 10556; soak 33/0, live 19/0; QuestCommit 339 commits, 454 destination_inactive, 12	blmap.psv:64
+5621	blocklist	override		impossible	CLASS_SPELL_ON_NPC	Garments of the Moon	priest Garments: heal+buff NPC 12429 (script credit); soak 7/0	blmap.psv:65
+5625	blocklist	override		impossible	CLASS_SPELL_ON_NPC	Garments of the Light	priest Garments: NPC 12427; soak 5/0	blmap.psv:66
+5648	blocklist	override		impossible	CLASS_SPELL_ON_NPC	Garments of Spirituality	priest Garments: NPC 12430; soak 6/0	blmap.psv:67
+5650	blocklist	override		impossible	CLASS_SPELL_ON_NPC	Garments of Darkness	priest Garments: NPC 12428; soak 7/0	blmap.psv:68
+5713	blocklist	override		impossible	ESCORT_EVENT	One Shot. One Kill.	event One Shot One Kill; soak 3/0, 11 drops	blmap.psv:53
+5727	blocklist	override		impossible	ESCORT_EVENT	Hidden Enemies	Hidden Enemies event; live 3/0	blmap.psv:58
+5930	blocklist	override		impossible	ESCORT_EVENT	Great Bear Spirit	Great Bear Spirit (druid talk event)	blmap.psv:59
+6395	blocklist	override		impossible	SPELL_ON_GO	Marla's Last Wish	ReqSpellCast 20364 on goober 178090 Marla's Grave; live 27 bots/0 tin, soak 10/0; QuestLoop suppressed 72x	blmap.psv:62
+6421	blocklist	override		impossible	EXPLORE_AT	Boulderslide Ravine	AT2946 (not seen in the windows)	blmap.psv:11
+6523	blocklist	override		impossible	ESCORT_EVENT	Protect Kaya	escort Protect Kaya; soak 4/0, 11 drops	blmap.psv:51
+6543	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_NO_SOURCE	The Warsong Reports	reports 16763-16765 come from gossip, no loot source; live 4/0	blmap.psv:39
+6621	blocklist	override		impossible	EVENT_SUMMON+ITEM_USE	King of the Foulweald	item 16976 no loot source (summon via src item)	blmap.psv:35
+8290	blocklist	rule	PVP_BG	impossible	PVP_BG	Vanquish the Invaders!	WSG marks 20558 (battleground only)	blmap.psv:46
+8295	blocklist	rule	PVP_BG	impossible	PVP_BG	Quell the Silverwing Usurpers	WSG marks 20558 (battleground only)	blmap.psv:47
+8368	blocklist	rule	PVP_BG	impossible	PVP_BG	Battle of Warsong Gulch	WSG marks 20558 (battleground only); live 3/0	blmap.psv:48
+8372	blocklist	rule	PVP_BG	impossible	PVP_BG	Fight for Warsong Gulch	WSG marks 20558 (battleground only)	blmap.psv:45
+9263	blocklist	override		impossible	EXPLORE_AT	Investigate the Scourge of Orgrimmar	AT4101 Scourge-invasion event quest	blmap.psv:16
+9264	blocklist	override		impossible	EXPLORE_AT	Investigate the Scourge of Thunder Bluff	AT4103 Scourge-invasion event quest	blmap.psv:17
+9265	blocklist	override		impossible	EXPLORE_AT	Investigate the Scourge of the Undercity	AT4100 Scourge-invasion event quest	blmap.psv:15
+40003	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	Hookah for Your Troubles	credit 60301 dummy trigger 0 spawns; soak 7/0	blmap.psv:24; cpp-credit-helpers.toml:234
+40084	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Magical Interference	Turtle group quest; soak 3/0	blmap.psv:77
+40099	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	Attack from the Inside	objective 60323 dummy trigger x5 (0 spawns); item 5438 no loot source	blmap.psv:28; cpp-credit-helpers.toml:259
+40536	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	Bond Through Battle	credit 60382 quest_40536_dummy_triger 0 spawns; soak 14/0	blmap.psv:23; cpp-credit-helpers.toml:449
+40670	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	Information for Thrall	credit 60398 dummy trigger 0 spawns	blmap.psv:26; cpp-credit-helpers.toml:524
+40820	blocklist	override		impossible	CHAIN_ORPHAN	The Key to Karazhan IV	Karazhan key IV duplicate of 41136 (same giver 2543, same ender 60731, ExclusiveGroup 0); NextQuestInChain 40821	blmap.psv:83; check-feasibility.md:188-194; ob50/quest-intent.tsv:6-7
+40821	blocklist	rule	NO_GIVER_NO_ENDER	impossible	CHAIN_ORPHAN	The Key to Karazhan V	Karazhan key V duplicate of 41137 with no creature/GO giver or ender; NextQuestId 0 so not a prev of 40825; dead end	blmap.psv:84; check-feasibility.md:188-194; ob50/quest-intent.tsv:6-7
+41363	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Rampant Weeds	Turtle group quest; soak 4/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	blmap.psv:75
+41367	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Against the Kolkar Dream	Turtle group quest; soak 3/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	blmap.psv:76
+41640	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Restless	Turtle elite; soak 21/0	blmap.psv:71
+41747	blocklist	override		impossible	TURNIN_UNREACHABLE	The Tower of Azora	delivery to 62634 Antonas Riftgaze (Tower of Azora); soak 159 QuestFirstRoute selected, 5 arrived, 3 turn-ins; 44 bots, avg open 7.6 h	blmap.psv:79; map-data.md:48
+41905	blocklist	override		impossible	ITEM_NO_SOURCE	Dark Iron Aggression	item 42072 no loot source (Turtle)	blmap.psv:44
+42006	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Searching for Archaeologist Evenpike	Turtle dungeon quest, ender 63182 inside Frostmane Hollow (map 822), Type 81; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	map-data.md:45; ob50/quest-intent.tsv:12; STATUS.md:60
+42045	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	Tainted Rune	ender unspawned; item 42337 no loot source; live 3/0	blmap.psv:21; ob50/quest-intent.tsv:4
+42055	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	In Favor of the Three Siblings	ender 63099 Pargan Starstrider has 0 creature rows; talk-only class quest; soak 7/0	blmap.psv:19; ob50/quest-intent.tsv:3
+42056	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	Garments of the Three Siblings	follow-up of 42055; giver and ender 63099 Pargan Starstrider 0 spawns, credit 63199 0 spawns; until data fix (core#459 / train 10)	map-data.md:54; STATUS.md:56
+55048	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	WANTED: Hole Escapee	credit 91296 custom objective trigger 0 spawns; soak 4/0	blmap.psv:25
+60050	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT+ITEM_USE	Lucky Coin	credit 51301 DUMMY_STORMWIND_FOUNTAIN 0 spawns, needs src item use; soak 44 bots/0 tin, avg open 6.8 h	blmap.psv:22
+60114	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	The Terror of Chill Breeze	Old Icebeard elite (Turtle); soak 32 bots/0 tin, avg open 4.0 h	blmap.psv:70
+60124	blocklist	override		impossible	EVENT_SUMMON+DUNGEON	Trapped in the Nightmare	Mutanus 3654 0 static spawns (WC escort finale), group quest	blmap.psv:30
+60131	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Deep Blue Sea	Sand Shark elite; soak 7/0	blmap.psv:73
+80306	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	What's Yours is Ours	credit 80600 custom objective 0 spawns	blmap.psv:27
+80315	blocklist	rule	ITEM_NO_SOURCE	impossible	ITEM_NO_SOURCE	Apple a Day	item 80865 no loot source (Turtle)	blmap.psv:43
+80340	blocklist	override		impossible	ESCORT_EVENT+ITEM_USE	Taming the Beast	Taming the Beast (hunter, Turtle)	blmap.psv:60
+80395	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED+DUMMY_CREDIT	A Glittering Opportunity	ender 81041 Kheyna Spinpistol 0 spawns; credit 80007 custom trigger 0 spawns; soak 9 bots/0 tin/15 drops	blmap.psv:20; cpp-credit-helpers.toml:534; ob50/quest-intent.tsv:5
+80396	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	A Bloody Good Deed	Ratchet/Chromie chain after 80395; giver and ender 81041 Kheyna Spinpistol 0 spawns	map-data.md:46; STATUS.md:57; ob50/quest-intent.tsv:5
+80407	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	A Letter From a Friend	Chromie chain (L46); ender 81041 0 spawns; credit 81252 is a C++-credited trigger	map-data.md:46; STATUS.md:57; cpp-credit-helpers.toml:559
+80408	blocklist	rule	GIVER_UNSPAWNED	impossible	GIVER_UNSPAWNED	A Slaughter for Brains	Chromie chain (L46); giver 81041 Kheyna Spinpistol 0 spawns	map-data.md:46; STATUS.md:57
+80409	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	Return to Kheyna	Chromie chain end; ender 65019 Chromie 0 spawns	map-data.md:46; STATUS.md:57
+41169	no_custom_starts	override		config	STARTZONE_LEG	Bearer Of Bad News	goblin start: giver Taxxlo (island) -> taker Nert (Sparkwater Port); off-island leg	map-data.md:63; STATUS.md:66; s3-design.md:156
+41170	no_custom_starts	override		config	STARTZONE_LEG	Solutions On Their Way	goblin start: giver Nert (Sparkwater) -> taker Taxxlo (island)	map-data.md:64; STATUS.md:66; s3-design.md:156
+41201	no_custom_starts	override		config	STARTZONE_LEG	Dabbling In Darkness	goblin warlock: giver Amri (island) -> taker Gan'rul (Orgrimmar)	map-data.md:72; s3-design.md:156
+41235	no_custom_starts	override		config	STARTZONE_LEG	To Staghelm	high-elf start: taker Fandral, Darnassus (map 1), needs the ship	map-data.md:73; s3-design.md:156
+41259	no_custom_starts	override		config	STARTZONE_LEG	Journey to Auberdine	high-elf start: taker Glynda, Auberdine; ship 176250 not linked	map-data.md:74; s3-design.md:156
+60163	no_custom_starts	override		config	STARTZONE_LEG	Training the Beast	goblin hunter: giver Mayten (island) -> taker Ormak Grimshot (Orgrimmar)	map-data.md:71; s3-design.md:156
+80330	no_custom_starts	override		config	STARTZONE_LEG	The Hunter's Path	goblin hunter: givers TB/Razor Hill/Org -> taker Mayten 80105 (island)	map-data.md:70; s3-design.md:156
