@@ -8,6 +8,7 @@ id	list	basis	rule	class	category	title	reason	evidence
 256	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	WANTED: Chok'sul	Chok'sul elite; soak 6/0	blmap.psv:74
 273	blocklist	override		impossible	ESCORT_EVENT	Resupplying the Excavation	Resupplying the Excavation (ambush event); soak 4 drops, live 3/0	blmap.psv:61
 287	blocklist	override		impossible	EXPLORE_AT	Frostmane Hold	areatrigger_involvedrelation AT97 + 5 Frostmane Headhunter; bots send CMSG_AREATRIGGER only as master relay (AreaTriggerAction.cpp:54-80); QuestVal	blmap.psv:1
+310	blocklist	override		impossible	TURNIN_UNREACHABLE	Bitter Rivals	turn-in at GO 270 Unguarded Thunder Ale Barrel (1 spawn) runs a scripted event; quest outcome aggregator 25.10.: 99 bots, 0 turn-ins, 152 structural_no_destination parks, 74 abandons; v24: 510 work timeouts (#485)	evidence/ws-10/cli-quest-organic/r08a/outcome/test-20261025/quest-outcome-candidates.tsv
 409	blocklist	override		impossible	EVENT_SUMMON	Proving Allegiance	Lillith Nefara 1946 0 static spawns	blmap.psv:32
 437	blocklist	override		impossible	EXPLORE_AT	The Dead Fields	AT173 + item 3622 from Nightlash (creature 1983, 0 static spawns, event summon)	blmap.psv:6
 455	blocklist	override		impossible	EXPLORE_AT	The Algaz Gauntlet	AT175 + kill objectives; soak 4/0	blmap.psv:7

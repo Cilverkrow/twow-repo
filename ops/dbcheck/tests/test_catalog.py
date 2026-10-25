@@ -33,11 +33,14 @@ def load_text(text):
 class CommittedCatalog(unittest.TestCase):
     def test_counts_and_freeze(self):
         cat = catalog.load_catalog(CAT_DIR / "quest-feasibility.toml", FACTS)
-        self.assertEqual(len(cat.quests), 94)
+        self.assertEqual(len(cat.quests), 95)
         self.assertEqual(sum(q.basis == "rule" for q in cat.quests), 46)   # strict split, OB-00 2026-10-19; 2242 override (CI #621)
-        self.assertEqual(len(cat.ids("blocklist")), 87)
+        self.assertEqual(len(cat.ids("blocklist")), 88)
         self.assertEqual(len(cat.ids("no_custom_starts")), 7)
-        self.assertEqual(set(cat.ids()), set(cat.baseline))
+        # the frozen baseline stays complete; ids beyond it carry an OB-00 approval (310 Bitter Rivals, OB-00 2026-10-25)
+        self.assertTrue(set(cat.baseline) <= set(cat.ids()))
+        self.assertEqual(sorted(q.entry for q in cat.quests if q.entry not in cat.baseline), [310])
+        self.assertTrue(all(q.approved.startswith("OB-00 ") for q in cat.quests if q.entry not in cat.baseline))
 
     def test_committed_files_are_current(self):
         cat = catalog.load_catalog(CAT_DIR / "quest-feasibility.toml", FACTS)

@@ -121,6 +121,17 @@ reason = "areatrigger_involvedrelation AT97 + 5 Frostmane Headhunter; bots send 
 evidence = "blmap.psv:1"
 
 [[quest]]
+entry = 310
+list = "blocklist"
+basis = "override"
+class = "impossible"
+category = "TURNIN_UNREACHABLE"
+title = "Bitter Rivals"
+reason = "turn-in at GO 270 Unguarded Thunder Ale Barrel (1 spawn) runs a scripted event; quest outcome aggregator 25.10.: 99 bots, 0 turn-ins, 152 structural_no_destination parks, 74 abandons; v24: 510 work timeouts (#485)"
+evidence = "evidence/ws-10/cli-quest-organic/r08a/outcome/test-20261025/quest-outcome-candidates.tsv"
+approved = "OB-00 2026-10-25 https://github.com/Cilverkrow/twow-repo/pull/621#issuecomment-6392426914"
+
+[[quest]]
 entry = 409
 list = "blocklist"
 basis = "override"
