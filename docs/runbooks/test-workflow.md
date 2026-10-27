@@ -160,9 +160,9 @@ Measurement rules:
 | Queue | `Y:\tw\builds\ob30-t9-bisect\cap-threads\marathon\queue\queue.tsv`, state in `…\queue\state\` |
 | Scheduler | `…\cap-threads\chain90-queue.sh` (with bot budget) |
 | Heartbeat | `…\cap-threads\chain85c-heartbeat.sh` |
-| Arm library | `Y:\tw\rt\tools\arm-lib.sh` |
+| Arm library | `…\cap-threads\rt\tools\arm-lib.sh` |
 | Flags A / B | `…\ob30-t9-bisect\cap-threads\flags`, `…\ob30-t9b\cap-threads\flags` |
-| Fast lane / hidden launch | `…p-threadsmarathonastlane-runner.sh`, `…marathonhlaunch.ps1` (OB-30) |
+| Fast lane / hidden launch | `…\cap-threads\marathon\fastlane-runner.sh`, `…\cap-threads\marathon\hlaunch.ps1` (OB-30) |
 | Review queue | `Y:\tw\evidence\ws-10\REVIEW-QUEUE-OB10.md` |
 | Live package list | `Y:\tw\evidence\ws-00\LIVE-PAKET-NAECHSTES.md` |
 | Run results | per CLI under `Y:\tw\evidence\<ws>\…`, with `SHA256SUMS` |
