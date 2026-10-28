@@ -19,7 +19,7 @@ flowchart TD
     end
 
     subgraph FACH["Fach-Chats (Claude Code)"]
-        CLI["CLI-Deep · CLI-ROT · CLI-PATH<br/>CLI-GRP · CLI-Berufe"]
+        CLI["Fach-CLIs (Auswahl): CLI-Deep · CLI-ROT<br/>CLI-PATH · CLI-GRP · CLI-Berufe<br/>sowie OB-15/20/50/60"]
         OB40["OB-40 Daten<br/>Roster, Test-DBs, Resets"]
         OB30["OB-30 Plattform<br/>Queue, Pins, Images, Tests"]
         OB10["OB-10 Review<br/>einziger Merge-Reviewer"]
@@ -52,7 +52,7 @@ flowchart TD
     OB30 -- "Prioritäts-Queue,<br/>Gates, Batch-Verify" --> TEST
     CLI -- "Auswertung → Empfehlung" --> OB00
     OB00 -- "ADOPT → Profil / Live-Paket" --> OWNER
-    OWNER -- "Go für Live-Start<br/>+ DB-Einzelfreigaben" --> LIVE
+    OWNER -- "Zug-Auftrag, Live nach Betriebsplan<br/>+ DB-Einzelfreigaben" --> LIVE
 ```
 
 ## Ein Fix im Detail
@@ -72,7 +72,7 @@ sequenceDiagram
     Inhaber->>OB00: Ziel oder Beobachtung
     OB00->>CLI: Auftrag, Priorität
     CLI->>CLI: Ursache offline aus Logs (CAUSE.md)
-    CLI->>GH: PR-Paar non-draft, Schalter Default 0
+    CLI->>GH: PR-Paar non-draft (neue Verhaltensänderung hinter Schalter)
     GH-->>CLI: CI trixie grün
     CLI->>OB00: Heads
     OB00->>OB10: Review-Queue-Zeile
@@ -85,7 +85,7 @@ sequenceDiagram
     CLI->>OB00: RESULT (ADOPT / HARM / NOT MET)
     alt ADOPT
         OB00->>Inhaber: Live-Paket-Vorschlag
-        Inhaber->>Live: Go (Live-Start, DB-Einzelfreigaben)
+        Inhaber->>Live: Zug-Auftrag, DB-Einzelfreigaben (Live an/aus nach Betriebsplan)
     else HARM / NOT MET
         OB00->>CLI: Ursache weiter suchen, neuer Fix
     end
@@ -93,7 +93,7 @@ sequenceDiagram
 
 ## Regeln in einem Satz
 
-- Fixes kommen hinter Schaltern (Default 0) und werden erst nach einem A/B-Nachweis ins Profil übernommen.
-- Merge nur bei grüner CI, OB-10-OK auf den exakten Heads und als Zwillingspaar.
-- Images werden nur in CI gebaut, lokal laufen nur TU-Compiles und Contracts.
-- Live-Start, Live-DB-Änderungen, Löschen und Secrets brauchen immer das direkte OK des Inhabers.
+- Neue Verhaltensänderungen mit offenem Nutzen kommen hinter Schaltern (Default 0) und gehen erst nach einem A/B-Nachweis ins Profil; angenommene Bug-Fixes laufen mit Default 1 (z. B. #752, #756).
+- Merge nur bei grüner CI und OB-10-OK auf den exakten Heads; twow-core-PRs als Zwillingspaar (release/x.x + main), twow-repo-PRs einzeln.
+- Images werden nur in CI gebaut; lokal laufen in der Regel nur TU-Compiles und Contracts.
+- Live an/aus nach Betriebsplan und Deploy im erteilten Zug-Auftrag sind Dauerfreigaben (Ä16); Live-DB-Mutation, Löschen, Secrets und Spielentscheidungen brauchen eine Einzelfreigabe des Inhabers (Weitergabe nach Ä13).
