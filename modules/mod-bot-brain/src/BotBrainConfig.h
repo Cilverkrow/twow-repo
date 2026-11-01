@@ -118,6 +118,20 @@ namespace botbrain
         // command that arrives anyway is dropped by the decoder.
         bool dialogueCommandsEnabled = false;
 
+        // ------------------------------------------------------------------
+        // Personality without planning (BotBrain.Personality.Enable)
+        // ------------------------------------------------------------------
+        //
+        // twow-repo#664 (OB-00 01.11.2026): a bot's identity (cv_brain
+        // bot_identity) and its profile (cv_brain bot_personality) were only
+        // resolved by the planning tick, so a bot without the "bot brain"
+        // strategy talked without a personality. The profile is deterministic
+        // (ADR-0014) and needs no model. With this on, such a bot runs the same
+        // two workers, at the same backoff, and nothing else: no snapshot, no
+        // /v1/plan, no intent, no strategy change. Under BotBrain.Enable, off by
+        // default.
+        bool personalityEnabled = false;
+
         // Log every applied intent at BASIC level. On by default because the
         // acceptance check for this module is "a bot's travel target is set
         // from an intent", and that is only checkable if it is logged.

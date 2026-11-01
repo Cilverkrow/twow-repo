@@ -157,3 +157,17 @@ BotBrain.Dialogue.MaxInFlight = 8
 # never enters the model's prompt, and a command that arrives anyway is dropped
 # by the wire decoder.
 BotBrain.Dialogue.Commands.Enable = 0
+
+###############################################################################
+# Personality without planning (twow-repo#664)
+###############################################################################
+#
+# A bot's identity (cv_brain.bot_identity) and personality profile
+# (cv_brain.bot_personality) used to be resolved only by the planning tick, so
+# a bot WITHOUT the "bot brain" strategy talked without its traits. The profile
+# is deterministic (ADR-0014) and needs no model. With this on, such a bot runs
+# the same identity and profile workers, at BotBrain.BackoffMs, and nothing else:
+# no snapshot, no /v1/plan, no intent, no strategy change. Each bot looks in once
+# per 15 seconds, and not while BotBrain.MaxInFlight workers are running. Under
+# BotBrain.Enable; the database (cv_brain) is all it needs, not the service.
+BotBrain.Personality.Enable = 0
