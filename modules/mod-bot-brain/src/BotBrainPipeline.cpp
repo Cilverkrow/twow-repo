@@ -1801,6 +1801,101 @@ namespace botbrain
             // strategy, whatever the config says.
             return botAI->HasStrategy(kStrategyName, BotState::BOT_STATE_NON_COMBAT);
         }
+
+        // twow-repo#664 (BotBrain.Personality.Enable): identity and profile for a
+        // bot the planner does not cover, so its dialogue carries its traits
+        // (LookupBotIdentity reads them from the same state). The same two
+        // workers, the same order (the uuid is the seed, section 4.1), the same
+        // backoff and the same cv_brain rows as the planning tick -- and nothing
+        // else: no snapshot, no /v1/plan, no intent, no strategy change. It does
+        // not need the brain's handshake either: both workers only talk to the
+        // database.
+        //
+        // OnUpdate runs this for every bot, often, and g_statesMutex is global,
+        // so each bot looks in once per kPersonalityOnlyLookMs, measured from its
+        // OWN last look (first look spread by guid), and never while the worker
+        // ceiling is reached. Not a slot on the wall clock: a bot that updates
+        // every few seconds (sleeping grid, load) could miss such a slot forever.
+        // The timestamps are per map thread, so the check needs no lock; a bot
+        // that changes thread just gets a fresh first look there.
+        constexpr uint32 kPersonalityOnlyLookMs = 15000;
+        thread_local std::unordered_map<uint64, uint32> t_nextPersonalityLookMs;
+
+        void ResolvePersonalityOnly(Player* bot, PlayerbotAI* botAI)
+        {
+            Settings const& cfg = GetSettings();
+            if (!cfg.enabled || !cfg.personalityEnabled || g_shuttingDown.load())
+                return;
+            if (!bot || !botAI || !bot->IsInWorld() || !realmID)
+                return;
+
+            uint32 const now = WorldTimer::getMSTime();
+            uint64 const raw = bot->GetObjectGuid().GetRawValue();
+            auto look = t_nextPersonalityLookMs.find(raw);
+            if (look == t_nextPersonalityLookMs.end())
+            {
+                t_nextPersonalityLookMs.emplace(raw, now + (bot->GetGUIDLow() % (kPersonalityOnlyLookMs / 1000)) * 1000);
+                return;
+            }
+            if (!Elapsed(now, look->second))
+                return;
+            if (g_inFlight.load() >= cfg.maxInFlight)
+                return;
+            look->second = now + kPersonalityOnlyLookMs;
+
+            std::string uuid;
+            bool startPersonality = false;
+            {
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                BotPlanState& state = g_states[raw];
+
+                // Identity first: absorb a finished mint/lookup, else start one.
+                if (state.identity && state.identity->done.load(std::memory_order_acquire))
+                {
+                    state.uuid = state.identity->uuid;
+                    state.identity.reset();
+                }
+                if (state.uuid.empty())
+                {
+                    if (!state.identity && Elapsed(now, state.nextIdentityAttemptMs))
+                    {
+                        state.identity = std::make_shared<IdentityExchange>();
+                        SpawnIdentityWorker(state.identity, realmID, bot->GetGUIDLow());
+                        state.nextIdentityAttemptMs = now + cfg.backoffMs;
+                    }
+                    return;   // no seed yet, so no profile yet
+                }
+
+                // Then the profile, exactly as the planning tick does it.
+                if (state.personality && state.personality->done.load(std::memory_order_acquire))
+                {
+                    if (state.personality->resolved)
+                    {
+                        state.traitKeys = state.personality->keys;
+                        state.traitsResolved = true;
+                    }
+                    state.personality.reset();
+                }
+                if (!state.traitsResolved && !state.personality && Elapsed(now, state.nextPersonalityAttemptMs))
+                {
+                    startPersonality = true;
+                    state.nextPersonalityAttemptMs = now + cfg.backoffMs;
+                }
+                uuid = state.uuid;
+            }
+
+            // Reading the bot is a map thread job and stays outside the lock, the
+            // same spawn-then-relock shape the planning tick uses.
+            if (startPersonality)
+            {
+                ai::personality::Request const request = BuildPersonalityRequest(bot, uuid);
+                std::shared_ptr<PersonalityExchange> exchange = std::make_shared<PersonalityExchange>();
+                SpawnPersonalityWorker(exchange, request);
+
+                std::lock_guard<std::mutex> lock(g_statesMutex);
+                g_states[raw].personality = exchange;
+            }
+        }
     }
 
     void BeginShutdown()
@@ -2124,7 +2219,12 @@ namespace botbrain
         ReconcileStrategies(bot, botAI);
 
         if (!ShouldPlanFor(bot, botAI))
+        {
+            // twow-repo#664: a bot the planner does not cover still gets its
+            // identity and profile, so it talks with its traits (switch off: as before).
+            ResolvePersonalityOnly(bot, botAI);
             return;
+        }
 
         Settings const& cfg = GetSettings();
         uint32 const now = WorldTimer::getMSTime();

@@ -47,6 +47,8 @@ namespace botbrain
         cfg.dialogueMaxInFlight = ReadUint("BotBrain.Dialogue.MaxInFlight", 8, 1, 64);
         cfg.dialogueCommandsEnabled = sConfig.GetBoolDefault("BotBrain.Dialogue.Commands.Enable", false);
         cfg.logApplied = sConfig.GetBoolDefault("BotBrain.LogAppliedIntents", true);
+        // twow-repo#664: identity + profile for bots the planner does not cover (no "bot brain" strategy).
+        cfg.personalityEnabled = sConfig.GetBoolDefault("BotBrain.Personality.Enable", false);
 
         g_config = cfg;
 
@@ -62,5 +64,10 @@ namespace botbrain
                 g_config.dialogueEnabled ? "enabled" : "disabled",
                 g_config.dialogueTimeoutMs, g_config.dialogueMaxInFlight,
                 g_config.dialogueCommandsEnabled ? "enabled" : "disabled");
+
+        // The same reason as the dialogue line: a bot that talks without its traits is otherwise silent about why.
+        if (g_config.enabled)
+            sLog.outString("mod-bot-brain: personality without planning %s (BotBrain.Personality.Enable)",
+                g_config.personalityEnabled ? "enabled" : "disabled");
     }
 }

@@ -70,3 +70,12 @@ add_test(NAME bot_brain_startup_config_contract
   COMMAND "${CMAKE_COMMAND}"
     -DBB_LOADER=${BB_MODULE_DIR}/src/mod_bot_brain_loader.cpp
     -P ${BB_MODULE_DIR}/t/bot_brain_startup_config_contract.cmake)
+
+# twow-repo#664: BotBrain.Personality.Enable - identity + profile without planning, nothing else.
+add_test(NAME bot_brain_personality_only_contract
+  COMMAND "${CMAKE_COMMAND}"
+    -DBB_CONFIG_H=${BB_MODULE_DIR}/src/BotBrainConfig.h
+    -DBB_CONFIG_CPP=${BB_MODULE_DIR}/src/BotBrainConfig.cpp
+    -DBB_PIPELINE=${BB_MODULE_DIR}/src/BotBrainPipeline.cpp
+    -DBB_CONF_DIST=${BB_MODULE_DIR}/conf/mod_bot_brain.conf.dist
+    -P ${BB_MODULE_DIR}/t/bot_brain_personality_only_contract.cmake)
