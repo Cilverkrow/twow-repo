@@ -67,7 +67,12 @@ string(FIND "${rest}" "\n        }\n" fn_end)
 string(SUBSTRING "${rest}" 0 ${fn_end} fn)
 require("${fn}" "if (!cfg.enabled || !cfg.personalityEnabled || g_shuttingDown.load())\n                return;" "switch gates")
 require("${fn}" "if (g_inFlight.load() >= cfg.maxInFlight)\n                return;" "worker ceiling")
-require("${fn}" "% kPersonalityOnlyWindowS != 0)\n                return;" "per-bot time window")
+# Per-bot timestamp from the bot's own last look (OB-00 pre-check #665): a wall-clock slot
+# (getMSTime / 1000 + guid) % N can be missed forever by a bot that updates every few seconds.
+require("${fn}" "if (!Elapsed(now, look->second))\n                return;" "per-bot look timestamp")
+require("${fn}" "look->second = now + kPersonalityOnlyLookMs;" "next look from the last look")
+forbid("${pipeline}" "kPersonalityOnlyWindowS" "wall-clock slot")
+forbid("${fn}" "now / 1000" "wall-clock slot")
 require("${fn}" "SpawnIdentityWorker(state.identity, realmID, bot->GetGUIDLow());" "identity worker")
 require("${fn}" "return;   // no seed yet, so no profile yet" "no profile without the uuid seed")
 require("${fn}" "SpawnPersonalityWorker(exchange, request);" "profile worker")

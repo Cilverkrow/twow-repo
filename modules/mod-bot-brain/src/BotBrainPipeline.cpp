@@ -1812,10 +1812,14 @@ namespace botbrain
         // database.
         //
         // OnUpdate runs this for every bot, often, and g_statesMutex is global,
-        // so each bot only looks in during one second out of every
-        // kPersonalityOnlyWindowS (spread by guid), and never while the worker
-        // ceiling is reached.
-        constexpr uint32 kPersonalityOnlyWindowS = 15;
+        // so each bot looks in once per kPersonalityOnlyLookMs, measured from its
+        // OWN last look (first look spread by guid), and never while the worker
+        // ceiling is reached. Not a slot on the wall clock: a bot that updates
+        // every few seconds (sleeping grid, load) could miss such a slot forever.
+        // The timestamps are per map thread, so the check needs no lock; a bot
+        // that changes thread just gets a fresh first look there.
+        constexpr uint32 kPersonalityOnlyLookMs = 15000;
+        thread_local std::unordered_map<uint64, uint32> t_nextPersonalityLookMs;
 
         void ResolvePersonalityOnly(Player* bot, PlayerbotAI* botAI)
         {
@@ -1826,12 +1830,19 @@ namespace botbrain
                 return;
 
             uint32 const now = WorldTimer::getMSTime();
-            if ((now / 1000 + bot->GetGUIDLow()) % kPersonalityOnlyWindowS != 0)
+            uint64 const raw = bot->GetObjectGuid().GetRawValue();
+            auto look = t_nextPersonalityLookMs.find(raw);
+            if (look == t_nextPersonalityLookMs.end())
+            {
+                t_nextPersonalityLookMs.emplace(raw, now + (bot->GetGUIDLow() % (kPersonalityOnlyLookMs / 1000)) * 1000);
+                return;
+            }
+            if (!Elapsed(now, look->second))
                 return;
             if (g_inFlight.load() >= cfg.maxInFlight)
                 return;
+            look->second = now + kPersonalityOnlyLookMs;
 
-            uint64 const raw = bot->GetObjectGuid().GetRawValue();
             std::string uuid;
             bool startPersonality = false;
             {
