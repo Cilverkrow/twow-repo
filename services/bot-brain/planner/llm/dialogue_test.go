@@ -319,10 +319,12 @@ func TestDialogueRespectsTheSharedTokenBudget(t *testing.T) {
 }
 
 // Dialogue reserves ITS ceiling, not the planner's. Sharing the window without
-// sharing the per-call figure is what stops one-sentence replies from charging
-// the shared hourly budget as if they were sixteen-bot planning batches.
-func TestDialogueReservesItsOwnSmallerCeiling(t *testing.T) {
-	budget, err := NewTokenBudget(DefaultTokenLimits(), nil)
+// sharing the per-call figure keeps the two configured separately. The planner
+// gets a ceiling above dialogue's default here so the two figures differ.
+func TestDialogueReservesItsOwnCeiling(t *testing.T) {
+	limits := DefaultTokenLimits()
+	limits.OutputPerRequest = 4096
+	budget, err := NewTokenBudget(limits, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -335,7 +337,7 @@ func TestDialogueReservesItsOwnSmallerCeiling(t *testing.T) {
 	t.Cleanup(srv.Close)
 	backend, err := New(Config{
 		Enabled: true, BaseURL: srv.URL, Model: "offline-fixture",
-		Timeout: time.Second, MaxTokens: 1024, TokenBudget: budget,
+		Timeout: time.Second, MaxTokens: 4096, TokenBudget: budget,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -353,12 +355,57 @@ func TestDialogueReservesItsOwnSmallerCeiling(t *testing.T) {
 	// The charge is the request's bytes (the local accounting unit for input)
 	// plus the reserved completion. Asserted exactly rather than approximately,
 	// because the whole claim being made is which completion figure was used:
-	// with the planner's 1024 the charge would be 832 units higher, every call.
+	// with the planner's 4096 the charge would be 3072 units higher, every call.
 	want := int64(sentBytes) + DefaultDialogueMaxTokens
 	if used != want {
 		t.Fatalf("charged %d units, want %d (%d prompt bytes + dialogue's %d completion). "+
 			"A charge of %d would mean the planner's ceiling was reserved for a one-sentence reply.",
-			used, want, sentBytes, DefaultDialogueMaxTokens, int64(sentBytes)+1024)
+			used, want, sentBytes, DefaultDialogueMaxTokens, int64(sentBytes)+4096)
+	}
+}
+
+// twow-repo#664 smoke 0: dialogue and planner share one *http.Client, and its
+// Timeout is BOT_BRAIN_LLM_TIMEOUT (1.5 s by default, sized for a planning
+// tick). Every dialogue call died at that bound although BOT_BRAIN_DIALOGUE_TIMEOUT
+// allowed 4 s. Pinned here: an endpoint slower than the planner's timeout but
+// inside dialogue's still gets its reply, the planner's client keeps its own
+// timeout, and dialogue's own bound still holds.
+func TestDialogueTimeoutIsNotCutByThePlannerTimeout(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(300 * time.Millisecond)
+		io.WriteString(w, replyEnvelope(`{"reply":"Hallo."}`))
+	}))
+	t.Cleanup(srv.Close)
+	budget, err := NewTokenBudget(DefaultTokenLimits(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	backend, err := New(Config{
+		Enabled: true, BaseURL: srv.URL, Model: "offline-fixture",
+		Timeout: 50 * time.Millisecond, TokenBudget: budget,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := NewDialogue(backend, DialogueConfig{Enabled: true, Timeout: 3 * time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := d.Speak(context.Background(), dialogueFixture())
+	if err != nil || !resp.Spoke || resp.Reply != "Hallo." {
+		t.Fatalf("want the reply after 300 ms with a 3 s dialogue and a 50 ms planner timeout, got %+v, err %v", resp, err)
+	}
+	if backend.client.Timeout != 50*time.Millisecond {
+		t.Fatalf("planner client timeout = %s, want 50ms untouched", backend.client.Timeout)
+	}
+
+	short, err := NewDialogue(backend, DialogueConfig{Enabled: true, Timeout: 100 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, _ = short.Speak(context.Background(), dialogueFixture())
+	if resp.Spoke || resp.Reason != contract.SilenceDeadline {
+		t.Fatalf("want silent/deadline past the 100 ms dialogue timeout, got %+v", resp)
 	}
 }
 

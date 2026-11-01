@@ -142,12 +142,14 @@ services:
       # bot that correctly had nothing to say.
       BOT_BRAIN_DIALOGUE_ENABLED: ${BOT_BRAIN_DIALOGUE_ENABLED:-false}
 
-      # A reply is at most 255 bytes of German, so this is far below the
-      # planner's 1024 on purpose. Dialogue and planning SHARE the hourly and
-      # daily token windows -- a cost cap a second caller can add its own quota
-      # to is not a cost cap -- but not the per-call ceiling, so a one-sentence
-      # answer does not charge the shared window like a sixteen-bot batch.
-      BOT_BRAIN_DIALOGUE_MAX_TOKENS: ${BOT_BRAIN_DIALOGUE_MAX_TOKENS:-192}
+      # A reply is at most 255 bytes of German, but Claude 5 thinks on every
+      # call through the OpenAI-compatible endpoint and the thinking counts
+      # here: at 192 all five smoke replies were cut off (filtered), at 1024 all
+      # five spoke (twow-repo#664). The cost follows the tokens produced, not
+      # this cap. Dialogue and planning SHARE the hourly and daily token
+      # windows -- a cost cap a second caller can add its own quota to is not a
+      # cost cap -- but each reserves its own per-call ceiling.
+      BOT_BRAIN_DIALOGUE_MAX_TOKENS: ${BOT_BRAIN_DIALOGUE_MAX_TOKENS:-1024}
 
       # May be longer than BOT_BRAIN_LLM_TIMEOUT, and usually should be. Nothing
       # in the world is waiting on a reply the way a planning tick waits on an

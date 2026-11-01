@@ -86,11 +86,13 @@ type DialogueConfig struct {
 
 	// MaxTokens caps one reply's completion.
 	//
-	// Small, and much smaller than the planner's 1024. A reply is at most
-	// [contract.MaxDialogueReplyBytes] of German text, which is well under a
-	// hundred tokens; the rest is the JSON wrapper. 192 leaves room for a model
-	// that thinks out loud briefly before closing the object, and refuses to pay
-	// for one that writes an essay we would only truncate.
+	// A reply is at most [contract.MaxDialogueReplyBytes] of German text, well
+	// under a hundred tokens, but the default is 1024 (twow-repo#664, smoke 0,
+	// 01.11.2026): Claude 5 thinks on every call through the OpenAI-compatible
+	// endpoint, and the thinking counts against max_tokens. At 192 all five
+	// replies were cut off before the JSON object closed (filtered); at 1024 all
+	// five spoke. The cost follows the tokens actually produced, not this cap. A
+	// native Messages adapter that controls thinking can lower it again.
 	MaxTokens int
 
 	// Timeout bounds one dialogue call end to end. Zero means
@@ -105,7 +107,7 @@ type DialogueConfig struct {
 
 // Defaults for [DialogueConfig].
 const (
-	DefaultDialogueMaxTokens = 192
+	DefaultDialogueMaxTokens = 1024
 	DefaultDialogueTimeout   = 4 * time.Second
 )
 
@@ -388,7 +390,13 @@ func (d *Dialogue) Speak(ctx context.Context, req *contract.DialogueRequest) (co
 
 	// One admitted destination, as in Plan: a redirect is not another budgeted
 	// call, and following one would send the API key somewhere nobody approved.
+	// Its own deadline, too: the shared client carries BOT_BRAIN_LLM_TIMEOUT,
+	// which is sized for a planning tick (1.5 s by default) and would cut every
+	// dialogue call off long before BOT_BRAIN_DIALOGUE_TIMEOUT (twow-repo#664,
+	// smoke 0). The copy keeps the planner's client untouched; the context above
+	// carries the same bound.
 	client := *d.backend.client
+	client.Timeout = budget
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	httpResp, err := client.Do(httpReq)
 	if err != nil {
