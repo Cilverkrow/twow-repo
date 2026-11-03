@@ -112,10 +112,17 @@ name query shows "Name Surname" from the roster table `deploy/roster/names-518/a
 mounted read-only as `/opt/turtle/etc/bot-surnames.tsv` and read once at startup (no DB change);
 the full display name maps back on whispers, `/r`, invites and mail.
 
-All two hundred and eighty-two deviations are classified in `semantic-profile.tsv`.
+All three hundred and three deviations are classified in `semantic-profile.tsv`.
 
 Organic questing S3a (#601) adds the two quest-feasibility lists: 87 quest ids a roster
 bot on its own neither accepts nor keeps while open, and 7 ids that apply only while
 `AiPlayerbot.CustomRaceStartZones = 0`. They are inert in this profile:
 `AiPlayerbot.QuestFeasibility.Enable` keeps its core default 0 until the A/B arm A3 and
 an OB-00 go switch it on.
+
+cand4 + guards (#601, owner 2026-11-04 after the cand4G crossover, RESULT ADOPT): the organic
+questing candidate cand4 for every bot (S1 failure classes and parking, quest-first order, hub band
+ladder with the S5a F1/F2 steps, the quest-loop fixes, precomputed-path dispatch) plus the two
+guards `AiPlayerbot.QuestFirstProgression.StaleObjectiveFilter` and `AiPlayerbot.RosterFarMove.LevelGuard`.
+The band ladder reads the hub ladder file rev3a (sha256 83723b7b), mounted read-only as
+`/opt/turtle/etc/hub-ladder.tsv`; without the file the band step stays off.
