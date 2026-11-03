@@ -292,7 +292,6 @@ aiplayerbot	AiPlayerbot.QuestFirstProgression.BandLadder	INTENTIONAL_CHANGE	aipl
 aiplayerbot	AiPlayerbot.QuestFirstProgression.BandLadderFile	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
 aiplayerbot	AiPlayerbot.QuestFirstProgression.BandStepAfterEmptySearches	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
 aiplayerbot	AiPlayerbot.QuestFirstProgression.BandLadderSameZoneNext	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
-aiplayerbot	AiPlayerbot.Park.CellSourceKinds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
 aiplayerbot	AiPlayerbot.Perf.DispatchPrecomputedPath	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
 aiplayerbot	AiPlayerbot.QuestLoop.InactiveAfterProgress	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
 aiplayerbot	AiPlayerbot.QuestFirstProgression.ContestedObjectiveWait	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt

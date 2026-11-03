@@ -112,7 +112,7 @@ name query shows "Name Surname" from the roster table `deploy/roster/names-518/a
 mounted read-only as `/opt/turtle/etc/bot-surnames.tsv` and read once at startup (no DB change);
 the full display name maps back on whispers, `/r`, invites and mail.
 
-All three hundred and four deviations are classified in `semantic-profile.tsv`.
+All three hundred and three deviations are classified in `semantic-profile.tsv`.
 
 Organic questing S3a (#601) adds the two quest-feasibility lists: 87 quest ids a roster
 bot on its own neither accepts nor keeps while open, and 7 ids that apply only while
