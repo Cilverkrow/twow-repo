@@ -398,7 +398,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_group_quest` (
 | `AiPlayerbot.BotGroups.Enabled` | 0 | 1 (reported only), 2 | master switch; 0 = today's behaviour exactly (invariant 4) |
 | `AiPlayerbot.BotGroups.MaxBots` | 3 | 1 | max bots per bot group, clamped 2..5; funserver-test: **5** (owner contract) |
 | `AiPlayerbot.BotGroups.LevelWindow` | 3 | 1 | max level spread (max − min) in the group |
-| `AiPlayerbot.BotGroups.Diagnostics` | 0 | 1 | `[BotGroup]` / `[AdHocGroup]` lines; funserver-test: on |
+| `AiPlayerbot.BotGroups.Diagnostics` | 0 | 1 | `[BotGroup]` / `[AdHocGroup]` lines; funserver-test: off (twow-repo#640, unread; jobs that need the lines set it in their own keys) |
 | `AiPlayerbot.BotGroups.AdHoc.Radius` | 50 | 2 | yards within which bots with the same objective group (owner: 40–60) |
 | `AiPlayerbot.BotGroups.AdHoc.ScanIntervalSeconds` | 10 | 2 | candidate check per bot, at least 10 s |
 | `AiPlayerbot.BotGroups.AdHoc.PairCooldownSeconds` | 600 | 2 | no re-invite between the same two bots |
