@@ -695,7 +695,7 @@ body: |
   **Dependencies:** #486 B0/B1 (policy test and rulesets) merged first.
 ---
 id: OPS-NODE2-01
-title: node2 test PC - two behaviour realm tracks N1/N2, bot cap 800, owner-ordered perf test 1600+
+title: node2 test PC - two behaviour realm tracks N1/N2, bot cap 800, perf test 1600+ prepared (start only on owner go)
 workstream: WS-50
 priority: p1
 existing_ot: none
@@ -708,6 +708,8 @@ body: |
   **Owner decisions (verbatim):**
   - 04.11.2026, OB-00 chat (Ä13): "maximale bot grenze 800 - immer nur soviele bots wie nötig -
     leistungstest mit 1600+ da architektur sehr ähnlich fast schon besser als der hauptrechner"
+  - 04.11.2026 OB-00 correction (owner): perf tests only when the owner calls for them; the 1600+ test is
+    not ordered yet. The cap of 800 stays.
   - 02.11.2026, OB-30 chat: #664 run 1 with the scripted GM stimulus; OB-30 copies the LLM key file
     to node2 unread (scp of the file only, chmod 600, "set: yes/no" check only).
 
@@ -719,7 +721,10 @@ body: |
   3. Queue priority (OB-00): N1 = next job of the priority list (Berufe run 8 moved to main-PC track C),
      N2 = dru-v2 follow-up probe once its pin is ready, then tank v27 / SafePull / resto shaman as kits
      arrive. No perf jobs beside behaviour jobs.
-  4. Perf test 1600+ (owner-ordered): after N1/N2 run stably. PREREG with tick p50/p95/p99 per window,
+  4. Perf test 1600+: **prepared only, NOT ordered.** OB-00 correction 04.11.2026 (owner): perf tests run
+     only when the owner calls for them; the start needs the owner's own go, relayed by OB-00 with the exact
+     wording. Preparation: PREREG with tick p50/p95/p99 per window, slow-tick tail per bot ([BotUpdateSlow]
+     lines per bot-h, >=100 ms count; CLI-Deep REPORT-CAND4G-S 9b189ee1 saw a 1.34x rise for guarded bots),
      RAM/CPU, lost bots; EnableActionLog=0; failcensus v4.1; 1600+ test roster on a node2 test DB (OB-40).
      A one-page plan with the time window goes to OB-00 before the start; the perf window stays quiet.
   5. #664 LLM dialogue realm test (1-5 bots) runs on node2 as its own realm; that issue stays the LLM
