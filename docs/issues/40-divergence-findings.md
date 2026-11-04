@@ -138,6 +138,161 @@ body: |
   request leaves `false` and needs its rejection quiet enough not to flood the log.
   Add a regression test per classification.
 ---
+id: BOT-12
+title: Ad-hoc member follows a leader on another map forever (no-op leave)
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: evidence/ws-10/cli-grp/crossmap/CAUSE-CROSSMAP-FOLLOW-20261104.md (cand4G u2, core 04d063bc)
+superseded_by: none
+body: |
+  **Observed** (cand4G u2, 2026-11-03): roster bot Zogra (1372, L14) joined ad-hoc
+  group 38 (leader Rokaya 1168) at 00:45Z. From 02:00Z it stood at the Grom'gol
+  zeppelin dock (map 0) while the leader stayed on map 1 and later Ragefire (389).
+  For about 10 h it ran `follow` every update: 534 `[BotUpdateSlow]` lines
+  `A:follow - OK` at ~13 ms, about 40 % of the cand4G slow-update excess. It never
+  left the group.
+
+  **Cause** (twow-core 04d063bc, the files unchanged on release/9.x):
+  1. With `BotGroups.AdHoc.WorldThread = 0` the ad-hoc leave is a no-op.
+     `AdhocGroupAction::CheckLeave` runs the generic `leave` action with the bot as
+     issuer, and `LeaveGroupAction` keeps a free bot in its group
+     (`singleton_group::ShouldStayInGroup`, #301); roster bots are free bots. In
+     that run: 7,574 leave decisions, 155 real leaves. Known in #628 (comment
+     23.10.), fixed there only on the world-thread path, which stays off.
+  2. `FollowAction::isUseful` has no map check. `Follow` sends a target on another
+     map straight to `MoveTo2`, before the #303 hold. `MoveTo2` plans a route
+     through zeppelin 175080, waits at the dock (boarding never succeeds, #342) and
+     returns true, so the action reports OK. The dock node has entry 0, so
+     `getTransports(0)` scans every gameobject spawn on each update.
+  3. `follow` (relevance 20 via "wander far") starves the ad-hoc action (2.0): the
+     bot decided to leave only 5 times in 11 h.
+
+  **Fix** (one switch, default 0 = today, e.g.
+  `AiPlayerbot.BotGroups.AdHoc.LeaderOtherMapLeave`):
+  - a new leave reason `leader_other_map` after N s (proposal 120) with the leader
+    on another map. Every decided ad-hoc leave goes through the core leave path
+    (a helper shared with `WorldThreadManager::LeaveGroup`), and a failed leave does
+    not reset the clocks;
+  - `FollowAction::isUseful` returns false at once when the follow target is on
+    another map or instance and the bot has no real-player master (one compare,
+    no path search);
+  - the timer lives in `CheckLeave`'s existing per-bot state on the scan interval
+    (and in the world-thread pass), so nothing runs per update.
+
+  **Acceptance:**
+  - Policy unit test: N-1 s gives no leave, N s gives `leader_other_map`, switch 0
+    is unchanged.
+  - Source contract: a map check before the first distance in `isUseful`, the
+    reason string, and no bot-issued `leave` in `CheckLeave` behind the switch.
+  - Run window:
+    - decided leaves about equal real leaves (>= 0.95);
+    - no bot/group pair with >= 10 repeated decisions;
+    - no follower with `A:follow` slow lines more than N + 1 min after its leader
+      went to another map.
+
+  **Listed, out of scope:**
+  - A real-player master on another map takes the same `MoveTo2` cross-map path.
+  - `LeaveFarAwayAction` is blocked by any member on another map.
+  - The `getTransports(0)` full scan is its own perf item.
+  - The bot's unexplained jump from map 1 to map 0 at 01:45-01:55Z (candidate: the
+    `MoveTo2` hop teleport has no same-map check).
+
+  Refs #628, #342, #303.
+---
+id: BOT-13
+title: ChaseTo hazard path leaves a bot's MotionMaster empty (SIGABRT)
+workstream: WS-10
+priority: p2
+existing_ot: none
+source: evidence/ws-10/crash-sigabrt-g1r-20261101/RESULT-CRASH-SIGABRT-G1R-20261101.md
+superseded_by: none
+body: |
+  **Finding** (triage of the track-B SIGABRT of 2026-11-01 00:21:22Z, core
+  ece42753). The hazard branch of `ChaseTo` in
+  `mod-playerbots/.../strategy/actions/MovementActions.cpp` (~line 3978) does:
+
+  ```cpp
+  mm.Clear(false, true);   // all = true: pops every generator, idle included
+  ...
+  mm.MovePath(pointsArray, FORCED_MOVEMENT_RUN, false, false);
+  ```
+
+  - `Clear(reset, all = true)` outside a motion update goes to
+    `DirectClean(..., true)`. That empties the stack and does not re-initialise it
+    (`MotionMaster.cpp:212-237`).
+  - `MotionMaster::MovePath` (`MotionMaster.cpp:529-551`) only launches a spline;
+    it pushes no movement generator.
+  - The bot's next `MotionMaster::UpdateMotion` hits `MANGOS_ASSERT(!empty())`
+    (`MotionMaster.cpp:167`). `WPError` throws `std::runtime_error`; nothing on the
+    map worker catches it, so the result is `std::terminate` and SIGABRT.
+
+  **Status:**
+  - Latent: it needs a non-empty hazard list on a chase.
+  - The 01.11. crash itself is most likely the #563 cross-thread case X5 (the
+    master-held holder runs `HandleTeleportAck` -> `StopMoving` ->
+    `Clear(false, true)` for a bot on another map). The log does not support this
+    branch, but its `outDetail` line is not logged at that level, so the log
+    cannot rule it out either.
+  - OB-00 02.11.: backlog only, no fix now.
+
+  **Fix direction:** `mm.Clear()` (keeps the idle base) or `mm.MoveIdle()` before
+  `MovePath`, so the stack never stays empty.
+
+  Refs #563.
+---
+id: GRP-REZ-01
+title: Dungeon-clear rez path elects rezzers that cannot rez; runs end
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: evidence/ws-10/cli-grp/g1/CAUSE-DC-REVIVE-PFAD-20261104.md
+superseded_by: none
+body: |
+  **Finding.** CLI-GRP, CAUSE of 2026-11-04 (sha256 361bfdf0), core ece42753.
+  In the g1rc comparison arm (registry level), 8 of 9 dungeon-clear runs end on
+  the revive path ("Couldn't get X resurrected in time" / "no one left alive can
+  resurrect"). The main arm (`level=boss`) on the same units has 2 of 9.
+  Data: `g1/RESULT-G1RC-VERGLEICHSARM-20261104.md`.
+
+  **Main cause (F1).** The DC rez election counts the druid as a rez class and
+  prefers healers. The DC rez rung then casts `"revive"` for a druid, which no
+  druid knows in 1.12, so the cast resolves to spell 0: 566x
+  `A:dungeon clear rez party - FAILED` and 0 casts. The living paladin is not
+  elected, and after 90 s the episode ends in `TimedOut` and the run is disabled.
+
+  **Amplifier (F3).** StayDeadInRun holds the corpse while ANY rez class lives,
+  the druid included. That blocks the ghost walk, which recovers every full wipe
+  in 8-10 s.
+
+  **Contract (fix candidates; each behind its own switch, default 0):**
+  - **F1 + F3 (done):** `DungeonClear.RezCapableOnly`, twow-core #861/#862,
+    merged 2026-11-04 (release/9.x 80b9274c = pin 2h). The election and the
+    release veto count only a member who can rez now: known spell, not on
+    cooldown, max mana >= cost; humans keep the class rule. The read is limited
+    to the caller's map object (OB-10).
+  - **F2:** the druid casts Rebirth in the DC rung (30-min cooldown); only
+    together with F1.
+  - **F4:** `TimedOut`/`NoRezzer` -> release instead of disable.
+  - **F5:** rez budget per corpse instead of per episode.
+  - **F6:** explicit wipe recovery with a wipe limit.
+  - **F7:** pull cap at a negative level gap.
+  - **F8:** healer self-protection.
+  - **F9:** the distance fence leaves the elected rezzer alone.
+  - F4 and F6 belong to the one-owner rescue / dungeon manager of the A3 design
+    (steps 4 and 7) and link to the owner contract #550 (B.3: dungeon death).
+
+  **Acceptance (F1 + F3):** PREREG addendum G1-4
+  (`g1/PREREG-NACHTRAG-G1-4-REZCAPABLE-20261104.md`). ON and OFF run on pin 2h,
+  paired by (dungeon, compSeed).
+  - **P1:** revive-ending share ON <= OFF - 0.30, paired exact test one-sided
+    p < 0.05.
+  - **M1 = M2 = 0 in ON:** no druid elected, no corpse held for a druid alone.
+  - **No HARM:** no crash, and the deaths-per-run ratio ON/OFF has lo95 <= 1.3.
+  - **Finding rule (OB-00):** an elected rezzer that fails a rez with
+    NO_POWER and does not drink is a finding for rescue-ladder step 4.
+  - On MET: profile switch = 1 by a profile PR, with the owner's OK.
+---
 id: CORE-01
 title: Group::UpdatePlayerOutOfRange reads another map thread's visible list
 workstream: WS-10
