@@ -241,6 +241,58 @@ body: |
 
   Refs #563.
 ---
+id: GRP-REZ-01
+title: Dungeon-clear rez path elects rezzers that cannot rez; runs end
+workstream: WS-10
+priority: p1
+existing_ot: none
+source: evidence/ws-10/cli-grp/g1/CAUSE-DC-REVIVE-PFAD-20261104.md
+superseded_by: none
+body: |
+  **Finding.** CLI-GRP, CAUSE of 2026-11-04 (sha256 361bfdf0), core ece42753.
+  In the g1rc comparison arm (registry level), 8 of 9 dungeon-clear runs end on
+  the revive path ("Couldn't get X resurrected in time" / "no one left alive can
+  resurrect"). The main arm (`level=boss`) on the same units has 2 of 9.
+  Data: `g1/RESULT-G1RC-VERGLEICHSARM-20261104.md`.
+
+  **Main cause (F1).** The DC rez election counts the druid as a rez class and
+  prefers healers. The DC rez rung then casts `"revive"` for a druid, which no
+  druid knows in 1.12, so the cast resolves to spell 0: 566x
+  `A:dungeon clear rez party - FAILED` and 0 casts. The living paladin is not
+  elected, and after 90 s the episode ends in `TimedOut` and the run is disabled.
+
+  **Amplifier (F3).** StayDeadInRun holds the corpse while ANY rez class lives,
+  the druid included. That blocks the ghost walk, which recovers every full wipe
+  in 8-10 s.
+
+  **Contract (fix candidates; each behind its own switch, default 0):**
+  - **F1 + F3 (done):** `DungeonClear.RezCapableOnly`, twow-core #861/#862,
+    merged 2026-11-04 (release/9.x 80b9274c = pin 2h). The election and the
+    release veto count only a member who can rez now: known spell, not on
+    cooldown, max mana >= cost; humans keep the class rule. The read is limited
+    to the caller's map object (OB-10).
+  - **F2:** the druid casts Rebirth in the DC rung (30-min cooldown); only
+    together with F1.
+  - **F4:** `TimedOut`/`NoRezzer` -> release instead of disable.
+  - **F5:** rez budget per corpse instead of per episode.
+  - **F6:** explicit wipe recovery with a wipe limit.
+  - **F7:** pull cap at a negative level gap.
+  - **F8:** healer self-protection.
+  - **F9:** the distance fence leaves the elected rezzer alone.
+  - F4 and F6 belong to the one-owner rescue / dungeon manager of the A3 design
+    (steps 4 and 7) and link to the owner contract #550 (B.3: dungeon death).
+
+  **Acceptance (F1 + F3):** PREREG addendum G1-4
+  (`g1/PREREG-NACHTRAG-G1-4-REZCAPABLE-20261104.md`). ON and OFF run on pin 2h,
+  paired by (dungeon, compSeed).
+  - **P1:** revive-ending share ON <= OFF - 0.30, paired exact test one-sided
+    p < 0.05.
+  - **M1 = M2 = 0 in ON:** no druid elected, no corpse held for a druid alone.
+  - **No HARM:** no crash, and the deaths-per-run ratio ON/OFF has lo95 <= 1.3.
+  - **Finding rule (OB-00):** an elected rezzer that fails a rez with
+    NO_POWER and does not drink is a finding for rescue-ladder step 4.
+  - On MET: profile switch = 1 by a profile PR, with the owner's OK.
+---
 id: CORE-01
 title: Group::UpdatePlayerOutOfRange reads another map thread's visible list
 workstream: WS-10
