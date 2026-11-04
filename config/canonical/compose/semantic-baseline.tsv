@@ -5,7 +5,6 @@ service	key	classification	canonical_source	evidence
 aiplayerbot	AiPlayerbot.AutoLearnDroppedSpells	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.AutoLearnQuestSpells	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.BoostFollow	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
-aiplayerbot	AiPlayerbot.DisableBotOptimizations	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.DisableRandomLevels	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline
 aiplayerbot	AiPlayerbot.EventStoreTable	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	deployment-schema-topology
 aiplayerbot	AiPlayerbot.GlobalSoundEffects	KEEP	aiplayerbot.overlay.conf	verified-sanitized-baseline

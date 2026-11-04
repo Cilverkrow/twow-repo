@@ -271,9 +271,7 @@ aiplayerbot	AiPlayerbot.InitPet.Cache	INTENTIONAL_CHANGE	aiplayerbot.overlay.con
 aiplayerbot	AiPlayerbot.Park.Persist	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
 aiplayerbot	AiPlayerbot.Park.Quiet	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
 aiplayerbot	AiPlayerbot.Path.RescueSkipCustomStarts	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
-aiplayerbot	AiPlayerbot.Perf.ActionBudget	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
 aiplayerbot	AiPlayerbot.Perf.EventTriggerSkip	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
-aiplayerbot	AiPlayerbot.Perf.PartialPathReuse	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
 aiplayerbot	AiPlayerbot.Perf.RouteFailCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
 aiplayerbot	AiPlayerbot.Perf.SkipBotUpdatePackets	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
 aiplayerbot	AiPlayerbot.QuestLoop.InactiveCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
