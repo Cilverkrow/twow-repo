@@ -27,8 +27,10 @@ What it found:
   and +4 for mobs. The exclusion list has 8 slots and lives in memory only.
 - **The fixes form layers of patches on the same ladder.** Of the switches with a legacy path, 152
   were adopted without the old path ever being removed (`A2-ALTPFAD.tsv`). Several are dead: the
-  "has nearby quest taker" trigger is never registered, the TravelActionMultiplier exceptions never
-  match, and `+bot brain` in the profile names a strategy that does not exist.
+  "has nearby quest taker" trigger is never registered, and the TravelActionMultiplier exceptions never
+  match. (Correction 2026-11-04: an earlier version also listed `+bot brain` in the profile here. That
+  was wrong. The strategy exists in `modules/mod-bot-brain` (ADR-0039), and the profile line keeps it
+  active.)
 - **Outcomes are measured.**
   - Quest-first bots are idle 23–25 % and stuck 6–7 % of the time, and grind 0 %.
   - 7.4 % of far-move arrivals end in death.
