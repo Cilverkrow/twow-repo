@@ -44,14 +44,12 @@ mangosd	BotBrain.Dialogue.MaxInFlight	INTENTIONAL_CHANGE	mangosd.overlay.conf	is
 mangosd	BotBrain.Dialogue.Commands.Enable	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-bot-brain-sconfig-bridge
 aiplayerbot	AiPlayerbot.PersistentActiveRoster.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-persistent-roster
 aiplayerbot	AiPlayerbot.QuestFirstProgression.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-quest-first
-aiplayerbot	AiPlayerbot.QuestFirstProgression.TraceTravelDecisions	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-quest-first-trace
 aiplayerbot	AiPlayerbot.RandomBotGroupNearby	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-no-random-grouping
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInMaxDeathsOnRoute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-death-route-cap-pinned-default
 aiplayerbot	AiPlayerbot.QuestFirstProgression.TurnInDeathRouteCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-death-route-cooldown-pinned-default
 aiplayerbot	AiPlayerbot.MaxAlternateGraveyardDistance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-276-graveyard-bound-pinned-default
 aiplayerbot	AiPlayerbot.DeadWaitForRealMasterSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-pinned-default
 aiplayerbot	AiPlayerbot.DeadWaitForRealMasterInstanceSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-instance-pinned-default
-aiplayerbot	AiPlayerbot.EquipDiagnostics.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-equip-trace-measurement-window
 aiplayerbot	AiPlayerbot.AuctionHouse.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-owner-no-bot-auction-house
 aiplayerbot	AiPlayerbot.QuestFirstProgression.MinLevelForCrossMapQuestRoute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-487-544-crossmap-continents-until-61
 aiplayerbot	AiPlayerbot.QuestFirstProgression.QuestAreaLevelMargin	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-335-quest-area-level-margin-pinned-default
@@ -71,16 +69,12 @@ aiplayerbot	AiPlayerbot.DangerMap.LineSamples	INTENTIONAL_CHANGE	aiplayerbot.ove
 aiplayerbot	AiPlayerbot.ProfessionUse.GatherDistance	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-333-profession-use
 aiplayerbot	AiPlayerbot.ProfessionUse.Craft	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-333-profession-use
 aiplayerbot	AiPlayerbot.ProfessionUse.CraftIntervalSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-333-profession-use
-aiplayerbot	AiPlayerbot.ProfessionUse.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-333-profession-use
-aiplayerbot	AiPlayerbot.ProfessionUse.TraceCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-333-profession-use
 aiplayerbot	AiPlayerbot.ProfessionUse.RealReagents	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-craft-real-reagents
 aiplayerbot	AiPlayerbot.ProfessionUse.KeepCraftMaterials	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-craft-real-reagents
 aiplayerbot	AiPlayerbot.ProfessionUse.VendorReagents	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-craft-real-reagents
 aiplayerbot	AiPlayerbot.LootRoll.RoleAware	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-341-role-aware-loot-roll
-aiplayerbot	AiPlayerbot.LootRoll.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-341-role-aware-loot-roll-trace
 aiplayerbot	AiPlayerbot.ZoneEscape.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-zone-escape
 aiplayerbot	AiPlayerbot.ZoneEscape.CooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-zone-escape-cooldown
-aiplayerbot	AiPlayerbot.FollowDiagnostics	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-303-follow-diagnostics
 aiplayerbot	AiPlayerbot.RosterControl.GmMinSecurity	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-354-owner-gm-min-security-3
 aiplayerbot	AiPlayerbot.RosterControl.SummonCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-292-summon-cooldown-pinned-default
 aiplayerbot	AiPlayerbot.AutoLearnTrainerSpells	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-356-owner-auto-learn-trainer-spells
@@ -97,7 +91,6 @@ aiplayerbot	AiPlayerbot.FarFollowMaxWalkDistance	INTENTIONAL_CHANGE	aiplayerbot.
 mangosd	Funserver.Quests.AllSharable	INTENTIONAL_CHANGE	mangosd.overlay.conf	owner-all-quests-sharable
 aiplayerbot	AiPlayerbot.PersistentActiveRoster.LoginWaveSize	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-391-train7-login-wave-24
 aiplayerbot	AiPlayerbot.PersistentActiveRoster.LoginWaveIntervalSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-391-train7-login-wave-900s
-aiplayerbot	AiPlayerbot.AutoLearn.TimingTrace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-351-train7-autolearn-timing-trace-24h
 aiplayerbot	AiPlayerbot.ClassGrant.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-356-train7-class-grant
 aiplayerbot	AiPlayerbot.DeathLoop.MaxDeaths	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-train7-death-loop-4
 aiplayerbot	AiPlayerbot.DeathLoop.WindowSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-train7-death-loop-window-pinned-default
@@ -220,7 +213,6 @@ aiplayerbot	AiPlayerbot.Path.RpgTargetSnap	INTENTIONAL_CHANGE	aiplayerbot.overla
 aiplayerbot	AiPlayerbot.Path.RouteFailDetail	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
 aiplayerbot	AiPlayerbot.Path.RouteFailDetail.LinesPerMinute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
 aiplayerbot	AiPlayerbot.Path.TaxiTrace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
-aiplayerbot	AiPlayerbot.PacketTrace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
 aiplayerbot	AiPlayerbot.Perf.NearestSkipHiddenBots	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
 aiplayerbot	AiPlayerbot.Shaman.ImbueBySpec	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v463-fixes-on
 aiplayerbot	AiPlayerbot.AutoLearnQuestTeachEffects	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-541-owner-v464-fixes-on
