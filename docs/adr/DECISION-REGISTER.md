@@ -4,7 +4,7 @@ Operational follow-up is maintained in [Open project threads](../OPEN-THREADS.md
 
 ## Accepted decisions
 
-The accepted durable decisions are recorded by **ADR-0001 through ADR-0031**, **ADR-0038** through **ADR-0040**, minus the
+The accepted durable decisions are recorded by **ADR-0001 through ADR-0031**, **ADR-0038** through **ADR-0041**, minus the
 supersessions listed at the bottom of this page.
 
 **ADR-0031 states the project's goal**, which until now was not written down anywhere -- it existed
@@ -38,6 +38,7 @@ this register until 2026-09-02:
 | ADR-0038 | Version shared server configuration and deploy it with provenance | Accepted |
 | ADR-0039 | Out-of-process bot planning, with a stored-UUID identity and a `cv_brain` store | Accepted |
 | ADR-0040 | Module ownership: upstream-tracked modules stay in core; only code we wrote lives in the platform | Accepted |
+| ADR-0041 | Bot behaviour target architecture (supervisor, planner, quest book, route, combat rule, rescue ladder, group/dungeon manager); strangler per module | Accepted |
 
 ADR-0026 is load-bearing for the others: no document may restate the fork point, the
 upstream of record or the merge rules. They link to it.

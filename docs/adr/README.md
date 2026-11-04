@@ -44,6 +44,8 @@ Chat text is provenance, not runtime truth. When evidence conflicts, use the pre
 | [0030](ADR-0030-local-mariadb-loopback-transport.md) | Explicit plaintext profile for the legacy local MariaDB endpoint | Accepted | WS-30 / WS-20 |
 | [0038](ADR-0038-configuration-as-code-and-provenance.md) | Version shared server configuration and deploy it with provenance | Accepted | WS-30 / WS-40 / WS-50 / WS-60 / WS-80 |
 | [0039](ADR-0039-bot-brain-identity-and-memory.md) | Out-of-process bot planning, with a stable identity and durable memory | Accepted | WS-10 / WS-20 |
+| [0040](ADR-0040-module-ownership-and-the-core-boundary.md) | Module ownership, and what the core is allowed to contain | Accepted | WS-00 / WS-10 |
+| [0041](ADR-0041-bot-behaviour-target-architecture.md) | Bot behaviour gets one owner per concern; replaced module by module, legacy path deleted on adoption | Accepted | WS-10 |
 
 ADRs 0020 to 0029 record the OT-025 restructuring. ADR-0028 is accepted because its
 Linux/Docker platform contract is both binding in `AGENTS.md` and implemented in the
