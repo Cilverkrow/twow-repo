@@ -694,3 +694,71 @@ body: |
 
   **Dependencies:** #486 B0/B1 (policy test and rulesets) merged first.
 ---
+id: OPS-NODE2-01
+title: node2 test PC - two behaviour realm tracks N1/N2, bot cap 800, perf test 1600+ prepared (start only on owner go)
+workstream: WS-50
+priority: p1
+existing_ot: none
+source: owner decisions 02.-04.11.2026 (OB-30 chat; OB-00 chat relayed per Ä13), evidence/ws-50/maint-20261030/APPROVALS.md
+superseded_by: none
+body: |
+  **Goal:** a second test PC (`node2`, Debian 13, 192.168.2.148, docker context `node2`, ssh key only)
+  runs behaviour jobs in parallel to the main PC tracks A/B/C, so the queue does not sit idle.
+
+  **Owner decisions (verbatim):**
+  - 04.11.2026, OB-00 chat (Ä13): "maximale bot grenze 800 - immer nur soviele bots wie nötig -
+    leistungstest mit 1600+ da architektur sehr ähnlich fast schon besser als der hauptrechner"
+  - 04.11.2026 OB-00 correction (owner): perf tests only when the owner calls for them; the 1600+ test is
+    not ordered yet. The cap of 800 stays.
+  - 02.11.2026, OB-30 chat: #664 run 1 with the scripted GM stimulus; OB-30 copies the LLM key file
+    to node2 unread (scp of the file only, chmod 600, "set: yes/no" check only).
+
+  **Scope (OB-30):**
+  1. Tracks N1/N2: realm stacks against the OB-40 test DBs `node2-n1-db` / `node2-n2-db`
+     (sanitised live540 dump 299a5806, resets via flags `NODE2-NX-LIVE540-REQ-<k>`, k 101-999).
+     Same promote image digest as A/B/C; one scheduler per track with a single-instance check.
+  2. Bot cap: 800 in total on node2, each job only as many bots as it needs (behaviour ~90 per realm).
+  3. Queue priority (OB-00): N1 = next job of the priority list (Berufe run 8 moved to main-PC track C),
+     N2 = dru-v2 follow-up probe once its pin is ready, then tank v27 / SafePull / resto shaman as kits
+     arrive. No perf jobs beside behaviour jobs.
+  4. Perf test 1600+: **prepared only, NOT ordered.** OB-00 correction 04.11.2026 (owner): perf tests run
+     only when the owner calls for them; the start needs the owner's own go, relayed by OB-00 with the exact
+     wording. Preparation: PREREG with tick p50/p95/p99 per window, slow-tick tail per bot ([BotUpdateSlow]
+     lines per bot-h, >=100 ms count; CLI-Deep REPORT-CAND4G-S 9b189ee1 saw a 1.34x rise for guarded bots),
+     RAM/CPU, lost bots; EnableActionLog=0; failcensus v4.1; 1600+ test roster on a node2 test DB (OB-40).
+     A one-page plan with the time window goes to OB-00 before the start; the perf window stays quiet.
+  5. #664 LLM dialogue realm test (1-5 bots) runs on node2 as its own realm; that issue stays the LLM
+     dialogue only.
+
+  **Not in scope:** no live data or live access from node2, no builds on node2 (images via
+  `docker save | load`), no Swarm/Portainer/Samba.
+
+  **Acceptance:** N1 and N2 each complete one queue job end to end (reset → realm up → job rc 0 →
+  evidence), the scheduler single-instance check passes, and node2 RAM/CPU during the first jobs is
+  reported to OB-00 together with a confirmed per-realm cap.
+---
+id: CORE-NOFILE-01
+title: Cap the ACE reactor handler table instead of sizing it by RLIMIT_NOFILE (multi-GB startup allocation on high-nofile hosts)
+workstream: WS-10
+priority: p2
+existing_ot: none
+source: twow-repo#671 (node2 OOM 04.11.2026), evidence/ws-50/maint-20261102, OB-10 code analysis 04.11.2026
+superseded_by: none
+body: |
+  **Defect:** the network layer creates `ACE_Dev_Poll_Reactor` without a size, so ACE sizes the handler
+  repository by `ACE::max_handles()` = `RLIMIT_NOFILE`. Located by OB-10:
+  - `src/framework/Network/MangosSocketMgrImpl.h:79` — `imp = new ACE_Dev_Poll_Reactor();`, one per network thread;
+  - `src/realmd/Main.cpp:235` — `ACE_Dev_Poll_Reactor(ACE::max_handles(), 1)`.
+
+  **Effect:** on a host whose container fd limit is high (Debian `docker.io`, `LimitNOFILE=infinity` → ~1.07e9),
+  mangosd allocates +8–9 GB of anonymous memory within ~2 s right after world load and is OOM-killed on every start.
+  Observed on the node2 test PC, 04.11.2026: 0.1 s cgroup samples, peak >12 GB at a 12 GB limit, host OOM without a
+  limit. With `nofile 1048576` (the Docker Desktop value) the same build runs at 4.4 GB.
+
+  **Mitigation in place:** `ulimits: nofile 1048576` in the node2 compose and in `deploy/compose/docker-compose.yml` (#680).
+
+  **Fix:** pass `std::min(ACE::max_handles(), cap)` in both places, with the cap as a config key or a sane constant
+  (e.g. 65536). Alternative: lower `RLIMIT_NOFILE` with `setrlimit` at startup. Add a startup log line with the effective
+  size. Review: OB-10. Low priority while the compose ulimit is pinned, but any future bare-metal or non-Desktop live
+  host would hit it.
+---
