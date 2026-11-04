@@ -138,7 +138,7 @@ body: |
   request leaves `false` and needs its rejection quiet enough not to flood the log.
   Add a regression test per classification.
 ---
-id: BOT-09
+id: BOT-12
 title: Ad-hoc member follows a leader on another map forever (no-op leave)
 workstream: WS-10
 priority: p1
@@ -200,7 +200,7 @@ body: |
 
   Refs #628, #342, #303.
 ---
-id: BOT-10
+id: BOT-13
 title: ChaseTo hazard path leaves a bot's MotionMaster empty (SIGABRT)
 workstream: WS-10
 priority: p2
