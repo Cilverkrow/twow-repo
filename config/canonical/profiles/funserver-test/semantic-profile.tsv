@@ -253,3 +253,4 @@ aiplayerbot	AiPlayerbot.QuestLoop.GameObjectPresence	INTENTIONAL_CHANGE	aiplayer
 aiplayerbot	AiPlayerbot.QuestLoop.EmptyCampHold	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
 aiplayerbot	AiPlayerbot.QuestFirstProgression.StaleObjectiveFilter	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
 aiplayerbot	AiPlayerbot.RosterFarMove.LevelGuard	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-601-cand4g-owner-20261104-adopt
+aiplayerbot	AiPlayerbot.ThreadSafeTeleportAck	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-676-crash-b-20261104-x5-on
