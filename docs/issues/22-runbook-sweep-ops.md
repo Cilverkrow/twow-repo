@@ -737,3 +737,28 @@ body: |
   evidence), the scheduler single-instance check passes, and node2 RAM/CPU during the first jobs is
   reported to OB-00 together with a confirmed per-realm cap.
 ---
+id: CORE-NOFILE-01
+title: Cap the ACE reactor handler table instead of sizing it by RLIMIT_NOFILE (multi-GB startup allocation on high-nofile hosts)
+workstream: WS-10
+priority: p2
+existing_ot: none
+source: twow-repo#671 (node2 OOM 04.11.2026), evidence/ws-50/maint-20261102, OB-10 code analysis 04.11.2026
+superseded_by: none
+body: |
+  **Defect:** the network layer creates `ACE_Dev_Poll_Reactor` without a size, so ACE sizes the handler
+  repository by `ACE::max_handles()` = `RLIMIT_NOFILE`. Located by OB-10:
+  - `src/framework/Network/MangosSocketMgrImpl.h:79` — `imp = new ACE_Dev_Poll_Reactor();`, one per network thread;
+  - `src/realmd/Main.cpp:235` — `ACE_Dev_Poll_Reactor(ACE::max_handles(), 1)`.
+
+  **Effect:** on a host whose container fd limit is high (Debian `docker.io`, `LimitNOFILE=infinity` → ~1.07e9),
+  mangosd allocates +8–9 GB of anonymous memory within ~2 s right after world load and is OOM-killed on every start.
+  Observed on the node2 test PC, 04.11.2026: 0.1 s cgroup samples, peak >12 GB at a 12 GB limit, host OOM without a
+  limit. With `nofile 1048576` (the Docker Desktop value) the same build runs at 4.4 GB.
+
+  **Mitigation in place:** `ulimits: nofile 1048576` in the node2 compose and in `deploy/compose/docker-compose.yml` (#680).
+
+  **Fix:** pass `std::min(ACE::max_handles(), cap)` in both places, with the cap as a config key or a sane constant
+  (e.g. 65536). Alternative: lower `RLIMIT_NOFILE` with `setrlimit` at startup. Add a startup log line with the effective
+  size. Review: OB-10. Low priority while the compose ulimit is pinned, but any future bare-metal or non-Desktop live
+  host would hit it.
+---
