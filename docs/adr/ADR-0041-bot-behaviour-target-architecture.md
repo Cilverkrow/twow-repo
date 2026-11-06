@@ -1,7 +1,7 @@
 # ADR-0041: Bot behaviour target architecture, replaced module by module
 
 - Status: Accepted (owner, 2026-11-04); implementation pending, each step under its own order
-- Date: 2026-11-04
+- Date: 2026-11-04 (amended 2026-11-06)
 - Primary: WS-10
 - Related: ADR-0022 (characterization before extraction), ADR-0024 (invariants), ADR-0031 (project goal),
   ADR-0039 (out-of-process planning), ADR-0040 (module ownership)
@@ -110,6 +110,57 @@ Rules for getting there:
   crossovers, one level band at a time, with deaths per bot-hour as a guard.
 - ADR-0024 invariant 1 (a bot is never lost) applies to every step. The quest book's persistent
   exclusion list writes only to project-owned tables (invariant 2).
+
+## Amendment 2026-11-06
+
+The status is unchanged: Accepted. This amendment records the owner's decisions of 2026-11-06 and
+the OB-00 sequencing decisions that follow from them.
+
+1. **Re-steering to the new bot logic.**
+   - Owner: "freigabe zum umsteuern zur neuen botlogik und drzahung der abläufe" (OB-00 chat,
+     2026-11-06).
+   - What this changes in practice: rule 4 now covers tests as well as code. No A/B test runs on a
+     knob of the legacy ladder. Only these three kinds of run are allowed:
+     - HARM or crash fixes;
+     - base and characterisation runs with the full action log (rule 5). In these runs every
+       log-only switch is on and every behaviour switch keeps its default;
+     - A/B tests of new A3 modules.
+   - Queue entries that test old-ladder knobs are marked `#DROP` or `#HOLD` in the test queue. They
+     are not deleted.
+2. **Crafting moves forward.**
+   - Owner: "wie empfehlung" (2026-11-06) on the M2 professions draft.
+   - This changes rule 2. The **crafting module** (using a profession: crafting from materials
+     in the bags) may start with step 3. It follows the same strangler rules: its own switch,
+     default 0, then A/B.
+   - Travel to crafting stations comes after step 3. PvP, guilds, trade and the rest of the
+     professions stay after step 7.
+   - Related decision: the goal for the item cheat is OFF. It is only switched off after an
+     analysis and an A/B with the cheat off in one arm. The auction house stays off for now.
+3. **The step 3 scaffold runs parallel to step 2.**
+   - What the scaffold is: the supervisor and planner code skeleton. It sits behind its own switch,
+     default 0, has counters only and changes no behaviour.
+   - It may be built and merged while the quest book (step 2) is still in progress. Behaviour
+     adoption keeps the order from rule 2.
+   - Design basis: `Y:\tw\evidence\ws-00\projekt-durchleuchtung\A3-S3-ENTWURF.md`.
+4. **Lever order for group work and steps 3–7** (OB-00, 2026-11-06). Rule 3 still applies: one
+   lever per run, and an adopted module is part of the base in both arms. The order is:
+   1. BOT-12 (running);
+   2. group manager write path, as ops without directives;
+   3. supervisor and planner, on top of that write path;
+   4. group manager ADHOC and QUEST with directives;
+   5. meeting point;
+   6. dungeon G-1..G-3 (step 7).
+
+   Group membership changes only through a manager op. A directive only carries what the bot
+   must do: mode, target and meeting point. The bot confirms each directive back to the manager.
+5. **Coupling between the core and the bot logic.** Rule 6 is confirmed:
+   - New behaviour uses the existing PlayerScript hooks plus emits and edge checks inside the
+     module. Events go to the bot through a module-wide mailbox keyed by guid; no pointers cross
+     threads.
+   - If a needed signal turns out to be impossible without a core engine change, work stops and
+     the case goes to OB-00 and the owner.
+   - The bot brain (ADR-0039) only supplies slow preferences to the planner, with a TTL. The
+     per-tick work it does today is removed in its own twow-repo pair after the planner lands.
 
 ## Evidence
 
