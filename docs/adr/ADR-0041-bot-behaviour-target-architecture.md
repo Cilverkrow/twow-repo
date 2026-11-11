@@ -1,7 +1,7 @@
 # ADR-0041: Bot behaviour target architecture, replaced module by module
 
 - Status: Accepted (owner, 2026-11-04); implementation pending, each step under its own order
-- Date: 2026-11-04 (amended 2026-11-06)
+- Date: 2026-11-04 (amended 2026-11-06, 2026-11-11)
 - Primary: WS-10
 - Related: ADR-0022 (characterization before extraction), ADR-0024 (invariants), ADR-0031 (project goal),
   ADR-0039 (out-of-process planning), ADR-0040 (module ownership)
@@ -162,6 +162,60 @@ the OB-00 sequencing decisions that follow from them.
    - The bot brain (ADR-0039) only supplies slow preferences to the planner, with a TTL. The
      per-tick work it does today is removed in its own twow-repo pair after the planner lands.
 
+## Amendment 2026-11-11
+
+The status is unchanged: Accepted. This amendment records three owner decisions of 2026-11-09 and
+2026-11-10. Two of them are exceptions to the rules above; each is limited to what is named here.
+
+1. **Steps 4 and 5 may be A/B-tested before the step-3 adoption** (owner, 2026-11-09, question F1,
+   answer (b)).
+   - Owner: "Ja, vorziehen in freier Testzeit" (relayed by OB-00, 2026-11-09).
+   - What this changes: rule 2 fixes the order of adoption, and that order stays 3, 4, 5. What moves
+     is only **when the A/B may run**: the rescue ladder (step 4) and combat rule (step 5) levers may
+     run their A/B before the planner (step 3) is adopted, in spare track time. This is the third
+     kind of run that amendment 2026-11-06, item 1, allows (A/B tests of new A3 modules), now also
+     ahead of step 3. Rule 3 (one lever per run) is unchanged.
+   - Three conditions set by OB-00:
+     1. every such result is labelled **"pre-planner"**;
+     2. after the planner adoption each step-4/5 lever gets a **confirmation unit** on the planner
+        pin; it counts as a repetition. Such a lever is adopted only after step 3 **and** after its
+        confirmation unit;
+     3. the arbiter shadow and the planner chain have **priority on the tracks**; pre-planner A/B use
+        free time only.
+2. **T02-GROUP and T30 count as one lever** (owner, 2026-11-10, about 23:00Z, question Q4, answer
+   Q4-a).
+   - Owner: "Ausnahme, ein Test (Empf.)".
+   - What this changes: T02-GROUP (the bot side) and T30 (the group manager) ship behind **one**
+     switch, `AiPlayerbot.BotGroups.Manager.Types` (`Manager.Types` below) at Arbiter 2, and are
+     tested as **one lever**. This is an exception to
+     **rule 1** (each module its own switch) and **rule 3** (one lever per run), for exactly this
+     pair.
+   - Conditions:
+     - before the first run with `Types` above 0, an **R9 smoke PREREG** is written; it contains
+       vetoes only;
+     - the T30 A/B is also the T02-GROUP A/B, with the T02-GROUP vetoes;
+     - a rollback works only for both together (`Types=0`).
+   - Scope: PR pair twow-core#1026/#1027 and the Supervisor.h comment. It is not a general
+     exception.
+   - Record: the Ä13 comment on twow-core#1026 (comment 6786029803, the verbatim record); filed
+     record `A3-anhang/t02/EINGANG-T02GROUP-Q4.md` (sha256 91266032 as of 2026-11-11 04:22Z; the
+     file was extended after the comment was written).
+3. **Standing approval for the framework, levels 1 to 30** (owner, 2026-11-09, given in the chat of
+   each CLI session and recorded in twow-repo#685, comment 6743648138).
+   - It covers every block of the plan (A3-PLAN-ZIEL) and of the upstream list (A3-HARM-UPSTREAM):
+     build, test and a PR pair. It is the owner default-1 rule of rule 1, given in advance for this
+     scope.
+   - **HARM bug fixes get default 1** after their acceptance unit has passed **and** OB-10 has given
+     the OK. Mechanics (OB-00, 2026-11-09): the fix merges with code default 0, the acceptance unit
+     runs with the key at 1 on the promoted pin image, and after PASS + OB-10 OK a small flip pair
+     sets default 1.
+   - **A behaviour lever** goes to default 1 only on a **clear ADOPT** of the previously frozen test
+     plan (PREREG) plus the OB-10 OK. OB-00 reports every adoption to the owner. Everything else
+     stays default 0 until its A/B.
+   - Not covered, still needs its own owner decision: anything without its own ADOPT (for example
+     HomeHubs, which needed the owner), the live server, deletion, game rules and balance, and perf
+     tests.
+
 ## Evidence
 
 - `Y:\tw\evidence\ws-00\projekt-durchleuchtung\A3-BOT-LOGIK.md` (v2.2): parts 1–5, verification log,
@@ -173,3 +227,7 @@ the OB-00 sequencing decisions that follow from them.
   legacy-path inventory).
 - `Y:\tw\evidence\ws-50\a2-hotspots\A2-HOTSPOTS-20261104.md` (cost hotspots).
 - Owner approval of 2026-11-04 relayed by OB-00 (session message; provenance per ADR-0002).
+- twow-repo#685 comment 6743648138 (standing approval for the framework L1-30, 2026-11-09) and
+  twow-core#1026 comment 6786029803 (owner decision Q4-a, 2026-11-10), both recorded by OB-00 under
+  Ä13; `Y:\tw\evidence\ws-00\projekt-durchleuchtung\A3-PLAN-ZIEL.md` (v2.5, sha256 3395c934; F1 (b) is in
+  it since v2.1).
