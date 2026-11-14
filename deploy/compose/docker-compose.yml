@@ -127,6 +127,13 @@ services:
     build: *core-build
     image: ${IMAGE_REPO:-twow/core}:${IMAGE_TAG:-dev}
     restart: unless-stopped
+    # Explicit fd limit (OB-30 04.11.2026, twow-repo#671): ACE_Dev_Poll_Reactor sizes its handler table by
+    # RLIMIT_NOFILE. Docker Desktop gives 1048576, but Debian docker.io (LimitNOFILE=infinity) gives ~1.07e9,
+    # which made mangosd allocate +8 GB at startup and get OOM-killed. Pin the Docker Desktop value everywhere.
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
     depends_on:
       db:
         condition: service_healthy
@@ -157,6 +164,13 @@ services:
     build: *core-build
     image: ${IMAGE_REPO:-twow/core}:${IMAGE_TAG:-dev}
     restart: unless-stopped
+    # Explicit fd limit (OB-30 04.11.2026, twow-repo#671): ACE_Dev_Poll_Reactor sizes its handler table by
+    # RLIMIT_NOFILE. Docker Desktop gives 1048576, but Debian docker.io (LimitNOFILE=infinity) gives ~1.07e9,
+    # which made mangosd allocate +8 GB at startup and get OOM-killed. Pin the Docker Desktop value everywhere.
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
     depends_on:
       db:
         condition: service_healthy
