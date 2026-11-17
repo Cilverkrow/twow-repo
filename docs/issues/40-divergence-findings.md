@@ -693,3 +693,43 @@ body: |
   4. Add a smoke assertion that the index exists after bootstrap, so this cannot
      regress silently again.
 ---
+id: PROV-05
+title: Reconcile item_template.subclass drift between sql/base and the live world
+workstream: WS-20
+priority: p2
+existing_ot: none
+source: twow-core sql/base/tw_world_item_template.sql
+superseded_by: none
+body: |
+  **Parked 2026-11-17 (OB-00), do not work on it yet.** Context:
+  twow-repo#333, comment 6933322546.
+
+  The live `tw_world.item_template` and the twow-core base file disagree on
+  `subclass` for consumables (`class = 0`):
+
+  | Source | class-0 rows | subclass values |
+  |---|---|---|
+  | live world, dump `live540-20261014T2230Z/world.sql` (sha256 `94959392…`) | 1587 | all 0 |
+  | twow-core `sql/base/tw_world_item_template.sql` @ `cbd8c883` | 1365 | 0 x1170, 3 x123, 4 x28, 5 x24, 6 x15, 2 x3, 7 x1, 8 x1 |
+
+  Examples: 13510 Flask of the Titans, 929 Healing Potion and 2289 Scroll of
+  Strength II are subclass 0 live, but 3, 3 and 4 in the base file.
+
+  The test realms (main-PC tracks A/B/C and node2) import that live dump plus the
+  ledger migrations up to 831. None of those migrations sets `subclass`. They
+  therefore match live, and A/B runs classify consumables the way live does.
+  Only `sql/base` differs. A fresh bootstrap from `sql/base` would get a
+  different consumable classification than live.
+
+  Not verified: a live change after 2026-10-14 made outside the migration ledger.
+  The facts above come from the dump file and the repository only. No query was
+  run against live.
+
+  **To decide later:**
+  1. Which source is authoritative for `item_template`: the live data or the
+     upstream base file.
+  2. A data migration or a base-file regeneration to remove the drift, following
+     the hotfix and world-data rules.
+  3. Whether bot code that filters on `item_subclass` (food, potion, flask) needs
+     a fallback. Today it effectively sees only subclass 0 live.
+---
