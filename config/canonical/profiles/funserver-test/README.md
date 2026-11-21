@@ -75,7 +75,9 @@ one line per 60 s in perf.log): the D1 source of the scaling gate (#351), since
 the slow-update lines alone give no percentile. Every quest becomes sharable
 (`Funserver.Quests.AllSharable = 1`); low-level roster bots grind within reach
 and avoid repeated killers; zone escape reads corrected zone levels
-(`AiPlayerbot.AreaLevelOverrides`) and retries; far follow to a real player is
+(`AiPlayerbot.AreaLevelOverrides`; owner 20.11.2026: Wetlands 26, Dustwallow
+Marsh 39, Feralas 46, i.e. the owner's lower bound plus the 5-level margin) and
+retries; far follow to a real player is
 capped at 400 yards.
 
 Release train 7 (wave 1, 180 bots) adds login waves after an L1 reset (24 bots
