@@ -55,6 +55,13 @@ their single reviewed overlay value. LFT and LFT Bot Fill stay in the
 mangosd/Core template and executable; this contract creates no separate service
 or container for them.
 
+Rested experience (owner decision 21.11.2026): the three `Rate.Rest.*` keys are
+`1.5`, i.e. rest accumulates at +50 % over the standard rate (before: `2`,
++100 %). This changes how fast the rested pool grows, online and offline, for
+every character including bots; the per-kill rested bonus itself is a Core
+constant and unchanged. The keys are `INTENTIONAL_CHANGE` in
+`compose/semantic-baseline.tsv`.
+
 ## Optional Funserver test profile
 
 `CONFIG_PROFILE=funserver-test` applies the tracked, reversible test overlay
