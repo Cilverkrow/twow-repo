@@ -109,9 +109,9 @@ mangosd	Rate.Rage.Income	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	Rate.Reputation.Gain	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	Rate.Reputation.LowLevel.Kill	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	Rate.Reputation.LowLevel.Quest	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Rate.Rest.InGame	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Rate.Rest.Offline.InTavernOrCity	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
-mangosd	Rate.Rest.Offline.InWilderness	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
+mangosd	Rate.Rest.InGame	INTENTIONAL_CHANGE	mangosd.overlay.conf	owner-20261121-rested-rate-1-5
+mangosd	Rate.Rest.Offline.InTavernOrCity	INTENTIONAL_CHANGE	mangosd.overlay.conf	owner-20261121-rested-rate-1-5
+mangosd	Rate.Rest.Offline.InWilderness	INTENTIONAL_CHANGE	mangosd.overlay.conf	owner-20261121-rested-rate-1-5
 mangosd	Rate.Skill.Discovery	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	Rate.XP.Explore	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
 mangosd	Rate.XP.Kill	KEEP	mangosd.overlay.conf	verified-sanitized-baseline
