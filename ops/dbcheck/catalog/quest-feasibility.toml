@@ -758,6 +758,18 @@ reason = "delivery to 62634 Antonas Riftgaze (Tower of Azora); soak 159 QuestFir
 evidence = "blmap.psv:79; map-data.md:48"
 
 [[quest]]
+entry = 41752
+list = "blocklist"
+basis = "rule"
+rule = "GIVER_UNSPAWNED"
+class = "impossible"
+category = "GIVER_UNSPAWNED"
+title = "Cavernweb Extract"
+reason = "Dragonmaw Retreat (Horde L27); giver and taker 62638 Okul 0 spawns"
+evidence = "evidence/ws-30/dungeons-l35/DUNGEONS-L35-DB-ABGLEICH.md (75ab13c2), dungeon-quests-db.tsv"
+approved = "OB-00 2026-11-21 (relay to OB-20: 41752 onto the block list; OB-10 OK for a small config PR)"
+
+[[quest]]
 entry = 41905
 list = "blocklist"
 basis = "override"

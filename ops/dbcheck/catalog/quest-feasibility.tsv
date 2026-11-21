@@ -69,6 +69,7 @@ id	list	basis	rule	class	category	title	reason	evidence
 41367	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Against the Kolkar Dream	Turtle group quest; soak 3/0; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	blmap.psv:76
 41640	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Restless	Turtle elite; soak 21/0	blmap.psv:71
 41747	blocklist	override		impossible	TURNIN_UNREACHABLE	The Tower of Azora	delivery to 62634 Antonas Riftgaze (Tower of Azora); soak 159 QuestFirstRoute selected, 5 arrived, 3 turn-ins; 44 bots, avg open 7.6 h	blmap.psv:79; map-data.md:48
+41752	blocklist	rule	GIVER_UNSPAWNED	impossible	GIVER_UNSPAWNED	Cavernweb Extract	Dragonmaw Retreat (Horde L27); giver and taker 62638 Okul 0 spawns	evidence/ws-30/dungeons-l35/DUNGEONS-L35-DB-ABGLEICH.md (75ab13c2), dungeon-quests-db.tsv
 41905	blocklist	override		impossible	ITEM_NO_SOURCE	Dark Iron Aggression	item 42072 no loot source (Turtle)	blmap.psv:44
 42006	blocklist	rule	GROUP	impossible	GROUP_DUNGEON	Searching for Archaeologist Evenpike	Turtle dungeon quest, ender 63182 inside Frostmane Hollow (map 822), Type 81; dungeon quest (Type 81): S7 does not help (QuestGroupPolicy.h IsGroupHelpQuest)	map-data.md:45; ob50/quest-intent.tsv:12; STATUS.md:60
 42045	blocklist	rule	ENDER_UNSPAWNED	impossible	ENDER_UNSPAWNED	Tainted Rune	ender unspawned; item 42337 no loot source; live 3/0	blmap.psv:21; ob50/quest-intent.tsv:4
