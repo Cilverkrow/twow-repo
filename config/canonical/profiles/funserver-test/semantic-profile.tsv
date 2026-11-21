@@ -269,3 +269,5 @@ aiplayerbot	AiPlayerbot.Rotation.FleeAway	INTENTIONAL_CHANGE	aiplayerbot.overlay
 aiplayerbot	AiPlayerbot.Rotation.FleeAway.Scope	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	ds6-owner-20261121-bundle-c
 aiplayerbot	AiPlayerbot.Rotation.HunterMeleeStart	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	ds6-owner-20261121-bundle-c
 aiplayerbot	AiPlayerbot.Rotation.MeleeFleeBreak	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	ds6-owner-20261121-bundle-c
+aiplayerbot	AiPlayerbot.RosterConsumables.HealingPotionPct	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	owner-20261004-485-potions
+aiplayerbot	AiPlayerbot.RosterConsumables.ManaPotionPct	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	owner-20261004-485-potions
