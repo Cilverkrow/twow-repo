@@ -33,14 +33,14 @@ def load_text(text):
 class CommittedCatalog(unittest.TestCase):
     def test_counts_and_freeze(self):
         cat = catalog.load_catalog(CAT_DIR / "quest-feasibility.toml", FACTS)
-        self.assertEqual(len(cat.quests), 96)
-        self.assertEqual(sum(q.basis == "rule" for q in cat.quests), 47)   # strict split, OB-00 2026-10-19; 2242 override (CI #621); +41752 (OB-00 2026-11-21)
-        self.assertEqual(len(cat.ids("blocklist")), 89)
+        self.assertEqual(len(cat.quests), 97)
+        self.assertEqual(sum(q.basis == "rule" for q in cat.quests), 48)   # strict split, OB-00 2026-10-19; 2242 override (CI #621); +41752, +60116 (OB-00 2026-11-21)
+        self.assertEqual(len(cat.ids("blocklist")), 90)
         self.assertEqual(len(cat.ids("no_custom_starts")), 7)
         # the frozen baseline stays complete; ids beyond it carry an OB-00 approval (310 Bitter Rivals, OB-00 2026-10-25;
-        # 41752 Cavernweb Extract, OB-00 2026-11-21)
+        # 41752 Cavernweb Extract, 60116 Paint the Roses Red, OB-00 2026-11-21)
         self.assertTrue(set(cat.baseline) <= set(cat.ids()))
-        self.assertEqual(sorted(q.entry for q in cat.quests if q.entry not in cat.baseline), [310, 41752])
+        self.assertEqual(sorted(q.entry for q in cat.quests if q.entry not in cat.baseline), [310, 41752, 60116])
         self.assertTrue(all(q.approved.startswith("OB-00 ") for q in cat.quests if q.entry not in cat.baseline))
 
     def test_committed_files_are_current(self):

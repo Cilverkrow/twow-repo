@@ -857,6 +857,18 @@ reason = "Old Icebeard elite (Turtle); soak 32 bots/0 tin, avg open 4.0 h"
 evidence = "blmap.psv:70"
 
 [[quest]]
+entry = 60116
+list = "blocklist"
+basis = "rule"
+rule = "CREDIT_UNSPAWNED"
+class = "impossible"
+category = "CREDIT_UNSPAWNED"
+title = "Paint the Roses Red"
+reason = "Scarlet Monastery (L30); kill target 4281 Scarlet Scout 0 spawns, no summon spell, no kill credit, no src reference"
+evidence = "evidence/ws-30/dungeons-l35/dungeons-l30-quests.tsv (558a415a), DUNGEONS-L30-DS5.md (b61ccd6b)"
+approved = "OB-00 2026-11-21 (relay to OB-20: 60116 onto the block list, Ä12 self-decision, reversible; OB-10 agreed)"
+
+[[quest]]
 entry = 60124
 list = "blocklist"
 basis = "override"

@@ -78,6 +78,7 @@ id	list	basis	rule	class	category	title	reason	evidence
 55048	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	WANTED: Hole Escapee	credit 91296 custom objective trigger 0 spawns; soak 4/0	blmap.psv:25
 60050	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT+ITEM_USE	Lucky Coin	credit 51301 DUMMY_STORMWIND_FOUNTAIN 0 spawns, needs src item use; soak 44 bots/0 tin, avg open 6.8 h	blmap.psv:22
 60114	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	The Terror of Chill Breeze	Old Icebeard elite (Turtle); soak 32 bots/0 tin, avg open 4.0 h	blmap.psv:70
+60116	blocklist	rule	CREDIT_UNSPAWNED	impossible	CREDIT_UNSPAWNED	Paint the Roses Red	Scarlet Monastery (L30); kill target 4281 Scarlet Scout 0 spawns, no summon spell, no kill credit, no src reference	evidence/ws-30/dungeons-l35/dungeons-l30-quests.tsv (558a415a), DUNGEONS-L30-DS5.md (b61ccd6b)
 60124	blocklist	override		impossible	EVENT_SUMMON+DUNGEON	Trapped in the Nightmare	Mutanus 3654 0 static spawns (WC escort finale), group quest	blmap.psv:30
 60131	blocklist	rule	GROUP_HELP	needs_group	GROUP_ELITE	Deep Blue Sea	Sand Shark elite; soak 7/0	blmap.psv:73
 80306	blocklist	rule	CREDIT_UNSPAWNED	impossible	DUMMY_CREDIT	What's Yours is Ours	credit 80600 custom objective 0 spawns	blmap.psv:27
