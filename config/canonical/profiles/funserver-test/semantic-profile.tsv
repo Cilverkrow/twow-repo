@@ -28,7 +28,7 @@ aiplayerbot	AiPlayerbot.ProfessionTraining.LocalTrainerRadius	INTENTIONAL_CHANGE
 aiplayerbot	AiPlayerbot.ProfessionTraining.Trace	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-306-acceptance-trace
 aiplayerbot	AiPlayerbot.ProfessionTraining.TraceCooldownSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-306-trace-throttle-300s
 mangosd	Rate.XP.Explore	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-owner-xp-1-test-phase
-mangosd	BotBrain.Enable	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-bot-brain-sconfig-bridge
+mangosd	BotBrain.Enable	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-754-owner-bot-brain-off
 mangosd	BotBrain.Endpoint	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-bot-brain-sconfig-bridge
 mangosd	BotBrain.TimeoutMs	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-bot-brain-sconfig-bridge
 mangosd	BotBrain.IntervalMs	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-bot-brain-sconfig-bridge
@@ -42,6 +42,7 @@ mangosd	BotBrain.Dialogue.Enable	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-3
 mangosd	BotBrain.Dialogue.TimeoutMs	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-bot-brain-sconfig-bridge
 mangosd	BotBrain.Dialogue.MaxInFlight	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-bot-brain-sconfig-bridge
 mangosd	BotBrain.Dialogue.Commands.Enable	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-321-bot-brain-sconfig-bridge
+mangosd	BotBrain.Personality.Enable	INTENTIONAL_CHANGE	mangosd.overlay.conf	issue-754-owner-bot-brain-off
 aiplayerbot	AiPlayerbot.PersistentActiveRoster.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-persistent-roster
 aiplayerbot	AiPlayerbot.QuestFirstProgression.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-quest-first
 aiplayerbot	AiPlayerbot.RandomBotGroupNearby	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-321-live-no-random-grouping
