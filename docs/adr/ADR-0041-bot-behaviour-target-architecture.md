@@ -1,7 +1,7 @@
 # ADR-0041: Bot behaviour target architecture, replaced module by module
 
 - Status: Accepted (owner, 2026-11-04); implementation pending, each step under its own order
-- Date: 2026-11-04 (amended 2026-11-06, 2026-11-11)
+- Date: 2026-11-04 (amended 2026-11-06, 2026-11-11, 2026-11-22)
 - Primary: WS-10
 - Related: ADR-0022 (characterization before extraction), ADR-0024 (invariants), ADR-0031 (project goal),
   ADR-0039 (out-of-process planning), ADR-0040 (module ownership)
@@ -216,6 +216,40 @@ The status is unchanged: Accepted. This amendment records three owner decisions 
      HomeHubs, which needed the owner), the live server, deletion, game rules and balance, and perf
      tests.
 
+## Amendment 2026-11-22
+
+The status is unchanged: Accepted. This amendment records the owner's decision to switch the bot
+brain (ADR-0039) off in tests and at the next live start, and how its functions are covered until
+the planner (step 3) takes them over.
+
+1. **Bot brain off** (owner: 2026-11-21 about 23:15Z for tests, 2026-11-22 about 02:00Z for live).
+   - Owner, verbatim: "wenn das bot brain keine äquivalenten funktionen übernimmt die wir später
+     missen stellen wir es erst mal aus" (if the bot brain does not take over equivalent functions
+     we would miss later, we switch it off for now).
+   - OB-00 checked this condition against the OB-15 function analysis and found it met. Until the
+     planner lands, these functions are covered without the brain:
+     - the travel target, by the core `ChooseTravelTargetAction`;
+     - the daily intents, by the standard actions;
+     - commands, by the normal chat commands.
+   - What is lost while the brain is off:
+     - live strategy switching (`set_strategies` is only partly covered);
+     - identity, traits and memory (ADR-0039 §1–§2);
+     - LLM dialogue, which was never on in live.
+   - The `cv_brain` data stays in the database, so the decision is reversible.
+2. **Target values.**
+   - `BotBrain.Enable = 0`.
+   - Dialogue, personality and `LLMEnabled = 0`.
+   - The profile `funserver-test` carries these values since twow-repo#756 (main 571f3b5e).
+   - Every new test kit on tracks B, C and node2 sets `BotBrain.Enable = 0` explicitly. The start
+     proof is the server-log line `mod-bot-brain: disabled (BotBrain.Enable = 0)`.
+   - The live render and the live `.env` follow at the next live start (LIVE-START-CHECKLIST items
+     L7a and L7b). The live start itself still needs the owner's own OK.
+3. **Way back.** Amendment 2026-11-06, item 5, still applies: the brain may return only as a source
+   of slow preferences to the planner, with a TTL. Personality and dialogue come back through the
+   planner and #664, each under its own A/B. twow-repo#757 tracks the replacement table.
+   - Effect on ADR-0024 invariant 4 and on ADR-0039's fail-closed rule: none. With the brain off,
+     normal bot AI runs, and that is the path this ADR builds.
+
 ## Evidence
 
 - `Y:\tw\evidence\ws-00\projekt-durchleuchtung\A3-BOT-LOGIK.md` (v2.2): parts 1–5, verification log,
@@ -231,3 +265,9 @@ The status is unchanged: Accepted. This amendment records three owner decisions 
   twow-core#1026 comment 6786029803 (owner decision Q4-a, 2026-11-10), both recorded by OB-00 under
   Ä13; `Y:\tw\evidence\ws-00\projekt-durchleuchtung\A3-PLAN-ZIEL.md` (v2.5, sha256 3395c934; F1 (b) is in
   it since v2.1).
+- Amendment 2026-11-22:
+  - `Y:\backup twwow\workspace-relocation-20260902\evidence\ws-15\ob15-botbrain-funktionsanalyse\BOTBRAIN-FUNKTIONSANALYSE.md`
+    (sha256 aae2c289…, OB-15 function analysis, section 1b);
+  - `Y:\tw\evidence\ws-50\botbrain-node2-survey-20261121.md` (sha256 9785238e…, OB-30 survey of
+    where the brain was active);
+  - twow-repo#756 (profile values, merged 2026-11-22) and twow-repo#757 (replacement table).
