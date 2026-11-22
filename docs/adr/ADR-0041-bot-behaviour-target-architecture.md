@@ -222,10 +222,12 @@ The status is unchanged: Accepted. This amendment records the owner's decision t
 brain (ADR-0039) off in tests and at the next live start, and how its functions are covered until
 the planner (step 3) takes them over.
 
-1. **Bot brain off** (owner: 2026-11-21 about 23:15Z for tests, 2026-11-22 about 02:00Z for live).
-   - Owner, verbatim: "wenn das bot brain keine äquivalenten funktionen übernimmt die wir später
-     missen stellen wir es erst mal aus" (if the bot brain does not take over equivalent functions
-     we would miss later, we switch it off for now).
+1. **Bot brain off.**
+   - Tests: on 2026-11-21 about 23:15Z the owner chose option A, relayed by OB-00: the brain stays
+     off in all tests.
+   - Live: on 2026-11-22 about 02:00Z the owner wrote, typos corrected: "wenn das bot brain keine
+     äquivalenten funktionen übernimmt die wir später missen stellen wir es erst mal aus" (if the bot
+     brain does not take over equivalent functions we would miss later, we switch it off for now).
    - OB-00 checked this condition against the OB-15 function analysis and found it met. Until the
      planner lands, these functions are covered without the brain:
      - the travel target, by the core `ChooseTravelTargetAction`;
@@ -247,8 +249,9 @@ the planner (step 3) takes them over.
 3. **Way back.** Amendment 2026-11-06, item 5, still applies: the brain may return only as a source
    of slow preferences to the planner, with a TTL. Personality and dialogue come back through the
    planner and #664, each under its own A/B. twow-repo#757 tracks the replacement table.
-   - Effect on ADR-0024 invariant 4 and on ADR-0039's fail-closed rule: none. With the brain off,
-     normal bot AI runs, and that is the path this ADR builds.
+   - This is the case ADR-0024 invariant 4 asks for: a project feature is switched off and the server
+     still plays. ADR-0012's fail-closed admission rule is unchanged. With the brain off, normal bot
+     AI runs, and that is the path this ADR builds.
 
 ## Evidence
 
@@ -266,8 +269,9 @@ the planner (step 3) takes them over.
   Ä13; `Y:\tw\evidence\ws-00\projekt-durchleuchtung\A3-PLAN-ZIEL.md` (v2.5, sha256 3395c934; F1 (b) is in
   it since v2.1).
 - Amendment 2026-11-22:
-  - `Y:\backup twwow\workspace-relocation-20260902\evidence\ws-15\ob15-botbrain-funktionsanalyse\BOTBRAIN-FUNKTIONSANALYSE.md`
+  - `Y:\tw\evidence\ws-15\ob15-botbrain-funktionsanalyse\BOTBRAIN-FUNKTIONSANALYSE.md`
     (sha256 aae2c289…, OB-15 function analysis, section 1b);
+  - `Y:\tw\builds\ob30-kg-tmp\LIVE-START-CHECKLIST.md` (sha256 98dd14ad…, items L7a and L7b);
   - `Y:\tw\evidence\ws-50\botbrain-node2-survey-20261121.md` (sha256 9785238e…, OB-30 survey of
     where the brain was active);
   - twow-repo#756 (profile values, merged 2026-11-22) and twow-repo#757 (replacement table).
