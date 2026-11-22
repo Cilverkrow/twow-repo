@@ -361,6 +361,17 @@ assert_funserver_test_profile() {
 
     assert_profile_semantics "$profile_dir"
 
+    # twow-repo#754 (owner 2026-11-21/22): the bot brain is OFF in the funserver
+    # profile, travel planning, dialogue, dialogue commands and personality alike.
+    # mod-bot-brain reads these through sConfig, i.e. from mangosd.conf.
+    local bb_key
+    for bb_key in BotBrain.Enable BotBrain.Dialogue.Enable BotBrain.Dialogue.Commands.Enable BotBrain.Personality.Enable; do
+        [[ "$(key_value "$CONFIG_OUT_DIR/mangosd.conf" "$bb_key")" == 0 ]] || {
+            echo "ERROR: funserver profile must render $bb_key = 0 (#754)" >&2
+            exit 1
+        }
+    done
+
     mkdir -p "$TMP/profile-first"
     cp -- "$CONFIG_OUT_DIR"/*.conf "$TMP/profile-first/"
     grep -v '^RENDERED_UTC=' "$CONFIG_OUT_DIR/config-provenance.txt" > \
