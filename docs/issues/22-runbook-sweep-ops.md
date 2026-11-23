@@ -743,3 +743,31 @@ body: |
   (c)1-5 and the launcher end line comes from `lv2_run`, and no new job-only
   start failure appears in the threads.out files of N1-N5 for 7 days.
 ---
+id: OPS-029
+title: Make import-issues.sh run without a host jq
+workstream: WS-40
+priority: p2
+existing_ot: none
+source: ops/issues/import-issues.sh
+superseded_by: none
+body: |
+  **Why:** on 23.11.2026 the OPS-028 import could not run. `ops/issues/import-issues.sh`
+  calls `jq` in three places (`fetch_all_issues` length check, `existing_titles`,
+  `resolve_issue_number`). None of the OB hosts has `jq` (checked by OB-30,
+  OB-60 and OB-00), and host installs are not allowed. A Docker run would need a
+  GitHub token inside the container, which is ruled out. So OPS-028 was created
+  once by hand with `gh`, with title, body and labels exactly as the importer
+  builds them (OB-00 OK 23.11.).
+
+  **Do:** replace the three `jq` calls so that the importer needs only `gh`:
+  - take the issue list with `gh issue list ... --json number,title,state --jq`;
+  - or run `jq` from a token-free container on data that `gh` fetched on the host.
+  Keep the single-query rule (`ops/audit/issue-tooling-guard.sh`: exactly one
+  `gh issue list`) and the truncation guard (`ISSUE_LIMIT`).
+
+  **Acceptance:**
+  - `ops/issues/import-issues.sh` (dry run) runs on an OB host without `jq` and
+    lists the same plan as before;
+  - `issue-tooling-guard.sh` is green;
+  - `--only OPS-028` reports `= OPS-028 (exists)`.
+---
