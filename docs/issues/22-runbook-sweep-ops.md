@@ -694,3 +694,80 @@ body: |
 
   **Dependencies:** #486 B0/B1 (policy test and rulesets) merged first.
 ---
+id: OPS-028
+title: Bring every test kit up to KIT-GUARDS (c)-(e): job DRY, launcher rc, log re-resolve
+workstream: WS-50
+priority: p1
+existing_ot: none
+source: Y:/tw/builds/ob30-t9-bisect/cap-threads/marathon/KIT-GUARDS.md (f82bf86b, 2026-11-23)
+superseded_by: none
+body: |
+  **Why:** on 22.11.2026 three node2 starts failed only inside the job, after a
+  green wrapper DRY. ETC at 18:31Z had a track block in the job, and at 18:36Z a
+  known template without `BotBrain.Enable`. GRIND failed at 21:00Z. Each burned a
+  reset or a slot. On 20.11. a launcher reported `end rc=0` after its job was
+  killed (the last pipeline rc). After an honor restart in `rt_arm_up`, hour lines
+  kept reading the old `server_*.log`. OB-00 ordered the fixes (22.11.), and OB-30
+  wrote them into `KIT-GUARDS.md` on 23.11.
+
+  **Rules (KIT-GUARDS.md):**
+  - **(c) The wrapper DRY runs the job's own start path:**
+    1. QTRACK checked against the job's track list;
+    2. a job DRY mode through every pre-reset gate, including every set key
+       being known in the pin dists or REF `mod_bot_brain.conf`, render, and
+       BotBrain.Enable = 0;
+    3. the read-only parts of `rt_arm_begin` / `rt_reset` (reset served and
+       unused, REF pin gate). The libs have no dry hook. Reference: ETC kit
+       `etc-job.sh` 983-1010;
+    4. a `set -u` smoke;
+    5. rc 10 only after 1-4 and `kg_dry_roster_gate` PASS.
+  - **(d) Launchers** source `rt/launch-lib-v2.sh` (`83c1b133`, OB-60 R3 review
+    23.11., 8-case offline test). rc comes from `wait <pid>`; a killed job
+    reports `rc=killed sig=N`; `ENDTOK SHORT` is written for a short run or one
+    without a start proof; the kit sha is never empty.
+  - **(e) Hour lines re-resolve the newest `server_*.log`** after a restart or
+    resume. This is a rule only, so each kit shows its own test.
+
+  **Scope:** new kits and new copies apply (c)-(e) from 23.11. Running and
+  frozen kits stay as they are. Known open gap: T30 `kit-v1.1-f7` (OB-00 decision
+  23.11., `DELTA-F7.md`) lacks (c)(2)-(4); the next T30 kit version adds them.
+  X/Y start only after a clean G3 start proof.
+
+  **Do:**
+  1. Keep a list of active kits with their (c)/(d)/(e) state (OB-30).
+  2. Each kit owner adds (c)-(e) at the next kit copy and shows the DRY log
+     with the new lines.
+  3. Close the T30 gap in the next T30 kit version (OB-10 review).
+
+  **Acceptance:** for every kit started after 30.11.2026, the DRY log shows
+  (c)1-5 and the launcher end line comes from `lv2_run`, and no new job-only
+  start failure appears in the threads.out files of N1-N5 for 7 days.
+---
+id: OPS-029
+title: Make import-issues.sh run without a host jq
+workstream: WS-40
+priority: p2
+existing_ot: none
+source: ops/issues/import-issues.sh
+superseded_by: none
+body: |
+  **Why:** on 23.11.2026 the OPS-028 import could not run. `ops/issues/import-issues.sh`
+  calls `jq` in three places (`fetch_all_issues` length check, `existing_titles`,
+  `resolve_issue_number`). None of the OB hosts has `jq` (checked by OB-30,
+  OB-60 and OB-00), and host installs are not allowed. A Docker run would need a
+  GitHub token inside the container, which is ruled out. So OPS-028 was created
+  once by hand with `gh`, with title, body and labels exactly as the importer
+  builds them (OB-00 OK 23.11.).
+
+  **Do:** replace the three `jq` calls so that the importer needs only `gh`:
+  - take the issue list with `gh issue list ... --json number,title,state --jq`;
+  - or run `jq` from a token-free container on data that `gh` fetched on the host.
+  Keep the single-query rule (`ops/audit/issue-tooling-guard.sh`: exactly one
+  `gh issue list`) and the truncation guard (`ISSUE_LIMIT`).
+
+  **Acceptance:**
+  - `ops/issues/import-issues.sh` (dry run) runs on an OB host without `jq` and
+    lists the same plan as before;
+  - `issue-tooling-guard.sh` is green;
+  - `--only OPS-028` reports `= OPS-028 (exists)`.
+---
