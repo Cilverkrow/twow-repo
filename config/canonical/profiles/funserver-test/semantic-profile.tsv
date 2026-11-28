@@ -52,7 +52,7 @@ aiplayerbot	AiPlayerbot.MaxAlternateGraveyardDistance	INTENTIONAL_CHANGE	aiplaye
 aiplayerbot	AiPlayerbot.DeadWaitForRealMasterSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-pinned-default
 aiplayerbot	AiPlayerbot.DeadWaitForRealMasterInstanceSeconds	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-277-master-wait-instance-pinned-default
 aiplayerbot	AiPlayerbot.AuctionHouse.Enabled	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-308-owner-no-bot-auction-house
-aiplayerbot	AiPlayerbot.QuestFirstProgression.MinLevelForCrossMapQuestRoute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-485-487-544-crossmap-continents-until-61
+aiplayerbot	AiPlayerbot.QuestFirstProgression.MinLevelForCrossMapQuestRoute	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	owner-20261025-342-crossmap-from-l10
 aiplayerbot	AiPlayerbot.QuestFirstProgression.QuestAreaLevelMargin	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-335-quest-area-level-margin-pinned-default
 aiplayerbot	AiPlayerbot.QuestFirstProgression.ProgressAwareObjectives	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-329-progress-aware-objectives-pinned-default
 aiplayerbot	AiPlayerbot.DestinationDeaths.Max	INTENTIONAL_CHANGE	aiplayerbot.overlay.conf	issue-307-destination-death-cap-pinned-default
